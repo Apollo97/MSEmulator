@@ -1,0 +1,342 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Hello World!</title>
+
+        <link rel="stylesheet" href="/jquery-ui.css">
+		<link rel="stylesheet" href="/stylesheets/style.css">
+        <style>
+			body {
+				position: fixed;
+				left: 0;
+				top: 0;
+				padding: 0;
+				margin: 0;
+				width: 100vw;
+				height: 100vh;
+				display: block;
+			}
+            .layer {
+                position: fixed;
+                /*width: 100%;*/
+                /*height: 100%;*/
+                top: 0px;
+                left: 0px;
+            }
+            .layer2 {
+                position: absolute;
+                width: 1366px;
+                height: 768px;
+                top: 100px;
+                left: 100px;
+                border: 1px solid black;
+            }
+            .layer_top {
+                position: absolute;
+                width: 1366px;
+                height: 768px;
+                top: -1px;
+                left: -1px;
+                border: 1px solid black;
+            }
+			.fixed-layer {
+				position: fixed;
+				width: 100%;
+				height: 100%;
+				top: 0px;
+				left: 0px;
+			}
+            .item-border {
+                border: 1px solid black;
+            }
+            .center, .layer>div {
+                top: 50%;
+                position: absolute;
+                left: 50%;
+            }
+            .map_back {
+                z-index: 0;
+            }
+            .map_object {
+                z-index: 25;
+            }
+            .character_layer {
+                z-index: 50;
+            }
+            .map_front {
+                z-index: 100;
+            }
+			.Scene {
+				position: fixed;
+				left: 0;
+				top: 0;
+				padding: 0;
+				margin: 0;
+				width: 100vw;
+				height: 100vh;
+				display: block;
+			}
+			.Screenshot > * {
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+			}
+
+			[v-cloak] {
+				display: none
+			}
+        </style>
+
+        <script src="/jquery-1.12.4.js"></script>
+        <script src="/jquery-ui.js"></script>
+		<script src="/classList.js"></script><!--element.classList-->
+		
+		<script src="/spine/spine.js"></script>
+		<script src="/spine/atlas.js"></script>
+		<script src="/spine/render-ctx2d.js"></script>
+		<script src="/spine/render-webgl.js"></script>
+		<script src="/spine/SpineBinary.js"></script>
+		<script src="/spine/SSAnim.js"></script>
+		<script src="gl-matrix.js"></script>
+
+	</head>
+	<body>
+		<canvas id="glcanvas" class="Scene" width="800" height="600"></canvas>
+		<canvas id="glcanvas2" class="Scene" width="800" height="600" style="display: none;"></canvas>
+		<div id="Screenshot" class="Scene"></div>
+        <!--<div class="layer" id="map_back"></div>
+        <div class="layer" id="map_object"></div>-->
+        <div class="layer" id="character_layer">
+            <!--<canvas id="scene" class="Scene" width="800" height="600"></canvas>-->
+        </div>
+        <div class="layer" id="map_front"></div>
+
+        <!--<div class="layer_top" id="StatusBar"></div>-->
+        <!--<div class="layer2" id="StatusBar"></div>-->
+
+		<!--<div class="fixed-layer" id="overlay"></div>-->
+
+		<div id="vue" v-cloak></div>
+
+		<div class="" id="layout"></div>
+
+		<div style="position: fixed; right: 0px; top: 0px; background: #FFF;">
+			<label><input type="checkbox" id="m_is_run" checked /> Run</label>
+			<div>screen width: <span id="screen_width"></span></div>
+			<div>screen height: <span id="screen_height"></span></div>
+			<div>FPS: <span id="FPS"></span></div>
+			<div>frame: <span id="frame"></span> ms</div>
+			<label><input type="checkbox" id="m_is_always_show_tip" /> always show tip</label>
+		</div>
+
+        <noscript>
+            var StatusBar = $("#StatusBar")[0];
+            var _StatusBar = null;
+
+            (async function () {
+                /** @type {HTMLElement} */
+                _StatusBar = JSON.parse(await ajax_get("/data/UI/StatusBar3.img/"));
+
+                drawAll(_StatusBar.mainBar.status, StatusBar);
+                //drawAll(_StatusBar.chat, StatusBar);
+                
+                //ajax_get("/data/UIToolTip.img/");
+            })();
+
+            function drawAll(raw, parent, cls) {
+                cls = cls || "";
+                for (var i in raw) {
+                    var obj = raw[i];
+                    cls = " " + i;
+                    if (typeof obj == "object" && "" in obj) {
+                        var elem = add_child("IMG", parent);
+
+                        //elem.className = cls;
+                        elem.style.left = obj.origin.x + "px";
+                        elem.style.top = obj.origin.y + "px";
+                        elem.style.position = "absolute";
+                        elem.style.zIndex = 1 + Number(obj.z || 0);
+
+                        elem.src = obj[""];
+
+                        parent.appendChild(elem);
+                    }
+                    else {
+                        var div = document.createElement(tag);
+                        div.id = cls.replace(".");
+                        parent.appendChild(div);
+                        drawAll(obj, div, cls);
+                    }
+                }
+            }
+            function add_child(tag, parent) {
+                var div = document.createElement(tag);
+                div.className = "item-border";
+                $(div).draggable({ containment: "#StatusBar", scroll: false, snap: true });
+                $(div).mousedown(function (e) {
+                    if (e.button == 2) {
+                        var b = !$(this).draggable("option", "snap");
+                        $(this).draggable({ snap: b});
+                        return false;
+                    }
+                    return true;
+                });
+                return div;
+            }
+
+            function ajax_get(url) {
+                return new Promise(function (resolve, reject) {
+                    var xmlhttp = new XMLHttpRequest();
+                    xmlhttp.onreadystatechange = function () {
+                        if (this.readyState == 4) {//done
+                            if (this.status == 404 || this.status == 500) {
+                                reject("404/500");
+                            }
+                            else if (this.status == 200) {
+                                resolve(this.responseText);
+                            }
+                        }
+                    };
+                    xmlhttp.open("GET", url, true);
+                    xmlhttp.send();
+                });
+            }
+        </noscript>
+
+		<script src="/version"></script>
+
+		<script src="/index.bundle.js"></script>
+
+<!--/////////////////////////////////////////////////////////////////////////-->
+
+		<noscript src="gl-matrix.js"></noscript>
+		<noscript src="resource.js"></noscript>
+
+		<noscript src="js/math.js"></noscript>
+		<noscript src="js/IRenderer.js"></noscript>
+		<!--<noscript src="js/WebGLRenderer.js"></noscript>-->
+		<noscript src="js/Canvas2DRenderer.js"></noscript>
+
+		<noscript src="js/Sprite.js"></noscript>
+		<noscript src="js/Animation.js"></noscript>
+		<noscript src="js/SceneObject.js"></noscript>
+		<noscript src="js/Scene.js"></noscript>
+		<noscript src="js/Actor.js"></noscript>
+
+		<noscript src="js/Mob.js"></noscript>
+		<noscript src="js/Map.js"></noscript>
+
+		<noscript src="js/Character.js"></noscript>
+
+        <noscript src="test.js"></noscript>
+
+<!--/////////////////////////////////////////////////////////////////////////-->
+
+		<noscript src="editor/equip_list_window.js"></noscript>
+
+<!--/////////////////////////////////////////////////////////////////////////-->
+
+		<noscript>
+			var m_is_always_show_tip = false;
+			document.getElementById("m_is_always_show_tip").addEventListener("change", function (e) {
+				e = e ? e : event;
+				m_is_always_show_tip = e.target.checked ? true : false;
+			});
+
+			document.oncontextmenu = function () {
+				return false;
+			}
+
+			Promise.all([
+				initUIToolTip("UIToolTip"),
+				initEquipBox("equip_box")
+			]).then(function (results) {
+				var ui_tool_tip = window.$ui_tool_tip = results[0];
+				var equip_box = window.$equip_box = results[1];
+
+				var ui_eca = new UIEditCharacterAttribute();
+				ui_eca.chara = chara;
+				
+				$("#UIToolTip").position({
+					my: "right center", at: "right-32 center", of: window
+				});
+
+				//
+				
+				ui_tool_tip.updateInfo(equip_box.getItem("01003799"));//透明帽：01002186
+
+				//
+
+				equip_box.charaColor = function (groupName, color) {
+					if (chara && chara[groupName] != color) {
+						chara[groupName] = color;
+						updateScreen();
+					}
+				}
+
+				equip_box.item_onclick = function (id, category) {
+					const cateInfo = ItemCategoryInfo.get(id);
+					if (cateInfo) {
+						if (cateInfo.slot == "face") {
+							id = CharacterRender._getColorFaceID(id, equip_box.faceColor);
+							chara.use(id);
+						}
+						else if (cateInfo.slot == "hair") {
+							id = CharacterRender._getColorHairID(id, equip_box.hairColor);
+							chara.use(id);
+						}
+						else {
+							if (!chara.unuse(id)) {
+								chara.use(id, category);
+							}
+						}
+						updateScreen();
+					}
+					if (ui_tool_tip) {
+						ui_tool_tip.updateInfo($(this).data("info"));
+					}
+				}
+				equip_box.item_hover = function (id, category) {
+					if (ui_tool_tip) {
+						const e = event;
+						const is_equip = ItemCategoryInfo.isEquip(id);
+
+						if (is_equip) {
+							ui_tool_tip.updateInfo($(this).data("info"));
+							$("#UIToolTip").stop().show(/*"fade", {}, 120*/).position({
+								my: "left top",
+								at: `left+${e.clientX + 1} top+${e.clientY + 1}`,
+								of: document.body,
+							});
+						}
+					}
+				}
+				equip_box.item_mouseleave = function (id, category) {
+					if (!m_is_always_show_tip) {
+						$("#UIToolTip").hide(/*"fade", {}, 1000*/);
+					}
+				}
+			});
+
+			async function updateScreen() {
+				if (m_is_run) {
+					await chara.waitLoaded();
+					chara.__require_update = true;//update once
+					return;
+				}
+				await chara.waitLoaded();
+				await chara._waitFrameTexturesLoaded();
+				await IGraph.waitAllLoaded();
+
+				document.getElementById("Screenshot").innerHTML = "";
+
+				chara.__require_update = true;//update once
+				Render(0);
+			}
+		</noscript>
+	</body>
+</html>

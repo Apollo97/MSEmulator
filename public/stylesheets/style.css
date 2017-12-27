@@ -1,0 +1,185 @@
+﻿
+._menu {
+	/*position: sticky;*/
+	/*top: 0;*/
+	/*background: lightgray;*/
+  
+	max-height: 1em;
+	overflow: hidden;
+	transition: 0.2s;
+}
+._menu > * {
+	margin: 0;
+  
+	opacity: 0;
+	transition: 0.2s;
+}
+._menu:hover, ._menu > * {
+	opacity: 1;
+	/*background: green;*/
+	max-height: 2.5em;
+	overflow: visible;
+}
+._menu > .small {
+	opacity: 1;
+	/*background: lightgreen;*/
+	transition: 0.2s;
+}
+._menu:hover > .small {
+	opacity: 0;
+	max-height: 0em;
+	overflow: hidden;
+	transition: 0s;
+}
+
+/*****************************************************************************/
+
+.pagination {
+    /*display: inline-block;*/
+    font-size: 0;
+}
+.pagination > * {
+    background: rgba(250,250,250,0.9);
+	font-size: initial;
+}
+.pagination > a {
+	text-decoration: none;
+	border: 1px solid black;
+	color: blue;
+	padding: 0 0.25em;
+}
+.pagination > a.active {
+	cursor: default;
+	color: red;
+}
+.pagination.center > a:first-child {
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+.pagination.center > a:last-child {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+.pagination.top > a:first-child {
+	border-bottom-left-radius: 4px;
+}
+.pagination.top > a:last-child {
+	border-bottom-right-radius: 4px;
+}
+.pagination.bottom > a:first-child {
+	border-top-left-radius: 4px;
+}
+.pagination.bottom > a:last-child {
+	border-top-right-radius: 4px;
+}
+
+/*****************************************************************************/
+
+.ui-dialog {
+	padding: 0px;
+    box-shadow: 0 0 1em 0 rgba(0,0,0,0.5);
+}
+.dialog-group.active {
+    box-shadow: 0 0 1em 0 rgba(55,200,200,0.5);
+}
+.ui-dialog-title {
+	margin: 0px;
+	margin-left: 0.1em;
+}
+.ui-dialog .ui-dialog-title {
+	width: 100%;
+}
+.ui-dialog .ui-dialog-titlebar {
+	padding: 0px;
+	padding-left: 0.5em;
+    box-shadow: 0 .1em 0.5em 0 rgba(0,0,0,0.2);
+}
+.ui-dialog .ui-dialog-titlebar-close {
+	right: 0px
+}
+
+/*****************************************************************************/
+
+.ui-tabs * {
+	border-radius: 0;
+}
+.ui-tabs {
+	padding: 0;
+	border-radius: 0;
+	border: none !important;
+}
+.ui-tabs .ui-tabs-nav {
+	padding: 0;
+	border-top: none;
+	border-left: none;
+}
+.ui-tabs .ui-tabs-nav li {
+	margin: 0;
+}
+.ui-tabs .ui-tabs-nav .ui-tabs-anchor {
+	padding: 0 .1em 0 .1em;
+	background: transparent;
+}
+.ui-tabs .ui-tabs-panel {
+	padding: 0;
+}
+
+/*****************************************************************************/
+
+::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #efefef;
+    /*box-shadow: inset 0 0 4px 0 rgba(0,0,0,0.2);*/
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #bbb;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px #efefef;
+}
+
+::-webkit-scrollbar-button {
+    background-color: #efefef;
+    background-image: url("../images/ui-icons_222222_256x240.png");
+    /* background: red; */
+}
+::-webkit-scrollbar-button:hover {
+}
+
+::-webkit-scrollbar-button:vertical:decrement {
+    /* background: green; */
+    background-position: -3px 0;
+    /* clip-path: polygon(100% 100%, 50% 75%, 0 100%, 0 25%, 50% 0, 100% 25%); */
+}
+::-webkit-scrollbar-button:vertical:increment {
+    /* background: blue; */
+    /* clip-path: ellipse(25% 50% at 50% 50%); */
+    background-position: -68px 0;
+}
+::-webkit-scrollbar-button:horizontal:decrement {
+    /* background: yellow; */
+    background-position: -96px -4px;
+}
+::-webkit-scrollbar-button:horizontal:increment {
+    /* background: red; */
+    background-position: -32px -4px;
+}
+
+::-webkit-scrollbar-button:hover {
+    background-color: #bbb;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa;
+}
+
+::-webkit-scrollbar-track:hover {
+    background-color: #fff;
+}
+
+/*****************************************************************************/
+

@@ -1,0 +1,278 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{97e9329a-30d6-40ee-b133-d6a2385ed9db}</ProjectGuid>
+    <ProjectHome />
+    <ProjectView>ShowAllFiles</ProjectView>
+    <StartupFile>app.js</StartupFile>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <NodeExePath>
+    </NodeExePath>
+    <StartWebBrowser>True</StartWebBrowser>
+    <Environment>EDGE_CS_DEBUG=1
+_ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt\dist\electron.exe</Environment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <ItemGroup>
+    <Compile Include="app.js" />
+    <Compile Include="public\box2d-html5.js" />
+    <Compile Include="public\classList.js" />
+    <Compile Include="public\gl-matrix.js" />
+    <Compile Include="public\jquery-1.12.4.js" />
+    <Compile Include="public\jquery-ui.js" />
+    <Compile Include="public\resource.js" />
+    <Compile Include="public\spine\atlas.js" />
+    <Compile Include="public\spine\build\spine-all.js" />
+    <Compile Include="public\spine\build\spine-canvas.js" />
+    <Compile Include="public\spine\build\spine-core.js" />
+    <Compile Include="public\spine\build\spine-threejs.js" />
+    <Compile Include="public\spine\build\spine-webgl.js" />
+    <Compile Include="public\spine\build\spine-widget.js" />
+    <Compile Include="public\spine\goog.js" />
+    <Compile Include="public\spine\main.js" />
+    <Compile Include="public\spine\render-ctx2d.js" />
+    <Compile Include="public\spine\render-webgl.js" />
+    <Compile Include="public\spine\spine.js" />
+    <Compile Include="public\spine\SpineBinary.js" />
+    <Compile Include="public\spine\SSAnim.js" />
+    <Compile Include="src\app.js" />
+    <Compile Include="src\components\CorePosition.js" />
+    <Compile Include="src\game\Animation.js" />
+    <Compile Include="src\game\Canvas2DRenderer.js" />
+    <Compile Include="src\game\demo.js" />
+    <Compile Include="src\game\Engine.js" />
+    <Compile Include="src\game\GameState.js" />
+    <Compile Include="src\game\init.js" />
+    <Compile Include="src\game\IRenderer.js" />
+    <Compile Include="src\game\main.js" />
+    <Compile Include="src\game\Map.js" />
+    <Compile Include="src\game\math.js" />
+    <Compile Include="src\game\MobSkill\238.FairyDust.js" />
+    <Compile Include="src\game\MobSkill\238.FlowerTrap.js" />
+    <Compile Include="src\game\MobSkill\MobSkillBase.js" />
+    <Compile Include="src\game\Physics\DebugDraw.js" />
+    <Compile Include="src\game\Physics\Foothold.js" />
+    <Compile Include="src\game\Physics\Ground.js" />
+    <Compile Include="src\game\Physics\Physics.js" />
+    <Compile Include="src\game\Physics\PMob.js" />
+    <Compile Include="src\game\Physics\PPlayer.js" />
+    <Compile Include="src\game\Physics\World.js" />
+    <Compile Include="src\game\Renderer\CharacterRenderer.js" />
+    <Compile Include="src\game\Renderer\LifeRenderer.js" />
+    <Compile Include="src\game\Renderer\MobRenderer.js" />
+    <Compile Include="src\game\Renderer\NpcRenderer.js" />
+    <Compile Include="src\game\Renderer\ParticleSystem.js" />
+    <Compile Include="src\game\Renderer\Scene.js" />
+    <Compile Include="src\game\SceneCharacter.js" />
+    <Compile Include="src\game\SceneObject.js" />
+    <Compile Include="src\game\Skill.js" />
+    <Compile Include="src\game\Sprite.js" />
+    <Compile Include="src\game\WebGLRenderer.js" />
+    <Compile Include="src\index.js" />
+    <Compile Include="src\init.js" />
+    <Compile Include="src\util.js" />
+    <Compile Include="webpack.config.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".eslintrc" />
+    <Content Include=".npmignore" />
+    <Content Include="package.json" />
+    <Content Include="public\1x1.png" />
+    <Content Include="public\data\0170.json" />
+    <Content Include="public\data\accessoryEars.json" />
+    <Content Include="public\data\accessoryEyes.json" />
+    <Content Include="public\data\accessoryFace.json" />
+    <Content Include="public\data\body.json" />
+    <Content Include="public\data\Cap.json" />
+    <Content Include="public\data\Cape.json" />
+    <Content Include="public\data\Coat.json" />
+    <Content Include="public\data\equip" />
+    <Content Include="public\data\ESP限制器.json" />
+    <Content Include="public\data\Face0.json" />
+    <Content Include="public\data\Face1.json" />
+    <Content Include="public\data\Face2.json" />
+    <Content Include="public\data\Face3.json" />
+    <Content Include="public\data\Face4.json" />
+    <Content Include="public\data\Face5.json" />
+    <Content Include="public\data\Face6.json" />
+    <Content Include="public\data\Face7.json" />
+    <Content Include="public\data\Face8.json" />
+    <Content Include="public\data\Glove.json" />
+    <Content Include="public\data\Hair0.json" />
+    <Content Include="public\data\Hair1.json" />
+    <Content Include="public\data\Hair2.json" />
+    <Content Include="public\data\Hair3.json" />
+    <Content Include="public\data\Hair4.json" />
+    <Content Include="public\data\Hair5.json" />
+    <Content Include="public\data\Hair6.json" />
+    <Content Include="public\data\Hair7.json" />
+    <Content Include="public\data\head.json" />
+    <Content Include="public\data\Longcoat.json" />
+    <Content Include="public\data\Pants.json" />
+    <Content Include="public\data\Shield.json" />
+    <Content Include="public\data\Shoes.json" />
+    <Content Include="public\data\加農砲.json" />
+    <Content Include="public\data\單手劍.json" />
+    <Content Include="public\data\單手斧.json" />
+    <Content Include="public\data\單手錘.json" />
+    <Content Include="public\data\太刀.json" />
+    <Content Include="public\data\幻獸棒.json" />
+    <Content Include="public\data\弓.json" />
+    <Content Include="public\data\弩.json" />
+    <Content Include="public\data\扇子.json" />
+    <Content Include="public\data\手杖.json" />
+    <Content Include="public\data\拳套.json" />
+    <Content Include="public\data\指虎.json" />
+    <Content Include="public\data\控制器.json" />
+    <Content Include="public\data\槍.json" />
+    <Content Include="public\data\火槍.json" />
+    <Content Include="public\data\琉.json" />
+    <Content Include="public\data\璃.json" />
+    <Content Include="public\data\矛.json" />
+    <Content Include="public\data\短劍.json" />
+    <Content Include="public\data\短杖.json" />
+    <Content Include="public\data\能量劍.json" />
+    <Content Include="public\data\重拳槍.json" />
+    <Content Include="public\data\鎖鏈.json" />
+    <Content Include="public\data\鎬.json" />
+    <Content Include="public\data\鏟.json" />
+    <Content Include="public\data\長杖.json" />
+    <Content Include="public\data\閃亮克魯.json" />
+    <Content Include="public\data\雙刀.json" />
+    <Content Include="public\data\雙弩槍.json" />
+    <Content Include="public\data\雙手劍.json" />
+    <Content Include="public\data\雙手斧.json" />
+    <Content Include="public\data\雙手棍.json" />
+    <Content Include="public\data\靈魂之環.json" />
+    <Content Include="public\data\靈魂射手.json" />
+    <Content Include="public\data\魔劍.json" />
+    <Content Include="public\data\魔法護腕.json" />
+    <Content Include="public\demo.html" />
+    <Content Include="public\images\player_pause.png" />
+    <Content Include="public\images\player_play.png" />
+    <Content Include="public\images\toolstrip_beginner.png" />
+    <Content Include="public\images\toolstrip_bowman.png" />
+    <Content Include="public\images\toolstrip_cash.png" />
+    <Content Include="public\images\toolstrip_character.png" />
+    <Content Include="public\images\toolstrip_code.png" />
+    <Content Include="public\images\toolstrip_delete.png" />
+    <Content Include="public\images\toolstrip_duplicate.png" />
+    <Content Include="public\images\toolstrip_female.png" />
+    <Content Include="public\images\toolstrip_magician.png" />
+    <Content Include="public\images\toolstrip_male.png" />
+    <Content Include="public\images\toolstrip_neutral.png" />
+    <Content Include="public\images\toolstrip_pirate.png" />
+    <Content Include="public\images\toolstrip_save.png" />
+    <Content Include="public\images\toolstrip_save_all.png" />
+    <Content Include="public\images\toolstrip_standard.png" />
+    <Content Include="public\images\toolstrip_thief.png" />
+    <Content Include="public\images\toolstrip_unlimited.png" />
+    <Content Include="public\images\toolstrip_warrior.png" />
+    <Content Include="public\images\ui-icons_222222_256x240.png" />
+    <Content Include="public\images\ui-icons_444444_256x240.png" />
+    <Content Include="public\images\ui-icons_555555_256x240.png" />
+    <Content Include="public\images\ui-icons_777620_256x240.png" />
+    <Content Include="public\images\ui-icons_777777_256x240.png" />
+    <Content Include="public\images\ui-icons_cc0000_256x240.png" />
+    <Content Include="public\images\ui-icons_ffffff_256x240.png" />
+    <Content Include="public\images\warning.png" />
+    <Content Include="public\index.html" />
+    <Content Include="public\jquery-ui.css" />
+    <Content Include="public\spine\bg.png" />
+    <Content Include="public\spine\index.html" />
+    <Content Include="public\stylesheets\style.css" />
+    <Content Include="public\wzproperty.xslt" />
+    <Content Include="setting.ini" />
+    <Content Include="src\components\ui-button-group.vue" />
+    <Content Include="src\components\ui-dialog.vue" />
+    <Content Include="src\components\ui-draggable.vue" />
+    <Content Include="src\components\ui-menu.vue" />
+    <Content Include="src\components\ui-sortable.vue" />
+    <Content Include="src\components\ui-trigger.vue" />
+    <Content Include="src\editor\editor.vue" />
+    <Content Include="src\editor\ui-character-attribute.vue" />
+    <Content Include="src\editor\ui-character-svg.vue" />
+    <Content Include="src\editor\ui-character.vue" />
+    <Content Include="src\editor\ui-equip-box.vue" />
+    <Content Include="src\editor\ui-map-editor.vue" />
+    <Content Include="src\editor\ui-mob-list.vue" />
+    <Content Include="src\main-ui.vue" />
+    <Content Include="src\ui\BasicComponent.vue" />
+    <Content Include="src\ui\StatusBar.vue" />
+    <Content Include="src\ui\UIToolTip\Frame2.vue" />
+    <Content Include="src\ui\UIToolTip\ItemTip.vue" />
+    <Content Include="src\ui\UIWindow\Equip.vue" />
+    <Content Include="src\ui\UIWindow\WindowBase.vue" />
+    <Content Include="typings.json" />
+    <Content Include="wz.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="public\" />
+    <Folder Include="public\data\" />
+    <Folder Include="public\images\" />
+    <Folder Include="public\spine\" />
+    <Folder Include="public\spine\build\" />
+    <Folder Include="public\stylesheets\" />
+    <Folder Include="src\" />
+    <Folder Include="src\components\" />
+    <Folder Include="src\editor\" />
+    <Folder Include="src\game\" />
+    <Folder Include="src\game\MobSkill\" />
+    <Folder Include="src\game\Physics\" />
+    <Folder Include="src\game\Renderer\" />
+    <Folder Include="src\ui\" />
+    <Folder Include="src\ui\UIToolTip\" />
+    <Folder Include="src\ui\UIWindow\" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <!--Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them.-->
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="False" />
+  <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsTools.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:48022/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>True</UseCustomServer>
+          <CustomServerUrl>http://localhost:1337</CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}" User="">
+        <WebProjectProperties>
+          <StartPageUrl>
+          </StartPageUrl>
+          <StartAction>CurrentPage</StartAction>
+          <AspNetDebugging>True</AspNetDebugging>
+          <SilverlightDebugging>False</SilverlightDebugging>
+          <NativeDebugging>False</NativeDebugging>
+          <SQLDebugging>False</SQLDebugging>
+          <ExternalProgram>
+          </ExternalProgram>
+          <StartExternalURL>
+          </StartExternalURL>
+          <StartCmdLineArguments>
+          </StartCmdLineArguments>
+          <StartWorkingDirectory>
+          </StartWorkingDirectory>
+          <EnableENC>False</EnableENC>
+          <AlwaysStartWebServerOnDebug>False</AlwaysStartWebServerOnDebug>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
