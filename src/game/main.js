@@ -84,21 +84,21 @@ function isMapReady() {
 
 var m_move_speed = 10;
 window.mapControl = function mapControl(inBound) {
-	const speed = m_move_speed + (input_keys['A'] ? 90 : 0);
+	const speed = m_move_speed + (input_keys['z'] ? 90 : 0);
 	const info = scene_map._raw.info;
 
 	//m_viewRect = scene_map.viewArea(new Vec2(m_viewRect.left, m_viewRect.top));
 
-	if (input_keys['left'] > 0) {
+	if (input_keys['ArrowLeft'] > 0) {
 		m_viewRect.left -= speed;
 	}
-	if (input_keys['right'] > 0) {
+	if (input_keys['ArrowRight'] > 0) {
 		m_viewRect.left += speed;
 	}
-	if (input_keys['up'] > 0) {
+	if (input_keys['ArrowUp'] > 0) {
 		m_viewRect.top -= speed;
 	}
-	if (input_keys['down'] > 0) {
+	if (input_keys['ArrowDown'] > 0) {
 		m_viewRect.top += speed;
 	}
 
