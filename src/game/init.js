@@ -39,6 +39,17 @@ window.m_is_run = true;
 	window.m_display_front = true;
 	window.m_display_mapobj = true;
 	window.m_display_maptile = true;
+	window.m_display_particle_system = true;
+
+	window.m_display_player = true;
+	window.m_display_life = true;
+
+	//window.m_display_skill;
+	//window.m_display_mob_skill;
+	//window.m_display_mob_effect = true;
+	//window.m_display_mob_etc = true;
+
+	window.m_display_portal = true;
 
 	window.m_display_skeletal_anim = true;
 })();

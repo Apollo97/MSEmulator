@@ -148,8 +148,8 @@ internal class DataExtracter
 		this.output_file(path + "/鎖鏈.json", this.extract_equip, "Weapon", "0127");
 		Console.WriteLine("extract 鎖鏈");
 
-		this.output_file(path + "/魔法護腕.json", this.extract_equip, "Weapon", "0128");
-		Console.WriteLine("extract 魔法護腕");
+		this.output_file(path + "/魔力護腕.json", this.extract_equip, "Weapon", "0128");
+		Console.WriteLine("extract 魔力護腕");
 
 		this.output_file(path + "/單手劍.json", this.extract_equip, "Weapon", "0130");
 		Console.WriteLine("extract 單手劍");

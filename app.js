@@ -6,6 +6,7 @@ const path = require('path');
 const url = require('url');
 const fs = require('fs');
 const util = require('util');
+const { Transform } = require('stream');
 
 const { StringDecoder } = require('string_decoder');
 const AsciiStringDecoder = new StringDecoder("ascii");
@@ -22,9 +23,13 @@ function main() {
 	const child_process = require('child_process');
 
 	let EquipList = child_process.spawn(path.join(__dirname, "Tools", "EquipList", "EquipList"), ["./public/data", "./setting.ini"]);
-	
+	console.log("產生道具清單...");
+
+	EquipList.stdout.on("data", data => process.stdout.write(data));
+
 	let promise = new Promise(function (resolve, reject) {
 		EquipList.on('exit', function () {
+			console.log("產生道具清單...完成");
 			resolve();
 		});
 	});

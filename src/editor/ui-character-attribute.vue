@@ -4,22 +4,35 @@
 		<div style="display: inline-block; vertical-align: top;">
 			<table>
 				<tr>
-					<td><div>
-						<button v-if="chara.speed" @click="pauseAnimation" title="pause animation" class="btn"><img src="/images/player_pause.png" alt="pause"></button>
-						<button v-else @click="pauseAnimation" title="play animation" class="btn"><img src="/images/player_play.png" alt="play"></button>
-					</div></td>
+					<td></td>
 					<td>
-						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">disable</button>
-						<button v-else @click="sceneChara.enablePhysics=true">enable</button>
+						<template v-if="chara.speed">
+							<button @click="pauseAnimation" title="pause animation" class="btn">
+								<img src="/images/player_pause.png" alt="pause" />
+							</button>
+						</template>
+						<template v-else>
+							<button @click="pauseAnimation" title="play animation" class="btn">
+								<img src="/images/player_play.png" alt="play" />
+							</button>
+						</template>
 					</td>
-					<td><button @click="isShowDebug=!isShowDebug">detail</button></td>
+					<td>
+						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">禁用物理</button>
+						<button v-else @click="sceneChara.enablePhysics=true">啟用物理</button>
+					</td>
+					<td>
+						<button @click="isShowDebug=!isShowDebug">細節</button>
+					</td>
 				</tr>
 				<tr>
-					<td><label for="chara_action">action</label></td>
-					<td><select id="chara_action" v-model="chara.action" @clicl="update_frame_list('action')">
-							<option v-if="!actions.length" disabled value="">请选择</option>
+					<th>動作</th>
+					<td>
+						<select v-model="chara.action" @clicl="update_frame_list('action')">
+							<option v-if="!actions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in actions">{{item}}</option>
-						</select></td>
+						</select>
+					</td>
 					<td>
 						<select v-model.number="chara.action_frame">
 							<option v-if="!actions.length" disabled> ---- </option>
@@ -28,11 +41,13 @@
 					</td>
 				</tr>
 				<tr>
-					<td><label for="chara_emotion">emotion</label></td>
-					<td><select id="chara_emotion" v-model="chara.emotion">
-							<option v-if="!emotions.length" disabled value="">请选择</option>
+					<th>表情</th>
+					<td>
+						<select v-model="chara.emotion">
+							<option v-if="!emotions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in emotions">{{item}}</option>
-						</select></td>
+						</select>
+					</td>
 					<td>
 						<select v-model.number="chara.emotion_frame" @clicl="update_frame_list('emotion')">
 							<option v-if="!emotions.length" disabled> ---- </option>
@@ -41,34 +56,33 @@
 					</td>
 				</tr>
 				<tr>
-					<td>location</td>
-					<td colspan="2">
-						<input type="number" v-model.number="chara.x" min="-9999" max="9999" style="width: 5em;" />
-						<input type="number" v-model.number="chara.y" min="-9999" max="9999" style="width: 5em;" />
-						<input type="number" v-model.number="sceneChara.$layer" min="0"     max="7"    style="width: 5em;" />
+					<th>位置</th>
+					<td><input type="number" v-model.number="chara.x" min="-9999" max="9999" style="width: 5em;" /></td>
+					<td><input type="number" v-model.number="chara.y" min="-9999" max="9999" style="width: 5em;" /></td>
+					<td><input type="number" v-model.number="sceneChara.$layer" min="0" max="7" style="width: 5em;" /></td>
+				</tr>
+				<tr>
+					<th rowspan="2">耳朵</th>
+					<td>
+						<label class="chara_ear">人類<input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked /></label>
+					</td>
+					<td>
+						<label class="chara_ear">妖精<input type="radio" name="chara_ear" v-model="chara.ear" value="elfEar" /></label>
+					</td>
+					<td>
+						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lefEar" /></label>
 					</td>
 				</tr>
 				<tr>
 					<td>
-						<label class="chara_ear">elf<input type="radio" name="chara_ear" v-model="chara.ear" value="elfEar" /></label>
-					</td>
-					<td>
-						<label class="chara_ear">human<input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked /></label>
-					</td>
-					<td>
-						<label class="chara_ear">雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lefEar" /></label>
+						<label class="chara_ear">亥雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="highlefEar" /></label>
 					</td>
 				</tr>
 				<!--<tr>
-					<td><button @click="chara._download()">download</button></td>
-					<td></td>
-					<td></td>
-				</tr>
-				<tr>
-					<td></td>
-					<td></td>
-					<td></td>
-				</tr>-->
+		<td></td>
+		<td></td>
+		<td></td>
+	</tr>-->
 			</table>
 		</div>
 		<div v-if="isShowDebug" style="display: inline-block; user-select: text;">
@@ -124,9 +138,7 @@
 	}
 	
 	.btn {
-		display: inline-flex;
-		width: 20px;
-		height: 20px;
+		margin: auto;
 		padding: 0;
 	}
 	.chara_ear {

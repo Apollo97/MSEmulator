@@ -378,7 +378,7 @@ export class Game {
 				scene_map.beginRender(engine);
 				{					
 					scene_map.renderBackground(engine);
-					if (0 && scene_map._raw.info.mirror_Bottom) {
+					if (0 && window.m_display_life && scene_map._raw.info.mirror_Bottom) {
 						engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
 						engine.ctx.translate(Math.trunc(-m_viewRect.x), Math.trunc(-m_viewRect.y));
 						engine.ctx.scale(1, -1);
@@ -400,9 +400,11 @@ export class Game {
 									charaList[chara_index].render(engine);
 								}
 							}
-							
-							scene_map.renderLife(engine, i);
-							
+
+							if (window.m_display_life) {
+								scene_map.renderLife(engine, i);
+							}
+
 							if (chara && chara.renderer) {
 								if (chara.$layer == i) {
 									chara.render(engine);
@@ -433,14 +435,18 @@ export class Game {
 				{
 					scene_map.applyCamera(engine);
 					{
-						scene_map.renderPortal(engine);
+						if (window.m_display_portal) {
+							scene_map.renderPortal(engine);
+						}
 					}
 					
 					scene_map.renderFrontground(engine);
 				}
 				scene_map.endRender(engine);
-					
-				scene_map.renderParticle(engine);
+
+				if (window.m_display_particle_system) {
+					scene_map.renderParticle(engine);
+				}
 
 				scene_map.applyCamera(engine);
 				{

@@ -14,10 +14,16 @@ export class SpriteBase extends Graph {
 	 * @param {string=} url
 	 */
 	constructor(raw, url) {
-		super(url, {
-			width: raw.__w,
-			height: raw.__h,
-		});
+		if (raw) {
+			super(url, {
+				width: raw.__w,
+				height: raw.__h,
+			});
+		}
+		else {
+			super();
+			return;
+		}
 
 		this._raw = raw;
 		
@@ -44,10 +50,12 @@ export class SpriteBase extends Graph {
 				}
 			}
 			else {
-				console.group("no texture");
-				console.warn(raw);
-				console.groupEnd();
-				throw new Error("no texture");
+				if (!raw.__isEmpty) {
+					console.group("no texture");
+					console.warn(raw);
+					console.groupEnd();
+					throw new Error("no texture");
+				}
 			}
 		}
 		return false;
@@ -75,7 +83,7 @@ export class SpriteBase extends Graph {
 		if (!this._raw) {
 			debugger;
 		}
-		if (propertyName in this._raw) {
+		else if (propertyName in this._raw) {
 			return converter(this._raw[propertyName]);
 		}
 		return defaultValue;

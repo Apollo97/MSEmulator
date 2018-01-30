@@ -6,6 +6,7 @@ import { IGraph, IRenderer } from "./IRenderer.js";
 import { engine, Graph } from "./Engine.js";
 
 import { Sprite } from "./Sprite.js";
+import { LifeRenderer } from "./Renderer/LifeRenderer.js";
 import { MobRenderer } from "./Renderer/MobRenderer.js";
 import { NpcRenderer } from "./Renderer/NpcRenderer.js";
 
@@ -49,7 +50,7 @@ async function map_load_package(cat, pack) {
 	if (map_sprite[cat][pack]) {
 		return map_sprite[cat][pack];
 	}
-	throw new Error();
+	//throw new Error();
 }
 
 
@@ -60,19 +61,22 @@ class MapTexture extends Sprite {
 	/**
 	 * @param {!any} raw
 	 * @param {!string} url
+	 * @param {!MapTexture} texture0
 	 */
-	constructor(_raw, url) {
+	constructor(_raw, url, texture0) {
 		super(_raw, url);
 		//this.className = _path;
+
+		texture0 = texture0 || MapTexture.raw_default;
 		
 		this.a0 = this._get(-1, "a0", Number);
 		this.a1 = this._get(-1, "a1", Number);
 
-		this.movetype = this._get(0, "moveType", Number);
-		this.movew = this._get(0, "moveW", Number);
-		this.moveh = this._get(0, "moveH", Number);
-		this.movep = this._get(0, "moveP", Number);
-		this.mover = this._get(0, "moveR", Number);
+		this.movetype = this._get(texture0.movetype, "moveType", Number);
+		this.movew = this._get(texture0.movew, "moveW", Number);
+		this.moveh = this._get(texture0.moveh, "moveH", Number);
+		this.movep = this._get(texture0.movep, "moveP", Number);
+		this.mover = this._get(texture0.mover, "moveR", Number);
 	}
 
 	/**
@@ -125,6 +129,15 @@ class MapTexture extends Sprite {
 		}
 	}
 }
+MapTexture.raw_default = {
+	a0: -1,
+	a1: -1,
+	movetype: 0,
+	movew: 0,
+	moveh: 0,
+	movep: 0,
+	mover: 0,
+};
 
 /**
  * Map clip-texture
@@ -162,7 +175,8 @@ class MapObjectBase {
 		this._load_object_info();
 		this._load_back_info();
 		this._load_tile_info();
-		
+
+		this.aabb = null;
 		this.$display_aabb = false;
 		this.$aabb_color = null;
 		
@@ -235,10 +249,24 @@ class MapObjectBase {
 	}
 	
 	/**
-	 * @virtual
 	 * @returns {Promise}
 	 */
 	load() {
+		let texture0 = this._load_texture(0, null);
+		this.textures[0] = texture0;
+
+		for (let i = 1; i in this._texture_raw; ++i) {//not array
+			this.textures[i] = this._load_texture(i, texture0);
+		}
+		this.__calc_aabb();
+	}
+	
+	/**
+	 * @virtual
+	 * @param {number} i - texture index
+	 * @param {MapTexture} texture0
+	 */
+	_load_texture() {
 		//nothing
 	}
 	
@@ -246,29 +274,25 @@ class MapObjectBase {
 	 * @virtual
 	 */
 	unload() {
-		//nothing
+		this.textures = [];
 	}
 	
-	__after_load_textures() {
+	__calc_aabb() {
 		if (this.textures.length > 1) {
-			const texture0 = this.textures[0];
-			for (let i = 1; i < this.textures.length; ++i) {
+			let mover = 0;
+			for (let i = 0; i < this.textures.length; ++i) {
 				let texture = this.textures[i];
-				texture.movetype = texture0.movetype;
-				texture.movew = texture0.movew;
-				texture.moveh = texture0.moveh;
-				texture.movep = texture0.movep;
-				texture.mover = texture0.mover;
+				mover = mover | texture.mover;
 			}
-		}
-		const aabb = this.compute_max_rectangle();
-		if (this.mover) {
-			const r = Math.round(Math.sqrt(aabb.width ** 2 + aabb.height ** 2));
-			const hr = Math.round(r * 0.5);
-			this.aabb = new Rectangle(this.x - hr, this.y - hr, r, r);
-		}
-		else {
-			this.aabb = aabb;
+			const aabb = this.compute_max_rectangle();
+			if (mover) {
+				const r = Math.round(Math.sqrt(aabb.width ** 2 + aabb.height ** 2));
+				const hr = Math.round(r * 0.5);
+				this.aabb = new Rectangle(this.x - hr, this.y - hr, r, r);
+			}
+			else {
+				this.aabb = aabb;
+			}
 		}
 	}
 
@@ -555,13 +579,21 @@ class MapObject extends MapObjectBase {
 			}
 		}
 	}
-	load() {
-		for (let i = 0; i in this._texture_raw; ++i) {//not array
-			let texture = new MapTexture(this._texture_raw[i]);
-			texture._url = ["/images", "Map", "Obj", this._texture_base_path, i].join("/");
-			this.textures.push(texture);
-		}
-		this.__after_load_textures();
+
+	/**
+	 * @override
+	 * @param {number} i - texture index
+	 * @param {MapTexture} texture0
+	 * @returns {MapTexture}
+	 */
+	_load_texture(i, texture0) {
+		const null_url = undefined;
+		let path = ["Map", "Obj", this._texture_base_path, i].join("/");
+
+		let texture = new MapTexture(this._texture_raw[i], null_url, texture0);
+		texture._url = "/images/" + path;
+
+		return texture;
 	}
 
 	get _texture_base_path() {
@@ -1021,24 +1053,20 @@ class MapBackAnimation extends MapBackBase {
 	constructor(_raw) {
 		super(_raw);
 	}
-	load() {
-		for (let i = 0; i in this._texture_raw; ++i) {//not array
-			let path = ["Map", "Back", this._texture_base_path, i].join("/");
-			
-			this.textures[i] = new MapTexture(this._texture_raw[i]);
-			this.textures[i]._url = "/images/" + path;
-		}
-		if (this.textures.length > 1) {
-			const texture0 = this.textures[0];
-			for (let i = 1; i < this.textures.length; ++i) {
-				let texture = this.textures[i];
-				texture.movetype = texture0.movetype;
-				texture.movew = texture0.movew;
-				texture.moveh = texture0.moveh;
-				texture.movep = texture0.movep;
-				texture.mover = texture0.mover;
-			}
-		}
+
+	/**
+	 * @override
+	 * @param {number} i - texture index
+	 * @param {MapTexture} texture0
+	 * @returns {MapTexture}
+	 */
+	_load_texture(i, texture0) {
+		let path = ["Map", "Back", this._texture_base_path, i].join("/");
+
+		let texture = new MapTexture(this._texture_raw[i]);
+		texture._url = "/images/" + path;
+
+		return texture;
 	}
 	
 	get _texture_base_path() {
@@ -1192,7 +1220,7 @@ export class MapLifeEntity {
 			rx1: 720,
 		};
 
-		/** @type {Renderer} */
+		/** @type {LifeRenderer} LifeRenderer|MobRenderer|NpcRenderer */
 		this.renderer = null;
 
 		/** @type {boolean} */
@@ -1317,7 +1345,7 @@ export class MapLifeEntity {
 	/**
 	 * @param {IRenderer} renderer
 	 */
-	draw(renderer) {
+	draw(renderer) {MobRenderer
 		renderer.globalAlpha = this.opacity;
 		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front >= 1);
 	}

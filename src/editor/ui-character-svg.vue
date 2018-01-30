@@ -50,6 +50,8 @@
 						let ft = this.chara.__frag_list[i];
 						if (ft.texture) {
 							arr.push(ft);
+							if (ft.graph2 && ft.graph2.texture) arr.push(ft.graph2);
+							if (ft.graph3 && ft.graph3.texture) arr.push(ft.graph3);
 						}
 					}
 					return arr;

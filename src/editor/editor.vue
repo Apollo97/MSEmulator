@@ -31,12 +31,13 @@
 						</label>
 					</div>
 					<div>
-						<label><input type="checkbox" @click="window().m_is_rendering_map = !window().m_is_rendering_map" checked /> Map</label>
-						<label><input type="checkbox" @click="window().m_display_back = !window().m_display_back" checked /> back</label>
-						<label><input type="checkbox" @click="window().m_display_front = !window().m_display_front" checked /> front</label>
-						<label><input type="checkbox" @click="window().m_display_mapobj = !window().m_display_mapobj" checked /> mapobj</label>
-						<label><input type="checkbox" @click="window().m_display_maptile = !window().m_display_maptile" checked /> tile</label>
-						<label><input type="checkbox" @click="window().m_display_skeletal_anim = !window().m_display_skeletal_anim" checked /> spine</label>
+						<label><input type="checkbox" @click="window().m_is_rendering_map = !window().m_is_rendering_map" checked />Map</label>
+						<label><input type="checkbox" @click="window().m_display_back = !window().m_display_back" checked />map back</label>
+						<label><input type="checkbox" @click="window().m_display_front = !window().m_display_front" checked />map front</label>
+						<label><input type="checkbox" @click="window().m_display_mapobj = !window().m_display_mapobj" checked />map object</label>
+						<label><input type="checkbox" @click="window().m_display_maptile = !window().m_display_maptile" checked />map tile</label>
+						<label><input type="checkbox" @click="window().m_display_particle_system = !window().m_display_particle_system" checked />particle system</label>
+						<label><input type="checkbox" @click="window().m_display_skeletal_anim = !window().m_display_skeletal_anim" checked />spine</label>
 					</div>
 				</p>
 			</details>
@@ -136,6 +137,8 @@
 						  @mouseleaveItem="mouseleaveItem"
 						  @faceColor="faceColor"
 						  @hairColor="hairColor"
+						  @hairColor2="hairColor2"
+						  @hairMix2="hairMix2"
 						  >
 			</ui-equip-box>
 		</transition>
@@ -547,6 +550,28 @@
 						app.updateScreen();
 					}
 				}
+			},
+			$hairMixColor2: function ({ color, mix }) {
+				const vm = this;
+
+				this.$store.commit("increaseProgressMax", { amount: 1 });
+
+				this.chara.renderer.slots.hairColor2 = color;
+				Promise.all([this.chara.renderer.slots.hair.$promise_hair2, this.chara.renderer.slots.hair.$promise_hair3]).then(async function (hair2, hair3) {
+					await vm.chara.renderer.__synchronize(0);
+					vm.chara.renderer.slots.hairMix2 = mix;
+					app.updateScreen();
+
+					vm.$store.commit("increaseProgress", { amount: 1 });
+				}).catch(function (reason) {
+					vm.$store.commit("increaseProgress", { amount: 1 });
+				})
+			},
+			hairColor2: function (params) {
+				this.$hairMixColor2(params);
+			},
+			hairMix2: function (params) {
+				this.$hairMixColor2(params);
 			},
 
 			clickItem: async function (payload) {

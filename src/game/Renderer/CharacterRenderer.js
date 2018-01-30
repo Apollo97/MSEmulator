@@ -517,7 +517,7 @@ class ItemEffect {
 class CharacterFragmentBase {
 	constructor(textures) {
 		this.textures = textures;
-		this.opacity = 1;
+		//this.opacity = 1;
 	}
 
 	/**
@@ -556,7 +556,7 @@ class CharacterBodyFragment extends CharacterFragmentBase {
 		//if (this.textures.is_show) {
 			let ft = this.textures[chara.action][frame];
 			if (ft) {
-				ft.opacity = this.opacity;
+				//ft.opacity = this.opacity;
 				return ft;
 			}
 		//}
@@ -588,7 +588,7 @@ class CharacterFaceFragment extends CharacterFragmentBase {
 		}
 		//if (this.textures.is_show) {
 			let ft = this.textures[chara.emotion][frame];
-			ft.opacity = this.opacity;
+			//ft.opacity = this.opacity;
 			return ft;
 		//}
 		return null;
@@ -813,19 +813,20 @@ class CharacterEquipBase extends ICharacterEquip {
 
 			if (raw) {
 				/** @type {FragmentTexture} */
+				const FragmentTextureType = this.FragmentTextureType;
 				let ft;
 				if (raw[""] == "") {
-					ft = new FragmentTexture(raw);
+					ft = new FragmentTextureType(raw);
 					ft._url = "/images/" + path;
 					textures[place] = ft
 				}
 				else if (typeof raw[""] == 'string' && raw[""].startsWith("data:image/")) {
-					ft = new FragmentTexture(raw);
+					ft = new FragmentTextureType(raw);
 					ft._url = raw[""];
 					textures[place] = ft;
 				}
 				else if (place == "hairShade") {
-					ft = new FragmentTexture(raw[0]);
+					ft = new FragmentTextureType(raw[0]);
 					ft._url = "/images/" + path + "/0";
 					textures[place] = ft;
 				}
@@ -844,6 +845,9 @@ class CharacterEquipBase extends ICharacterEquip {
 			}
 		}
 		return textures;
+	}
+	get FragmentTextureType() {
+		return FragmentTexture;
 	}
 	__load_slot() {
 		if (!this._raw.info.islot) {
@@ -995,18 +999,23 @@ class CharacterEquipHead extends CharacterEquip {
 		super();
 		this.elfEarFragment = null;
 		this.lefEarFragment = null;
+		this.highlefEarFragment = null;
 	}
 	__load_fragments() {
 		super.__load_fragments()
 		
-		for (let frag in this.fragments) {
-			if (frag == "ear") {
+		if (this.fragments) {
+			if (this.fragments.ear) {
 				this.elfEarFragment = this.fragments.ear;
 				delete this.fragments.ear;
 			}
-			else if (frag == "lefEar") {
+			if (this.fragments.lefEar) {
 				this.lefEarFragment = this.fragments.lefEar;
 				delete this.fragments.lefEar;
+			}
+			if (this.fragments.highlefEar) {
+				this.highlefEarFragment = this.fragments.highlefEar;
+				delete this.fragments.highlefEar;
 			}
 		}
 	}
@@ -1014,6 +1023,9 @@ class CharacterEquipHead extends CharacterEquip {
 		return this.fragments.ear != null;
 	}
 	set elfEar(value) {
+		if (!this.elfEarFragment) {
+			return;
+		}
 		if (value) {
 			this.fragments.ear = this.elfEarFragment;
 		}
@@ -1026,11 +1038,29 @@ class CharacterEquipHead extends CharacterEquip {
 		return this.fragments.lefEar != null;
 	}
 	set lefEar(value) {
+		if (!this.lefEarFragment) {
+			return;
+		}
 		if (value) {
 			this.fragments.lefEar = this.lefEarFragment;
 		}
 		else {
 			delete this.fragments.lefEar;
+		}
+	}
+
+	get highlefEar() {
+		return this.fragments.highlefEar != null;
+	}
+	set highlefEar(value) {
+		if (!this.highlefEarFragment) {
+			return;
+		}
+		if (value) {
+			this.fragments.highlefEar = this.highlefEarFragment;
+		}
+		else {
+			delete this.fragments.highlefEar;
 		}
 	}
 }
@@ -1091,11 +1121,57 @@ class CharacterEquipFace extends CharacterEquipBase {
 	}
 }
 
+class HairFragmentTexture extends FragmentTexture {
+	constructor(...args) {
+		super(...args);
+		
+		this.graph2 = null;
+		
+		this.graph3 = null;
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {Character} chara
+	 */
+	render(renderer, chara) {
+		if (!this.relative) {
+			return;
+		}
+		const x = this.relative.x;
+		const y = this.relative.y;
+
+		renderer.globalAlpha = this.opacity || 1;
+
+		renderer.drawGraph2(this, x, y);
+
+		if (this.graph2 && this.graph2.opacity) {//color2
+			renderer.globalAlpha = this.graph2.opacity;
+
+			renderer.drawGraph2(this.graph2, x, y);
+		}
+		if (this.graph3 && this.graph3.opacity) {//color3
+			renderer.globalAlpha = this.graph3.opacity;
+
+			renderer.drawGraph2(this.graph3, x, y);
+		}
+	}
+}
+class CharacterEquipHair extends CharacterEquip {
+	constructor() {
+		super();
+	}
+
+	get FragmentTextureType() {
+		return HairFragmentTexture;
+	}
+}
+
 ItemCategoryInfo._info['0000'].fragmentType = CharacterEquipBody;
 ItemCategoryInfo._info['0001'].fragmentType = CharacterEquipHead;//elfEar
 ItemCategoryInfo._info['0002'].fragmentType = CharacterEquipFace;	//	Face
-ItemCategoryInfo._info['0003'].fragmentType = CharacterEquip;//CharacterEquipHair;	//	Hair
-ItemCategoryInfo._info['0004'].fragmentType = CharacterEquip;//CharacterEquipHair;	//	Hair
+ItemCategoryInfo._info['0003'].fragmentType = CharacterEquipHair;//CharacterEquipHair;	//	Hair
+ItemCategoryInfo._info['0004'].fragmentType = CharacterEquipHair;//CharacterEquipHair;	//	Hair
 
 ItemCategoryInfo._info['0100'].fragmentType = CharacterEquip;		//	Cap
 ItemCategoryInfo._info['0101'].fragmentType = CharacterEquipFace;	//	accessoryFace
@@ -1113,6 +1189,41 @@ ItemCategoryInfo._info['0170'].fragmentType = CharacterEquipCashWeapon;		//	cash
 
 class CharacterSlots {
 	constructor() {
+			
+		/** @type {CharacterEquipBase[]} */
+		Object.defineProperty(this, "_ordered_slot", {
+			configurable: true,
+			writable: true,
+			enumerable: false,
+			value: []
+		});
+
+		Object.defineProperty(this, "_hair", {
+			writable: true,
+			enumerable: false,
+			value: null,
+		});
+		Object.defineProperty(this, "_hair2", {
+			writable: true,
+			enumerable: false,
+			value: null,
+		});
+		Object.defineProperty(this, "_hairMix2", {	// 0~1.0
+			writable: true,
+			enumerable: false,
+			value: null,
+		});
+		Object.defineProperty(this, "_hair3", {
+			writable: true,
+			enumerable: false,
+			value: null,
+		});
+		Object.defineProperty(this, "_hairMix3", {	// 0~1.0
+			writable: true,
+			enumerable: false,
+			value: null,
+		});
+
 		/** @type {CharacterEquipBody} */
 		this.body = null;
 
@@ -1160,19 +1271,156 @@ class CharacterSlots {
 
 		/** @type {CharacterEquip} */
 		this.weapon = null;
-			
-		/** @type {CharacterEquipBase[]} */
-		Object.defineProperty(this, "_ordered_slot", {
-			configurable: true,
-			writable: true,
-			enumerable: false,
-			value: []
+	}
+
+	/** @type {CharacterEquipHair} */
+	get hair() {
+		return this._hair;
+	}
+	set hair(value) {
+		this._hair = value;
+		if (this._hair2) {
+			this.hairColor2 = this.hairColor2;
+			this.hairMix2 = this.hairMix2;
+		}
+		if (this._hair3) {
+			this.hairColor3 = this.hairColor3;
+			this.hairMix3 = this.hairMix3;
+		}
+	}
+
+	async __loadColoredHair(color) {
+		const id = CharacterRenderConfig.getColorHairID(this.hair.id, color);
+		const cateInfo = ItemCategoryInfo.get(id);
+
+		if (cateInfo) {
+			const url = `Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}.img/`;
+			const use_category = undefined;
+
+			let hair = new CharacterEquipHair();
+
+			await hair.load(url, id, cateInfo, use_category);
+
+			return hair;
+		}
+	}
+
+	/** @returns {number} */
+	get hairColor2() {
+		return Number(CharacterRenderConfig.getHairColor(this._hair2.id));
+	}
+	set hairColor2(color) {
+		if (color != null && (!this._hair2 || this._hair2.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
+			const that = this;
+
+			this.hair.$promise_hair2 = this.__loadColoredHair(color);
+
+			this.hair.$promise_hair2.then(function (hair2) {
+				delete that.hair.$promise_hair2;
+
+				that._hair2 = hair2;
+				if (that._hair2) {
+					that.hairMix2 = that.hairMix2;//force update
+				}
+				else {
+					that.hairMix2 = 0;//disable
+				}
+			});
+		}
+	}
+	/** @returns {number} 0~1.0 */
+	get hairMix2() {
+		return this._hairMix2;
+	}
+	set hairMix2(value) {
+		const that = this;
+
+		Promise.resolve(this.hair.$promise_hair2).then(function () {
+			/** @type {CharacterEquipBase} */
+			let item = that._hair2;
+			/** @type {CharacterEquipBase} */
+			let base = that.hair;
+
+			if (!item || !base) {
+				return;
+			}
+
+			for (let j in item.fragments) {
+				for (let k in item.fragments[j].textures) {
+					for (let i = 0; i < item.fragments[j].textures[k].length; ++i) {
+						/** @type {FragmentTexture} */
+						let ft = item.fragments[j].textures[k][i];
+						/** @type {FragmentTexture} */
+						let ori = base.fragments[j].textures[k][i];
+						if (ori) {
+							ori.graph2 = ft;
+							ori.graph2.opacity = value;
+							ori.graph2.relative = ori.relative;
+						}
+					}
+				}
+			}
+			that._hairMix2 = value;
 		});
-		///** @type {CharacterEquipBase[]} */
-		//Object.defineProperty(this, "_islot_map", {
-		//	enumerable: false,
-		//	value: new Map()
-		//});
+	}
+
+	/** @returns {number} 0~1.0 */
+	get hairColor3() {
+		return Number(CharacterRenderConfig.getHairColor(this._hair3.id));
+	}
+	set hairColor3(color) {
+		if (color != null && (!this._hair3 && this._hair3.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
+			const that = this;
+
+			this.hair.$promise_hair3 = this.__loadColoredHair(color);
+
+			this.hair.$promise_hair3.then(function (hair3) {
+				delete this.hair.$promise_hair3;
+
+				that._hair3 = hair3;
+				if (that._hair3) {
+					that.hairMix2 = that.hairMix2;//force update
+				}
+				else {
+					that.hairMix2 = 0;//disable
+				}
+			});
+		}
+	}
+	/** @returns {number} */
+	get hairMix3() {
+		return this._hairMix3;
+	}
+	set hairMix3(value) {
+		const that = this;
+
+		Promise.resolve(this.hair.$promise_hair3).then(function () {
+			/** @type {CharacterEquipBase} */
+			let item = that._hair3;
+			/** @type {CharacterEquipBase} */
+			let base = that.hair;
+
+			if (!item || !base) {
+				return;
+			}
+
+			for (let j in item.fragments) {
+				for (let k in item.fragments[j].textures) {
+					for (let i = 0; i < item.fragments[j].textures[k].length; ++i) {
+						/** @type {FragmentTexture} */
+						let ft = item.fragments[j].textures[k][i];
+						/** @type {FragmentTexture} */
+						let ori = base.fragments[j].textures[k][i];
+						if (ori) {
+							ori.graph3 = ft;
+							ori.graph3.opacity = value;
+							ori.graph3.relative = ori.relative;
+						}
+					}
+				}
+			}
+			that._hairMix3 = value;
+		});
 	}
 
 	//__order_slot() {
@@ -1486,9 +1734,20 @@ export class CharacterAnimationBase {
 		}
 	}
 
+	get highlefEar() {
+		if (this.slots.head) {
+			return this.slots.head.highlefEar;
+		}
+	}
+	set highlefEar(value) {
+		if (this.slots.head) {
+			return this.slots.head.highlefEar = value;
+		}
+	}
+
 	get ear() {
 		if (this.slots.head) {
-			return this.slots.head.lefEar ? "lefEar" : (this.slots.head.elfEar ? "elfEar" : "human");
+			return this.slots.head.lefEar ? "lefEar" : (this.slots.head.elfEar ? "elfEar" : (this.slots.head.highlefEar ? "highlefEar" : "human"));
 		}
 	}
 	set ear(value) {
@@ -1496,14 +1755,22 @@ export class CharacterAnimationBase {
 			if (value == "elfEar") {
 				this.slots.head.elfEar = true;
 				this.slots.head.lefEar = false;
+				this.slots.head.highlefEar = false;
 			}
 			else if (value == "lefEar") {
 				this.slots.head.lefEar = true;
 				this.slots.head.elfEar = false;
+				this.slots.head.highlefEar = false;
+			}
+			else if (value == "highlefEar") {
+				this.slots.head.elfEar = false;
+				this.slots.head.lefEar = false;
+				this.slots.head.highlefEar = true;
 			}
 			else {
 				this.slots.head.elfEar = false;
 				this.slots.head.lefEar = false;
+				this.slots.head.highlefEar = false;
 			}
 		}
 	}
@@ -1789,28 +2056,71 @@ export class CharacterAnimationBase {
 		}
 		renderer.popMatrix();
 	}
+	/**
+	 * @param {Array<CharacterEquipBase>[]} slots
+	 * @param {CharacterEquipBase} item
+	 */
+	__add_equip_to_frag_list(slots, item) {
+		// if equip not use then value is mumber(slot_order) where this.slots._ordered_slot
+		if (item == null) {
+			return;//debugger;
+		}
+		else if (item > 0) {// typeof item == 'number'; item != null && (item instanceof CharacterEquipBase || item >= 0)
+			return;//continue;
+		}
+
+		// init slots
+		for (let j in item.vslot) {
+			let slot = item.vslot[j];
+			slots[slot] = [];
+		}
+
+		for (let j in item.fragments) {//foreach equip place
+			let slot = sMap[j];
+			if (slot != null) {
+				/** @type {FragmentTexture} */
+				let ft = item.fragments[j].getTexture(this);
+				if (ft) {
+					if (!slots[slot]) {
+						slots[slot] = [ft];//cover ??
+					}
+					else {
+						slots[slot].push(ft);//cover ??
+					}
+				}
+			}
+			else if (j == "default") {
+				/** @type {FragmentTexture} */
+				let ft = item.fragments[j].getTexture(this);
+				slot = item._raw.info.islot;
+				if (ft) {
+					if (!slots[slot]) {
+						slots[slot] = [ft];//cover ??
+					}
+					else {
+						slots[slot].push(ft);//cover ??
+					}
+				}
+			}
+			else {
+				/** @type {FragmentTexture} */
+				let ft = item.fragments[j].getTexture(this);
+				if (ft) {
+					this.__add_frag_to_list(ft);
+				}
+			}
+			//item.fragments[j].is_show = true;
+		}
+	}
 	__update_frag_list() {
 		this.__frag_list = [];
 
 		/** @type {Array<CharacterEquipBase>[]} */
 		let slots = {};
 
-		for (let i in this.slots._ordered_slot) {
+		if (this.slots._hair2) {
 			/** @type {CharacterEquipBase} */
-			let item = this.slots._ordered_slot[i];
-
-			// if equip not use then value is mumber(slot_order) where this.slots._ordered_slot
-			if (item == null) {
-				debugger;
-			}
-			else if (item > 0) {// typeof item == 'number'; item != null && (item instanceof CharacterEquipBase || item >= 0)
-				continue;
-			}
-
-			for (let j in item.vslot) {
-				let slot = item.vslot[j];
-				slots[slot] = [];
-			}
+			let item = this.slots._hair2;
 
 			for (let j in item.fragments) {//foreach equip place
 				let slot = sMap[j];
@@ -1826,10 +2136,17 @@ export class CharacterAnimationBase {
 						}
 					}
 				}
-				else if (j == "default") {
+			}
+		}
+		if (this.slots._hair3) {
+			/** @type {CharacterEquipBase} */
+			let item = this.slots._hair3;
+
+			for (let j in item.fragments) {//foreach equip place
+				let slot = sMap[j];
+				if (slot != null) {
 					/** @type {FragmentTexture} */
 					let ft = item.fragments[j].getTexture(this);
-					slot = item._raw.info.islot;
 					if (ft) {
 						if (!slots[slot]) {
 							slots[slot] = [ft];//cover ??
@@ -1839,15 +2156,13 @@ export class CharacterAnimationBase {
 						}
 					}
 				}
-				else {
-					/** @type {FragmentTexture} */
-					let ft = item.fragments[j].getTexture(this);
-					if (ft) {
-						this.__add_frag_to_list(ft);
-					}
-				}
-				//item.fragments[j].is_show = true;
 			}
+		}
+		for (let i in this.slots._ordered_slot) {
+			/** @type {CharacterEquipBase} */
+			let item = this.slots._ordered_slot[i];
+
+			this.__add_equip_to_frag_list(slots, item);
 		}
 
 		for (let i in slots) {

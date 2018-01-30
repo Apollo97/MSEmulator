@@ -23,23 +23,20 @@
 			</div>
 
 			<div>
-				<div v-once style="display: inline-flex;">
+				<div v-once style="display: inline-flex; width: 100%;">
 					<select v-model="selected_category" ref="select_category" style="flex: 1;">
 						<option v-for="cat in categoryList" :value="cat.value">{{cat.key}}</option>
 					</select>
 					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" :title="'name\nItemID\n<attr>:/<regexp>/\n$style:/21158/'" placeholder="Search.." style="flex: 1;" />
-				</div>
-				<div style="position: relative; display: inline-block;">
-					<button v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'"
-							style="padding: 0;"
-							>
-						<span class="ui-icon ui-icon-gear"></span>
-					</button>
-					<div v-ui:hide v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" ref="setting"
-						 style="position: absolute; left: 0; top: 0; background: #e9e9e9; border: 1px solid #ddd; width: 12em; text-align:left; padding: 0.25em 0.5em;"
-						 >
-						<div><label><input type="checkbox" v-model="onlyShowSearchResult" />Only show result of search</label></div>
-						<div><label><input type="checkbox" v-model="displayMode" />display: {{displayMode ? "plain":"list"}}</label></div>
+					<div style="position: relative; display: inline-block;">
+						<button v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" style="padding: 0;">
+							<span class="ui-icon ui-icon-gear"></span>
+						</button>
+						<div v-ui:hide v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" ref="setting"
+							 style="position: absolute; left: 0; top: 0; background: #e9e9e9; border: 1px solid #ddd; width: 12em; text-align:left; padding: 0.25em 0.5em;">
+							<div><label><input type="checkbox" v-model="onlyShowSearchResult" />Only show result of search</label></div>
+							<div><label><input type="checkbox" v-model="displayMode" />display: {{displayMode ? "plain":"list"}}</label></div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -57,11 +54,25 @@
 					</template>
 				</ui-button-group>
 
-				<ui-button-group v-if="_is_category_hair()" type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
-					<template slot-scope="{text, value}">
-						<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
-					</template>
-				</ui-button-group>
+				<template v-if="_is_category_hair()">
+					<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
+						<template slot-scope="{text, value}">
+							<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+						</template>
+					</ui-button-group>
+					<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
+						<tr>
+							<td :style="getHairMixColor1CSS()"><span style="width: 3em; display: inline-block;">{{String(100-hair_mix2)}}%</span></td>
+							<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
+							<td :style="getHairMixColor2CSS()"><span style="width: 3em; display: inline-block;">{{String(hair_mix2)}}%</span></td>
+						</tr>
+					</table>
+					<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color2" class="hair_color">
+						<template slot-scope="{text, value}">
+							<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+						</template>
+					</ui-button-group>
+				</template>
 			</div>
 
 			<div v-if="__count_of_item_in_page > 0" class="header pagination top">
@@ -196,7 +207,7 @@
 	];
 
 	const face_color_buttons = [
-		{ text: "黑", value: "0", style: { background: "#000000" } },
+		{ text: "黑", value: "0", style: { background: "#333333" } },
 		{ text: "藍", value: "1", style: { background: "#0000ff" } },
 		{ text: "紅", value: "2", style: { background: "#ff0000" } },
 		{ text: "綠", value: "3", style: { background: "#00ff00" } },
@@ -208,7 +219,7 @@
 	];
 
 	const hair_color_buttons = [
-		{ text: "黑", value: "0", style: { background: "#000000" } },
+		{ text: "黑", value: "0", style: { background: "#333333" } },
 		{ text: "紅", value: "1", style: { background: "#ff0000" } },
 		{ text: "橙", value: "2", style: { background: "#ff8040" } },
 		{ text: "黃", value: "3", style: { background: "#ffff00" } },
@@ -219,7 +230,7 @@
 	];
 
 	const face_color_buttons_en = [
-		{ text: "Black", value: "0", style: { background: "#000000" } },
+		{ text: "Black", value: "0", style: { background: "#111111" } },
 		{ text: "Blue", value: "1", style: { background: "#0000ff" } },
 		{ text: "Red", value: "2", style: { background: "#ff0000" } },
 		{ text: "Green", value: "3", style: { background: "#00ff00" } },
@@ -305,6 +316,8 @@
 				filters: [],
 				face_color: 0,
 				hair_color: 0,
+				hair_color2: 0,
+				hair_mix2: 0,
 
 				page: 0,
 
@@ -332,6 +345,12 @@
 			},
 		},
 		methods: {
+			getHairMixColor1CSS() {
+				return Object.assign({ "clip-path": "polygon(50% 0%, 0% 20%, 0% 90%, 100% 90%, 100% 20%)" }, hair_color_buttons[this.hair_color].style);
+			},
+			getHairMixColor2CSS() {
+				return Object.assign({ "clip-path": "polygon(0% 10%, 0% 80%, 50% 100%, 100% 80%, 100% 10%)" }, this.hair_color2 != null ? hair_color_buttons[this.hair_color2].style : {});
+			},
 			copyImageUrl: function (e, id) {
 				let img = e.currentTarget.querySelector("img");
 				if (img) {
@@ -773,6 +792,20 @@
 					color: this.hair_color
 				});
 				await this.loadList();
+			},
+			hair_color2: async function () {
+				//console.log("hair: " + /*btn.text + ": " +*/ btn.value);
+				this.$emit("hairColor2", {
+					color: this.hair_color2,
+					mix: this.hair_mix2 / 100
+				});
+			},
+			hair_mix2: async function () {
+				//console.log("hair: " + /*btn.text + ": " +*/ btn.value);
+				this.$emit("hairMix2", {
+					color: this.hair_color2,
+					mix: this.hair_mix2 / 100
+				});
 			},
 		},
 		mounted: function () {
