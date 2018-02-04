@@ -1,6 +1,25 @@
 
-import { ColorRGB } from "../IRenderer.js";
+import { ColorRGB, ImageDataHelper } from "../IRenderer.js";
 import { Sprite } from "../Sprite.js";
+
+/**
+ * @param {HTMLImageElement} image
+ */
+function whiteToRed(image) {
+	let helper = new ImageDataHelper();
+	let imagedata = helper.imageToImagedata(image);
+
+	for (let y = 0; y < imagedata.height; ++y) {
+		for (let x = 0; x < imagedata.width * 4; ++x) {
+			//imagedata.data[y * imagedata.width * 4 + x * 4 + 0] = 0;
+			imagedata.data[y * imagedata.width * 4 + x * 4 + 1] = 0;
+			imagedata.data[y * imagedata.width * 4 + x * 4 + 2] = 0;
+			//imagedata.data[y * imagedata.width * 4 + x * 4 + 3] = 0;
+		}
+	}
+
+	return helper.imagedataToDataURL(imagedata);
+}
 
 function rand_r(min, range) {
 	return min + Math.random() * range;
@@ -141,9 +160,39 @@ export class ParticleGroup {
 
 		//this.totalParticle = 2;
 		this.delay = (this.life + this.lifeVar / 2) / this.totalParticle;
-	
-		this.texture = new Sprite(data.texture);
-		this.texture._url = "/images/" + this._texture_base_path;
+
+		if (_experimental_particle) {
+			const that = this;
+			return new Promise(function (resolve, reject) {
+				let image = new Image();
+				image.onload = function () {
+					let texture = new Sprite(data.texture);
+					if (_experimental_particle === true) {
+						texture._url = whiteToRed(this);
+					}
+					else {
+						texture._url = "data:image/svg+xml;utf-8," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${this.naturalWidth}" height="${this.naturalHeight}">
+	<defs>
+		<mask id="Mask">
+			<image xlink:href="${new URL("/images/" + that._texture_base_path, window.location).href}"/>
+		</mask>
+	</defs>
+	<g>
+		<rect width="${this.naturalWidth}" height="${this.naturalHeight}" fill="red" mask="url(#Mask)"/>
+	</g>
+</svg>`);
+					}
+					that.texture = texture;
+					resolve();
+				}
+				image.src = "/images/" + that._texture_base_path;
+			});
+		}
+		else {
+			this.texture = new Sprite(data.texture);
+			this.texture._url = "/images/" + this._texture_base_path;
+		}
 	}
 	
 	/** @param {number} stamp - time in millisecond */
@@ -178,9 +227,7 @@ export class ParticleGroup {
 	 */
 	render(renderer, viewRect, mx, my) {
 		const ctx = renderer.ctx;
-		const alpha = renderer.globalAlpha;
-		//let compositeOperation = ctx.globalCompositeOperation;
-		
+
 		renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-m_viewRect.x), Math.trunc(-m_viewRect.y));
 		ctx.globalCompositeOperation = "lighter";
 		
@@ -197,8 +244,8 @@ export class ParticleGroup {
 		}
 		
 		//reset
-		ctx.globalCompositeOperation = "source-over";//compositeOperation;
-		renderer.globalAlpha = alpha;
+		ctx.globalCompositeOperation = "source-over";
+		renderer.globalAlpha = 1;
 	}
 	
 	get _particle_path() {

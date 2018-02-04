@@ -295,6 +295,7 @@ export class Game {
 			setTimeout(function () {
 				let elem = new Image();
 				elem.src = engine._canvas.toDataURL();
+				engine.ctx.clearRect(0, 0, engine.ctx.width, engine.ctx.height);
 				document.getElementById("Screenshot").appendChild(elem);
 			}, 0);
 		}

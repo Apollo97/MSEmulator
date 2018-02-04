@@ -50,6 +50,43 @@ export class ColorRGB {
 	static fromInt24(col) {
 		return new ColorRGB((col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF);
 	}
+	/**
+	 * source: https://gist.github.com/mjackson/5311256#file-color-conversion-algorithms-js-L84
+	 * Converts an RGB color value to HSV. Conversion formula
+	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+	 * Assumes r, g, and b are contained in the set [0, 255] and
+	 * returns h, s, and v in the set [0, 1].
+	 *
+	 * @return {{h:number,s:number,v:number}}
+	 */
+	toHsv() {
+		let r = this.r /= 255, g = this.g /= 255, b = this.b /= 255;
+
+		let max = Math.max(r, g, b), min = Math.min(r, g, b);
+		let h, s, v = max;
+
+		let d = max - min;
+		s = max == 0 ? 0 : d / max;
+
+		if (max == min) {
+			h = 0; // achromatic
+		} else {
+			switch (max) {
+				case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+				case g: h = (b - r) / d + 2; break;
+				case b: h = (r - g) / d + 4; break;
+			}
+
+			h /= 6;
+		}
+
+		return { h, s, v };
+	}
+	toFilter() {
+		let { h, s, v } = this.toHsv();
+		//return `hue-rotate(${h*Math.PI*2}rad) saturate(${s}) brightness(${v})`;
+		return `hue-rotate(${h * 360}deg) saturate(${Math.max(0, Math.min(Math.trunc(s * 100), 100))}%) brightness(${Math.max(0, Math.min(Math.trunc(v * 100), 100))}%)`;
+	}
 }
 
 /**
@@ -438,5 +475,72 @@ export class IRenderer {
 	 */
 	drawColoredGraph(graph, x, y, color) {
 		throw new Error("Not implement");
+	}
+}
+
+export class ImageDataHelper {
+	constructor() {
+		this.canvas = document.createElement('canvas');
+		this.ctx = this.canvas.getContext('2d');
+	}
+
+	/**
+	 * @param {number} width
+	 * @param {number} height
+	 */
+	resize(width, height) {
+		canvas.width = width;
+		canvas.height = height;
+	}
+
+	clear() {
+		this.ctx.clearRect(0, 0, this.canvas.width, this.height);
+	}
+	
+	/**
+	 * @param {HTMLImageElement} image
+	 * @returns {ImageData}
+	 */
+	imageToImagedata(image) {
+		const canvas = this.canvas;
+		const ctx = this.ctx;
+
+		canvas.width = image.width;
+		canvas.height = image.height;
+		ctx.drawImage(image, 0, 0);
+
+		return ctx.getImageData(0, 0, image.width, image.height);
+	}
+
+	/**
+	 * @param {ImageData} imagedata
+	 * @returns {string}
+	 */
+	imagedataToDataURL(imagedata) {
+		const canvas = this.canvas;
+		const ctx = this.ctx;
+
+		canvas.width = imagedata.width;
+		canvas.height = imagedata.height;
+		ctx.putImageData(imagedata, 0, 0);
+		
+		return canvas.toDataURL();
+	}
+
+	/**
+	 * @param {ImageData} imagedata
+	 * @returns {HTMLImageElement}
+	 */
+	imagedataToImage(imagedata) {
+		const canvas = this.canvas;
+		const ctx = this.ctx;
+
+		canvas.width = imagedata.width;
+		canvas.height = imagedata.height;
+		ctx.putImageData(imagedata, 0, 0);
+
+		let image = new Image();
+		image.src = canvas.toDataURL();
+		return image;
 	}
 }

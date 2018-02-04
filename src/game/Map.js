@@ -122,7 +122,7 @@ class MapTexture extends Sprite {
 			renderer.loadIdentity();
 			renderer.translate(Math.trunc(-m_viewRect.x + 0.5), Math.trunc(-m_viewRect.y + 0.5));
 			{
-				renderer.globalAlpha = alpha / 255;
+				renderer.globalAlpha = Math.max(0, Math.min(alpha / 255, 1));
 
 				renderer._drawRotaGraph(this, px, py, angle, f);
 			}
@@ -431,6 +431,8 @@ class MapObjectBase {
 			const y = Math.trunc((-canva.top + 0.5) + this.aabb.top);
 			
 			renderer.loadIdentity();
+
+			renderer.globalAlpha = 1;
 			
 			ctx.beginPath();
 			ctx.rect(x, y, this.aabb.width, this.aabb.height);
@@ -1346,7 +1348,7 @@ export class MapLifeEntity {
 	 * @param {IRenderer} renderer
 	 */
 	draw(renderer) {MobRenderer
-		renderer.globalAlpha = this.opacity;
+		renderer.globalAlpha = Math.max(0, Math.min(this.opacity / 255, 1));
 		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front >= 1);
 	}
 }

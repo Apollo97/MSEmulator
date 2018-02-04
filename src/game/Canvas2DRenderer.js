@@ -2,6 +2,7 @@
 import { Vec2 } from './math.js';
 import { IGraph, IRenderer, ColorRGB } from './IRenderer.js';
 
+window._experimental_particle = true;
 
 /**
  * @implements {IRenderer}
@@ -12,7 +13,7 @@ export class Engine extends IRenderer {
 
 		/** @type {CanvasRenderingContext2D} */
 		this.ctx = null;
-		
+
 		/** @type {CanvasRenderingContext2D} */
 		this._ctx2 = null;
 		/** @type {HTMLCanvasElement} */
@@ -34,26 +35,26 @@ export class Engine extends IRenderer {
 		let canvas = document.getElementById(id);
 		let canvas2 = this._canvas2 = document.getElementById(id + "2");
 
-		this.ctx = canvas.getContext("2d");
-		this._ctx2 = canvas2.getContext("2d");
-		
+		this.ctx = canvas.getContext("2d", { alpha: false });
+		this._ctx2 = canvas2.getContext("2d", { alpha: false });
+
 		this.ctx.imageSmoothingEnabled = false;
 		this._ctx2.imageSmoothingEnabled = false;
-
+		
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		_resize_canvas(canvas2, window.innerWidth, window.innerHeight);
 
 		window.onresize = function () {
 			_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 			_resize_canvas(canvas2, window.innerWidth, window.innerHeight);
-			
+
 			document.getElementById("screen_width").innerHTML = canvas.width;
 			document.getElementById("screen_height").innerHTML = canvas.height;
 		}
 		window.onresize();
-		
+
 		function _resize_canvas(canvas, width, height) {
-			canvas.width  = width;
+			canvas.width = width;
 			canvas.height = height;
 		}
 	}
@@ -410,21 +411,29 @@ export class Engine extends IRenderer {
 	 */
 	drawColoredGraph(graph, x, y, color) {//destination
 		if (graph.isLoaded()) {
-			const _ctx = this._ctx2;
-			_ctx.globalCompositeOperation = "copy";
-			_ctx.drawImage(graph.texture, 0, 0);
+			if (_experimental_particle) {
+				this.ctx.filter = color.toFilter();
+				this.ctx.drawImage(graph.texture, x - graph.x, y - graph.y);
+				this.ctx.filter = "none";
+			}
+			else {
+				const _ctx = this._ctx2;
 
-			_ctx.globalCompositeOperation = "darken";
-			_ctx.fillStyle = color.toString();
-			_ctx.beginPath();
-			//_ctx.arc(graph.width / 2, graph.width / 2, graph.width / 2, 0, Math.PI * 2);
-			_ctx.rect(0, 0, graph.width, graph.width);
-			_ctx.fill();
+				_ctx.globalCompositeOperation = "copy";
+				_ctx.drawImage(graph.texture, 0, 0);
 
-			_ctx.globalCompositeOperation = "destination-atop";
-			_ctx.drawImage(graph.texture, 0, 0);
+				_ctx.globalCompositeOperation = "darken";
+				_ctx.fillStyle = color.toString();
+				_ctx.beginPath();
+				//_ctx.arc(graph.width / 2, graph.width / 2, graph.width / 2, 0, Math.PI * 2);
+				_ctx.rect(0, 0, graph.width, graph.width);
+				_ctx.fill();
 
-			this.ctx.drawImage(this._canvas2, x - graph.x, y - graph.y);
+				_ctx.globalCompositeOperation = "destination-atop";
+				_ctx.drawImage(graph.texture, 0, 0);
+
+				this.ctx.drawImage(this._canvas2, x - graph.x, y - graph.y);
+			}
 		}
 	}
 	
@@ -438,26 +447,34 @@ export class Engine extends IRenderer {
 	 */
 	drawColoredGraph2(graph, x, y, scaleX, scaleY, color) {//destination
 		if (graph.isLoaded()) {
-			const _ctx = this._ctx2;
 			const width = graph.width;
 			const height = graph.height;
 			const swidth = width * scaleX;
 			const sheight = height * scaleY;
-			
-			_ctx.globalCompositeOperation = "copy";
-			_ctx.drawImage(graph.texture, 0, 0, swidth, swidth);
 
-			_ctx.globalCompositeOperation = "darken";
-			_ctx.fillStyle = color.toString();
-			_ctx.beginPath();
-			//_ctx.arc(graph.width / 2, graph.height / 2, graph.width / 2, 0, Math.PI * 2);
-			_ctx.rect(0, 0, swidth, swidth);
-			_ctx.fill();
+			if (_experimental_particle) {
+				this.ctx.filter = color.toFilter();
+				this.ctx.drawImage(graph.texture, 0, 0, width, height, x - graph.x, y - graph.y, swidth, sheight);
+				this.ctx.filter = "none";
+			}
+			else {
+				const _ctx = this._ctx2;
 
-			_ctx.globalCompositeOperation = "destination-atop";
-			_ctx.drawImage(graph.texture, 0, 0, swidth, swidth);
+				_ctx.globalCompositeOperation = "copy";
+				_ctx.drawImage(graph.texture, 0, 0, swidth, swidth);
 
-			this.ctx.drawImage(this._canvas2, 0, 0, swidth, sheight, x - graph.x, y - graph.y, swidth, sheight);
+				_ctx.globalCompositeOperation = "darken";
+				_ctx.fillStyle = color.toString();
+				_ctx.beginPath();
+				//_ctx.arc(graph.width / 2, graph.height / 2, graph.width / 2, 0, Math.PI * 2);
+				_ctx.rect(0, 0, swidth, swidth);
+				_ctx.fill();
+
+				_ctx.globalCompositeOperation = "destination-atop";
+				_ctx.drawImage(graph.texture, 0, 0, swidth, swidth);
+
+				this.ctx.drawImage(this._canvas2, 0, 0, swidth, sheight, x - graph.x, y - graph.y, swidth, sheight);
+			}
 		}
 	}
 }

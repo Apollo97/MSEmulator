@@ -877,6 +877,21 @@ class CharacterEquipBase extends ICharacterEquip {
 		this.effect == null;
 	}
 
+	/**
+	 * @param {number} opacity
+	 */
+	setOpacity(opacity) {
+		for (let i in this.fragments) {
+			for (let j in this.fragments[i].textures) {
+				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = this.fragments[i].textures[j][k];
+					ft.opacity = opacity;
+				}
+			}
+		}
+	}
+
 	get _action_list() {
 		console.warn("Not implement");
 	}
@@ -1064,12 +1079,16 @@ class CharacterEquipHead extends CharacterEquip {
 		}
 	}
 }
-//
-//class CharacterEquipHair extends CharacterEquip {
-//	constructor() {
-//		super();
-//	}
-//}
+
+class CharacterEquipHair extends CharacterEquip {
+	constructor() {
+		super();
+	}
+
+	get FragmentTextureType() {
+		return HairFragmentTexture;
+	}
+}
 
 class CharacterEquipFace extends CharacterEquipBase {
 	constructor() {
@@ -1124,10 +1143,25 @@ class CharacterEquipFace extends CharacterEquipBase {
 class HairFragmentTexture extends FragmentTexture {
 	constructor(...args) {
 		super(...args);
-		
+
+		/** @type {HairFragmentTexture} */
 		this.graph2 = null;
-		
+
+		/** @type {HairFragmentTexture} */
 		this.graph3 = null;
+	}
+
+	/**
+	 * @param {CharacterAnimationBase} chara
+	 */
+	update(chara) {
+		this.relative = this.calcRelative(chara);
+		if (this.graph2) {
+			this.graph2.relative = this.relative;
+		}
+		if (this.graph3) {
+			this.graph3.relative = this.relative;
+		}
 	}
 
 	/**
@@ -1155,15 +1189,6 @@ class HairFragmentTexture extends FragmentTexture {
 
 			renderer.drawGraph2(this.graph3, x, y);
 		}
-	}
-}
-class CharacterEquipHair extends CharacterEquip {
-	constructor() {
-		super();
-	}
-
-	get FragmentTextureType() {
-		return HairFragmentTexture;
 	}
 }
 
@@ -1355,7 +1380,6 @@ class CharacterSlots {
 						if (ori) {
 							ori.graph2 = ft;
 							ori.graph2.opacity = value;
-							ori.graph2.relative = ori.relative;
 						}
 					}
 				}
@@ -1414,7 +1438,6 @@ class CharacterSlots {
 						if (ori) {
 							ori.graph3 = ft;
 							ori.graph3.opacity = value;
-							ori.graph3.relative = ori.relative;
 						}
 					}
 				}
@@ -2649,4 +2672,3 @@ function toDataURL(url) {
 		xhr.send();
 	});
 }
-
