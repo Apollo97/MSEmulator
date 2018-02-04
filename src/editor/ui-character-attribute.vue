@@ -86,19 +86,23 @@
 			</table>
 		</div>
 		<div v-if="isShowDebug" style="display: inline-block; user-select: text;">
-			<ul>
-				<template v-for="equip in chara.slots._ordered_slot" v-if="equip && isEquip(equip.id)">
-					<li>
-						<div style="display: inline-block; width: 32px; height: 32px;">
-							<img :src="'images/' + equip._url + 'info/iconRaw'" />
-						</div>
-						<div style="display: inline-block;">
-							<div>{{equip.name}}</div>
-							<div>{{equip.id}}</div>
-						</div>
-					</li>
-				</template>
-			</ul>
+			<table>
+				<tr v-for="equip in chara.slots._ordered_slot" v-if="equip">
+					<td>
+						{{getEquipCategoryName(equip)}}
+					</td>
+					<td style="max-width: 32px;">
+						<img :src="getEquipIcon(equip)" style="max-width: 32px;" />
+					</td>
+					<td>
+						<div>{{equip.name}}</div>
+						<div>{{equip.id}}</div>
+					</td>
+					<td>
+						<input type="range" value="0" min="0" max="360" @change="equip.setFilter(Number($event.target.value), 100, 100)" style="width: 8em;" />
+					</td>
+				</tr>
+			</table>
 		</div>
 	</div>
 </template>
@@ -126,6 +130,24 @@
 			},
 			isEquip: function (id) {
 				return ItemCategoryInfo.isEquip(id);
+			},
+			getEquipIcon(equip) {
+				const type = ItemCategoryInfo.get(equip.id).slot;
+				switch (type) {
+					case "head":
+						return "/images/" + equip._url + "stand1/0/head";
+					case "body":
+						return "/images/" + equip._url + "stand1/0/body";
+					case "hair":
+						return "/images/" + equip._url + "stand1/0/hair";
+					case "face":
+						return "/images/" + equip._url + "blink/0/face";
+					default:
+						return "/images/" + equip._url + "info/iconRaw";
+				}
+			},
+			getEquipCategoryName: function (equip) {
+				return ItemCategoryInfo.get(equip.id).categoryName;
 			},
 		},
 	}

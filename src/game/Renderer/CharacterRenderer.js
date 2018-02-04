@@ -4,7 +4,7 @@ import { AddInitTask } from "../../init.js";
 import { ItemCategoryInfo, ResourceManager, CharacterRenderConfig } from '../../../public/resource.js';
 
 import { Vec2 } from '../math.js';
-import { IGraph, IRenderer } from '../IRenderer.js';
+import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
 import { engine, Graph } from '../Engine.js';
 
 import { SpriteBase, Sprite } from '../Sprite.js';
@@ -48,6 +48,7 @@ class FragmentTexture extends SpriteBase {
 		/** @type {function(CharacterAnimationBase):Vec2} */
 		this.calcRelative = this._calcRelative;//this._getRelativeFunction();//this.__old_calcRelative;//
 
+		this.filter = new ImageFilter();
 		this.opacity = 1;
 	}
 
@@ -236,9 +237,80 @@ class FragmentTexture extends SpriteBase {
 		if (!this.relative) {
 			return;
 		}
-		renderer.globalAlpha = this.opacity || 1;
+		const x = this.relative.x;
+		const y = this.relative.y;
 
-		renderer.drawGraph2(this, this.relative.x, this.relative.y);
+		renderer.globalAlpha = this.opacity || 1;
+		if (this.filter.isEmpty) {
+			renderer.drawGraph2(this, x, y);
+		}
+		else {
+			renderer.ctx.filter = this.filter.toString();
+			renderer.drawGraph2(this, x, y);
+			renderer.ctx.filter = "none";
+		}
+	}
+}
+
+class HairFragmentTexture extends FragmentTexture {
+	constructor(...args) {
+		super(...args);
+
+		/** @type {HairFragmentTexture} */
+		this.graph2 = null;
+
+		/** @type {HairFragmentTexture} */
+		this.graph3 = null;
+	}
+
+	/**
+	 * @param {CharacterAnimationBase} chara
+	 */
+	update(chara) {
+		this.relative = this.calcRelative(chara);
+		if (this.graph2) {
+			this.graph2.relative = this.relative;
+		}
+		if (this.graph3) {
+			this.graph3.relative = this.relative;
+		}
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {Character} chara
+	 */
+	render(renderer, chara) {
+		if (!this.relative) {
+			return;
+		}
+
+		renderer.globalAlpha = this.opacity || 1;
+		if (this.filter.isEmpty) {
+			this._render(renderer);
+		}
+		else {
+			renderer.ctx.filter = this.filter.toString();
+			this._render(renderer);
+			renderer.ctx.filter = "none";
+		}
+	}
+	_render(renderer) {
+		const x = this.relative.x;
+		const y = this.relative.y;
+
+		renderer.drawGraph2(this, x, y);
+
+		if (this.graph2 && this.graph2.opacity) {//color2
+			renderer.globalAlpha = this.graph2.opacity;
+
+			renderer.drawGraph2(this.graph2, x, y);
+		}
+		if (this.graph3 && this.graph3.opacity) {//color3
+			renderer.globalAlpha = this.graph3.opacity;
+
+			renderer.drawGraph2(this.graph3, x, y);
+		}
 	}
 }
 
@@ -886,7 +958,30 @@ class CharacterEquipBase extends ICharacterEquip {
 				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
 					/** @type {FragmentTexture} */
 					let ft = this.fragments[i].textures[j][k];
-					ft.opacity = opacity;
+					if (ft) {
+						ft.opacity = opacity;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * @param {number} hue 0 ~ 360
+	 * @param {number} sat 0 ~ 100
+	 * @param {number} bri 0 ~ 100
+	 */
+	setFilter(hue, sat, bri) {
+		for (let i in this.fragments) {
+			for (let j in this.fragments[i].textures) {
+				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = this.fragments[i].textures[j][k];
+					if (ft) {
+						ft.filter.hue = hue;
+						ft.filter.sat = sat;
+						ft.filter.bri = bri;
+					}
 				}
 			}
 		}
@@ -1137,58 +1232,6 @@ class CharacterEquipFace extends CharacterEquipBase {
 
 	get _action_list() {
 		return character_emotion_list;
-	}
-}
-
-class HairFragmentTexture extends FragmentTexture {
-	constructor(...args) {
-		super(...args);
-
-		/** @type {HairFragmentTexture} */
-		this.graph2 = null;
-
-		/** @type {HairFragmentTexture} */
-		this.graph3 = null;
-	}
-
-	/**
-	 * @param {CharacterAnimationBase} chara
-	 */
-	update(chara) {
-		this.relative = this.calcRelative(chara);
-		if (this.graph2) {
-			this.graph2.relative = this.relative;
-		}
-		if (this.graph3) {
-			this.graph3.relative = this.relative;
-		}
-	}
-
-	/**
-	 * @param {IRenderer} renderer
-	 * @param {Character} chara
-	 */
-	render(renderer, chara) {
-		if (!this.relative) {
-			return;
-		}
-		const x = this.relative.x;
-		const y = this.relative.y;
-
-		renderer.globalAlpha = this.opacity || 1;
-
-		renderer.drawGraph2(this, x, y);
-
-		if (this.graph2 && this.graph2.opacity) {//color2
-			renderer.globalAlpha = this.graph2.opacity;
-
-			renderer.drawGraph2(this.graph2, x, y);
-		}
-		if (this.graph3 && this.graph3.opacity) {//color3
-			renderer.globalAlpha = this.graph3.opacity;
-
-			renderer.drawGraph2(this.graph3, x, y);
-		}
 	}
 }
 

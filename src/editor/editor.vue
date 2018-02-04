@@ -103,7 +103,7 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-dialog ref="character_list" v-show="wnds.character_attribute.visable" :position="wnds.character_attribute.pos" width="18.25em" height="50vh">
+			<ui-dialog ref="character_list" v-show="wnds.character_attribute.visable" :position="wnds.character_attribute.pos" width="20em" height="50vh">
 				<template slot="header">
 					Character attribute
 				</template>
