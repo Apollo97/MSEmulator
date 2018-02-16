@@ -194,11 +194,11 @@ class ActionAnimationBase {
 	
 	static async Init() {
 		//action definition
-		ActionAnimationBase.Adef = JSON.parse(await ajax_get("assets/" + ActionAnimationBase.base_path));
+		ActionAnimationBase.Adef = JSON.parse(await $get.data(ActionAnimationBase.base_path));
 	}
 	
 	static get base_path () {
-		return "Character/00002000.img/";
+		return "/Character/00002000.img/";
 	}
 }
 
@@ -256,7 +256,7 @@ class SkillAnimationBase {
 			
 		const url = `${this.constructor.base_path}/${jobID}.img/skill/${skillID}`;
 		
-		const raw = JSON.parse(await ajax_get("/data/" + url));
+		const raw = JSON.parse(await $get.pack(url));
 		if (!raw) {
 			alert("SkillAnimationBase");
 			return;
@@ -403,7 +403,7 @@ class SkillAnimationBase {
 	}
 	
 	static get base_path () {
-		return "Skill";
+		return "/Skill";
 	}
 }
 

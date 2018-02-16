@@ -60,7 +60,7 @@
 				//window.alert(msg);
 			},
 			loadData: async function () {
-				this.raw = JSON.parse(await ajax_get("/assets/UI/UIWindow4.img/Equip"));
+				this.raw = JSON.parse(await $get.data("/UI/UIWindow4.img/Equip"));
 			},
 		},
 		computed: {

@@ -54,7 +54,7 @@
 			loadData: async function (context, payload) {
 				//return new Promise(async function (resolve, reject) {
 					const path = payload.path.endsWith(".img") ? (payload.path + "/") : payload.path;
-					const task = ajax_get("/data" + path);
+					const task = $get.pack(path);
 
 					context.commit("_waitTask", { task: task });
 					const data = JSON.parse(await task);

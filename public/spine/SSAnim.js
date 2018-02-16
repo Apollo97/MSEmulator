@@ -45,7 +45,7 @@ let SSAnim = (function () {
 		}
 		
 		async load(url) {
-			let rawData = JSON.parse(await ajax_get("/data/" + url));
+			let rawData = JSON.parse(await $get.pack(url));
 			let fname;
 			
 			for (let file in rawData) {

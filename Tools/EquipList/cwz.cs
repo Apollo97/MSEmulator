@@ -1,32 +1,29 @@
 ﻿
-#define ELECTRON
-
-//#define LOG_LOAD_TIME
-
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
-
+using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 //using System.Data;
-
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-
 using System.Dynamic;
-
 using System.Diagnostics;
+using System.Net;
+using System.Web.Script.Serialization;
+using System.Collections;
+using System.Configuration;
+
+#if !EDGE_EQUIPLIST
 
 public class Startup
 {
 	public async Task<object> Invoke(dynamic input)
 	{
-		//System.GC.Collect();
-		//System.GC.WaitForPendingFinalizers();
-		
 		DataSource.Init();
 
 		Returns returns = new Returns();
@@ -72,6 +69,7 @@ public class Startup
 	}
 }
 
+#endif
 
 public class DataSource
 {
@@ -93,7 +91,7 @@ public class DataSource
 
 	public static void Init()
 	{
-		DataSource.Init(Directory.GetCurrentDirectory() + "/setting.ini");
+		DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
 	}
 	public static void Init(string iniFilePath)
 	{
@@ -301,7 +299,7 @@ public class DataProvider
 		wzproperty prop;
 
 		DataSource.get_data(path, out pack, out prop);
-		
+
 		if (prop != null)
 		{
 			return prop.identities;
@@ -470,7 +468,8 @@ public class Tools
 
 		return "data:image/png;base64," + binStr;
 	}
-	public static string BinaryToBase64String(byte[] binary) {
+	public static string BinaryToBase64String(byte[] binary)
+	{
 		return Convert.ToBase64String(binary);
 	}
 	public static wzproperty inspect_canvas(wzproperty property)
@@ -545,7 +544,7 @@ public class ObjectInspectorBase
 	{
 		throw new System.NotImplementedException();
 	}
-	
+
 	public virtual object inspect_sound(wzsound sound)
 	{
 		throw new System.NotImplementedException();
@@ -568,11 +567,12 @@ public class ObjectInspectorBase
 			//	var i = prop[id];
 			foreach (var i in prop.values)
 			{
+#if !EQUIPLIST
 				if (i.identity.StartsWith("_"))
 				{
 					continue;
 				}
-
+#endif
 				var p = this.pod(i, deep - 1);
 
 				eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
@@ -600,14 +600,14 @@ public class ObjectInspectorBase
 				case 1: // Shape2D#Vector2D
 					return new vec2(prop.data as wzvector); //return (prop.data as wzvector).content;
 				case 2: // Sound_DX8
-					//if (output_canvas)
-					//{
-						return this.inspect_sound(prop.data as wzsound);                     //return (data as wzsound).content;
-					//}
-					//else
-					//{
-					//	return null;
-					//}
+						//if (output_canvas)
+						//{
+					return this.inspect_sound(prop.data as wzsound);                     //return (data as wzsound).content;
+																						 //}
+																						 //else
+																						 //{
+																						 //	return null;
+																						 //}
 				case 3: // "Property"
 					return this.pod_property(prop, deep);                  //return null;
 				case 4: // Canvas
@@ -615,14 +615,19 @@ public class ObjectInspectorBase
 						dynamic eo = this.pod_property(prop, deep);                    //return (data as wzcanvas).content;
 						var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
 
+#if EDGE_EQUIPLIST
+						var _target_prop = Tools._inspect_canvas1(prop);
+						var canvas = Tools.inspect_canvas1(_target_prop);
+#else
 						var canvas = Tools.inspect_canvas1(prop);
+#endif
 						if (canvas != null)
 						{
 							//if (output_canvas)
 							//{
-								object canvas_data;
-								canvas_data = this.inspect_image(canvas.image);
-								eoColl.Add(new KeyValuePair<string, object>("", canvas_data));
+							object canvas_data;
+							canvas_data = this.inspect_image(canvas.image);
+							eoColl.Add(new KeyValuePair<string, object>("", canvas_data));
 							//}
 							//else
 							//{
@@ -630,6 +635,13 @@ public class ObjectInspectorBase
 							//}
 							eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
 							eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
+#if EDGE_EQUIPLIST
+							if (_target_prop["_outlink"] != null) {
+								var _hash = _target_prop["_hash"].data + "";
+								if (eoColl.Contains(new KeyValuePair<string, object>("_hash", "")))
+									eoColl.Add(new KeyValuePair<string, object>("_hash", _hash));
+							}
+#endif
 						}
 						else
 						{
@@ -725,7 +737,7 @@ public class Inspector_Base64 : ObjectInspectorBase
 	{
 		return Tools.ImageToBase64PNG(image);
 	}
-	
+
 	public override object inspect_sound(wzsound sound)
 	{
 		//this._inspect_sound_b(sound);
@@ -745,16 +757,16 @@ public class Inspector_Base64 : ObjectInspectorBase
 //		return sound.wave ?? sound.data;
 //	}
 //}
-	
+
 public class POD_XML
 {
 	protected string imgPath = "";
-		
+
 	public string toXML(string link)
 	{
 		return this._toXML(link);
 	}
-	
+
 	protected string _toXML(string link)
 	{
 		var pak = this._getPropertyByLink(link);
@@ -820,7 +832,7 @@ public class POD_XML
 			if (link.EndsWith(".img"))
 			{
 				this.imgPath = link + "/";
-				
+
 				var paths = link.Split('/');
 				name = paths[paths.Length - 1];
 				prop = DataSource.packages[paths].root[""];
@@ -832,7 +844,7 @@ public class POD_XML
 			else if (link.EndsWith(".img/"))
 			{
 				this.imgPath = link;
-				
+
 				var paths = link.Substring(0, link.Length - 1).Split('/');
 				name = paths[paths.Length - 1];
 				prop = DataSource.packages[paths].root[""];
@@ -848,7 +860,7 @@ public class POD_XML
 				if (index >= 0 && (index + 5) < link.Length)
 				{
 					this.imgPath = link.Substring(0, index + 5);
-					
+
 					DataSource.get_data(link, out prop);
 
 					return new object[] {
@@ -871,10 +883,12 @@ public class POD_XML
 
 		foreach (var i in prop.values)
 		{
+#if !EQUIPLIST
 			if (i.identity.StartsWith("_"))
 			{
 				continue;
 			}
+#endif
 
 			sb.Append(this.pod(i.identity, i));
 		}
@@ -945,7 +959,7 @@ public class POD_XML
 		string value = rgx.Replace((prop.data + ""), "↵");
 		return "<" + type + " name=\"" + name + "\" value=\"" + (value) + "\"/>";
 	}
-	
+
 	protected virtual string Value(string type, string name, wzproperty prop)
 	{
 		return "<" + type + " name=\"" + name + "\" value=\"" + (prop.data + "") + "\"/>";
@@ -993,7 +1007,7 @@ public class POD_XML
 }
 
 public class POD_s_XML : POD_XML
-{	
+{
 	protected override StringBuilder Canvas(string name, wzproperty prop)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -1051,33 +1065,33 @@ internal class Returns
 
 namespace Ini
 {
-public class File
-{
-	public string path;
-
-	[DllImport("kernel32")]
-	private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
-
-	[DllImport("kernel32")]
-	private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
-
-	public File(string INIPath)
+	public class File
 	{
-		path = INIPath;
-	}
+		public string path;
 
-	public void Write(string Section, string Key, string Value)
-	{
-		WritePrivateProfileString(Section, Key, Value, this.path);
-	}
+		[DllImport("kernel32")]
+		private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
 
-	public string Read(string Section, string Key)
-	{
-		StringBuilder temp = new StringBuilder(255);
-		int i = GetPrivateProfileString(Section, Key, "", temp, 255, this.path);
-		return temp.ToString();
+		[DllImport("kernel32")]
+		private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
+
+		public File(string INIPath)
+		{
+			path = INIPath;
+		}
+
+		public void Write(string Section, string Key, string Value)
+		{
+			WritePrivateProfileString(Section, Key, Value, this.path);
+		}
+
+		public string Read(string Section, string Key)
+		{
+			StringBuilder temp = new StringBuilder(255);
+			int i = GetPrivateProfileString(Section, Key, "", temp, 255, this.path);
+			return temp.ToString();
+		}
 	}
-}
 }
 
 

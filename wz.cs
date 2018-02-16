@@ -1,76 +1,78 @@
 
-#define ELECTRON
-
-//#define LOG_LOAD_TIME
-
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
-
+using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 //using System.Data;
-
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-
 using System.Dynamic;
-
 using System.Diagnostics;
+using System.Net;
+using System.Web.Script.Serialization;
+using System.Collections;
+using System.Configuration;
 
-public class Startup
+#if !EDGE_EQUIPLIST
+
+internal class Startup
 {
 	public async Task<object> Invoke(dynamic input)
 	{
 		DataSource.Init();
-
-		Returns returns = new Returns();
-
+		
 		switch ((string)input.func)
 		{
 			case "version":
-				returns.result = DataSource.archives.version;
+				return DataSource.archives.version;
 				break;
 			case "make_zorders":
-				returns.result = DataProvider.make_zorders();
+				return DataProvider.make_zorders();
 				break;
-			case "ms"://image to base64, other to string
-				returns.result = DataProvider.get_object_by_path((string)input.args.path, (bool)input.args.output_canvas);
+			case "data":
+				return DataProvider.get_data_by_path((string)input.args.path);
+				break;
+			case "pack"://data + base64 image
+				return DataProvider.get_bundle_by_path((string)input.args.path);
 				break;
 			case "binary":
-				returns.result = DataProvider.get_binary_file((string)input.args.path);
+				return DataProvider.get_binary_file((string)input.args.path);
 				break;
 			case "sound":
-				returns.result = DataProvider.get_sound_file((string)input.args.path);
+				return DataProvider.get_sound_file((string)input.args.path);
 				break;
 			case "images":
-				returns.result = DataProvider.get_image_file((string)input.args.path);
+				return DataProvider.get_image_file((string)input.args.path);
 				break;
 			case "_images":
-				returns.result = DataProvider.get_image_gif_file((string)input.args.path);
+				return DataProvider.get_image_gif_file((string)input.args.path);
 				break;
 			case "ls":
-				returns.result = DataProvider.get_identities((string)input.args.path);
+				return DataProvider.get_identities((string)input.args.path);
 				break;
 			case "xml":
-				returns.result = (new POD_XML()).toXML((string)input.args.path);
+				return DataProvider.get_xml((string)input.args.path);
 				break;
 			case "xml2":
-				returns.result = (new POD_s_XML()).toXML((string)input.args.path);
+				return DataProvider.get_xml2((string)input.args.path);
 				break;
 			case "test":
-				returns.result = DateTime.Now.ToString();
+				return DateTime.Now.ToString();
 				break;
 		}
 
-		return returns;
+		return null;
 	}
 }
 
+#endif
 
-public class DataSource
+internal class DataSource
 {
 	public static Ini.File iniFile;
 	public static string location = "Q:\\Program Files\\MapleStory";
@@ -90,7 +92,7 @@ public class DataSource
 
 	public static void Init()
 	{
-		DataSource.Init(Directory.GetCurrentDirectory() + "/setting.ini");
+		DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
 	}
 	public static void Init(string iniFilePath)
 	{
@@ -265,7 +267,7 @@ public class DataSource
 	}
 }
 
-public class DataProvider
+internal class DataProvider
 {
 	DataProvider()
 	{
@@ -292,7 +294,7 @@ public class DataProvider
 		return eo;
 	}
 
-	public static dynamic get_identities(string path)
+	public static Returns get_identities(string path)
 	{
 		wzpackage pack;
 		wzproperty prop;
@@ -301,48 +303,74 @@ public class DataProvider
 
 		if (prop != null)
 		{
-			return prop.identities;
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = prop.identities;
+			return returns;
 		}
 		else if (pack != null)
 		{
-			return pack.identities;
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = pack.identities;
+			return returns;
 		}
 
 		return null;
 	}
 
-	public static dynamic get_object_by_path(string path, bool hasBinaryToBase64)
+	public static Returns get_data_by_path(string path)
 	{
 		wzpackage pack;
 		wzproperty prop;
-		ObjectInspectorBase inspector;
-
 		DataSource.get_data(path, out pack, out prop);
-
-		if (hasBinaryToBase64)
-		{
-			inspector = new Inspector_Base64();
-		}
-		else
-		{
-			inspector = new Inspector_Plain();
-		}
 
 		if (prop != null)
 		{
-			return inspector.pod(prop);
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(prop);
+			return returns;
 		}
 		else if (pack != null)
 		{
-			return inspector.pod(prop);
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(pack);
+			return returns;
+		}
+
+		return null;
+	}
+	public static Returns get_bundle_by_path(string path)
+	{
+		wzpackage pack;
+		wzproperty prop;
+
+		DataSource.get_data(path, out pack, out prop);
+
+		if (prop != null)
+		{
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(prop);
+			return returns;
+		}
+		else if (pack != null)
+		{
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(pack);
+			return returns;
 		}
 
 		return null;
 	}
 
-	public static dynamic get_binary_file(string path)
+	public static Returns get_binary_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -350,20 +378,19 @@ public class DataProvider
 		{
 			var sound = prop.data as wzsound;
 
-			dynamic eo = new ExpandoObject();
+			returns.mime = "application/octet-stream";
+			//returns.mime = "text/plain";
+			//returns.mime = "text/html";
+			returns.data = sound.data;
 
-			eo.mime = "application/octet-stream";
-			//eo.mime = "text/plain";
-			//eo.mime = "text/html";
-			eo.data = sound.data;
-
-			return eo;
+			return returns;
 		}
 		return null;
 	}
-	public static dynamic get_sound_file(string path)
+	public static Returns get_sound_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -371,19 +398,18 @@ public class DataProvider
 		{
 			var sound = prop.data as wzsound;
 
-			dynamic eo = new ExpandoObject();
+			//returns.ext = (sound.pcm ? ".wav" : ".mp3");
+			returns.mime = (sound.pcm ? "audio/wav" : "audio/mp3");
+			returns.data = sound.wave ?? sound.data;
 
-			//eo.ext = (sound.pcm ? ".wav" : ".mp3");
-			eo.mime = (sound.pcm ? "audio/wav" : "audio/mp3");
-			eo.data = sound.wave ?? sound.data;
-
-			return eo;
+			return returns;
 		}
 		return null;
 	}
-	public static dynamic get_image_file(string path)
+	public static Returns get_image_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -398,19 +424,19 @@ public class DataProvider
 				{
 					image.Save(stream, ImageFormat.Png);
 
-					dynamic eo = new ExpandoObject();
-					eo.mime = "image/png";
-					eo.data = stream.ToArray();
+					returns.mime = "image/png";
+					returns.data = stream.ToArray();
 
-					return eo;
+					return returns;
 				}
 			}
 		}
 		return null;
 	}
-	public static dynamic get_image_gif_file(string path)
+	public static Returns get_image_gif_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -425,20 +451,35 @@ public class DataProvider
 				{
 					image.Save(stream, ImageFormat.Gif);
 
-					dynamic eo = new ExpandoObject();
-					eo.mime = "image/gif";
-					eo.data = stream.ToArray();
+					returns.mime = "image/gif";
+					returns.data = stream.ToArray();
 
-					return eo;
+					return returns;
 				}
 			}
 		}
 		return null;
 	}
+
+	public static Returns get_xml(string path)
+	{
+		Returns returns = new Returns();
+		returns.mime = "text/xml; charset=utf-8";
+		returns.data = (new POD_XML()).toXML(path);
+		return returns;
+	}
+
+	public static Returns get_xml2(string path)
+	{
+		Returns returns = new Returns();
+		returns.mime = "text/xml; charset=utf-8";
+		returns.data = (new POD_s_XML()).toXML(path);
+		return returns;
+	}
 }
 
 
-public class Tools
+internal class Tools
 {
 	public Tools()
 	{
@@ -533,7 +574,7 @@ public class Tools
 	}
 }
 
-public class ObjectInspectorBase
+internal class ObjectInspectorBase
 {
 	public ObjectInspectorBase()
 	{
@@ -566,11 +607,12 @@ public class ObjectInspectorBase
 			//	var i = prop[id];
 			foreach (var i in prop.values)
 			{
+#if !EQUIPLIST
 				if (i.identity.StartsWith("_"))
 				{
 					continue;
 				}
-
+#endif
 				var p = this.pod(i, deep - 1);
 
 				eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
@@ -696,7 +738,7 @@ public class ObjectInspectorBase
 	}
 }
 
-public class Inspector_Plain : ObjectInspectorBase
+internal class Inspector_Plain : ObjectInspectorBase
 {
 	public Inspector_Plain()
 	{
@@ -713,7 +755,7 @@ public class Inspector_Plain : ObjectInspectorBase
 	}
 }
 
-public class Inspector_Base64 : ObjectInspectorBase
+internal class Inspector_Base64 : ObjectInspectorBase
 {
 	public Inspector_Base64()
 	{
@@ -732,7 +774,7 @@ public class Inspector_Base64 : ObjectInspectorBase
 	}
 }
 
-//public class Inspector_Buffer : InspectorBase
+//internal class Inspector_Buffer : InspectorBase
 //{
 //	public override object inspect_image(Image image)
 //	{
@@ -744,7 +786,7 @@ public class Inspector_Base64 : ObjectInspectorBase
 //	}
 //}
 
-public class POD_XML
+internal class POD_XML
 {
 	protected string imgPath = "";
 
@@ -869,10 +911,12 @@ public class POD_XML
 
 		foreach (var i in prop.values)
 		{
+#if !EQUIPLIST
 			if (i.identity.StartsWith("_"))
 			{
 				continue;
 			}
+#endif
 
 			sb.Append(this.pod(i.identity, i));
 		}
@@ -990,7 +1034,7 @@ public class POD_XML
 	}
 }
 
-public class POD_s_XML : POD_XML
+internal class POD_s_XML : POD_XML
 {
 	protected override StringBuilder Canvas(string name, wzproperty prop)
 	{
@@ -1035,21 +1079,16 @@ internal class Returns
 {
 	public Returns()
 	{
-		this.result = null;
-		this.status = "";
+		this.data = null;
+		this.mime = null;
 	}
-	public object result;
-	public string status;
-
-	public void LogWriteLine(string text)
-	{
-		//this.status += text + "\n";
-	}
+	public object data;
+	public string mime;
 }
 
 namespace Ini
 {
-	public class File
+	internal class File
 	{
 		public string path;
 

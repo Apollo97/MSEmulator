@@ -85,23 +85,79 @@
 	</tr>-->
 			</table>
 		</div>
-		<div v-if="isShowDebug" style="display: inline-block; user-select: text;">
-			<table>
-				<tr v-for="equip in chara.slots._ordered_slot" v-if="equip">
-					<td>
-						{{getEquipCategoryName(equip)}}
-					</td>
-					<td style="max-width: 32px;">
-						<img :src="getEquipIcon(equip)" style="max-width: 32px;" />
-					</td>
-					<td>
-						<div>{{equip.name}}</div>
-						<div>{{equip.id}}</div>
-					</td>
-					<td>
-						<input type="range" value="0" min="0" max="360" @change="equip.setFilter(Number($event.target.value), 100, 100)" style="width: 8em;" />
-					</td>
-				</tr>
+		<div v-if="isShowDebug" style="width: 100%; display: inline-block; user-select: text;">
+			<hr />
+			<table style="border-spacing: 0px; border-collapse: collapse; width: 100%;">
+				<template v-for="(equip,index) in chara.slots._ordered_slot">
+					<template v-if="equip">
+						<tr @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+							<td>
+								{{getEquipCategoryName(equip)}}
+							</td>
+							<td style="width: 32px; height: 32px;">
+								<img :src="getEquipIcon(equip)" class="equip-icon" />
+							</td>
+							<td>
+								<div>{{equip.name}}</div>
+								<div>{{equip.id}}</div>
+							</td>
+							<td>
+							</td>
+						</tr>
+						<transition name="fade">
+							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+								<td></td>
+								<td>opacity</td>
+								<td>
+									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
+								</td>
+								<td>
+									<input type="number" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
+								</td>
+								<td><button @click="equip.opacity=1;" class="btn">×</button></td>
+							</tr>
+						</transition>
+						<transition name="fade">
+							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+								<td></td>
+								<td>hue</td>
+								<td>
+									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" />
+								</td>
+								<td>
+									<input type="number" v-model.number="equip.filter.hue" min="0" max="359" />
+								</td>
+								<td><button @click="equip.filter.hue=0;" class="btn">×</button></td>
+							</tr>
+						</transition>
+						<transition name="fade">
+							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+								<td></td>
+								<td>sat</td>
+								<td>
+									<input type="range" v-model.number="equip.filter.sat" min="0" max="200" />
+								</td>
+								<td>
+									<input type="number" v-model.number="equip.filter.sat" min="0" max="200" />
+								</td>
+								<td><button @click="equip.filter.sat=100;" class="btn">×</button></td>
+							</tr>
+						</transition>
+						<transition name="fade">
+							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+								<td></td>
+								<td>bri</td>
+								<td>
+									<input type="range" v-model.number="equip.filter.bri" min="0" max="200" />
+								</td>
+								<td>
+									<input type="number" v-model.number="equip.filter.bri" min="0" max="200" />
+								</td>
+								<td><button @click="equip.filter.bri=100;" class="btn">×</button></td>
+							</tr>
+						</transition>
+					</template>
+				</template>
 			</table>
 		</div>
 	</div>
@@ -115,6 +171,7 @@
 		data: function () {
 			return {
 				isShowDebug: false,
+				isShowEquipImageFilter: [],
 			}
 		},
 		computed: {
@@ -135,15 +192,15 @@
 				const type = ItemCategoryInfo.get(equip.id).slot;
 				switch (type) {
 					case "head":
-						return "/images/" + equip._url + "stand1/0/head";
+						return "/images" + equip._url + "stand1/0/head";
 					case "body":
-						return "/images/" + equip._url + "stand1/0/body";
+						return "/images" + equip._url + "stand1/0/body";
 					case "hair":
-						return "/images/" + equip._url + "stand1/0/hair";
+						return "/images" + equip._url + "stand1/0/hair";
 					case "face":
-						return "/images/" + equip._url + "blink/0/face";
+						return "/images" + equip._url + "blink/0/face";
 					default:
-						return "/images/" + equip._url + "info/iconRaw";
+						return "/images" + equip._url + "info/iconRaw";
 				}
 			},
 			getEquipCategoryName: function (equip) {
@@ -162,9 +219,17 @@
 	.btn {
 		margin: auto;
 		padding: 0;
+		user-select: none;
 	}
 	.chara_ear {
 		width: 100%;
 		display: block;
+	}
+	.equip-icon {
+		margin: auto;
+		max-width: 32px;
+		max-height: 32px;
+		width: auto !important;
+		height: auto !important;
 	}
 </style>

@@ -451,7 +451,7 @@ class ItemEffectAnimation {
 	//}
 }
 
-//	/assets/Effect/ItemEff.img/1102918
+//	/data/Effect/ItemEff.img/1102918
 class ItemEffect {
 	constructor() {
 		this._url = null;
@@ -472,7 +472,7 @@ class ItemEffect {
 
 	static async Init() {
 		let itemEffectList = {};
-		let raw = JSON.parse(await ajax_get("/ls/Effect/ItemEff.img/"));
+		let raw = JSON.parse(await $get("/ls/Effect/ItemEff.img/"));
 
 		if (!raw) {
 			console.error("No item effect");
@@ -502,7 +502,7 @@ class ItemEffect {
 			return null;
 		}
 
-		let raw = JSON.parse(await ajax_get("/assets/" + url));
+		let raw = JSON.parse(await $get.data(url));
 		if (raw) {
 			let eff = new ItemEffect();
 			eff._load(equipID, url, raw);
@@ -667,6 +667,101 @@ class CharacterFaceFragment extends CharacterFragmentBase {
 	}
 }
 
+class EquipImageFilter {
+	/**
+	 * @param {ICharacterEquip} equip
+	 */
+	constructor(equip) {
+		this.equip = equip;
+	}
+
+	get hue() {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						return ft.filter.hue;
+					}
+				}
+			}
+		}
+	}
+	set hue(value) {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						ft.filter.hue = value;
+					}
+				}
+			}
+		}
+	}
+
+	get sat() {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						return ft.filter.sat;
+					}
+				}
+			}
+		}
+	}
+	set sat(value) {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						ft.filter.sat = value;
+					}
+				}
+			}
+		}
+	}
+	get bri() {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						return ft.filter.bri;
+					}
+				}
+			}
+		}
+	}
+	set bri(value) {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						ft.filter.bri = value;
+					}
+				}
+			}
+		}
+	}
+}
+
 class ICharacterEquip {
 	constructor() {
 	}
@@ -739,6 +834,8 @@ class CharacterEquipBase extends ICharacterEquip {
 
 		/** @type {object<string, number>} */
 		this.vslot = {};
+
+		this.filter = new EquipImageFilter(this);
 	}
 
 	isLoaded() {
@@ -772,7 +869,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		promise_raw = this.__load(url, id, cateInfo);
 
 		if (cateInfo.path) {
-			promise_name = ajax_get(`/assets/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(function (data) {
+			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(function (data) {
 				let ss = JSON.parse(data);
 				if (ss) {
 					that.name = ss.name;
@@ -791,7 +888,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		let raw;
 
 		if (ResourceManager.isEquipExist(id, cateInfo)) {
-			raw = JSON.parse(await ajax_get("/assets/" + url));
+			raw = JSON.parse(await $get.data(url));
 		}
 		if (!raw && load_extern_item_data) {
 			raw = await load_extern_item_data(id);
@@ -889,7 +986,7 @@ class CharacterEquipBase extends ICharacterEquip {
 				let ft;
 				if (raw[""] == "") {
 					ft = new FragmentTextureType(raw);
-					ft._url = "/images/" + path;
+					ft._url = "/images" + path;
 					textures[place] = ft
 				}
 				else if (typeof raw[""] == 'string' && raw[""].startsWith("data:image/")) {
@@ -899,7 +996,7 @@ class CharacterEquipBase extends ICharacterEquip {
 				}
 				else if (place == "hairShade") {
 					ft = new FragmentTextureType(raw[0]);
-					ft._url = "/images/" + path + "/0";
+					ft._url = "/images" + path + "/0";
 					textures[place] = ft;
 				}
 				if (ft) {
@@ -953,6 +1050,38 @@ class CharacterEquipBase extends ICharacterEquip {
 	 * @param {number} opacity
 	 */
 	setOpacity(opacity) {
+		for (let i in this.fragments) {
+			for (let j in this.fragments[i].textures) {
+				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = this.fragments[i].textures[j][k];
+					if (ft) {
+						ft.opacity = opacity;
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * @returns {number}
+	 */
+	get opacity() {
+		for (let i in this.fragments) {
+			for (let j in this.fragments[i].textures) {
+				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = this.fragments[i].textures[j][k];
+					if (ft) {
+						return ft.opacity;
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * @param {number} opacity
+	 */
+	set opacity(opacity) {
 		for (let i in this.fragments) {
 			for (let j in this.fragments[i].textures) {
 				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
@@ -1347,13 +1476,15 @@ class CharacterSlots {
 	}
 	set hair(value) {
 		this._hair = value;
-		if (this._hair2) {
-			this.hairColor2 = this.hairColor2;
-			this.hairMix2 = this.hairMix2;
-		}
-		if (this._hair3) {
-			this.hairColor3 = this.hairColor3;
-			this.hairMix3 = this.hairMix3;
+		if (value) {
+			if (this._hair2 && this._hairMix2) {
+				this.hairColor2 = this.hairColor2;
+				this.hairMix2 = this.hairMix2;
+			}
+			if (this._hair3 && this._hairMix3) {
+				this.hairColor3 = this.hairColor3;
+				this.hairMix3 = this.hairMix3;
+			}
 		}
 	}
 
@@ -1362,7 +1493,7 @@ class CharacterSlots {
 		const cateInfo = ItemCategoryInfo.get(id);
 
 		if (cateInfo) {
-			const url = `Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}.img/`;
+			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}.img/`;
 			const use_category = undefined;
 
 			let hair = new CharacterEquipHair();
@@ -1375,7 +1506,9 @@ class CharacterSlots {
 
 	/** @returns {number} */
 	get hairColor2() {
-		return Number(CharacterRenderConfig.getHairColor(this._hair2.id));
+		if (this._hair2) {
+			return Number(CharacterRenderConfig.getHairColor(this._hair2.id));
+		}
 	}
 	set hairColor2(color) {
 		if (color != null && (!this._hair2 || this._hair2.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
@@ -1387,12 +1520,12 @@ class CharacterSlots {
 				delete that.hair.$promise_hair2;
 
 				that._hair2 = hair2;
-				if (that._hair2) {
+				if (that._hair2 && that.hairMix2 != null) {
 					that.hairMix2 = that.hairMix2;//force update
 				}
-				else {
-					that.hairMix2 = 0;//disable
-				}
+				//else {
+				//	that.hairMix2 = 0;//disable
+				//}
 			});
 		}
 	}
@@ -1402,6 +1535,8 @@ class CharacterSlots {
 	}
 	set hairMix2(value) {
 		const that = this;
+
+		value = Number(value);
 
 		Promise.resolve(this.hair.$promise_hair2).then(function () {
 			/** @type {CharacterEquipBase} */
@@ -1433,7 +1568,9 @@ class CharacterSlots {
 
 	/** @returns {number} 0~1.0 */
 	get hairColor3() {
-		return Number(CharacterRenderConfig.getHairColor(this._hair3.id));
+		if (this._hair3) {
+			return Number(CharacterRenderConfig.getHairColor(this._hair3.id));
+		}
 	}
 	set hairColor3(color) {
 		if (color != null && (!this._hair3 && this._hair3.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
@@ -1445,12 +1582,12 @@ class CharacterSlots {
 				delete this.hair.$promise_hair3;
 
 				that._hair3 = hair3;
-				if (that._hair3) {
+				if (that._hair3 && that.hairMix2 != null) {
 					that.hairMix2 = that.hairMix2;//force update
 				}
-				else {
-					that.hairMix2 = 0;//disable
-				}
+				//else {
+				//	that.hairMix2 = 0;//disable
+				//}
 			});
 		}
 	}
@@ -1460,6 +1597,8 @@ class CharacterSlots {
 	}
 	set hairMix3(value) {
 		const that = this;
+
+		value = Number(value);
 
 		Promise.resolve(this.hair.$promise_hair3).then(function () {
 			/** @type {CharacterEquipBase} */
@@ -1512,7 +1651,7 @@ class CharacterSlots {
 		const cateInfo = ItemCategoryInfo.get(id);
 
 		if (cateInfo) {
-			let url = `Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}.img/`;
+			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}.img/`;
 			/** @type {CharacterEquipBase} */
 			let item;
 
@@ -1625,7 +1764,13 @@ class CharacterSlots {
 		if (this.body) slots.push(this.body.id);
 		if (this.head) slots.push(this.head.id);
 		if (this.face) slots.push(this.face.id + "|" + this.face.id);
-		if (this.hair) slots.push(this.hair.id + "|" + this.hair.id);
+		if (this.hair) {
+			let ha = [];
+			ha.push(this.hair.id);
+			if (this.hairColor2) ha.push(this.hairColor2 + "%" + Math.trunc(this.hairMix2 * 100));
+			if (this.hairColor3) ha.push(this.hairColor3 + "%" + Math.trunc(this.hairMix3 * 100));
+			slots.push(ha.join("|"));
+		}
 		if (this.cap) slots.push(this.cap.id);
 		if (this.accessoryFace) slots.push(this.accessoryFace.id);
 		if (this.accessoryEyes) slots.push(this.accessoryEyes.id);
@@ -2287,8 +2432,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 	static async Init() {
 		let result = await Promise.all([
-			ajax_get("/make_zorders"),
-			ajax_get("/assets/smap.img/"),
+			$get("/make_zorders"),
+			$get.data("/smap.img/"),
 			ItemEffect.Init(),
 			SkillAnimation.Init(),
 		]);
@@ -2373,7 +2518,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		//const item_type = id[0];
 		//switch (item_type) {
 		//	case "0"://equip
-				this.__load_task.push(this.slots._use(id, null, category));
+				let task = this.slots._use(id, null, category);
+				this.__load_task.push(task);
+				return task;
 		//		break;
 		//}
 	}
@@ -2409,15 +2556,31 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		let es = code.split(",");
 		this.slots._clear();
 		es.forEach((v, i, a) => {
-			let sp = v.indexOf("|");
-			if (sp >= 0) {
+			if (v.indexOf("|") >= 0) {
 				let ss = v.split("|");
 				const cate = ItemCategoryInfo.get(ss[0]);
-				if (cate.slot == "face" || cate.slot == "hair") {
+				if (cate.slot == "face") {
 					this.use(ss[1]);
 				}
+				else if (cate.slot == "hair") {
+					const slots = this.slots;
+					let h2 = ss[1];
+					let h3 = ss[2];
+					this.use(ss[0]).then(function () {
+						if (h2 && h2.indexOf("%") >= 0) {
+							let hc = h2.split("%");
+							slots.hairColor2 = hc[0];
+							slots.hairMix2 = hc[1] / 100;
+						}
+						if (h3 && h3.indexOf("%") >= 0) {
+							let hc = h3.split("%");
+							slots.hairColor3 = hc[0];
+							slots.hairMix4 = hc[1] / 100;
+						}
+					});
+				}
 				else if (cate.slot == "weapon") {
-					this.use.apply(this, ss);//this.use(ss[0], ss[1]);
+					this.use.apply(this, ss, ss[1]);//this.use(ss[0], ss[1]);
 				}
 			}
 			else if (Number.isFinite(parseInt(v, 10))) {
@@ -2508,130 +2671,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		}
 	}
 
-	/**
-	 * render to HTML with frame
-	 */
-	_toHTML() {
-		const width = 64;//Math.min(64, right - left);
-		const height = 96;//Math.min(96, bottom - top);
-
-		let $inn = document.createElement("DIV");
-		$inn.style.position = "absolute";
-		$inn.style.left = (width / 2) + "px";
-		$inn.style.top = height + "px";
-
-		for (let i in this.__frag_list) {
-			let ft = this.__frag_list[i];
-			if (ft.texture) {
-				let $img = new Image();
-
-				let x0 = Math.trunc(ft.relative.x);
-				let y0 = Math.trunc(ft.relative.y);
-				let x1 = Math.trunc(ft.width);
-				let y1 = Math.trunc(ft.height);
-
-				$img.src = ft.texture.src;
-
-				$img.className = [ft._slot, ft._place].join(" ");
-
-				$img.style.opacity = ft.opacity || 1;
-				$img.style.position = "absolute";
-				$img.style.left = x0 + "px";
-				$img.style.top = y0 + "px";
-				$img.style.width = x1 + "px";
-				$img.style.height = y1 + "px";
-
-				$inn.appendChild($img);
-			}
-		}
-
-		let $con = document.createElement("DIV");
-
-		$con.dataset.code = this._stringify();
-
-		$con.style.display = "inline-block";
-		$con.style.position = "relative";
-		$con.style.left = this.x + "px";
-		$con.style.top = this.y + "px";
-		$con.style.width = width + "px";
-		$con.style.height = height + "px";
-
-		$con.appendChild($inn);
-
-		return $con;
-	}
-
-	_renderToHTML() {
-		let $con = document.createElement("DIV");
-
-		$con.dataset.code = this._stringify();
-
-		$con.style.display = "inline-block";
-		$con.style.position = "relative";
-		$con.style.left = this.x + "px";
-		$con.style.top = this.y + "px";
-		$con.style.width = width + "px";
-		$con.style.height = height + "px";
-		$con.style.transform = "rotate(" + (this.angle * 180 / Math.PI).toFixed(4) + "deg)";
-
-		$con.appendChild($inn);
-
-		for (let i in this.__frag_list) {
-			let ft = this.__frag_list[i];
-			if (ft.texture) {
-				let $img = new Image();
-
-				let x0 = Math.trunc(ft.relative.x);
-				let y0 = Math.trunc(ft.relative.y);
-				let x1 = Math.trunc(ft.width);
-				let y1 = Math.trunc(ft.height);
-
-				$img.src = ft.texture.src;
-
-				$img.className = [ft._slot, ft._place].join(" ");
-
-				$img.style.opacity = ft.opacity || 1;
-				$img.style.position = "absolute";
-				$img.style.left = x0 + "px";
-				$img.style.top = y0 + "px";
-				$img.style.width = x1 + "px";
-				$img.style.height = y1 + "px";
-
-				$con.appendChild($img);
-			}
-		}
-
-		return $con;
-	}
-
-	_Clone(elementOnly) {
-		let $con = this._renderToHTML();
-
-		document.getElementById("overlay").appendChild($con);
-
-		$($con).draggable();
-		$($con).disableSelection();
-
-		(function (that) {
-			$($con).mousedown(function (e) {
-				if (e.which == 3) {
-					$(this).remove();
-				}
-			});
-			$($con).dblclick(function (e) {
-				if (e.which == 1) {
-					that._parse(e.delegateTarget.dataset.code);
-					updateScreen();
-				}
-			});
-		})(this);
-	}
-
 	_save_as_svg() {
 		let that = this;
-		that.__texture_to_base64().then(function () {
+		that.__texture_to_base64().then(function (frag_list) {
 			let file_name = that.id + ".svg";
-			let frag_list = that.__frag_list;
+			//let frag_list = that.__frag_list;
 	
 			let svg = '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >';
 
@@ -2664,14 +2708,45 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		let tasks = [];
 
 		frag_list.forEach(function (ft) {
-			if (ft && !ft.texture.src.startsWith("data:")) {
+			if (!ft) {
+				return;
+			}
+			if (!ft.texture.src.startsWith("data:")) {
 				tasks.push((async function () {
 					ft.texture.src = await toDataURL(ft.texture.src);
+					return ft;
 				})());
+			}
+			else {
+				tasks.push(ft);
+			}
+			if (ft.graph2) {
+				let src = ft.graph2.texture.src;
+				if (!src.startsWith("data:")) {
+					tasks.push((async function () {
+						ft.graph2.texture.src = await toDataURL(src);
+						return ft.graph2;
+					})());
+				}
+				else {
+					tasks.push(ft.graph2);
+				}
+			}
+			if (ft.graph3) {
+				let src = ft.graph3.texture.src;
+				if (!src.startsWith("data:")) {
+					tasks.push((async function () {
+						ft.graph3.texture.src = await toDataURL(src);
+						return ft.graph3;
+					})());
+				}
+				else {
+					tasks.push(ft.graph3);
+				}
 			}
 		});
 
-		await Promise.all(tasks);
+		return Promise.all(tasks);
 	}
 }
 AddInitTask(CharacterRenderer.Init());

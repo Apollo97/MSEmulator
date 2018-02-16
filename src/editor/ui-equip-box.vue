@@ -103,7 +103,7 @@
 											</div>
 										</td>
 										<td @mousedown.right="copyInnerText($event)">
-											<div class="item-name">{{__get_item_name(i - 1)}}</div>
+											<div class="item-name" :style="__get_item(i - 1).$foreign?'color: red':''">{{__get_item_name(i - 1)}}</div>
 										</td>
 									</tr>
 									<tr>
@@ -175,7 +175,7 @@
 	import UIDraggable from "../components/ui-draggable.vue";
 	import UIDialog from "../components/ui-dialog.vue";
 	import UIButtonGroup from '../components/ui-button-group.vue';
-	
+
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from '../../public/resource.js';
 
 	function emSize(socpe) {
@@ -306,7 +306,7 @@
 				search_next: -1,
 
 				column_count: 5,
-				
+
 				loaded_equip_list: [],	// origin list (no filter)
 				loaded_category: null,
 				equip_list: [],			// view list (final result)
@@ -383,7 +383,7 @@
 				let el = e.currentTarget;
 				let text = el.innerText;
 				copyToClipboard(text);
-				
+
 				SelectText(el);
 			},
 			copyText: function (e, text) {
@@ -413,7 +413,7 @@
 								let si = rr[2];
 								if (this._is_category_hair()) {
 									let black = CharacterRenderConfig.getColorHairID(String(si), 0);
-									
+
 									this.search_equip_result = this.equip_list.filter(function (item, index) {
 										let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
 										if (b1 && b1.indexOf(black) != -1) {
@@ -424,7 +424,7 @@
 								}
 								else if (this._is_category_face()) {
 									let black = CharacterRenderConfig.getColorFaceID(String(si), 0);
-									
+
 									this.search_equip_result = this.equip_list.filter(function (item, index) {
 										let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
 										if (b1 && b1.indexOf(black) != -1) {
@@ -442,7 +442,7 @@
 										return true;
 									}
 								});
-								
+
 								if (this.search_equip_result &&
 									this.search_equip_result[0] &&
 									this.search_equip_result[0][attr] &&
@@ -487,7 +487,7 @@
 						console.log("no search: " + search_text);
 					}
 				}
-				
+
 				if (this.onlyShowSearchResult) {
 					this.page = 0;
 					this.equip_list = this.search_equip_result;
@@ -500,7 +500,7 @@
 				//if (e.keyCode == 13) {}
 
 				let next = (this.search_next + 1) % this.search_equip_result.length;
-				
+
 				let item = this.search_equip_result[next];
 
 				if (item) {
@@ -573,7 +573,7 @@
 				let equip_list = [];
 
 				if (coloredPath != this.loaded_category || this.loaded_equip_list.length == 0) {
-					equip_list = JSON.parse(await ajax_get(`/data/${coloredPath}.json`));
+					equip_list = JSON.parse(await $get(`/equips/${coloredPath}.json`));
 					if (!equip_list || !equip_list.length) {
 						alert("? " + coloredPath);
 						return;
@@ -582,7 +582,7 @@
 					await concat_external_resource(coloredPath, equip_list);
 
 					if (cateinfo.slot == "weapon") {
-						let cash_weapon = JSON.parse(await ajax_get(`/data/0170.json`));
+						let cash_weapon = JSON.parse(await $get(`/equips/0170.json`));
 
 						let wt = prefix.slice(2, 4);
 						let va = cash_weapon.filter(a => {
@@ -699,7 +699,7 @@
 
 						sp[1] = "ls";
 
-						let ls = JSON.parse(await ajax_get(sp.join("/")));
+						let ls = JSON.parse(await $get(sp.join("/")));
 
 						let next = ls.indexOf(place) + 1;
 						if (next < ls.length) {
@@ -772,6 +772,10 @@
 				}
 				else if (value == "0003" || value == "0004") {
 					this.hair_color = Number(window.chara.renderer.hairColor);
+					if (window.chara.renderer.slots.hairColor2 && window.chara.renderer.slots.hairMix2) {
+						this.hair_color2 = Number(window.chara.renderer.slots.hairColor2);
+						this.hair_mix2 = Math.trunc(Number(window.chara.renderer.slots.hairMix2) * 100);
+					}
 				}
 				await this.loadList();
 			},

@@ -35,17 +35,17 @@ async function map_load_package(cat, pack) {
 		debugger;
 	}
 	if (!map_sprite[cat][pack]) {
-		let url = `Map/${cat}/${pack}.img/`;
+		let url = `/Map/${cat}/${pack}.img/`;
 
 		if (!(url in url_failed)) {
-			map_sprite[cat][pack] = JSON.parse(await ajax_get("/assets/" + url));
+			map_sprite[cat][pack] = JSON.parse(await $get.data(url));
 		}
-		if (map_sprite[cat][pack] == null) {
-			let url2 = `Map2/${cat}/${pack}.img/`;
-			url_failed[url] = url2;
-			map_sprite[cat][pack] = JSON.parse(await ajax_get("/assets/" + url2));
-			console.info("url2: " + url2);
-		}
+		//if (map_sprite[cat][pack] == null) {
+		//	let url2 = `/Map2/${cat}/${pack}.img/`;
+		//	url_failed[url] = url2;
+		//	map_sprite[cat][pack] = JSON.parse(await $get.data(url2));
+		//	console.info("url2: " + url2);
+		//}
 	}
 	if (map_sprite[cat][pack]) {
 		return map_sprite[cat][pack];
@@ -590,10 +590,10 @@ class MapObject extends MapObjectBase {
 	 */
 	_load_texture(i, texture0) {
 		const null_url = undefined;
-		let path = ["Map", "Obj", this._texture_base_path, i].join("/");
+		let path = ["/Map", "Obj", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i], null_url, texture0);
-		texture._url = "/images/" + path;
+		texture._url = "/images" + path;
 
 		return texture;
 	}
@@ -684,7 +684,7 @@ class MapObjectSkeletalAnim extends MapObject {
 	get _folder() {
 		const raw = this._raw;
 		//["Obj"	 ][obj.oS][obj.l0][obj.l1][obj.l2][0    ][""]
-		return `Map/Obj/${raw.oS}.img/${raw.l0}/${raw.l1}/${raw.l2}`;
+		return `/Map/Obj/${raw.oS}.img/${raw.l0}/${raw.l1}/${raw.l2}`;
 	}
 	async load() {
 		if (SSAnim) {
@@ -886,7 +886,7 @@ class MapPortal extends MapObject {
 	}
 	
 	get _texture_base_path() {
-		return "Map/MapHelper.img/portal/" + this.__display_mode;
+		return "/Map/MapHelper.img/portal/" + this.__display_mode;
 	}
 	
 	/**
@@ -912,7 +912,7 @@ class MapPortal extends MapObject {
 	}
 	
 	static async Init() {
-		let _raw = JSON.parse(await ajax_get("/data/Map/MapHelper.img/portal/editor"));
+		let _raw = JSON.parse(await $get.pack("/Map/MapHelper.img/portal/editor"));
 		
 		let portals = [];
 		
@@ -1018,7 +1018,7 @@ class MapBack extends MapBackBase {
 	}
 
 	load() {
-		let path = ["Map", "Back", this._texture_base_path].join("/");
+		let path = ["/Map", "Back", this._texture_base_path].join("/");
 
 		if (this._raw.bS == "") {
 			console.warn("?path: " + path);
@@ -1026,7 +1026,7 @@ class MapBack extends MapBackBase {
 		}
 
 		this.textures[0] = new MapTexture(this._texture_raw);
-		this.textures[0]._url = "/images/" + path;
+		this.textures[0]._url = "/images" + path;
 	}
 	
 	get _texture_base_path() {
@@ -1063,10 +1063,10 @@ class MapBackAnimation extends MapBackBase {
 	 * @returns {MapTexture}
 	 */
 	_load_texture(i, texture0) {
-		let path = ["Map", "Back", this._texture_base_path, i].join("/");
+		let path = ["/Map", "Back", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i]);
-		texture._url = "/images/" + path;
+		texture._url = "/images" + path;
 
 		return texture;
 	}
@@ -1101,7 +1101,7 @@ class MapBackSkeletalAnim extends MapBackBase {
 	get _folder() {
 		const ob = this._raw;
 		//["Back"  ][obj.bS]["ani" ][obj.no][0    ][""]
-		return `Map/Back/${ob.bS}.img/spine/${ob.no}`;
+		return `/Map/Back/${ob.bS}.img/spine/${ob.no}`;
 	}
 	async load() {
 		if (SSAnim) {
@@ -1721,7 +1721,7 @@ export class SceneMap {
 		let $_mapString = null;
 		let $mapString = {};
 
-		$_mapString = JSON.parse(await ajax_get("assets/String/Map.img/"));
+		$_mapString = JSON.parse(await $get.data("/String/Map.img/"));
 
 		for (let i in $_mapString) {
 			for (let j in $_mapString[i]) {
@@ -1990,7 +1990,7 @@ export class SceneMap {
 	}
 	
 	_get_map_data_url(map_id) {
-		return `Map/Map/Map${map_id.slice(0, 1)}/${map_id}.img/`;
+		return `/Map/Map/Map${map_id.slice(0, 1)}/${map_id}.img/`;
 	}
 
 	/**
@@ -2008,7 +2008,7 @@ export class SceneMap {
 		}
 		const url = this._get_map_data_url(map_id);
 
-		let raw = JSON.parse(await ajax_get("/assets/" + url));
+		let raw = JSON.parse(await $get.data(url));
 		if (!raw) {
 			alert("map not exit");
 			debugger;
@@ -2017,7 +2017,7 @@ export class SceneMap {
 		if (raw.info && raw.info.link) {
 			const url2 = this._get_map_data_url(raw.info.link);
 				
-			raw = JSON.parse(await ajax_get("/assets/" + url2));
+			raw = JSON.parse(await $get.data(url2));
 			if (!raw) {
 				alert("map-link not exit");
 				debugger;

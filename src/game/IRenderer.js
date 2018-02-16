@@ -158,8 +158,8 @@ export class _ImageFilter {
 		return this._hue;
 	}
 	set hue(value) {
-		this._hue = clamp(value, 0, 360);
-		if ((this._hue == 0 || this._hue == 360) && this._sat >= 100 && this._bri >= 100) {
+		this._hue = value % 360;
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
 			this.reset();
 		}
 	}
@@ -168,8 +168,8 @@ export class _ImageFilter {
 		return this._sat;
 	}
 	set sat(value) {
-		this._sat = clamp(value, 0, 100);
-		if ((this._hue == 0 || this._hue == 360) && this._sat >= 100 && this._bri >= 100) {
+		this._sat = Math.max(0, value);
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
 			this.reset();
 		}
 	}
@@ -178,8 +178,8 @@ export class _ImageFilter {
 		return this._bri;
 	}
 	set bri(value) {
-		this._bri = clamp(value, 0, 100);
-		if ((this._hue == 0 || this._hue == 360) && this._sat >= 100 && this._bri >= 100) {
+		this._bri = Math.max(0, value);
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
 			this.reset();
 		}
 	}
@@ -210,10 +210,10 @@ export class ImageFilter extends _ImageFilter {
 	}
 	/** @return {number} */
 	get hue() {
-		return 100;
+		return 0;
 	}
 	set hue(value) {
-		this._hue = clamp(value, 0, 360);
+		this._hue = value % 360;
 		this.__proto__ = _ImageFilter.prototype;
 	}
 	/** @return {number} */
@@ -221,7 +221,7 @@ export class ImageFilter extends _ImageFilter {
 		return 100;
 	}
 	set sat(value) {
-		this._sat = clamp(value, 0, 100);
+		this._sat = Math.max(0, value);
 		this.__proto__ = _ImageFilter.prototype;
 	}
 	/** @return {number} */
@@ -229,7 +229,7 @@ export class ImageFilter extends _ImageFilter {
 		return 100;
 	}
 	set bri(value) {
-		this._bri = clamp(value, 0, 100);
+		this._bri = Math.max(0, value);
 		this.__proto__ = _ImageFilter.prototype;
 	}
 
@@ -259,7 +259,7 @@ _ImageFilter.prototype.reset = function () {
  * @param {number} bri 0 ~ 100
  */
 _ImageFilter.prototype.set = function (hue, sat, bri) {
-	if ((hue == 0 || hue == 360) && sat >= 100 && bri >= 100) {
+	if ((hue % 360 == 0) && sat == 100 && bri == 100) {
 		this.reset();
 	}
 	else {

@@ -125,7 +125,7 @@ function DataServer(app) {
 		constructor() {
 			let _get = edge.func({
 				source: path.join(__dirname, "wz.cs"),
-				references: [path.join(__dirname, "bin", 'libwz.net.dll'), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll"]
+				references: [path.join(__dirname, "bin", 'libwz.net.dll'), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll", "System.Web.Extensions.dll"]
 			});
 			this._get = function () {
 				try {
@@ -147,8 +147,8 @@ function DataServer(app) {
 		 * @param {boolean} reload
 		 * @param {string=} func
 		 */
-		getAsync(method, path, output_canvas, reload) {
-			let that = this;
+		getAsync(method, path, output_canvas) {
+			const that = this;
 			return new Promise(function (resolve, reject) {
 				that._get({
 					func: method,
@@ -158,11 +158,11 @@ function DataServer(app) {
 					}
 				}, function (error, result) {
 					if (error) {
-						console.error(error);
+						console.error("error: " + error);
 						reject(error);
 					}
 					else {
-						resolve(result.result);
+						resolve(result);
 					}
 				});
 			});
@@ -170,26 +170,26 @@ function DataServer(app) {
 		version() {
 			let v = this._get({
 				func: "version"
-			}, true).result;
+			}, true);
 			return v;
 		}
 		make_zorders() {
 			let zorders = this._get({
 				func: "make_zorders"
-			}, true).result;
+			}, true);
 			return zorders;
 		}
 		getPng(url, req, res, next) {
 			let data_path = url.slice(8);
-			let task = dataProvider.getAsync("images", data_path);
+			let task = this.getAsync("images", data_path);
 
 			sendFile(task, req, res, next);
 		}
 
 		/** @returns {Date} */
 		_getDataLastModified() {
-			let setting = IniParser.parse(fs.readFileSync(path.join(__dirname, "setting.ini"), "utf-8"));
-			return fs.statSync(setting.resource.path).mtime;
+			let _setting = IniParser.parse(fs.readFileSync(path.join(__dirname, "./setting.ini"), "utf-8"));
+			return fs.statSync(_setting.resource.path).mtime;
 		}
 		
 		isNeedResponse(req, res, next) {
@@ -278,10 +278,10 @@ function DataServer(app) {
 	 * @param {any} next
 	 */
 	function sendFile(loadFileTask, req, res, next) {
-		loadFileTask.then(function (file) {
-			if (file) {
-				res.writeHead(200, makeHead(file.mime));
-				res.end(file.data);
+		loadFileTask.then(function (results) {
+			if (results) {
+				res.writeHead(200, makeHead(results.mime));
+				res.end(results.data);
 			}
 			else {
 				//return next();//goto 404
@@ -292,6 +292,29 @@ function DataServer(app) {
 			write_reason(res, reason);
 		});
 	}
+
+	/**
+	 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
+	 * @param {any} req
+	 * @param {any} res
+	 * @param {any} next
+	 */
+	function sendJSON(loadFileTask, req, res, next) {
+		loadFileTask.then(function (results) {
+			if (results) {
+				res.writeHead(200, makeHead(results.mime));
+				res.end(JSON.stringify(results.data, null, "\t"));
+			}
+			else {
+				//return next();//goto 404
+				//res.end("null");
+				write_res(res, 404);
+			}
+		}, function (reason) {
+			write_reason(res, reason);
+		});
+	}
+
 	app.get(/\/images\/.*/, function (req, res, next) {//png
 		if (dataProvider.isNeedResponse(req, res, next)) {
 			let url = decodeURI(req.path);
@@ -299,8 +322,8 @@ function DataServer(app) {
 		}
 	});
 	app.get(/\/_images\/.*/, function (req, res, next) {//gif
-		let url = decodeURI(req.path);
 		if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(9);
 			let task = dataProvider.getAsync("_images", data_path);
 
@@ -308,8 +331,8 @@ function DataServer(app) {
 		}
 	});
 	app.get(/\/sound\/.*/, function (req, res, next) {//wav/mp3
-		let url = decodeURI(req.path);
 		if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(7);
 			let task = dataProvider.getAsync("sound", data_path);
 
@@ -317,8 +340,8 @@ function DataServer(app) {
 		}
 	});
 	app.get(/\/binary\/.*/, function (req, res, next) {//wav/mp3
-		let url = decodeURI(req.path);
 		if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(8);
 			let task = dataProvider.getAsync("binary", data_path);
 
@@ -326,68 +349,38 @@ function DataServer(app) {
 		}
 	});
 
-	app.get(/\/data\/.*/, function (req, res, next) {//json: text + base64
-		let url = decodeURI(req.path);
+	app.get(/\/pack\/.*/, function (req, res, next) {//json: text + base64
 		if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(6);
-			let task = dataProvider.getAsync("ms", data_path, true);
+			let task = dataProvider.getAsync("pack", data_path, true);
 
-			task.then(function (data) {
-				if (data) {
-					res.writeHead(200, makeHead("application/json; charset=utf-8"));
-					res.end(JSON.stringify(data, null, "\t"));
-				}
-				else {
-					write_res(res, 404);
-				}
-			}, function (reason) {
-				write_reason(res, reason);
-			});
+			sendJSON(task, req, res, next);
 		}
 	});
-	app.get(/\/assets\/.*/, function (req, res, next) {//json: text
-		let url = decodeURI(req.path);
+	app.get(/\/data\/.*/, function (req, res, next) {//json: text
 		if (dataProvider.isNeedResponse(req, res, next)) {
-			let data_path = url.slice(8);
-			let task = dataProvider.getAsync("ms", data_path, false);
+			let url = decodeURI(req.path);
+			let data_path = url.slice(6);
+			let task = dataProvider.getAsync("data", data_path, false);
 
-			task.then(function (data) {
-				if (data) {
-					res.writeHead(200, makeHead("application/json; charset=utf-8"));
-					res.end(JSON.stringify(data, null, "\t"));
-				}
-				else {
-					write_res(res, 404);
-				}
-			}, function (reason) {
-				write_reason(res, reason);
-			});
+			sendJSON(task, req, res, next);
 		}
 	});
 	app.get(/\/ls\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path);
 		//if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(4);
-			let task = dataProvider.getAsync("ls", data_path, false);
+			let task = dataProvider.getAsync("ls", data_path);
 
-			task.then(function (data) {
-				if (data) {
-					res.writeHead(200, makeHeadNoCache("application/json; charset=utf-8"));
-					res.end(JSON.stringify(data, null, "\t"));
-				}
-				else {
-					write_res(res, 404);
-				}
-			}, function (reason) {
-				write_reason(res, reason);
-			});
+			sendJSON(task, req, res, next);
 		//}
 	});
 	app.get(/\/xml\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path);
 		//if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(5);
-			let task = dataProvider.getAsync("xml", data_path, false);
+			let task = dataProvider.getAsync("xml", data_path);
 
 			task.then(function (data) {
 				if (data) {
@@ -403,10 +396,10 @@ function DataServer(app) {
 		//}
 	});
 	app.get(/\/xml2\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path);
 		//if (dataProvider.isNeedResponse(req, res, next)) {
+			let url = decodeURI(req.path);
 			let data_path = url.slice(6);
-			let task = dataProvider.getAsync("xml2", data_path, false);
+			let task = dataProvider.getAsync("xml2", data_path);
 
 			task.then(function (data) {
 				if (data) {

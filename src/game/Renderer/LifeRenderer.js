@@ -69,7 +69,7 @@ export class LifeRenderer /*extends SceneObject*/ {
 			tasks.push(task);
 		}
 
-		let task = ajax_get("/assets/" + this._url).then(async function (raw) {
+		let task = $get.data(this._url).then(async function (raw) {
 			that._raw = JSON.parse(raw);
 			if (that._raw) {
 				await that._construct_actions();

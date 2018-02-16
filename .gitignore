@@ -291,3 +291,7 @@ __pycache__/
 *.xsd.cs
 /Tools/EquipList/libwz.net.dll
 /Tools/EquipList/EquipList.exe
+/public/_data
+/test.js
+/public/equips
+/public/_equips

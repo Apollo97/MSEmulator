@@ -55,7 +55,7 @@ export class MobRenderer extends LifeRenderer {
 		if (!MobRenderer._desc[id]) {
 			let base = MobRenderer._get_desc_base_path();
 			let url = [base, Number(id)].join("/");
-			let desc = JSON.parse(await ajax_get("/assets/" + url));
+			let desc = JSON.parse(await $get.data(url));
 			MobRenderer._desc[id] = desc;
 			return desc;
 		}
@@ -96,11 +96,11 @@ export class MobRenderer extends LifeRenderer {
 	}
 	
 	static _get_desc_base_path() {
-		return 'String/Mob.img';
+		return '/String/Mob.img';
 	}
 
 	static get _base_path() {
-		return "Mob";
+		return "/Mob";
 	}
 }
 MobRenderer._desc = {};

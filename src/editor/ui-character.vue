@@ -103,6 +103,7 @@
 					opacity: ft.opacity,
 					width: ft.width + 'px',
 					height: ft.height + 'px',
+					filter: ft.filter.toString(),
 				};
 
 				return style;

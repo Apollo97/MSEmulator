@@ -36,10 +36,10 @@ export class Engine extends IRenderer {
 		let canvas2 = this._canvas2 = document.getElementById(id + "2");
 
 		this.ctx = canvas.getContext("2d", { alpha: false });
-		this._ctx2 = canvas2.getContext("2d", { alpha: false });
+		this._ctx2 = canvas2.getContext("2d", { alpha: true });
 
 		this.ctx.imageSmoothingEnabled = false;
-		this._ctx2.imageSmoothingEnabled = false;
+		this._ctx2.imageSmoothingEnabled = true;
 		
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		_resize_canvas(canvas2, window.innerWidth, window.innerHeight);

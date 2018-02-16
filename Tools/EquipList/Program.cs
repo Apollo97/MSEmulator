@@ -1,46 +1,96 @@
 ﻿
+#if !EDGE_EQUIPLIST
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-
-using System.Net;
-using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Linq;
+using System.Text;
+using System.Collections.Generic;
+//using System.Data;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Dynamic;
-
-using System.Web.Script.Serialization;
-
 using System.Diagnostics;
+using System.Net;
+using System.Web.Script.Serialization;
 using System.Collections;
-
 using System.Configuration;
+#endif
 
 
 namespace EquipList
 {
-	class Program
+	public class Program
 	{
 		[STAThread]
 		static void Main(string[] args)
 		{
-			Console.WriteLine("init");
-			DataSource.Init(args.Length > 1 ? args[1] : "../../setting.ini");
+			Program.func(args);
+		}
+		public static void func(string[] args) {
+			string settingFileName = args.Length > 1 ? args[1] : "../../setting.ini";
+
+			Console.WriteLine("setting: " + settingFileName);
+			DataSource.Init(settingFileName);
 
 			var data_extracter = new DataExtracter("");
-			Console.WriteLine(DataSource.archives.location);
-			Console.WriteLine(DataSource.archives.version);
 
-			Console.WriteLine("start");
-			data_extracter.extractAll(args.Length > 0 ? args[0] : "./data");
+			var extractTo = args.Length > 0 ? args[0] : "./data";
 
+			if (args.Length > 0)
+			{
+				Console.WriteLine("extract to: " + extractTo);
+				Console.WriteLine("");
+			}
+
+			try
+			{
+				data_extracter.extractAll(extractTo);
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine("Error: ");
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.StackTrace);
+			}
 			Console.WriteLine("end");
 		}
 	}
 }
+
+#if EDGE_EQUIPLIST
+public class Startup
+{
+	public async Task<object> Invoke(dynamic input)
+	{
+		string[] args;
+
+		try
+		{
+			var input_args = (object[])input.args;
+			List<string> arg_list = new List<string>();
+			
+			foreach (var item in input_args)
+			{
+				arg_list.Add((string)item);
+			}
+			args = arg_list.ToArray();
+		}
+		catch(Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+			args = new string[] { };
+		}
+
+		EquipList.Program.func(args);
+
+		return null;
+	}
+}
+#endif
 
 internal class DataExtracter
 {
@@ -70,7 +120,9 @@ internal class DataExtracter
 
 	internal void extractAll(string path)
 	{
+		Console.WriteLine("location: " + DataSource.archives.location);
 		Console.WriteLine("version: " + DataSource.archives.version);
+		Console.WriteLine("");
 
 		this.output_file(path + "/body.json", this.extract_body);
 		Console.WriteLine("extract body");
@@ -241,14 +293,15 @@ internal class DataExtracter
 		this.output_file(path + "/0170.json", this.extract_cash_weapon, "Weapon", "0170");
 	}
 
-	void output_file(string path, Func<dynamic> fnExtract)
+	void output_file(string path, Func<dynamic, dynamic> fnExtract)
 	{
 		if (File.Exists(path))
 		{
+			Console.WriteLine(path + " is exist");
 			return;
 		}
 
-		dynamic eo = fnExtract();
+		dynamic eo = fnExtract(null);
 
 		var str = JSON.stringify(eo);
 
@@ -261,14 +314,14 @@ internal class DataExtracter
 		}
 	}
 
-	void output_file(string path, Func<string, string, dynamic> fnExtract, string category, string id_prefix)
+	void output_file(string path, Func<string, string, dynamic, dynamic> fnExtract, string category, string id_prefix)
 	{
 		if (File.Exists(path))
 		{
 			return;
 		}
 
-		dynamic eo = fnExtract(category, id_prefix);
+		dynamic eo = fnExtract(category, id_prefix, null);
 
 		var str = JSON.stringify(eo);
 
@@ -281,7 +334,7 @@ internal class DataExtracter
 		}
 	}
 
-	object extract_cash_weapon(string category, string id_prefix)
+	object extract_cash_weapon(string category, string id_prefix, dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -305,13 +358,23 @@ internal class DataExtracter
 				dynamic data = this.inspectProperty(info);
 				data.id = id;
 				data.name = name;
-				data.desc = desc;
+				if (desc != null)
+					data.desc = desc;
 				//
-				var __t = new List<string>(pack.identities);
+				var __t = new List<string>(pack.identities);//點數武器可套用的武器類型
 				__t.Remove("info");
 				data.__t = String.Join(", ", __t.ToArray()); ;
 				//
 				data.icon = data.iconRaw;
+				try
+				{
+					data.__hash = data.iconRaw._hash + "";
+				}
+				catch(Exception ex)
+				{
+					System.Console.WriteLine("get cashWpn(" + identity + ") icon._hash " + ex.Message);
+				}
+				data.__v = DataSource.archives.version;
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
@@ -329,7 +392,7 @@ internal class DataExtracter
 
 	//icon = pack["stand1", "0", wear]
 	//place => wear
-	object extract_equip(string category, string id_prefix)
+	object extract_equip(string category, string id_prefix, dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -353,9 +416,17 @@ internal class DataExtracter
 				dynamic data = this.inspectProperty(info);
 				data.id = id;
 				data.name = name;
-				data.desc = desc;
+				if (desc != null)
+					data.desc = desc;
 				//
-				data.icon = data.iconRaw;
+				try
+				{
+					data.__hash = data.icon._hash + "";
+				}
+				catch (Exception)
+				{
+				}
+				data.__v = DataSource.archives.version;
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
@@ -371,7 +442,7 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_face()
+	object extract_face(dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -402,6 +473,15 @@ internal class DataExtracter
 				data.id = id;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
+				try
+				{
+					data.__hash = (icon["_hash"] ?? pack["default", "face", "_hash"]).data;
+				}
+				catch(Exception ex)
+				{
+					System.Console.WriteLine("get face(" + identity + ") icon._hash " + ex.Message);
+				}
+				data.__v = DataSource.archives.version;
 
 				items.Add(data);
 			}
@@ -413,7 +493,7 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_hair()
+	object extract_hair(dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -446,6 +526,15 @@ internal class DataExtracter
 				data.id = id;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
+				try
+				{
+					data.__hash = (icon["_hash"] ?? pack["default", "hairOverHead", "_hash"] ?? pack["default", "hair"]).data;
+				}
+				catch (Exception ex)
+				{
+					System.Console.WriteLine("get hair(" + identity + ") icon._hash " + ex.Message);
+				}
+				data.__v = DataSource.archives.version;
 
 				items.Add(data);
 			}
@@ -457,7 +546,7 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_head()
+	object extract_head(dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -478,6 +567,11 @@ internal class DataExtracter
 			data.id = id;
 			data.name = name;
 			data.icon = this.inspectProperty(icon);
+			if (icon["_hash"] != null)
+			{
+				data.__hash = icon["_hash"].data + "";
+			}
+			data.__v = DataSource.archives.version;
 
 			items.Add(data);
 
@@ -489,7 +583,7 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_body()
+	object extract_body(dynamic existItem)
 	{
 		var items = new ArrayList();
 
@@ -514,6 +608,11 @@ internal class DataExtracter
 			data.id = id;
 			data.name = name;
 			data.icon = this.inspectProperty(icon);
+			if (icon["_hash"] != null)
+			{
+				data.__hash = icon["_hash"].data + "";
+			}
+			data.__v = DataSource.archives.version;
 
 			items.Add(data);
 
@@ -541,6 +640,18 @@ internal class DataExtracter
 
 	string _get_face_style(string style)
 	{
+#if EDGE_EQUIPLIST
+		var start = style.Substring(0, 5);
+		var end = style.Substring(8);
+		for (var i = 0; i < 9; ++i)
+		{
+			var id = start + i + end;
+			if (this.chara["Face"][id] != null)
+			{
+				return id;
+			}
+		}
+#else
 		var s = String.Copy(style);
 		for (var i = 0; i < 9; ++i)
 		{
@@ -548,7 +659,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 7] = (char)('0' + i);
+					p[style.Length - 3 - 4] = (char)('0' + i);//00012<3>45.img
 				}
 			}
 			if (this.chara["Face"][s] != null)
@@ -556,27 +667,51 @@ internal class DataExtracter
 				return s;
 			}
 		}
+#endif
 		return style;
 	}
 	string get_colored_face_style(string style, int color)
 	{
+#if EDGE_EQUIPLIST
+		var start = style.Substring(0, 5);
+		var end = style.Substring(8);
+
+		var id = start + ((char)('0' + color % 9)) + end;
+		if (this.chara["Face"][id] != null)
+		{
+			return id;
+		}
+#else
 		var s = String.Copy(style);
 		unsafe
 		{
 			fixed (char* p = s)
 			{
-				p[style.Length - 7] = (char)('0' + color % 9);
+				p[style.Length - 3 - 4] = (char)('0' + color % 9);//00012<3>45.img
 			}
 		}
 		if (this.chara["Face"][s] != null)
 		{
 			return s;
 		}
+#endif
 		return null;
 	}
 
 	string _get_hair_style(string style)
 	{
+#if EDGE_EQUIPLIST
+		var start = style.Substring(0, 5);
+		var end = style.Substring(8);
+		for (var i = 0; i < 9; ++i)
+		{
+			var id = start + i + end;
+			if (this.chara["Hair"][id] != null)
+			{
+				return id;
+			}
+		}
+#else
 		var s = String.Copy(style);
 		for (var i = 0; i < 8; ++i)
 		{
@@ -584,7 +719,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 5] = (char)('0' + i);
+					p[style.Length - 1 - 4] = (char)('0' + i);//0001234<5>.img
 				}
 			}
 			if (this.chara["Hair"][s] != null)
@@ -592,10 +727,21 @@ internal class DataExtracter
 				return s;
 			}
 		}
+#endif
 		return style;
 	}
 	string get_colored_hair_style(string style, int color)
 	{
+#if EDGE_EQUIPLIST
+		var start = style.Substring(0, 5);
+		var end = style.Substring(8);
+
+		var id = start + ((char)('0' + color % 8)) + end;
+		if (this.chara["Hair"][id] != null)
+		{
+			return id;
+		}
+#else
 		var s = String.Copy(style);
 		for (var i = 0; i < 8; ++i)
 		{
@@ -603,7 +749,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 5] = (char)('0' + color % 8);
+					p[style.Length - 1 - 4] = (char)('0' + color % 8);//0001234<5>.img
 				}
 			}
 			if (this.chara["Hair"][s] != null)
@@ -611,6 +757,7 @@ internal class DataExtracter
 				return s;
 			}
 		}
+#endif
 		return null;
 	}
 
@@ -668,6 +815,7 @@ internal class DataExtracter
 internal class JSON
 {
 	internal static JavaScriptSerializer serializer = null;
+
 	private static Func<object, string> _func = JSON.__stringify;
 
 	internal JSON()
@@ -692,37 +840,18 @@ internal class JSON
 		return serializer.Serialize(obj);
 	}
 
-	//static internal string stringify(object obj)
-	//{
-	//	if (obj != null)
-	//	{
-	//		var sb = new StringBuilder();
-	//
-	//		if (obj.GetType() == typeof(ExpandoObject))
-	//		{
-	//			var dict = (ICollection<KeyValuePair<string, object>>)obj;
-	//
-	//			var entries = dict.Select(d =>
-	//				string.Format("\"{0}\": {1}", d.Key, string.Join(",", stringify(d.Value))));
-	//
-	//			sb.Append("{" + string.Join(",", entries) + "}");
-	//		}
-	//		else
-	//		{
-	//			sb.Append(new JavaScriptSerializer().Serialize(obj));
-	//		}
-	//
-	//		return sb.ToString();
-	//	}
-	//	return "\"\"";
-	//}
+	static public dynamic parse(string jsonString)
+	{
+		return serializer.Deserialize<dynamic>(jsonString);
+	}
 }
 
 public class ExpandoJSONConverter : JavaScriptConverter
 {
 	public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
 	{
-		throw new NotImplementedException();
+		//throw new NotImplementedException();
+		return serializer.ConvertToType<dynamic>(dictionary);
 	}
 	public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
 	{

@@ -167,9 +167,6 @@ class ResourceManager {
 	 * @param {string} url
 	 */
 	static get(url) {
-		if (url == "/assets/Map/Back/.img/") {
-			debugger;
-		}
 		return new Promise(function (resolve, reject) {
 			let xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
@@ -228,7 +225,24 @@ module.exports.ResourceManager = ResourceManager;
  * @param {string} url
  * @returns {Promise<any>}
  */
-window.ajax_get = url => ResourceManager.get(url);
+let $get = function (url) {
+	return ResourceManager.get(url);
+}
+/**
+ * @param {string} url
+ * @returns {Promise<any>}
+ */
+$get.pack = function (url) {
+	return ResourceManager.get(`/pack${url}`);
+}
+/**
+ * @param {string} url
+ * @returns {Promise<any>}
+ */
+$get.data = function (url) {
+	return ResourceManager.get(`/data${url}`);
+}
+window.$get = $get;
 
 
 class ItemAttrNormalize {
@@ -468,14 +482,14 @@ async function load_external_resource(url) {
 	let raw;
 
 	try {
-		raw = ResourceManager._external_raw = JSON.parse(await ajax_get("/equip"));
+		raw = ResourceManager._external_raw = JSON.parse(await $get("/equip"));
 		if (!raw) {
 			debugger;
 			throw Error("'/equip' is empty");
 		}
 	}
 	catch (ex) {
-		raw = ResourceManager._external_raw = JSON.parse(await ajax_get("https://labs.maplestory.io/api/gms/latest/item/category/equip"));
+		raw = ResourceManager._external_raw = JSON.parse(await $get("//labs.maplestory.io/api/gms/latest/item/category/equip"));
 		if (!raw) {
 			debugger;
 			return;
@@ -579,7 +593,7 @@ function _concat_external_resource(category, origin_data) {
 }
 
 window.load_extern_item_data = async function (id) {
-	let _raw = JSON.parse(await ajax_get(`//labs.maplestory.io/api/gms/latest/item/${id}`));
+	let _raw = JSON.parse(await $get(`//labs.maplestory.io/api/gms/latest/item/${id}`));
 	let raw = {};
 
 	let default_ = _raw.frameBooks.default ? _raw.frameBooks.default.frames[0]:null;

@@ -76,7 +76,8 @@
 					top: ft.relative.y + 'px',
 					opacity: ft.opacity,
 					width: ft.width + 'px',
-					height: ft.height + 'px'
+					height: ft.height + 'px',
+					filter: ft.filter.toString(),
 				};
 			},
 			fake: function () {

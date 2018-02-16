@@ -147,7 +147,7 @@ export class ParticleGroup {
 	async load(particle_name) {
 		this.particleName = particle_name;
 		
-		let data = JSON.parse(await ajax_get("/assets/" + this._particle_path));
+		let data = JSON.parse(await $get.data(this._particle_path));
 		
 		Object.assign(this, data);
 
@@ -175,7 +175,7 @@ export class ParticleGroup {
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${this.naturalWidth}" height="${this.naturalHeight}">
 	<defs>
 		<mask id="Mask">
-			<image xlink:href="${new URL("/images/" + that._texture_base_path, window.location).href}"/>
+			<image xlink:href="${new URL("/images" + that._texture_base_path, window.location).href}"/>
 		</mask>
 	</defs>
 	<g>
@@ -186,12 +186,12 @@ export class ParticleGroup {
 					that.texture = texture;
 					resolve();
 				}
-				image.src = "/images/" + that._texture_base_path;
+				image.src = "/images" + that._texture_base_path;
 			});
 		}
 		else {
 			this.texture = new Sprite(data.texture);
-			this.texture._url = "/images/" + this._texture_base_path;
+			this.texture._url = "/images" + this._texture_base_path;
 		}
 	}
 	
@@ -249,7 +249,7 @@ export class ParticleGroup {
 	}
 	
 	get _particle_path() {
-		return ["Effect/particle.img", this.particleName].join("/");
+		return ["/Effect/particle.img", this.particleName].join("/");
 	}
 	get _texture_base_path() {
 		return [this._particle_path, "texture"].join("/");
