@@ -7,19 +7,20 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 
 namespace ExtractImage
 {
 	public class ExtractImage : MInspect
 	{
-		System.Collections.Stack images = new System.Collections.Stack();
+		protected System.Collections.Stack images = new System.Collections.Stack();
 		public System.ComponentModel.BackgroundWorker worker = null;
 
 		public ExtractImage()
 		{
 		}
 
-		public void ExtractAllImage(string output_path, string data_path)
+		public virtual void ExtractAllImage(string output_path, string data_path)
 		{
 			var pb = _getPropertyByLink(data_path);
 			var name = (string)pb[0];
@@ -30,7 +31,7 @@ namespace ExtractImage
 			var imgs = images.ToArray();
 			var length = images.Count;
 
-			for (var i = 0; i < imgs.Length; ++i)
+			for (var i = 0; i < length; ++i)
 			{
 				var pair = (object[])imgs[i];
 				var path = (string)pair[0];
@@ -91,7 +92,7 @@ namespace ExtractImage
 			return null;
 		}
 
-		protected void pod(string name, wzproperty prop, string current_path)
+		protected virtual void pod(string name, wzproperty prop, string current_path)
 		{
 			if (prop == null)
 			{
@@ -131,10 +132,63 @@ namespace ExtractImage
 			}
 		}
 
-		protected void enum_property(wzproperty prop, string current_path)
+		protected virtual void enum_property(wzproperty prop, string current_path)
 		{
 			System.IO.Directory.CreateDirectory(current_path);
 
+			foreach (var i in prop.values)
+			{
+				//if (i.identity.StartsWith("_"))
+				//{
+				//	continue;
+				//}
+
+				this.pod(i.identity, i, current_path + "/" + i.identity);
+			}
+		}
+	}
+	
+	public class ZipImage : ExtractImage
+	{
+		public override void ExtractAllImage(string zip_path, string data_path)
+		{
+			var pb = _getPropertyByLink(data_path);
+			var name = (string)pb[0];
+			var prop = (wzproperty)pb[1];
+
+			this.pod(name, prop, data_path);
+
+			var imgs = images.ToArray();
+			var length = images.Count;
+
+			using (FileStream zipToOpen = new FileStream(zip_path, FileMode.Create))
+			{
+				using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+				{
+					for (var i = 0; i < length; ++i)
+					{
+						var pair = (object[])imgs[i];
+						var path = (string)pair[0];
+						var canvas = (wzcanvas)pair[1];
+
+						ZipArchiveEntry entry = archive.CreateEntry(path);
+
+						using (Stream entryStream = entry.Open())
+						{
+							canvas.image.Save(entryStream, System.Drawing.Imaging.ImageFormat.Png);
+
+							if (this.worker != null)
+							{
+								this.worker.ReportProgress((int)((i + 1) * 100 / (float)length));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		protected override void enum_property(wzproperty prop, string current_path)
+		{
 			foreach (var i in prop.values)
 			{
 				//if (i.identity.StartsWith("_"))

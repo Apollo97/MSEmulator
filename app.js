@@ -11,35 +11,109 @@ const { Transform } = require('stream');
 const { StringDecoder } = require('string_decoder');
 const AsciiStringDecoder = new StringDecoder("ascii");
 
+const edge = require('edge');
 const IniParser = require('ini-parser');
 
 const port = process.argv[2] || 80;
 
+const CS_PROGRAM_REFERENCES = [path.join(__dirname, "bin", "libwz.net.dll"), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll", "System.Web.Extensions.dll"];
 
-main();
+
+main(process.argv[3] == "init");
 
 
-function main() {
-	const child_process = require('child_process');
+function main(firstInit) {
+	let app;
 
-	let EquipList = child_process.spawn(path.join(__dirname, "Tools", "EquipList", "EquipList"), ["./public/data", "./setting.ini"]);
-	console.log("產生道具清單...");
+	if (firstInit) {
+		console.log("產生道具清單...");
 
-	EquipList.stdout.on("data", data => process.stdout.write(data));
+		let equipListTasks = [];
+		let settingList = getSettingList("./");
 
-	let promise = new Promise(function (resolve, reject) {
-		EquipList.on('exit', function () {
+		for (let i = 0; i < settingList.length; ++i) {
+			equipListTasks[i] = function () {
+				return EquipList(settingList[i]);
+			}
+		}
+
+		sequenceTasks(equipListTasks).then(function () {
 			console.log("產生道具清單...完成");
-			resolve();
 		});
+	}
+	app = WebServer(app);
+
+	app = DataServer(app);
+
+	startServer(app, port);
+}
+
+/**
+ * source: https://github.com/azu/promises-book/blob/master/Ch4_AdvancedPromises/lib/promise-sequence.js
+ * @param {any} tasks
+ */
+function sequenceTasks(tasks) {
+	function recordValue(results, value) {
+		results.push(value);
+		return results;
+	}
+	var pushValue = recordValue.bind(null, []);
+	return tasks.reduce(function (promise, task) {
+		return promise.then(task).then(pushValue);
+	}, Promise.resolve());
+}
+
+/**
+ * @param {string} folderPath
+ * @param {function(Error,string[]):void} cbfunc
+ * @returns {string[]}
+ */
+function getSettingList(folderPath, cbfunc) {
+	if (cbfunc) {
+		fs.readdir(folderPath, function (err, files) {
+			if (err) {
+				cbfunc(err);
+			}
+
+			cbfunc(null, findSetting(files));
+		});
+	}
+	else {
+		files = fs.readdirSync(folderPath);
+		return findSetting(files);
+	}
+
+	function findSetting(files) {
+		let settingList = files.map(function (fileName) {
+			let m = fileName.match(/(setting\d*\.ini)$/);
+			return m ? m[1] : null;
+		}).filter(function (fileName) {
+			return fileName != null;
+		});
+		return settingList;
+	}
+}
+
+function EquipList(iniFilePath) {
+	var sourceFile = [
+		"#define EDGE_EQUIPLIST",
+		fs.readFileSync(path.join(__dirname, "wz.cs")),
+		fs.readFileSync(path.join(__dirname, "Tools", "EquipList", "Program.cs")),
+	].join("\n");
+	
+	var method = edge.func({
+		source: sourceFile,
+		references: CS_PROGRAM_REFERENCES,
 	});
 
-	let app = WebServer();
-
-	DataServer(app);
-
-	promise.then(function () {
-		startServer(app, port);
+	return new Promise(function (resolve, reject) {
+		method({
+			setting: path.join(__dirname, iniFilePath),
+			extractTo: path.join(__dirname, "public", "equips"),
+		}, function (error) {
+			if (error) reject(error);
+			resolve();
+		});
 	});
 }
 
@@ -67,7 +141,7 @@ function WebServer(app) {
 	app.use(webpackHotMiddleware(compiler));
 	
 	app.use(function (req, res, next) {
-		if (req.path.endsWith(".json") || req.path.startsWith("/data/")) {
+		if (req.path.endsWith(".json") || req.path.startsWith("/data/") || req.path.startsWith("/pack/")) {
 			res.header("Content-Type", "application/json; charset=utf-8");
 		}
 		next();
@@ -79,13 +153,47 @@ function WebServer(app) {
 		next();
 	});
 
-	app.use('/', express.static(path.join(__dirname, 'public')));
+	app.use("/", express.static(path.join(__dirname, 'public')));
 	
-	app.get(/.*\.zip\/.*/, get_unzip_handler("", __dirname, "public"));
+	app.get(/.*\.zip\/.*/, get_unzip_handler("", path.join(__dirname, "public")));
+
+	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
+		let url = decodeURI(req.path);
+		let names = url.match(/\/(images\/.*)\.img\/.*/);
+		if (names.length == 2) {
+			let imgZipPath = path.join(__dirname, "public", names[1] + ".zip");
+			if (fs.existsSync(imgZipPath)) {
+				let zip = null;
+
+				zip = new StreamZip({
+					file: imgZipPath,
+					//storeEntries: true
+				});
+				zip.on('error', function (err) {
+					console.log("zip.error: " + err);
+					zip.close();
+					zip = null;
+					next();
+				});
+				zip.on("ready", function () {
+					let data_path = url.slice(8);
+					res.end(zip.entryDataSync(data_path));
+					zip.close();
+					zip = null;
+				});
+			}
+			else {
+				next();
+			}
+		}
+		else {
+			next();
+		}
+	});
 
 	function get_unzip_handler(url, filepath) {
 		return function unzip_handler(req, res, next) {
-			let names = req.path.match(url + "(.*\.zip)\/(.*)");
+			let names = decodeURI(req.path).match(url + "(.*\.zip)\/(.*)");
 			if (names.length == 3) {
 				let zip = null;
 
@@ -115,17 +223,16 @@ function WebServer(app) {
 }
 
 function DataServer(app) {
-	const edge = require('edge');
 	let express = require('express');
 	if (!app) {
 		app = express();
 	}
 
 	class DataProvider {
-		constructor() {
+		constructor(iniFilePath) {
 			let _get = edge.func({
 				source: path.join(__dirname, "wz.cs"),
-				references: [path.join(__dirname, "bin", 'libwz.net.dll'), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll", "System.Web.Extensions.dll"]
+				references: CS_PROGRAM_REFERENCES,
 			});
 			this._get = function () {
 				try {
@@ -135,6 +242,15 @@ function DataServer(app) {
 					console.log("err get: " + JSON.stringify(arguments) + "\n" + (new Buffer(ex.stack)).toString());
 				}
 			};
+
+			let initResult = this._get({
+				func: "load",
+				args: {
+					path: iniFilePath,
+				}
+			});
+
+			this.iniFilePath = iniFilePath;
 
 			let mtime = this._getDataLastModified();
 
@@ -179,16 +295,10 @@ function DataServer(app) {
 			}, true);
 			return zorders;
 		}
-		getPng(url, req, res, next) {
-			let data_path = url.slice(8);
-			let task = this.getAsync("images", data_path);
-
-			sendFile(task, req, res, next);
-		}
 
 		/** @returns {Date} */
 		_getDataLastModified() {
-			let _setting = IniParser.parse(fs.readFileSync(path.join(__dirname, "./setting.ini"), "utf-8"));
+			let _setting = IniParser.parse(fs.readFileSync(path.join(__dirname, this.iniFilePath), "utf-8"));
 			return fs.statSync(_setting.resource.path).mtime;
 		}
 		
@@ -207,180 +317,199 @@ function DataServer(app) {
 		}
 	}
 
-	let dataProvider = new DataProvider();
-
-	/** @param {string} mime */
-	function makeHead(mime) {
-		return {
-			"Content-Type": mime,
-			"Access-Control-Allow-Origin": "*",
-			"Cache-Control": "public, max-age=86400",
-			"Cache-Control": "no-cache",
-			"Last-Modified": dataProvider.mtime_utcs
+	function Server(a_pp, _data_provider) {
+		/** @param {string} mime */
+		function makeHead(mime) {
+			return {
+				"Content-Type": mime,
+				"Access-Control-Allow-Origin": "*",
+				"Cache-Control": "public, max-age=86400",
+				"Cache-Control": "no-cache",
+				"Last-Modified": _data_provider.mtime_utcs
+			}
 		}
-	}
-	/** @param {string} mime */
-	function makeHeadNoCache(mime) {
-		return {
-			"Content-Type": mime,
-			"Access-Control-Allow-Origin": "*",
+		/** @param {string} mime */
+		function makeHeadNoCache(mime) {
+			return {
+				"Content-Type": mime,
+				"Access-Control-Allow-Origin": "*",
+			}
 		}
-	}
 
-	/** @param {string} text */
-	function write_res(res, status, text) {
-		res.writeHead(status);
-		res.end(text);
-	}
+		/** @param {string} text */
+		function write_res(res, status, text) {
+			res.writeHead(status);
+			res.end(text);
+		}
 
-	/** @param {string} reason */
-	function write_reason(res, reason) {
-		res.writeHead(500, {
-			"Content-Type": "application/json; charset=utf-8",
-			"Access-Control-Allow-Origin": "*",
-			"Cache-Control": "public, max-age=0",
+		/** @param {string} reason */
+		function write_reason(res, reason) {
+			res.writeHead(500, {
+				"Content-Type": "application/json; charset=utf-8",
+				"Access-Control-Allow-Origin": "*",
+				"Cache-Control": "public, max-age=0",
+			});
+			res.end("Internal Server Error:\n" + inspect_locale(reason));
+		}
+
+		a_pp.get(/\/echo\/.*/, function (req, res, next) {
+			let url = decodeURI(req.path.slice(6));
+			res.end(url);
 		});
-		res.end("Internal Server Error:\n" + inspect_locale(reason));
-	}
 
-	app.get(/\/echo\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path.slice(6));
-		res.end(url);
-	});
-
-	app.get(/\/echo-\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path.slice(7));
-		res.end(`<script>${url}</script>`);
-	});
-
-	app.get('/version', function (req, res, next) {
-		let js = [
-			`window.DATA_VERSION=${dataProvider.version()};`,
-		].join("\n");
-
-		res.writeHead(200, makeHead("application/x-javascript; charset=utf-8"));
-
-		res.end(js);
-	});
-
-	app.get('/make_zorders', function (req, res, next) {
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let data = dataProvider.make_zorders(path, true);
-			res.writeHead(200, makeHead("application/json; charset=utf-8"));
-			res.end(JSON.stringify(data, null, "\t"));
-		}
-	});
-
-	/**
-	 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
-	 * @param {any} req
-	 * @param {any} res
-	 * @param {any} next
-	 */
-	function sendFile(loadFileTask, req, res, next) {
-		loadFileTask.then(function (results) {
-			if (results) {
-				res.writeHead(200, makeHead(results.mime));
-				res.end(results.data);
-			}
-			else {
-				//return next();//goto 404
-				//res.end("null");
-				write_res(res, 404);
-			}
-		}, function (reason) {
-			write_reason(res, reason);
+		a_pp.get(/\/echo-\/.*/, function (req, res, next) {
+			let url = decodeURI(req.path.slice(7));
+			res.end(`<script>${url}</script>`);
 		});
-	}
 
-	/**
-	 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
-	 * @param {any} req
-	 * @param {any} res
-	 * @param {any} next
-	 */
-	function sendJSON(loadFileTask, req, res, next) {
-		loadFileTask.then(function (results) {
-			if (results) {
-				res.writeHead(200, makeHead(results.mime));
-				res.end(JSON.stringify(results.data, null, "\t"));
-			}
-			else {
-				//return next();//goto 404
-				//res.end("null");
-				write_res(res, 404);
-			}
-		}, function (reason) {
-			write_reason(res, reason);
+		a_pp.get('/version', function (req, res, next) {
+			let js = [
+				`window.DATA_VERSION=${_data_provider.version()};`,
+			].join("\n");
+
+			res.writeHead(200, makeHead("application/x-javascript; charset=utf-8"));
+
+			res.end(js);
 		});
-	}
 
-	app.get(/\/images\/.*/, function (req, res, next) {//png
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			dataProvider.getPng(url, req, res, next);
+		a_pp.get('/make_zorders', function (req, res, next) {
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let data = _data_provider.make_zorders(path, true);
+				res.writeHead(200, makeHead("application/json; charset=utf-8"));
+				res.end(JSON.stringify(data, null, "\t"));
+			}
+		});
+
+		/**
+		 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
+		 * @param {any} req
+		 * @param {any} res
+		 * @param {any} next
+		 */
+		function sendFile(loadFileTask, req, res, next) {
+			loadFileTask.then(function (results) {
+				if (results) {
+					res.writeHead(200, makeHead(results.mime));
+					res.end(results.data);
+				}
+				else {
+					return next();
+					//res.end("null");
+					//write_res(res, 404);
+				}
+			}, function (reason) {
+				write_reason(res, reason);
+			});
 		}
-	});
-	app.get(/\/_images\/.*/, function (req, res, next) {//gif
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			let data_path = url.slice(9);
-			let task = dataProvider.getAsync("_images", data_path);
 
-			sendFile(task, req, res, next);
+		/**
+		 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
+		 * @param {any} req
+		 * @param {any} res
+		 * @param {any} next
+		 */
+		function sendJSON(loadFileTask, req, res, next) {
+			loadFileTask.then(function (results) {
+				if (results) {
+					res.writeHead(200, makeHead(results.mime));
+					res.end(JSON.stringify(results.data, null, "\t"));
+				}
+				else {
+					return next();
+					//res.end("null");
+					//write_res(res, 404);
+				}
+			}, function (reason) {
+				write_reason(res, reason);
+			});
 		}
-	});
-	app.get(/\/sound\/.*/, function (req, res, next) {//wav/mp3
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			let data_path = url.slice(7);
-			let task = dataProvider.getAsync("sound", data_path);
 
-			sendFile(task, req, res, next);
-		}
-	});
-	app.get(/\/binary\/.*/, function (req, res, next) {//wav/mp3
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			let data_path = url.slice(8);
-			let task = dataProvider.getAsync("binary", data_path);
+		a_pp.get(/\/images\/.*/, function (req, res, next) {//png
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
 
-			sendFile(task, req, res, next);
-		}
-	});
+				let data_path = url.slice(8);
+				let task = _data_provider.getAsync("images", data_path);
 
-	app.get(/\/pack\/.*/, function (req, res, next) {//json: text + base64
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			let data_path = url.slice(6);
-			let task = dataProvider.getAsync("pack", data_path, true);
+				sendFile(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/_images\/.*/, function (req, res, next) {//gif
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(9);
+				let task = _data_provider.getAsync("_images", data_path);
 
-			sendJSON(task, req, res, next);
-		}
-	});
-	app.get(/\/data\/.*/, function (req, res, next) {//json: text
-		if (dataProvider.isNeedResponse(req, res, next)) {
-			let url = decodeURI(req.path);
-			let data_path = url.slice(6);
-			let task = dataProvider.getAsync("data", data_path, false);
+				sendFile(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/sound\/.*/, function (req, res, next) {//wav/mp3
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(7);
+				let task = _data_provider.getAsync("sound", data_path);
 
-			sendJSON(task, req, res, next);
-		}
-	});
-	app.get(/\/ls\/.*/, function (req, res, next) {
-		//if (dataProvider.isNeedResponse(req, res, next)) {
+				sendFile(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/binary\/.*/, function (req, res, next) {//wav/mp3
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(8);
+				let task = _data_provider.getAsync("binary", data_path);
+
+				sendFile(task, req, res, next);
+			}
+		});
+
+		const $sendFile_options = {
+			root: path.join(__dirname, "public"),
+		};
+		app.get(/\/(pack|data)\/.*\.img\/$/, function (req, res, next) {
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(0, url.length - 1);
+
+				res.sendFile(data_path, $sendFile_options, function (err) {
+					if (err) {
+						next();
+					}
+				});
+			}
+		});
+
+		a_pp.get(/\/pack\/.*/, function (req, res, next) {//json: text + base64
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(6);
+				let task = _data_provider.getAsync("pack", data_path, true);
+
+				sendJSON(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/data\/.*/, function (req, res, next) {//json: text
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(6);
+				let task = _data_provider.getAsync("data", data_path, false);
+
+				sendJSON(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/ls\/.*/, function (req, res, next) {
+			//if (_data_provider.isNeedResponse(req, res, next)) {
 			let url = decodeURI(req.path);
 			let data_path = url.slice(4);
-			let task = dataProvider.getAsync("ls", data_path);
+			let task = _data_provider.getAsync("ls", data_path);
 
 			sendJSON(task, req, res, next);
-		//}
-	});
-	app.get(/\/xml\/.*/, function (req, res, next) {
-		//if (dataProvider.isNeedResponse(req, res, next)) {
+			//}
+		});
+		a_pp.get(/\/xml\/.*/, function (req, res, next) {
+			//if (_data_provider.isNeedResponse(req, res, next)) {
 			let url = decodeURI(req.path);
 			let data_path = url.slice(5);
-			let task = dataProvider.getAsync("xml", data_path);
+			let task = _data_provider.getAsync("xml", data_path);
 
 			task.then(function (data) {
 				if (data) {
@@ -393,13 +522,13 @@ function DataServer(app) {
 			}, function (reason) {
 				write_reason(res, reason);
 			});
-		//}
-	});
-	app.get(/\/xml2\/.*/, function (req, res, next) {
-		//if (dataProvider.isNeedResponse(req, res, next)) {
+			//}
+		});
+		a_pp.get(/\/xml2\/.*/, function (req, res, next) {
+			//if (_data_provider.isNeedResponse(req, res, next)) {
 			let url = decodeURI(req.path);
 			let data_path = url.slice(6);
-			let task = dataProvider.getAsync("xml2", data_path);
+			let task = _data_provider.getAsync("xml2", data_path);
 
 			task.then(function (data) {
 				if (data) {
@@ -412,11 +541,24 @@ function DataServer(app) {
 			}, function (reason) {
 				write_reason(res, reason);
 			});
-		//}
-	});
-	app.get("/favicon.ico", function (req, res, next) {
-		dataProvider.getPng("/images/Character/Weapon/01572003.img/info/iconRaw", req, res, next);
-	});
+			//}
+		});
+
+		a_pp.get("/favicon.ico", function (req, res, next) {
+			const data_path = "Character/Weapon/01572003.img/info/iconRaw";
+
+			let task = _data_provider.getAsync("images", data_path);
+
+			sendFile(task, req, res, next);
+		});
+	}
+	
+	let settingList = getSettingList("./");
+
+	for (let i = 0; i < settingList.length; ++i) {
+		let dataProvider = new DataProvider(settingList[i]);
+		Server(app, dataProvider);
+	}
 
 	return app;
 }
@@ -440,4 +582,3 @@ function inspect_locale(obj) {
 		console.log(ex);
 	}
 }
-

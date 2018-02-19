@@ -18,66 +18,77 @@ using System.Web.Script.Serialization;
 using System.Collections;
 using System.Configuration;
 
-#if !EDGE_EQUIPLIST
+#if !EDGE_EQUIPLIST && !EQUIPLIST
 
 public class Startup
 {
+	public static string setting = "";
+
 	public async Task<object> Invoke(dynamic input)
 	{
-		DataSource.Init();
-
-		Returns returns = new Returns();
-
 		switch ((string)input.func)
 		{
+			case "load":
+				Startup.setting = (string)input.args.path;
+				return DataSource.Init(Startup.setting);
+				break;
 			case "version":
-				returns.result = DataSource.archives.version;
+				return DataSource.archives.version;
+				break;
+			case "tag":
+				return DataSource.tag;
 				break;
 			case "make_zorders":
-				returns.result = DataProvider.make_zorders();
+				return DataProvider.make_zorders();
 				break;
-			case "ms"://image to base64, other to string
-				returns.result = DataProvider.get_object_by_path((string)input.args.path, (bool)input.args.output_canvas);
+			case "data":
+				return DataProvider.get_data_by_path((string)input.args.path);
+				break;
+			case "pack"://data + base64 image
+				return DataProvider.get_bundle_by_path((string)input.args.path);
 				break;
 			case "binary":
-				returns.result = DataProvider.get_binary_file((string)input.args.path);
+				return DataProvider.get_binary_file((string)input.args.path);
 				break;
 			case "sound":
-				returns.result = DataProvider.get_sound_file((string)input.args.path);
+				return DataProvider.get_sound_file((string)input.args.path);
 				break;
 			case "images":
-				returns.result = DataProvider.get_image_file((string)input.args.path);
+				return DataProvider.get_image_file((string)input.args.path);
 				break;
 			case "_images":
-				returns.result = DataProvider.get_image_gif_file((string)input.args.path);
+				return DataProvider.get_image_gif_file((string)input.args.path);
 				break;
 			case "ls":
-				returns.result = DataProvider.get_identities((string)input.args.path);
+				return DataProvider.get_identities((string)input.args.path);
 				break;
 			case "xml":
-				returns.result = (new POD_XML()).toXML((string)input.args.path);
+				return DataProvider.get_xml((string)input.args.path);
 				break;
 			case "xml2":
-				returns.result = (new POD_s_XML()).toXML((string)input.args.path);
+				return DataProvider.get_xml2((string)input.args.path);
 				break;
 			case "test":
-				returns.result = DateTime.Now.ToString();
+				return DateTime.Now.ToString();
 				break;
 		}
 
-		return returns;
+		return null;
 	}
 }
 
 #endif
 
-public class DataSource
+internal class DataSource
 {
 	public static Ini.File iniFile;
+	public static string tag = "";
 	public static string location = "Q:\\Program Files\\MapleStory";
 
 	public static wzarchives archives = null;
 	public static wzpackage packages = null;
+
+	public static string tag_version = "";
 
 	static void saveConfig()
 	{
@@ -86,26 +97,43 @@ public class DataSource
 
 	static void readConfig()
 	{
+		DataSource.tag = DataSource.iniFile.Read("resource", "tag");
 		DataSource.location = DataSource.iniFile.Read("resource", "path");
 	}
 
-	public static void Init()
+	public static bool Init()
 	{
-		DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
+		return DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
 	}
-	public static void Init(string iniFilePath)
+	public static bool Init(string iniFilePath)
 	{
-		DataSource.iniFile = new Ini.File(iniFilePath);
-
-		readConfig();
-
-		if (DataSource.archives != null && DataSource.packages != null)
+		try
 		{
-			return;
-		}
+			DataSource.iniFile = new Ini.File(iniFilePath);
 
-		DataSource.archives = new wzarchives(DataSource.location + "\\" + "base.wz");
-		DataSource.packages = archives.root;
+			readConfig();
+
+			if (DataSource.archives != null && DataSource.packages != null)
+			{
+				Console.WriteLine("Already loaded");
+				return false;
+			}
+			DataSource.archives = new wzarchives(DataSource.location + "\\" + "base.wz");
+			DataSource.packages = archives.root;
+
+			DataSource.tag_version = DataSource.tag + "" + archives.version;
+
+			Console.Write(DataSource.tag_version);
+			Console.Write("> ");
+			Console.Write(DataSource.archives.location);
+			Console.Write("\n");
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+			Console.WriteLine(ex.StackTrace);
+		}
+		return true;
 	}
 
 	//public static object get_by_path(string fullpath)
@@ -170,7 +198,7 @@ public class DataSource
 				outPack = null;
 				outProp = null;
 				//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
-				Console.WriteLine("Can not get: " + link);
+				Console.WriteLine(Startup.setting + "> can not get: " + link);
 				Console.WriteLine(" ? " + ex.Message);
 				Console.WriteLine(" ? " + ex.StackTrace);
 				return;
@@ -266,7 +294,7 @@ public class DataSource
 	}
 }
 
-public class DataProvider
+internal class DataProvider
 {
 	DataProvider()
 	{
@@ -293,7 +321,7 @@ public class DataProvider
 		return eo;
 	}
 
-	public static dynamic get_identities(string path)
+	public static Returns get_identities(string path)
 	{
 		wzpackage pack;
 		wzproperty prop;
@@ -302,48 +330,74 @@ public class DataProvider
 
 		if (prop != null)
 		{
-			return prop.identities;
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = prop.identities;
+			return returns;
 		}
 		else if (pack != null)
 		{
-			return pack.identities;
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = pack.identities;
+			return returns;
 		}
 
 		return null;
 	}
 
-	public static dynamic get_object_by_path(string path, bool hasBinaryToBase64)
+	public static Returns get_data_by_path(string path)
 	{
 		wzpackage pack;
 		wzproperty prop;
-		ObjectInspectorBase inspector;
-
 		DataSource.get_data(path, out pack, out prop);
-
-		if (hasBinaryToBase64)
-		{
-			inspector = new Inspector_Base64();
-		}
-		else
-		{
-			inspector = new Inspector_Plain();
-		}
 
 		if (prop != null)
 		{
-			return inspector.pod(prop);
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Plain().pod(prop);
+			return returns;
 		}
 		else if (pack != null)
 		{
-			return inspector.pod(prop);
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Plain().pod(pack);
+			return returns;
+		}
+
+		return null;
+	}
+	public static Returns get_bundle_by_path(string path)
+	{
+		wzpackage pack;
+		wzproperty prop;
+
+		DataSource.get_data(path, out pack, out prop);
+
+		if (prop != null)
+		{
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(prop);
+			return returns;
+		}
+		else if (pack != null)
+		{
+			Returns returns = new Returns();
+			returns.mime = "application/json; charset=utf-8";
+			returns.data = new Inspector_Base64().pod(pack);
+			return returns;
 		}
 
 		return null;
 	}
 
-	public static dynamic get_binary_file(string path)
+	public static Returns get_binary_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -351,20 +405,19 @@ public class DataProvider
 		{
 			var sound = prop.data as wzsound;
 
-			dynamic eo = new ExpandoObject();
+			returns.mime = "application/octet-stream";
+			//returns.mime = "text/plain";
+			//returns.mime = "text/html";
+			returns.data = sound.data;
 
-			eo.mime = "application/octet-stream";
-			//eo.mime = "text/plain";
-			//eo.mime = "text/html";
-			eo.data = sound.data;
-
-			return eo;
+			return returns;
 		}
 		return null;
 	}
-	public static dynamic get_sound_file(string path)
+	public static Returns get_sound_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -372,19 +425,18 @@ public class DataProvider
 		{
 			var sound = prop.data as wzsound;
 
-			dynamic eo = new ExpandoObject();
+			//returns.ext = (sound.pcm ? ".wav" : ".mp3");
+			returns.mime = (sound.pcm ? "audio/wav" : "audio/mp3");
+			returns.data = sound.wave ?? sound.data;
 
-			//eo.ext = (sound.pcm ? ".wav" : ".mp3");
-			eo.mime = (sound.pcm ? "audio/wav" : "audio/mp3");
-			eo.data = sound.wave ?? sound.data;
-
-			return eo;
+			return returns;
 		}
 		return null;
 	}
-	public static dynamic get_image_file(string path)
+	public static Returns get_image_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -399,19 +451,19 @@ public class DataProvider
 				{
 					image.Save(stream, ImageFormat.Png);
 
-					dynamic eo = new ExpandoObject();
-					eo.mime = "image/png";
-					eo.data = stream.ToArray();
+					returns.mime = "image/png";
+					returns.data = stream.ToArray();
 
-					return eo;
+					return returns;
 				}
 			}
 		}
 		return null;
 	}
-	public static dynamic get_image_gif_file(string path)
+	public static Returns get_image_gif_file(string path)
 	{
 		wzproperty prop;
+		Returns returns = new Returns();
 
 		DataSource.get_data(path, out prop);
 
@@ -426,20 +478,35 @@ public class DataProvider
 				{
 					image.Save(stream, ImageFormat.Gif);
 
-					dynamic eo = new ExpandoObject();
-					eo.mime = "image/gif";
-					eo.data = stream.ToArray();
+					returns.mime = "image/gif";
+					returns.data = stream.ToArray();
 
-					return eo;
+					return returns;
 				}
 			}
 		}
 		return null;
 	}
+
+	public static Returns get_xml(string path)
+	{
+		Returns returns = new Returns();
+		returns.mime = "text/xml; charset=utf-8";
+		returns.data = (new POD_XML()).toXML(path);
+		return returns;
+	}
+
+	public static Returns get_xml2(string path)
+	{
+		Returns returns = new Returns();
+		returns.mime = "text/xml; charset=utf-8";
+		returns.data = (new POD_s_XML()).toXML(path);
+		return returns;
+	}
 }
 
 
-public class Tools
+internal class Tools
 {
 	public Tools()
 	{
@@ -534,7 +601,7 @@ public class Tools
 	}
 }
 
-public class ObjectInspectorBase
+internal class ObjectInspectorBase
 {
 	public ObjectInspectorBase()
 	{
@@ -615,12 +682,7 @@ public class ObjectInspectorBase
 						dynamic eo = this.pod_property(prop, deep);                    //return (data as wzcanvas).content;
 						var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
 
-#if EDGE_EQUIPLIST
-						var _target_prop = Tools._inspect_canvas1(prop);
-						var canvas = Tools.inspect_canvas1(_target_prop);
-#else
 						var canvas = Tools.inspect_canvas1(prop);
-#endif
 						if (canvas != null)
 						{
 							//if (output_canvas)
@@ -635,13 +697,6 @@ public class ObjectInspectorBase
 							//}
 							eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
 							eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
-#if EDGE_EQUIPLIST
-							if (_target_prop["_outlink"] != null) {
-								var _hash = _target_prop["_hash"].data + "";
-								if (eoColl.Contains(new KeyValuePair<string, object>("_hash", "")))
-									eoColl.Add(new KeyValuePair<string, object>("_hash", _hash));
-							}
-#endif
 						}
 						else
 						{
@@ -710,7 +765,7 @@ public class ObjectInspectorBase
 	}
 }
 
-public class Inspector_Plain : ObjectInspectorBase
+internal class Inspector_Plain : ObjectInspectorBase
 {
 	public Inspector_Plain()
 	{
@@ -727,7 +782,7 @@ public class Inspector_Plain : ObjectInspectorBase
 	}
 }
 
-public class Inspector_Base64 : ObjectInspectorBase
+internal class Inspector_Base64 : ObjectInspectorBase
 {
 	public Inspector_Base64()
 	{
@@ -746,7 +801,7 @@ public class Inspector_Base64 : ObjectInspectorBase
 	}
 }
 
-//public class Inspector_Buffer : InspectorBase
+//internal class Inspector_Buffer : InspectorBase
 //{
 //	public override object inspect_image(Image image)
 //	{
@@ -758,7 +813,7 @@ public class Inspector_Base64 : ObjectInspectorBase
 //	}
 //}
 
-public class POD_XML
+internal class POD_XML
 {
 	protected string imgPath = "";
 
@@ -1006,7 +1061,7 @@ public class POD_XML
 	}
 }
 
-public class POD_s_XML : POD_XML
+internal class POD_s_XML : POD_XML
 {
 	protected override StringBuilder Canvas(string name, wzproperty prop)
 	{
@@ -1051,21 +1106,16 @@ internal class Returns
 {
 	public Returns()
 	{
-		this.result = null;
-		this.status = "";
+		this.data = null;
+		this.mime = null;
 	}
-	public object result;
-	public string status;
-
-	public void LogWriteLine(string text)
-	{
-		//this.status += text + "\n";
-	}
+	public object data;
+	public string mime;
 }
 
 namespace Ini
 {
-	public class File
+	internal class File
 	{
 		public string path;
 
@@ -1077,7 +1127,7 @@ namespace Ini
 
 		public File(string INIPath)
 		{
-			path = INIPath;
+			path = Path.GetFullPath(INIPath);
 		}
 
 		public void Write(string Section, string Key, string Value)

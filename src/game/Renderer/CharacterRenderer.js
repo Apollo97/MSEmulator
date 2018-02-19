@@ -1045,23 +1045,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		this.fragments = null;
 		this.effect == null;
 	}
-
-	/**
-	 * @param {number} opacity
-	 */
-	setOpacity(opacity) {
-		for (let i in this.fragments) {
-			for (let j in this.fragments[i].textures) {
-				for (let k = 0; k < this.fragments[i].textures[j].length; ++k) {
-					/** @type {FragmentTexture} */
-					let ft = this.fragments[i].textures[j][k];
-					if (ft) {
-						ft.opacity = opacity;
-					}
-				}
-			}
-		}
-	}
+	
 	/**
 	 * @returns {number}
 	 */

@@ -17,6 +17,7 @@
     <StartWebBrowser>True</StartWebBrowser>
     <Environment>EDGE_CS_DEBUG=1
 _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt\dist\electron.exe</Environment>
+    <ScriptArguments>80</ScriptArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />

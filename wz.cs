@@ -18,18 +18,25 @@ using System.Web.Script.Serialization;
 using System.Collections;
 using System.Configuration;
 
-#if !EDGE_EQUIPLIST
+#if !EDGE_EQUIPLIST && !EQUIPLIST
 
-internal class Startup
+public class Startup
 {
+	public static string setting = "";
+
 	public async Task<object> Invoke(dynamic input)
 	{
-		DataSource.Init();
-		
 		switch ((string)input.func)
 		{
+			case "load":
+				Startup.setting = (string)input.args.path;
+				return DataSource.Init(Startup.setting);
+				break;
 			case "version":
 				return DataSource.archives.version;
+				break;
+			case "tag":
+				return DataSource.tag;
 				break;
 			case "make_zorders":
 				return DataProvider.make_zorders();
@@ -75,10 +82,23 @@ internal class Startup
 internal class DataSource
 {
 	public static Ini.File iniFile;
+	public static string tag = "";
 	public static string location = "Q:\\Program Files\\MapleStory";
 
 	public static wzarchives archives = null;
 	public static wzpackage packages = null;
+
+	public static string tag_version = "";
+
+	public static void writeLog(string text)
+	{
+#if DEBUG
+		Console.Write(DataSource.tag_version);
+		Console.Write("> ");
+		Console.Write(text);
+		Console.Write("\n");
+#endif
+	}
 
 	static void saveConfig()
 	{
@@ -87,26 +107,43 @@ internal class DataSource
 
 	static void readConfig()
 	{
+		DataSource.tag = DataSource.iniFile.Read("resource", "tag");
 		DataSource.location = DataSource.iniFile.Read("resource", "path");
 	}
 
-	public static void Init()
+	public static bool Init()
 	{
-		DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
+		return DataSource.Init(Directory.GetCurrentDirectory() + "\\setting.ini");
 	}
-	public static void Init(string iniFilePath)
+	public static bool Init(string iniFilePath)
 	{
-		DataSource.iniFile = new Ini.File(iniFilePath);
-
-		readConfig();
-
-		if (DataSource.archives != null && DataSource.packages != null)
+		try
 		{
-			return;
-		}
+			DataSource.iniFile = new Ini.File(iniFilePath);
 
-		DataSource.archives = new wzarchives(DataSource.location + "\\" + "base.wz");
-		DataSource.packages = archives.root;
+			readConfig();
+
+			if (DataSource.archives != null && DataSource.packages != null)
+			{
+				DataSource.writeLog("Already loaded");
+				return false;
+			}
+			DataSource.archives = new wzarchives(DataSource.location + "\\" + "base.wz");
+			DataSource.packages = archives.root;
+
+			DataSource.tag_version = DataSource.tag + "" + archives.version;
+
+			Console.Write(DataSource.tag_version);
+			Console.Write("> ");
+			Console.Write(DataSource.archives.location);
+			Console.Write("\n");
+		}
+		catch (Exception ex)
+		{
+			DataSource.writeLog(ex.Message);
+			DataSource.writeLog(ex.StackTrace);
+		}
+		return true;
 	}
 
 	//public static object get_by_path(string fullpath)
@@ -171,9 +208,9 @@ internal class DataSource
 				outPack = null;
 				outProp = null;
 				//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
-				Console.WriteLine("Can not get: " + link);
-				Console.WriteLine(" ? " + ex.Message);
-				Console.WriteLine(" ? " + ex.StackTrace);
+				DataSource.writeLog("can not get: " + link);
+				DataSource.writeLog(" ? " + ex.Message);
+				DataSource.writeLog(" ? " + ex.StackTrace);
 				return;
 			}
 		}
@@ -329,14 +366,14 @@ internal class DataProvider
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Base64().pod(prop);
+			returns.data = new Inspector_Plain().pod(prop);
 			return returns;
 		}
 		else if (pack != null)
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Base64().pod(pack);
+			returns.data = new Inspector_Plain().pod(pack);
 			return returns;
 		}
 
@@ -965,7 +1002,7 @@ internal class POD_XML
 		}
 		catch (Exception ex)
 		{
-			Console.Write("<cs Error: " + ex.Message + "\n" + ex.StackTrace + ">");
+			DataSource.writeLog("<cs Error: " + ex.Message + "\n" + ex.StackTrace + ">");
 		}
 		return sb;
 	}
@@ -1100,7 +1137,7 @@ namespace Ini
 
 		public File(string INIPath)
 		{
-			path = INIPath;
+			path = Path.GetFullPath(INIPath);
 		}
 
 		public void Write(string Section, string Key, string Value)

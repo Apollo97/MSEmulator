@@ -27,7 +27,7 @@
 					<select v-model="selected_category" ref="select_category" style="flex: 1;">
 						<option v-for="cat in categoryList" :value="cat.value">{{cat.key}}</option>
 					</select>
-					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" :title="'name\nItemID\n<attr>:/<regexp>/\n$style:/21158/'" placeholder="Search.." style="flex: 1;" />
+					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" :title="'name\nItemID\n<attr>:/<regexp>/\n$style:/21158/\n$foreign:/true/'" placeholder="Search.." style="flex: 1;" />
 					<div style="position: relative; display: inline-block;">
 						<button v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" style="padding: 0;">
 							<span class="ui-icon ui-icon-gear"></span>
@@ -402,83 +402,91 @@
 				else {
 					await this.loadList();
 
-					//$foreign:/true/
-					let rr = search_text.match(/^(.+):\/(.+)\/$/);
+					let old_search_equip_result = this.search_equip_result;
+					this.search_equip_result = [];
 
-					if (rr) {
-						try {
-							let attr = rr[1];
+					try {
+						let rr = search_text.match(/^(.+):\/(.+)\/$/);
 
-							if (attr == "$style" && Number.isSafeInteger(Number(rr[2]))) {
-								let si = rr[2];
-								if (this._is_category_hair()) {
-									let black = CharacterRenderConfig.getColorHairID(String(si), 0);
+						if (rr) {
+							try {
+								let attr = rr[1];
 
-									this.search_equip_result = this.equip_list.filter(function (item, index) {
-										let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
-										if (b1 && b1.indexOf(black) != -1) {
-											item.$page = config.calcPage(index);
-											return true;
-										}
-									});
-								}
-								else if (this._is_category_face()) {
-									let black = CharacterRenderConfig.getColorFaceID(String(si), 0);
+								if (attr == "$style" && Number.isSafeInteger(Number(rr[2]))) {
+									let si = rr[2];
+									if (this._is_category_hair()) {
+										let black = CharacterRenderConfig.getColorHairID(String(si), 0);
 
-									this.search_equip_result = this.equip_list.filter(function (item, index) {
-										let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
-										if (b1 && b1.indexOf(black) != -1) {
-											item.$page = config.calcPage(index);
-											return true;
-										}
-									});
-								}
-							}
-							if (this.search_equip_result.length == 0) {
-								let regexp = RegExp(rr[2]);
-								this.search_equip_result = this.equip_list.filter(function (item, index) {
-									if (item[attr] != null && regexp.test(item[attr])) {
-										item.$page = config.calcPage(index);
-										return true;
+										this.search_equip_result = this.equip_list.filter(function (item, index) {
+											let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
+											if (b1 && b1.indexOf(black) != -1) {
+												item.$page = config.calcPage(index);
+												return true;
+											}
+										});
 									}
-								});
+									else if (this._is_category_face()) {
+										let black = CharacterRenderConfig.getColorFaceID(String(si), 0);
 
-								if (this.search_equip_result &&
-									this.search_equip_result[0] &&
-									this.search_equip_result[0][attr] &&
-									this.search_equip_result[0][attr].localeCompare
-								) {//check attr is can compare
-									this.search_equip_result.sort(function (a, b) {
-										let sa = a[attr], sb = b[attr];
-										return sa.localeCompare(sb);
+										this.search_equip_result = this.equip_list.filter(function (item, index) {
+											let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
+											if (b1 && b1.indexOf(black) != -1) {
+												item.$page = config.calcPage(index);
+												return true;
+											}
+										});
+									}
+								}
+								if (this.search_equip_result.length == 0) {
+									let regexp = RegExp(rr[2]);
+									this.search_equip_result = this.equip_list.filter(function (item, index) {
+										if (item[attr] != null && regexp.test(item[attr])) {
+											item.$page = config.calcPage(index);
+											return true;
+										}
 									});
+
+									if (this.search_equip_result &&
+										this.search_equip_result[0] &&
+										this.search_equip_result[0][attr] &&
+										this.search_equip_result[0][attr].localeCompare
+									) {//check attr is can compare
+										this.search_equip_result.sort(function (a, b) {
+											let sa = a[attr], sb = b[attr];
+											return sa.localeCompare(sb);
+										});
+									}
 								}
 							}
+							catch (ex) {
+								this.search_equip_result = [];
+								return;
+							}
 						}
-						catch (ex) {
-							this.search_equip_result = [];
-							return;
+						else {
+							this.search_equip_result = this.equip_list.filter(function (item, index) {
+								if (item.id && item.id.indexOf(search_text) >= 0 ||
+									item.name && (
+										item.name.indexOf(search_text) >= 0 ||
+										item.name.toLowerCase().indexOf(search_text.toLowerCase()) >= 0
+									)
+								) {
+									item.$page = config.calcPage(index);
+									return true;
+								}
+							});
+							this.search_equip_result.sort(function (a, b) {
+								if (a.name && b.name) {
+									return a.name.localeCompare(b.name);
+								}
+								return 0;
+							});
 						}
 					}
-					else {
-						this.search_equip_result = this.equip_list.filter(function (item, index) {
-							if (item.id && item.id.indexOf(search_text) >= 0 ||
-								item.name && (
-									item.name.indexOf(search_text) >= 0 ||
-									item.name.toLowerCase().indexOf(search_text.toLowerCase()) >= 0
-								)
-							) {
-								item.$page = config.calcPage(index);
-								return true;
-							}
-						});
-						this.search_equip_result.sort(function (a, b) {
-							if (a.name && b.name) {
-								return a.name.localeCompare(b.name);
-							}
-							return 0;
-						});
+					catch (ex) {
+						this.search_equip_result = old_search_equip_result;
 					}
+					old_search_equip_result = null;
 
 					if (this.search_equip_result.length) {
 						this.searchNextText();
@@ -777,7 +785,8 @@
 						this.hair_mix2 = Math.trunc(Number(window.chara.renderer.slots.hairMix2) * 100);
 					}
 				}
-				await this.loadList();
+
+				this.search_equip(this.search_text);
 			},
 			filters: async function () {
 				//console.log(JSON.stringify(this.filters));

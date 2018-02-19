@@ -18,9 +18,21 @@ namespace ExtractImage
 		{
 			InitializeComponent();
 
-			this.textBox1.Text = @"Q:\Program Files\MapleStory_203";
+			this.textBox1.Text = @"Q:\Program Files\MapleStory";
 
 			this.textBox3.Text = @"Etc/BossLucid.img/Dragon";
+		}
+
+		public string getFileName(string path)
+		{
+			foreach (var s in path.Split('/'))
+			{
+				if (s.EndsWith(".img"))
+				{
+					return s.Replace(".img", ".zip");
+				}
+			}
+			throw new ArgumentException("path");
 		}
 
 		private void button2_Click(object sender, EventArgs e)
@@ -38,7 +50,7 @@ namespace ExtractImage
 						this.progressBar1.Value = 0;
 						this.button2.Enabled = false;
 
-						this.backgroundWorker1.RunWorkerAsync(new ExtractArgs(null, this.textBox1.Text, this.textBox3.Text));
+						this.backgroundWorker1.RunWorkerAsync(new ExtractArgs(getFileName(this.textBox3.Text), this.textBox1.Text, this.textBox3.Text));
 					}
 				}
 				catch (Exception)
@@ -55,22 +67,30 @@ namespace ExtractImage
 
 			e.Result = result;
 
-			this.m_inspect = new ExtractImage();
+			this.m_inspect = new ZipImage();
 			this.m_inspect.worker = this.backgroundWorker1;
 
 			if (this.m_inspect.Load(args.archives_path))
 			{
-				//try
-				//{
-					this.m_inspect.ExtractAllImage(args.output_path, args.data_path);
-
-					result.success = true;
-				//}
-				//catch (Exception ex)
-				//{
-				//	throw ex;
-				//}
+				this.m_inspect.ExtractAllImage(args.output_path, args.data_path);
 			}
+
+			//this.m_inspect = new ExtractImage();
+			//this.m_inspect.worker = this.backgroundWorker1;
+			//
+			//if (this.m_inspect.Load(args.archives_path))
+			//{
+			//	//try
+			//	//{
+			//		//this.m_inspect.ExtractAllImage(args.output_path, args.data_path);
+			//
+			//		result.success = true;
+			//	//}
+			//	//catch (Exception ex)
+			//	//{
+			//	//	throw ex;
+			//	//}
+			//}
 		}
 
 		private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

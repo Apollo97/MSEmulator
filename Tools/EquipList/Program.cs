@@ -28,23 +28,21 @@ namespace EquipList
 		[STAThread]
 		static void Main(string[] args)
 		{
-			Program.func(args);
-		}
-		public static void func(string[] args) {
-			string settingFileName = args.Length > 1 ? args[1] : "../../setting.ini";
+			var setting = args.Length > 1 ? args[1] : "../../setting.ini";
+			var extractTo = args.Length > 0 ? args[0] : "./equips";
 
-			Console.WriteLine("setting: " + settingFileName);
-			DataSource.Init(settingFileName);
+			Program.main(setting, extractTo);
+		}
+		public static void main(string setting, string extractTo) {
+			Startup.setting = setting;
+
+			Console.WriteLine("setting: " + setting);
+			Console.WriteLine("extract to: " + extractTo);
+			Console.WriteLine("");
+
+			DataSource.Init(setting);
 
 			var data_extracter = new DataExtracter("");
-
-			var extractTo = args.Length > 0 ? args[0] : "./data";
-
-			if (args.Length > 0)
-			{
-				Console.WriteLine("extract to: " + extractTo);
-				Console.WriteLine("");
-			}
 
 			try
 			{
@@ -61,36 +59,17 @@ namespace EquipList
 	}
 }
 
-#if EDGE_EQUIPLIST
 public class Startup
 {
+	public static string setting = "";
+
 	public async Task<object> Invoke(dynamic input)
 	{
-		string[] args;
-
-		try
-		{
-			var input_args = (object[])input.args;
-			List<string> arg_list = new List<string>();
-			
-			foreach (var item in input_args)
-			{
-				arg_list.Add((string)item);
-			}
-			args = arg_list.ToArray();
-		}
-		catch(Exception ex)
-		{
-			Console.WriteLine(ex.Message);
-			args = new string[] { };
-		}
-
-		EquipList.Program.func(args);
+		EquipList.Program.main((string)input.setting, (string)input.extractTo);
 
 		return null;
 	}
 }
-#endif
 
 internal class DataExtracter
 {
@@ -120,10 +99,6 @@ internal class DataExtracter
 
 	internal void extractAll(string path)
 	{
-		Console.WriteLine("location: " + DataSource.archives.location);
-		Console.WriteLine("version: " + DataSource.archives.version);
-		Console.WriteLine("");
-
 		this.output_file(path + "/body.json", this.extract_body);
 		Console.WriteLine("extract body");
 
@@ -293,15 +268,32 @@ internal class DataExtracter
 		this.output_file(path + "/0170.json", this.extract_cash_weapon, "Weapon", "0170");
 	}
 
-	void output_file(string path, Func<dynamic, dynamic> fnExtract)
+	Dictionary<string, dynamic> loadItemInfoFromJSON(string path)
 	{
+		var equipList = new Dictionary<string, dynamic>();
+
 		if (File.Exists(path))
 		{
-			Console.WriteLine(path + " is exist");
-			return;
+			string text = System.IO.File.ReadAllText(path);
+			var list = (dynamic[])JSON.parse(text);
+
+			foreach (var item in list)
+			{
+				var obj = (dynamic)item;
+				var id = obj.id;
+
+				equipList[id] = obj;
+			}
 		}
 
-		dynamic eo = fnExtract(null);
+		return equipList;
+	}
+
+	void output_file(string path, Func<Dictionary<string, dynamic>, dynamic> fnExtract)
+	{
+		Dictionary<string, dynamic> equipList = loadItemInfoFromJSON(path);
+
+		dynamic eo = fnExtract(equipList);
 
 		var str = JSON.stringify(eo);
 
@@ -314,14 +306,11 @@ internal class DataExtracter
 		}
 	}
 
-	void output_file(string path, Func<string, string, dynamic, dynamic> fnExtract, string category, string id_prefix)
+	void output_file(string path, Func<string, string, Dictionary<string, dynamic>, dynamic> fnExtract, string category, string id_prefix)
 	{
-		if (File.Exists(path))
-		{
-			return;
-		}
+		Dictionary<string, dynamic> equipList = loadItemInfoFromJSON(path);
 
-		dynamic eo = fnExtract(category, id_prefix, null);
+		dynamic eo = fnExtract(category, id_prefix, equipList);
 
 		var str = JSON.stringify(eo);
 
@@ -334,18 +323,26 @@ internal class DataExtracter
 		}
 	}
 
-	object extract_cash_weapon(string category, string id_prefix, dynamic existItem)
+	object extract_cash_weapon(string category, string id_prefix, Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
-		IEnumerable<string> identities =
+		IEnumerable<string> _identities =
 			from identity in this.chara[category].identities
 			where identity.StartsWith(id_prefix)
 			select identity;
 
+		SortedSet<string> identities = new SortedSet<string>(_identities, this.Comparer);
+		identities.UnionWith(existItems.Keys);
+
 		foreach (var identity in identities)
 		{
 			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			var id32 = this.parse_id(id);
 
 			if (id32 >= 0)
@@ -368,13 +365,13 @@ internal class DataExtracter
 				data.icon = data.iconRaw;
 				try
 				{
-					data.__hash = data.iconRaw._hash + "";
+					data.__hash = Tools._inspect_canvas1(info["iconRaw"])["_hash"] + "";
 				}
 				catch(Exception ex)
 				{
 					System.Console.WriteLine("get cashWpn(" + identity + ") icon._hash " + ex.Message);
 				}
-				data.__v = DataSource.archives.version;
+				data.__v = DataSource.tag_version;
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
@@ -392,18 +389,26 @@ internal class DataExtracter
 
 	//icon = pack["stand1", "0", wear]
 	//place => wear
-	object extract_equip(string category, string id_prefix, dynamic existItem)
+	object extract_equip(string category, string id_prefix, Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
-		IEnumerable<string> identities =
+		IEnumerable<string> _identities =
 			from identity in this.chara[category].identities
 			where identity.StartsWith(id_prefix)
 			select identity;
 
+		SortedSet<string> identities = new SortedSet<string>(_identities, this.Comparer);
+		identities.UnionWith(existItems.Keys);
+
 		foreach (var identity in identities)
 		{
 			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			var id32 = this.parse_id(id);
 
 			if (id32 >= 0)
@@ -426,7 +431,7 @@ internal class DataExtracter
 				catch (Exception)
 				{
 				}
-				data.__v = DataSource.archives.version;
+				data.__v = DataSource.tag_version;
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
@@ -442,24 +447,32 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_face(dynamic existItem)
+	object extract_face(Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
-		var list = new HashSet<string>();
+		var _list = new HashSet<string>();
 		foreach (var i in this.chara["Face"].identities)
 		{
 			var style = this.get_colored_face_style(i, this.faceColor);
 
-			if (style != null && !list.Contains(style))
+			if (style != null && !_list.Contains(style))
 			{
-				list.Add(style);
+				_list.Add(style);
 			}
 		}
+
+		SortedSet<string> list = new SortedSet<string>(_list, this.Comparer);
+		list.UnionWith(existItems.Keys);
 
 		foreach (var identity in list)
 		{
 			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			var id32 = this.parse_id(id);
 
 			if (id32 >= 0)
@@ -481,7 +494,7 @@ internal class DataExtracter
 				{
 					System.Console.WriteLine("get face(" + identity + ") icon._hash " + ex.Message);
 				}
-				data.__v = DataSource.archives.version;
+				data.__v = DataSource.tag_version;
 
 				items.Add(data);
 			}
@@ -493,26 +506,34 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_hair(dynamic existItem)
+	object extract_hair(Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
-		var list = new HashSet<string>();
+		var _list = new HashSet<string>();
 		foreach (var i in this.chara["Hair"].identities)
 		{
 			var style = this.get_colored_hair_style(i, this.hairColor);
-			if (style != null && !list.Contains(style))
+			if (style != null && !_list.Contains(style))
 			{
-				list.Add(style);
+				_list.Add(style);
 			}
 		}
 
+		SortedSet<string> list = new SortedSet<string>(_list, this.Comparer);
+		list.UnionWith(existItems.Keys);
+
 		foreach (string identity in list)
 		{
+			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			//#if MY_DEBUG
 			//			string _identity = "00033426.img";//has no place: hair
 			//#endif
-			var id = identity.Replace(".img", "");
 			var id32 = this.parse_id(id);
 
 			if (id32 >= 0)
@@ -534,7 +555,7 @@ internal class DataExtracter
 				{
 					System.Console.WriteLine("get hair(" + identity + ") icon._hash " + ex.Message);
 				}
-				data.__v = DataSource.archives.version;
+				data.__v = DataSource.tag_version;
 
 				items.Add(data);
 			}
@@ -546,18 +567,26 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_head(dynamic existItem)
+	object extract_head(Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
-		IEnumerable<string> heads =
+		IEnumerable<string> _heads =
 			from identity in this.chara.identities
 			where identity.StartsWith("0001") && identity.EndsWith(".img")
 			select identity;
 
+		SortedSet<string> heads = new SortedSet<string>(_heads, this.Comparer);
+		heads.UnionWith(existItems.Keys);
+
 		foreach (var identity in heads)
 		{
 			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			var pack = this.chara[identity].root[""];
 			var info = pack["info"];
 			var icon = pack["stand1", "0", "head"];
@@ -571,7 +600,7 @@ internal class DataExtracter
 			{
 				data.__hash = icon["_hash"].data + "";
 			}
-			data.__v = DataSource.archives.version;
+			data.__v = DataSource.tag_version;
 
 			items.Add(data);
 
@@ -583,7 +612,7 @@ internal class DataExtracter
 		return items;
 	}
 
-	object extract_body(dynamic existItem)
+	object extract_body(Dictionary<string, dynamic> existItems)
 	{
 		var items = new ArrayList();
 
@@ -591,14 +620,22 @@ internal class DataExtracter
 		//info://Character/00002001.img/info
 		//img://Character/00002001.img/stand1/0/body
 
-		IEnumerable<string> bodies =
+		IEnumerable<string> _bodies =
 			from identity in this.chara.identities
 			where identity.StartsWith("0000") && identity.EndsWith(".img")
 			select identity;
 
+		SortedSet<string> bodies = new SortedSet<string>(_bodies, this.Comparer);
+		bodies.UnionWith(existItems.Keys);
+
 		foreach (var identity in bodies)
 		{
 			var id = identity.Replace(".img", "");
+			if (existItems.ContainsKey(id))
+			{
+				items.Add(existItems[id]);
+				continue;
+			}
 			var pack = this.chara[identity].root[""];
 			var info = pack["info"];
 			var icon = pack["stand1", "0", "body"];
@@ -612,7 +649,7 @@ internal class DataExtracter
 			{
 				data.__hash = icon["_hash"].data + "";
 			}
-			data.__v = DataSource.archives.version;
+			data.__v = DataSource.tag_version;
 
 			items.Add(data);
 
@@ -622,6 +659,13 @@ internal class DataExtracter
 		}
 
 		return items;
+	}
+
+	Comparer<string> Comparer = Comparer<string>.Create((a, b) => parse_img_id(a) - parse_img_id(b));
+
+	static int parse_img_id(string id_string)
+	{
+		return Int32.Parse(id_string.Replace(".img", ""));
 	}
 
 	int parse_id(string id_string)
@@ -641,16 +685,7 @@ internal class DataExtracter
 	string _get_face_style(string style)
 	{
 #if EDGE_EQUIPLIST
-		var start = style.Substring(0, 5);
-		var end = style.Substring(8);
-		for (var i = 0; i < 9; ++i)
-		{
-			var id = start + i + end;
-			if (this.chara["Face"][id] != null)
-			{
-				return id;
-			}
-		}
+		throw new NotImplementedException();
 #else
 		var s = String.Copy(style);
 		for (var i = 0; i < 9; ++i)
@@ -674,7 +709,7 @@ internal class DataExtracter
 	{
 #if EDGE_EQUIPLIST
 		var start = style.Substring(0, 5);
-		var end = style.Substring(8);
+		var end = style.Substring(6);
 
 		var id = start + ((char)('0' + color % 9)) + end;
 		if (this.chara["Face"][id] != null)
@@ -701,16 +736,7 @@ internal class DataExtracter
 	string _get_hair_style(string style)
 	{
 #if EDGE_EQUIPLIST
-		var start = style.Substring(0, 5);
-		var end = style.Substring(8);
-		for (var i = 0; i < 9; ++i)
-		{
-			var id = start + i + end;
-			if (this.chara["Hair"][id] != null)
-			{
-				return id;
-			}
-		}
+		throw new NotImplementedException();
 #else
 		var s = String.Copy(style);
 		for (var i = 0; i < 8; ++i)
@@ -733,7 +759,7 @@ internal class DataExtracter
 	string get_colored_hair_style(string style, int color)
 	{
 #if EDGE_EQUIPLIST
-		var start = style.Substring(0, 5);
+		var start = style.Substring(0, 7);
 		var end = style.Substring(8);
 
 		var id = start + ((char)('0' + color % 8)) + end;
@@ -814,49 +840,35 @@ internal class DataExtracter
 
 internal class JSON
 {
-	internal static JavaScriptSerializer serializer = null;
-
-	private static Func<object, string> _func = JSON.__stringify;
-
-	internal JSON()
+	internal static string stringify(object obj)
 	{
-	}
+		var serializer = new JavaScriptSerializer();
+		serializer.MaxJsonLength = Int32.MaxValue;
+		serializer.RegisterConverters(new JavaScriptConverter[] { new ExpandoJSONConverterSerialize() });
 
-	internal static Func<object, string> stringify { get { return JSON._func; } }
-
-	internal static string _stringify(object obj)
-	{
 		return serializer.Serialize(obj);
 	}
 
-	internal static string __stringify(object obj)
-	{
-		{
-			serializer = new JavaScriptSerializer();
-			serializer.MaxJsonLength = Int32.MaxValue;
-			serializer.RegisterConverters(new JavaScriptConverter[] { new ExpandoJSONConverter() });
-			_func = JSON._stringify;
-		}
-		return serializer.Serialize(obj);
-	}
+	internal static object parse(string obj)
+{
+		var serializer = new JavaScriptSerializer();
+		serializer.MaxJsonLength = Int32.MaxValue;
+		serializer.RegisterConverters(new JavaScriptConverter[] { new ExpandoJSONConverterDeserialize() });
 
-	static public dynamic parse(string jsonString)
-	{
-		return serializer.Deserialize<dynamic>(jsonString);
+		return serializer.Deserialize<object>(obj);
 	}
 }
 
-public class ExpandoJSONConverter : JavaScriptConverter
+public class ExpandoJSONConverterSerialize : JavaScriptConverter
 {
 	public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
 	{
-		//throw new NotImplementedException();
-		return serializer.ConvertToType<dynamic>(dictionary);
+		throw new NotImplementedException();
 	}
 	public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
 	{
 		var result = new Dictionary<string, object>();
-		var dictionary = obj as IDictionary<string, object>;
+		var dictionary = (ICollection<KeyValuePair<string, object>>)obj;
 		foreach (var item in dictionary)
 			result.Add(item.Key, item.Value);
 		return result;
@@ -866,6 +878,32 @@ public class ExpandoJSONConverter : JavaScriptConverter
 		get
 		{
 			return new System.Collections.ObjectModel.ReadOnlyCollection<Type>(new Type[] { typeof(System.Dynamic.ExpandoObject) });
+		}
+	}
+}
+public class ExpandoJSONConverterDeserialize : JavaScriptConverter
+{
+	public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
+	{
+		dynamic eo = new ExpandoObject();
+		var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
+
+		foreach (var item in dictionary)
+		{
+			eoColl.Add(item);
+		}
+
+		return eo;
+	}
+	public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
+	{
+		throw new NotImplementedException();
+	}
+	public override IEnumerable<Type> SupportedTypes
+	{
+		get
+		{
+			return new System.Collections.ObjectModel.ReadOnlyCollection<Type>(new Type[] { typeof(object) });
 		}
 	}
 }

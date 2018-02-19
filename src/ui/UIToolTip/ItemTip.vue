@@ -46,7 +46,7 @@
 					</div>
 
 					<!--equip-name-->
-					<div class="c3 UIToolTip title" style="position: relative; width: 100%; height: 22px; text-align: center; text-shadow: 1px 1px 0 black, 0 0 1px white;">
+					<div class="c3 UIToolTip title" style="z-index: 2; position: relative; width: 100%; height: 22px; text-align: center; text-shadow: 1px 1px 0 black, 0 0 1px white;">
 						<span :style="equip.$foreign?'color: red':''">{{equip.name}}</span>
 					</div>
 
@@ -210,6 +210,7 @@
 				<div contenteditable="true" spellcheck="false"><span>id   : </span>{{equip.id}}</div>
 				<div v-if="!!equip._name" contenteditable="true" spellcheck="false"><span>nameEn: </span>{{equip._name}}</div>
 				<div v-else contenteditable="true" spellcheck="false"><span>name : </span>{{equip.name}}</div>
+				<div>Added in: {{equip.__v}}</div>
 				<div contenteditable="true" spellcheck="false"><span>islot: </span>{{equip.islot}}</div>
 				<div contenteditable="true" spellcheck="false"><span>vslot: </span>{{equip.vslot}}</div>
 			</div>
