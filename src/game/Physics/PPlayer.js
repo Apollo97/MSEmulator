@@ -215,7 +215,7 @@ export class PCharacterBase {
 	}
 
 	/**
-	 * @param {{[string]:number}} keys
+	 * @param {{[x:string]:number}} keys
 	 */
 	control(keys) {
 		if (this.portal && keys.up) {

@@ -51,27 +51,38 @@ public class wzarchives
 		if (null != root)
 		{
 			string prefix = Path.GetDirectoryName(location) + "\\";
+			string[] fmts = new string[] { "0", "000" };
 
 			foreach (wzpackage element in root)
 				if (0 != element.type % 2 && 0 == element.count)
 				{
-					location = prefix + element.identity + ".wz";
-
-					if (File.Exists(location))
+					for (var i = 0; i < 2; ++i)
 					{
-						archive = new wzarchive(location);
-						root = archive.root;
-
-						if (null != root)
+						for (var j = 0; j < fmts.Length; ++j)
 						{
-							foreach (wzpackage package in root)
+							var num = i == 0 ? "" : (j == 0 ? (i + 1) : i).ToString(fmts[j]);
+
+							location = prefix + element.identity + num  + ".wz";
+
+							if (File.Exists(location))
 							{
-								package.parent = element;
+								archive = new wzarchive(location);
+								root = archive.root;
 
-								element.append(package.identity, package);
+								if (null != root)
+								{
+									foreach (wzpackage package in root)
+									{
+										package.parent = element;
+
+										element.append(package.identity, package);
+									}
+
+									archives.Add(archive);
+
+									break;//Map001.wz or Map2.wz
+								}
 							}
-
-							archives.Add(archive);
 						}
 					}
 				}

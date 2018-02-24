@@ -26,7 +26,7 @@ export class MobSkillBallDefinition {
 export class MobSkillBallBase extends SceneObject {
 	/**
 	 * @param {MobSkillBallDefinition} ballDef
-	 * @param {{[string]:Animation} animations
+	 * @param {{[x:string]:Animation} animations
 	 */
 	constructor(ballDef, animations) {
 		super();

@@ -278,7 +278,7 @@ class MapObjectBase {
 	}
 	
 	__calc_aabb() {
-		if (this.textures.length > 1) {
+		if (this.textures.length >= 1) {
 			let mover = 0;
 			for (let i = 0; i < this.textures.length; ++i) {
 				let texture = this.textures[i];
@@ -1348,7 +1348,7 @@ export class MapLifeEntity {
 	 * @param {IRenderer} renderer
 	 */
 	draw(renderer) {MobRenderer
-		renderer.globalAlpha = Math.max(0, Math.min(this.opacity / 255, 1));
+		renderer.globalAlpha = Math.max(0, Math.min(this.opacity, 1));
 		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front >= 1);
 	}
 }
@@ -1364,7 +1364,7 @@ class MapMob extends MapLifeEntity {
 		/** @type {PMob} */
 		this.$physics = null;
 		
-		/** @type {{[string]: object}} - {[level]: skill} */
+		/** @type {{[x:string]: object}} - {[level]: skill} */
 		this.skills = {};
 	}
 	/**
@@ -1689,10 +1689,10 @@ export class SceneMap {
 		/** @type {MapTile[]} */
 		this.layeredTile = [];
 		
-		/** @type {{[string]:MapBackBase}} */
+		/** @type {{[tag:string]:MapBackBase}} */
 		this.backTags = {};
 		
-		/** @type {{[string]:MapObject}} */
+		/** @type {{[name:string]:MapObject}} */
 		this.namedObject = {};
 
 		/** @type {World} */
@@ -1838,8 +1838,21 @@ export class SceneMap {
 		for (let i = 0; i < this.layeredObject.length; ++i) {
 			const objs = this.layeredObject[i];
 			for (let j = 0; j < objs.length; ++j) {
+				/**
+				 * @type {MapObject}
+				 */
 				let obj = objs[j];
-				obj.load();
+				if (process.env.NODE_ENV !== 'production') {//is debug
+					try {
+						obj.load();
+					}
+					catch (ex) {
+						console.error("load textures failed: " + new URL("xml2" + obj._url, window.location).href);
+					}
+				}
+				else {
+					obj.load();
+				}
 			}
 		}
 		for (let i = 0; i < this.layeredTile.length; ++i) {
