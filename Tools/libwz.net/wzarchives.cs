@@ -79,6 +79,10 @@ public class wzarchives
 									}
 
 									archives.Add(archive);
+									if (i > 0)
+									{
+										this.root[element.identity].merge(root);
+									}
 
 									break;//Map001.wz or Map2.wz
 								}

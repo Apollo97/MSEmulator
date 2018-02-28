@@ -29,23 +29,18 @@ const map_sprite = {
 
 window.$map_sprite = map_sprite;
 
-let url_failed = {};
 async function map_load_package(cat, pack) {
 	if (!cat || !pack) {
 		debugger;
 	}
 	if (!map_sprite[cat][pack]) {
 		let url = `/Map/${cat}/${pack}.img/`;
+		
+		map_sprite[cat][pack] = JSON.parse(await $get.data(url));
 
-		if (!(url in url_failed)) {
-			map_sprite[cat][pack] = JSON.parse(await $get.data(url));
+		if (map_sprite[cat][pack] == null) {
+			console.warn("Empty package: " + url);
 		}
-		//if (map_sprite[cat][pack] == null) {
-		//	let url2 = `/Map2/${cat}/${pack}.img/`;
-		//	url_failed[url] = url2;
-		//	map_sprite[cat][pack] = JSON.parse(await $get.data(url2));
-		//	console.info("url2: " + url2);
-		//}
 	}
 	if (map_sprite[cat][pack]) {
 		return map_sprite[cat][pack];

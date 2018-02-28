@@ -649,7 +649,7 @@ function DataServer(app) {
 			}
 			catch (ex) {
 				res.write(`<p><h1>Error</h1><table border="1"><tbody>`);
-				res.write(`<tr><th>message</td><td>${ex.message}</td></tr>`);
+				res.write(`<tr><th>message</td><td>${inspect_locale(ex.message)}</td></tr>`);
 				res.write(`<tr><th>stack</td><td>${ex.stack}</td></tr>`);
 				res.write(`</tbody></table></p>`);
 			}
@@ -706,3 +706,4 @@ function inspect_locale(obj) {
 		console.log(ex);
 	}
 }
+

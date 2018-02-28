@@ -187,32 +187,15 @@ internal class DataSource
 			}
 			return;
 		}
-		catch (Exception)
+		catch (Exception ex)
 		{
-			try
-			{
-				var p = link.Split('/');
-				p[0] += "2";
-				link = String.Join("/", p);
-				DataSource._get_data(link, out outPack, out outProp);
-				if (outPack == null && outProp == null)
-				{
-					throw new Exception();
-				}
-				return;
-
-				//System.Windows.Forms.MessageBox.Show(link, "2");
-			}
-			catch (Exception ex)
-			{
-				outPack = null;
-				outProp = null;
-				//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
-				DataSource.writeLog("can not get: " + link);
-				DataSource.writeLog(" ? " + ex.Message);
-				DataSource.writeLog(" ? " + ex.StackTrace);
-				return;
-			}
+			outPack = null;
+			outProp = null;
+			//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
+			DataSource.writeLog("can not get: " + link);
+			DataSource.writeLog(" ? " + ex.Message);
+			DataSource.writeLog(" ? " + ex.StackTrace);
+			return;
 		}
 	}
 
