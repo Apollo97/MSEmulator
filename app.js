@@ -603,8 +603,8 @@ function DataServer(app) {
 
 				task.then(function (data) {
 					if (data) {
-						res.writeHead(200, makeHeadNoCache("text/xml; charset=utf-8", _data_provider));
-						res.end(data);
+						res.writeHead(200, makeHeadNoCache(data.mime, _data_provider));
+						res.end(data.data);
 					}
 					else {
 						write_res(res, 404);
@@ -622,8 +622,8 @@ function DataServer(app) {
 				
 				task.then(function (data) {
 					if (data) {
-						res.writeHead(200, makeHeadNoCache("text/xml; charset=utf-8", _data_provider));
-						res.end(data);
+						res.writeHead(200, makeHeadNoCache(data.mime, _data_provider));
+						res.end(data.data);
 					}
 					else {
 						write_res(res, 404);

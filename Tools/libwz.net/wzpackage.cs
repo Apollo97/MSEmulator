@@ -349,8 +349,7 @@ public class wzlist<T> where T : wzlist<T>
 
 			if (this[identity] == null)
 			{
-				identities.Add(identity);
-				values.Add(value);
+				append(identity, value);
 			}
 			else
 			{

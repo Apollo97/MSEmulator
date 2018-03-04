@@ -25,6 +25,12 @@ export class Vec2 {
 		return new Vec2(0, 0);
 	}
 	/**
+	 * @returns {Vec2}
+	 */
+	clone() {
+		return new this.constructor(this.x, this.y);
+	}
+	/**
 	 * @param {...Vec2} v2
 	 * @returns {Vec2}
 	 */
@@ -51,6 +57,13 @@ export class Vec2 {
 			y = y - v.y;
 		}
 		return new Vec2(x, y);
+	}
+	mul(floatVar) {
+		return new Vec2(this.x * floatVar, this.y * floatVar);
+	}
+	normalize() {
+		let r = Math.sqrt(this.x * this.x + this.y * this.y);
+		return new Vec2(this.x / r, this.y / r);
 	}
 }
 

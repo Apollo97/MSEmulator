@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 public class wzarchives
 {
@@ -79,10 +80,6 @@ public class wzarchives
 									}
 
 									archives.Add(archive);
-									if (i > 0)
-									{
-										this.root[element.identity].merge(root);
-									}
 
 									break;//Map001.wz or Map2.wz
 								}
@@ -90,6 +87,17 @@ public class wzarchives
 						}
 					}
 				}
+			Regex rgx = new Regex(@"([A-Za-z]+)(\d+)");
+			foreach (wzpackage package in this.root)
+			{
+				Match m = rgx.Match(package.identity);
+				if (m.Success)
+				{
+					string identity = m.Groups[1].Value;
+
+					this.root[identity].merge(package);
+				}
+			}
 		}
 	}
 

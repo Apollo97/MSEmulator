@@ -8,11 +8,33 @@ function colorInt24Parse(col) {
 	return "#" + [((col >> 16) & 0xFF), ((col >> 8) & 0xFF), (col & 0xFF)].map(a=>a.toString(16).padStart(2, "0")).join("");
 }
 
+
+/**
+ * @interface
+ */
+class IColor {
+	toFilter() {
+	}
+	toFilterLimit() {
+	}
+}
+
+/**
+ * @implements {IColor}
+ */
 export class ColorRGB {
 	constructor(r = 0, g = 0, b = 0) {
+		/** @type {number} - int value: 0 ~ 255 */
 		this.r = r;
+
+		/** @type {number} - int value: 0 ~ 255 */
 		this.g = g;
+
+		/** @type {number} - int value: 0 ~ 255 */
 		this.b = b;
+	}
+	clone() {
+		return new this.constructor(this.r, this.g, this.b);
 	}
 	selfAdd(rgb) {
 		this.r += rgb.r;
@@ -57,9 +79,9 @@ export class ColorRGB {
 	 * Assumes r, g, and b are contained in the set [0, 255] and
 	 * returns h, s, and v in the set [0, 1].
 	 *
-	 * @return {{h:number,s:number,v:number}}
+	 * @returns {ColorHSV}
 	 */
-	toHsv() {
+	toHSV() {
 		let r = this.r /= 255, g = this.g /= 255, b = this.b /= 255;
 
 		let max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -80,7 +102,7 @@ export class ColorRGB {
 			h /= 6;
 		}
 
-		return { h, s, v };
+		return new ColorHSV(h, s, v);
 	}
 	/**
 	 * source: https://gist.github.com/mjackson/5311256#file-color-conversion-algorithms-js-L119
@@ -136,9 +158,87 @@ export class ColorRGB {
 		return new ColorRGB(r * 255, g * 255, b * 255);
 	}
 	toFilter() {
-		let { h, s, v } = this.toHsv();
-		//return `hue-rotate(${h*Math.PI*2}rad) saturate(${s}) brightness(${v})`;
+		let { h, s, v } = this.toHSV();
+		return `hue-rotate(${h*Math.PI*2}rad) saturate(${s}) brightness(${v})`;
+	}
+	toFilterLimit() {
 		return `hue-rotate(${h * 360}deg) saturate(${clamp(Math.trunc(s * 100), 0, 100)}%) brightness(${clamp(Math.trunc(v * 100), 0, 100)}%)`;
+	}
+	toFilter_HueRotate() {
+		const { h, s, v } = this;
+		//return `hue-rotate(${h*Math.PI*2}rad)`;
+		return `hue-rotate(${h * 360}deg)`;
+	}
+}
+
+/**
+ * @implements {IColor}
+ */
+export class ColorHSV {
+	constructor(h = 0, s = 0, v = 0) {
+		/** @type {number} - float value: 0 ~ 1 */
+		this.h = h;
+
+		/** @type {number} - float value: 0 ~ 1 */
+		this.s = s;
+
+		/** @type {number} - float value: 0 ~ 1 */
+		this.v = v;
+	}
+	clone() {
+		return new this.constructor(this.h, this.s, this.v);
+	}
+	selfAdd(hsv) {
+		this.h += hsv.h;
+		this.s += hsv.s;
+		this.v += hsv.v;
+		return this;
+	}
+	selfSub(hsv) {
+		this.h += hsv.h;
+		this.s += hsv.s;
+		this.v += hsv.v;
+		return this;
+	}
+	selfScale(s) {
+		this.h *= s;
+		this.s *= s;
+		this.v *= s;
+		return this;
+	}
+	static add(hsv, hsv2) {
+		return new ColorHSV(hsv.s + hsv2.s, hsv.s + hsv2.s, hsv.v + hsv2.v);
+	}
+	static sub(hsv, hsv2) {
+		return new ColorHSV(hsv.s - hsv2.s, hsv.s - hsv2.s, hsv.v - hsv2.v);
+	}
+	static scale(hsv, s) {
+		return new ColorHSV(hsv.h * s, hsv.s * s, hsv.v * s);
+	}
+	toString() {
+		const { h, s, v } = this;
+		return "hsv(" + h + "," + s + "," + v + ")";
+	}
+
+	//toRgb() {
+	//}
+	//fromRgb(r, g, b) {
+	//}
+
+	//static fromRgb(r, g, b) {
+	//}
+
+	toFilter() {
+		const { h, s, v } = this;
+		return `hue-rotate(${h*Math.PI*2}rad) saturate(${s}) brightness(${v})`;
+	}
+	toFilterLimit() {
+		return `hue-rotate(${h * 360}deg) saturate(${clamp(Math.trunc(s * 100), 0, 100)}%) brightness(${clamp(Math.trunc(v * 100), 0, 100)}%)`;
+	}
+	toFilter_HueRotate() {
+		const { h, s, v } = this;
+		//return `hue-rotate(${h*Math.PI*2}rad)`;
+		return `hue-rotate(${h * 360}deg)`;
 	}
 }
 
@@ -153,7 +253,7 @@ export class _ImageFilter {
 		this._sat = sat;
 		this._bri = bri;
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get hue() {
 		return this._hue;
 	}
@@ -163,7 +263,7 @@ export class _ImageFilter {
 			this.reset();
 		}
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get sat() {
 		return this._sat;
 	}
@@ -173,7 +273,7 @@ export class _ImageFilter {
 			this.reset();
 		}
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get bri() {
 		return this._bri;
 	}
@@ -208,7 +308,7 @@ export class ImageFilter extends _ImageFilter {
 			this.__proto__ = _ImageFilter.prototype;
 		}
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get hue() {
 		return 0;
 	}
@@ -216,7 +316,7 @@ export class ImageFilter extends _ImageFilter {
 		this._hue = value % 360;
 		this.__proto__ = _ImageFilter.prototype;
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get sat() {
 		return 100;
 	}
@@ -224,7 +324,7 @@ export class ImageFilter extends _ImageFilter {
 		this._sat = Math.max(0, value);
 		this.__proto__ = _ImageFilter.prototype;
 	}
-	/** @return {number} */
+	/** @returns {number} */
 	get bri() {
 		return 100;
 	}
