@@ -1751,8 +1751,8 @@ class CharacterSlots {
 		if (this.hair) {
 			let ha = [];
 			ha.push(this.hair.id);
-			if (this.hairColor2) ha.push(this.hairColor2 + "%" + Math.trunc(this.hairMix2 * 100));
-			if (this.hairColor3) ha.push(this.hairColor3 + "%" + Math.trunc(this.hairMix3 * 100));
+			if (this.hairColor2 && this.hairMix2 > 0) ha.push(this.hairColor2 + "%" + Math.trunc(this.hairMix2 * 100));
+			if (this.hairColor3 && this.hairMix3 > 0) ha.push(this.hairColor3 + "%" + Math.trunc(this.hairMix3 * 100));
 			slots.push(ha.join("|"));
 		}
 		if (this.cap) slots.push(this.cap.id);
@@ -1906,7 +1906,10 @@ export class CharacterAnimationBase {
 		/** @type {number} */
 		this._emotion_frame = 0;
 	}
-	
+
+	/**
+	 * @type {boolean}
+	 */
 	get elfEar() {
 		if (this.slots.head) {
 			return this.slots.head.elfEar;
@@ -1918,6 +1921,9 @@ export class CharacterAnimationBase {
 		}
 	}
 
+	/**
+	 * @type {boolean}
+	 */
 	get lefEar() {
 		if (this.slots.head) {
 			return this.slots.head.lefEar;
@@ -1929,6 +1935,9 @@ export class CharacterAnimationBase {
 		}
 	}
 
+	/**
+	 * @type {boolean}
+	 */
 	get highlefEar() {
 		if (this.slots.head) {
 			return this.slots.head.highlefEar;
@@ -2313,45 +2322,11 @@ export class CharacterAnimationBase {
 		/** @type {Array<CharacterEquipBase>[]} */
 		let slots = {};
 
-		if (this.slots._hair2) {
+		for (let i = 2; i <= 3; ++i) {
 			/** @type {CharacterEquipBase} */
-			let item = this.slots._hair2;
+			let item = this.slots["_hair" + i];
 
-			for (let j in item.fragments) {//foreach equip place
-				let slot = sMap[j];
-				if (slot != null) {
-					/** @type {FragmentTexture} */
-					let ft = item.fragments[j].getTexture(this);
-					if (ft) {
-						if (!slots[slot]) {
-							slots[slot] = [ft];//cover ??
-						}
-						else {
-							slots[slot].push(ft);//cover ??
-						}
-					}
-				}
-			}
-		}
-		if (this.slots._hair3) {
-			/** @type {CharacterEquipBase} */
-			let item = this.slots._hair3;
-
-			for (let j in item.fragments) {//foreach equip place
-				let slot = sMap[j];
-				if (slot != null) {
-					/** @type {FragmentTexture} */
-					let ft = item.fragments[j].getTexture(this);
-					if (ft) {
-						if (!slots[slot]) {
-							slots[slot] = [ft];//cover ??
-						}
-						else {
-							slots[slot].push(ft);//cover ??
-						}
-					}
-				}
-			}
+			this.__add_equip_to_frag_list(slots, item);
 		}
 		for (let i in this.slots._ordered_slot) {
 			/** @type {CharacterEquipBase} */

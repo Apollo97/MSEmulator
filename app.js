@@ -130,7 +130,7 @@ function getSettingList(folderPath, cbfunc) {
 
 	function findSetting(files) {
 		let settingList = files.map(function (fileName) {
-			let m = fileName.match(/(setting\d*\.ini)$/);
+			let m = fileName.match(/^(setting\d*\.ini)$/);
 			return m ? m[1] : null;
 		}).filter(function (fileName) {
 			return fileName != null;
@@ -668,8 +668,8 @@ function DataServer(app) {
 	let settingList = getSettingList("./");
 	
 	for (let i = 0; i < settingList.length; ++i) {
-		let dataProvider = new DataProvider(settingList[i]);
 		console.log(settingList[i]);
+		let dataProvider = new DataProvider(settingList[i]);
 		Server(app, dataProvider);
 	}
 	
