@@ -40,7 +40,7 @@ export class Engine extends IRenderer {
 
 		this.ctx.imageSmoothingEnabled = false;
 		this._ctx2.imageSmoothingEnabled = true;
-		
+
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		_resize_canvas(canvas2, window.innerWidth, window.innerHeight);
 
@@ -63,7 +63,7 @@ export class Engine extends IRenderer {
 	get Graph() {
 		return this._GraphType;
 	}
-	
+
 	/** @type {HTMLCanvasElement} */
 	get _canvas() {
 		return this.ctx.canvas;
@@ -82,6 +82,27 @@ export class Engine extends IRenderer {
 	 */
 	_handleImageLoaded(image, graph) {
 		return image;
+	}
+
+	/**
+	 * swap Canvas and Canvas2
+	 * if (imageSmoothingEnabled) this._ctx2.imageSmoothingEnabled = true;
+	 * @param {boolean} imageSmoothingEnabled
+	 */
+	$swapCanvas(imageSmoothingEnabled) {
+		if (imageSmoothingEnabled) {
+			this.ctx.imageSmoothingEnabled = false;
+			this._ctx2.imageSmoothingEnabled = true;
+		}
+		else {
+			this.ctx.imageSmoothingEnabled = false;
+			this._ctx2.imageSmoothingEnabled = false;
+		}
+
+		//swap
+		const ctx2 = this._ctx2;
+		this._ctx2 = this.ctx;
+		this.ctx = ctx2;
 	}
 
 	loadIdentity() {

@@ -19,7 +19,10 @@ class App {
 		this.game = null;
 	}
 
-	async start() {
+	/**
+	 * @param {HTMLElement} elem
+	 */
+	async start(elem) {
 
 		this.store = Editor.store;
 
@@ -28,11 +31,13 @@ class App {
 		//	render: h => h(MainUI);
 		//});
 		let AppUI = Vue.extend(MainUI);
-		this.vue = new AppUI({ el: "#vue" });
+		this.vue = new AppUI({ el: elem });
 		
 		await InitAll();
-		
+
 		this.game = new Game();
+
+		this.game._$startClient();
 		
 		this.game.run();
 	}
@@ -45,8 +50,13 @@ class App {
 	}
 }
 
-const app = new App();
 
+///////////////////////////////////////////////////////////////////////////////
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
+const app = new App();
 window.app = app;
 
 export default app;

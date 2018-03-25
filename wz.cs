@@ -59,6 +59,9 @@ public class Startup
 			case "_images":
 				return DataProvider.get_image_gif_file((string)input.args.path);
 				break;
+			case "font":
+				return DataProvider._get_binary_file((string)input.args.path, "application/x-font-ttf");
+				break;
 			case "ls":
 				return DataProvider.get_identities((string)input.args.path);
 				break;
@@ -401,6 +404,24 @@ internal class DataProvider
 			returns.mime = "application/octet-stream";
 			//returns.mime = "text/plain";
 			//returns.mime = "text/html";
+			returns.data = sound.data;
+
+			return returns;
+		}
+		return null;
+	}
+	public static Returns _get_binary_file(string path, string mime)
+	{
+		wzproperty prop;
+		Returns returns = new Returns();
+
+		DataSource.get_data(path, out prop);
+
+		if (prop != null)
+		{
+			var sound = prop.data as wzsound;
+
+			returns.mime = mime;
 			returns.data = sound.data;
 
 			return returns;

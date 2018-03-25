@@ -1702,6 +1702,9 @@ export class SceneMap {
 		/** @type {MapParticle[]} */
 		this.particleList = null;
 
+		/** @type {Rectangle} */
+		this.mapBound = null;
+
 		/** @type {string} */
 		this._url = null;//data url //debug
 
@@ -1967,10 +1970,14 @@ export class SceneMap {
 
 	//_compute_view_rectangle
 	
-	_compute_map_bound() {
+	_compute_map_bound(reCalc) {
+		if (this.mapBound && !reCalc) {
+			return this.mapBound;
+		}
+
 		const info = this._raw.info;
 		let top, bottom;
-		
+
 		if (info.VRLeft != null && info.VRTop != null && info.VRRight != null && info.VRBottom != null) {
 			top = info.VRTop;
 			bottom = info.VRBottom;
@@ -1980,11 +1987,12 @@ export class SceneMap {
 			top = tb.top;
 			bottom = tb.bottom;
 		}
-		
+
 		const lr = this.controller.ground._compute_left_right_border();
-		
+
 		let rect = Rectangle.parse(lr.left, top, lr.right, bottom);
-		
+		this.mapBound = rect;//store
+
 		return rect;
 	}
 	

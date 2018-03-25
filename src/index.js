@@ -2,7 +2,7 @@
 
 import app from "./app.js";
 
-app.start();
+app.start("#vue");
 
 //https://github.com/glenjamin/webpack-hot-middleware/blob/master/example/client.js
 if (module.hot) {

@@ -613,6 +613,15 @@ export class IRenderer {
 		return new IGraph();
 	}
 
+	/**
+	 * swap Canvas and Canvas2
+	 * if (imageSmoothingEnabled) this._ctx2.imageSmoothingEnabled = true;
+	 * @param {boolean} imageSmoothingEnabled
+	 */
+	$swapCanvas(imageSmoothingEnabled) {
+		throw new Error("Not implement");
+	}
+
 	/** @type {HTMLCanvasElement} */
 	get _canvas() {
 		throw new Error("Not implement");

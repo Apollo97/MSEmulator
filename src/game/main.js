@@ -11,8 +11,13 @@ import { SceneMap } from './Map.js';
 import { EffectManager } from "./Skill.js";
 import { } from "./MobSkill/238.FairyDust.js";
 
+import { Client } from "../Client/Client.js";
 
+
+import { SceneCharacter } from "./SceneCharacter.js";//debug
 import gApp from "../app.js";//debug
+
+window.REC_FRAME_MAX = 12;
 
 
 window.SCREEN_PRINTLN = function (getText, getValue) {
@@ -27,96 +32,15 @@ window._SCREEN_PRINTLN = [];
 
 var animationRequestID = null;
 
-/** @param {SceneMap} */
-var scene_map = new SceneMap();
-
-window.scene_map = scene_map;
-
-scene_map.onload = function () {
-	GameStateManager.PushState(this, window.chara);
-}
-
 window.addEventListener("popstate", function (e) {
 	GameStateManager.PopState(e.state);
 });
 
-///////////////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////////////
-
-function _parseUrlParameter() {
-	let sPageURL = decodeURIComponent(window.location.search.substring(1));
-	let sURLVariables = sPageURL.split("&");
-	let params = {};
-
-	for (let i = 0; i < sURLVariables.length; ++i) {
-		let sParameter = sURLVariables[i].split("=");
-
-		params[sParameter[0]] = sParameter[1];
-	}
-
-	return params;
-};
-
-async function loadMap() {
-	if (scene_map) {
-		let params = _parseUrlParameter();
-
-		let map_id = params["map"] || "000000000";
-		let chara_code = params["chara"];
-
-		GameStateManager.PopState({
-			map_id: map_id,
-			chara: chara_code || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392",
-		});
-	}
-}
-
-function isMapReady() {
-	return scene_map && scene_map.isLoaded();
-}
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-var m_move_speed = 10;
-window.mapControl = function mapControl(inBound) {
-	const speed = m_move_speed + (input_keys['z'] ? 90 : 0);
-	const info = scene_map._raw.info;
-
-	//m_viewRect = scene_map.viewArea(new Vec2(m_viewRect.left, m_viewRect.top));
-
-	if (input_keys['ArrowLeft'] > 0) {
-		m_viewRect.left -= speed;
-	}
-	if (input_keys['ArrowRight'] > 0) {
-		m_viewRect.left += speed;
-	}
-	if (input_keys['ArrowUp'] > 0) {
-		m_viewRect.top -= speed;
-	}
-	if (input_keys['ArrowDown'] > 0) {
-		m_viewRect.top += speed;
-	}
-
-	if (inBound) {
-		if (m_viewRect.left < info.VRLeft) {
-			m_viewRect.left = info.VRLeft;
-		}
-		if (m_viewRect.right > info.VRRight) {
-			m_viewRect.left = info.VRRight - m_viewRect.width;
-		}
-		if (m_viewRect.top < info.VRTop) {
-			m_viewRect.top = info.VRTop;
-		}
-		if (m_viewRect.bottom > info.VRBottom) {
-			m_viewRect.top = info.VRBottom - m_viewRect.height;
-		}
-	}
-}
 
 /**
  * @param {KeyboardEvent} e
@@ -235,10 +159,20 @@ export class Game {
 	constructor() {
 		this.timer = 0;
 		this.timer_ = 0;
+		this._dTimer = 0;
 		this.fps_arr = [];
 		this.frame_s_arr = [];
 		
 		//this.chara = null;
+		
+		/** @type {SceneMap} */
+		this.scene_map = new SceneMap();
+
+		window.scene_map = this.scene_map;
+
+		scene_map.onload = function () {
+			GameStateManager.PushState(this, window.chara);
+		}
 		
 		this.render = this.render.bind(this);
 		
@@ -249,15 +183,76 @@ export class Game {
 				document.getElementById("Screenshot").innerHTML = "";
 			}
 		}).bind(this);
+
+		this._$moveViewportSpeed = 10;//debug
 	}
 	
-	async _load() {
-		await loadMap();
+	moveViewport(inBound) {
+		const scene_map = this.scene_map;
+
+		const speed = input_keys['z'] ? (this._$moveViewportSpeed * 10) : this._$moveViewportSpeed;
+
+		//m_viewRect = scene_map.viewArea(new Vec2(m_viewRect.left, m_viewRect.top));
+
+		if (input_keys['ArrowLeft'] > 0) {
+			m_viewRect.left -= speed;
+		}
+		if (input_keys['ArrowRight'] > 0) {
+			m_viewRect.left += speed;
+		}
+		if (input_keys['ArrowUp'] > 0) {
+			m_viewRect.top -= speed;
+		}
+		if (input_keys['ArrowDown'] > 0) {
+			m_viewRect.top += speed;
+		}
+
+		let { left, top, right, bottom } = scene_map.mapBound;
+
+		if (inBound) {
+			if (m_viewRect.left < left) {
+				m_viewRect.left = left;
+			}
+			if (m_viewRect.right > right) {
+				m_viewRect.left = right - m_viewRect.width;
+			}
+			if (m_viewRect.top < top) {
+				m_viewRect.top = top;
+			}
+			if (m_viewRect.bottom > bottom) {
+				m_viewRect.top = bottom - m_viewRect.height;
+			}
+		}
+	}
+	
+	async _$startClient() {
+		if (scene_map) {
+			if (window.io != null) {
+				let client = new Client();
+				gApp.client = client;
+				client.$test();
+			}
+			else {
+				let params = _parseUrlParameter();
+
+				let map_id = params["map"] || "000000000";
+				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
+
+				GameStateManager.PopState({
+					map_id: map_id,
+					chara: chara_code,
+				});
+			}
+		}
+	}
+
+	/** @type {boolean} */
+	get _isMapReady() {
+		const scene_map = this.scene_map;
+		return scene_map && scene_map.isLoaded();
 	}
 	
 	async run() {
-		await this._load();
-		
 		console.log("begin render");
 		this.render(0);//start render
 	}
@@ -287,6 +282,8 @@ export class Game {
 	 * @param {DOMHighResTimeStamp} timeStamp
 	 */
 	render(timeStamp) {
+		const scene_map = this.scene_map;
+
 		if (this.m_is_run) {
 			animationRequestID = requestAnimationFrame(this.render);
 		}
@@ -336,21 +333,47 @@ export class Game {
 			this.frame_s_arr = [];
 		}
 	/////
+
+		/** @type {SceneCharacter} */
 		const chara = this.chara;
+
+		/** @type {SceneCharacter[]} */
 		const charaList = this.charaList;
-		
-		if (scene_map) {
-			scene_map.update(stamp);//include world.update
+
+		{
+			for (let i in input_keys) {
+				if (input_keys[i] > 0) {
+					++input_keys[i];
+				}
+			}
+
+			if (scene_map) {
+				scene_map.update(stamp);//include world.update
+			}
+
+			SceneObjectMgr.Update(stamp);
+
+			EffectManager.Update(stamp);
+
+			// must before world.update
+			for (let i = 0; i < charaList.length; ++i) {
+				charaList[i].update(stamp);
+			}
 		}
-		
-		SceneObjectMgr.Update(stamp);
-		
-		EffectManager.Update(stamp);
-		
-		// must before world.update
-		for (let i = 0; i < charaList.length; ++i) {
-			charaList[i].update(stamp);
+		if ((timeStamp - this._dTimer) >= (1000 / (window.REC_FRAME_MAX || 20))) {
+			this._dTimer = timeStamp;
+			{
+				let client = gApp.client;
+				if (client && client.chara) {
+					/** @type {SceneCharacter} */
+					let ch = client.chara;
+					ch.$recMove(window.$io);
+				}
+			}
 		}
+		//else {
+		//	return;
+		//}
 		
 		engine.beginScene();
 		{
@@ -363,7 +386,7 @@ export class Game {
 				if (chara && chara.renderer) {
 					m_viewRect.setCenter(chara.renderer.x, chara.renderer.y);
 				}
-				else {
+				else if (scene_map.controller.player) {
 					const pos = scene_map.controller.player.getPosition();
 					const px = Math.trunc(pos.x * CANVAS_SCALE + 0.5);
 					const py = Math.trunc(pos.y * CANVAS_SCALE + 0.5);
@@ -371,9 +394,9 @@ export class Game {
 				}
 			}
 			
-			if (m_is_rendering_map && isMapReady()) {
+			if (m_is_rendering_map && this._isMapReady) {
 				if (m_editor_mode) {
-					window.mapControl(false);
+					this.moveViewport(false);
 				}
 				
 				scene_map.beginRender(engine);
@@ -430,8 +453,11 @@ export class Game {
 					charaList[i].render(engine);
 				}
 			}
+			for (let i = 0; i < charaList.length; ++i) {
+				charaList[i].renderer._$draw_name(engine, charaList[i].id);
+			}
 			
-			if (m_is_rendering_map && isMapReady()) {
+			if (m_is_rendering_map && this._isMapReady) {
 				scene_map.beginRender(engine);
 				{
 					scene_map.applyCamera(engine);
@@ -478,7 +504,7 @@ export class Game {
 
 			//print debug info
 			if (m_display_debug_info) {
-				if (isMapReady() && scene_map.controller && scene_map.controller.player) {
+				if (this._isMapReady && scene_map.controller && scene_map.controller.player) {
 					/** @type {CanvasRenderingContext2D} */
 					const ctx = engine.ctx;
 
@@ -549,12 +575,6 @@ export class Game {
 			}
 		}
 		engine.endScene();
-
-		for (let i in input_keys) {
-			if (input_keys[i] > 0) {
-				++input_keys[i];
-			}
-		}
 	}
 	
 	get chara() {
@@ -575,4 +595,23 @@ export class Game {
 		window.m_is_run = value;
 	}
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+///////////////////////////////////////////////////////////////////////////////
+
+function _parseUrlParameter() {
+	let sPageURL = decodeURIComponent(window.location.search.substring(1));
+	let sURLVariables = sPageURL.split("&");
+	let params = {};
+
+	for (let i = 0; i < sURLVariables.length; ++i) {
+		let sParameter = sURLVariables[i].split("=");
+
+		params[sParameter[0]] = sParameter[1];
+	}
+
+	return params;
+};
 

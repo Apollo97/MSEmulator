@@ -12,8 +12,8 @@
 								<dir-texture p="layer:back" style="position: relative; top: 0;"></dir-texture>
 								<dir-frame p="layer:gauge" style="position: absolute; top: 0;">
 									<template slot-scope="{img, path}">
-										<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${pl.getExpPercentS()}% 0%, ${pl.getExpPercentS()}% 100%, 0% 100%)`}" />
-										<div :style="{ position:'absolute', height:'100%', top:'0', left:pl.getExpPercentS()+'%' }">
+										<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getExpPercentS()}% 0%, ${stat.getExpPercentS()}% 100%, 0% 100%)`}" />
+										<div :style="{ position:'absolute', height:'100%', top:'0', left:stat.getExpPercentS()+'%' }">
 											<dir-texture p="../../layer:effect" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></dir-texture>
 										</div>
 									</template>
@@ -26,16 +26,16 @@
 						<dir ref="status" p="status" style="position: relative; display: inline-block; padding-bottom: 10px;">
 							<dir-texture p="backgrnd" style="position: absolute;"></dir-texture>
 
-							<!--<dir-texture p="gauge/hp/layer:0" :style="{position:'absolute', width:Math.trunc(pl.hp*100/pl.mhp)+'%'}"></dir-texture>-->
+							<!--<dir-texture p="gauge/hp/layer:0" :style="{position:'absolute', width:Math.trunc(stat.hp*100/stat.mhp)+'%'}"></dir-texture>-->
 							<dir-frame p="gauge/hp/layer:0" style="position: absolute;">
 								<template slot-scope="{img, path}">
-									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${pl.getHpPercentS()}% 0%, ${pl.getHpPercentS()}% 100%, 0% 100%)`}" />
+									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getHpPercentS()}% 0%, ${stat.getHpPercentS()}% 100%, 0% 100%)`}" />
 									<div style="position: absolute; margin: auto; bottom: 2px;">
 										<table class="table">
 											<tr>
 												<td style="width: 50%;">
 													<div style="float: right; display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(pl.hp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<dir-texture v-for="(i, k) in String(stat.hp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
 													</div>
 												</td>
 												<td width="1">
@@ -43,7 +43,7 @@
 												</td>
 												<td style="width: 50%;">
 													<div style="display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(pl.mhp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<dir-texture v-for="(i, k) in String(stat.mhp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
 													</div>
 												</td>
 											</tr>
@@ -54,13 +54,13 @@
 
 							<dir-frame p="gauge/mp/layer:0" style="position: absolute;">
 								<template slot-scope="{img, path}">
-									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${pl.getMpPercentS()}% 0%, ${pl.getMpPercentS()}% 100%, 0% 100%)`}" />
+									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getMpPercentS()}% 0%, ${stat.getMpPercentS()}% 100%, 0% 100%)`}" />
 									<div style="position: absolute; margin: auto; bottom: 2px;">
 										<table class="table">
 											<tr>
 												<td style="width: 50%;">
 													<div style="float: right; display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(pl.mp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<dir-texture v-for="(i, k) in String(stat.mp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
 													</div>
 												</td>
 												<td width="1">
@@ -68,7 +68,7 @@
 												</td>
 												<td style="width: 50%;">
 													<div style="display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(pl.mmp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<dir-texture v-for="(i, k) in String(stat.mmp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
 													</div>
 												</td>
 											</tr>
@@ -81,10 +81,10 @@
 
 							<dir-texture p="layer:Lv" style="position: absolute; top: 0;">
 								<div style="display: inline-flex;">
-									<dir-texture v-for="(i, k) in String(pl.lv)" :p="`../lvNumber/${i}`" :key="k" style="flex: 1;"></dir-texture>
+									<dir-texture v-for="(i, k) in String(stat.level)" :p="`../lvNumber/${i}`" :key="k" style="flex: 1;"></dir-texture>
 								</div>
 								<div class="text-fff-334" style="z-index: 20; margin-left: 19px; display:inline-block; transform: translateY(-2px);">
-									{{pl.name}}
+									{{chara ? chara.id:""}}
 								</div>
 							</dir-texture>
 						</dir>
@@ -160,7 +160,7 @@
 									<dir-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
 										<template slot-scope="{img, path, width}">
 											<div v-if="ui.chat.size!='min'" :data-src="path" :style="{ width:`${width}px`, background:`url(${img})` }">
-												<input type="text" v-model="ui.chat.inputText" @keydown.enter="ui.chat.records.push(pl.name+': '+ui.chat.inputText);ui.chat.inputText='';ui.chat.records.length>10?ui.chat.records.shift():undefined;" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
+												<input type="text" v-model="ui.chat.inputText" @keydown.enter="ui.chat.records.push(chara.id+': '+ui.chat.inputText);ui.chat.inputText='';ui.chat.records.length>10?ui.chat.records.shift():undefined;" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
 											</div>
 											<div v-else :data-src="path" :style="{ width:`${width}px`,  color: 'white' }">
 												<div v-if="ui.chat.records.length" style="position: absolute;">{{ui.chat.records[ui.chat.records.length-1]}}</div>
@@ -196,38 +196,18 @@
 	//import Vuex from "vuex";
 	import BasicComponent from "./BasicComponent.vue";
 
+	import { PlayerStat } from "../Client/PlayerStat.js";
+
 	//Vue.config.productionTip = false;
 
 	//Vue.use(Vuex);
 
-	class PlayerStat {
-		constructor() {
-			this.name = "aaa";
-			this.hp = 8855;
-			this.mp = 5246;
-			this.mhp = 28855;
-			this.mmp = 25246;
-			this.exp = 50;
-			this.lv = 223;
-		}
-		getHpPercentS() {
-			return (this.hp * 100 / this.mhp).toFixed(0);
-		}
-		getMpPercentS() {
-			return (this.mp * 100 / this.mmp).toFixed(0);
-		}
-		getExpPercentS() {
-			return (this.exp * 100 / this.getNextExp()).toFixed(2);
-		}
-		getNextExp() {
-			return 100;
-		}
-	}
-
 	export default {
+		props: [
+			"chara"
+		],
 		data: function () {
 			return {
-				pl: new PlayerStat(),
 				system: {
 					resolution: {
 						x: 1366,
@@ -259,6 +239,21 @@
 					},
 				}
 			};
+		},
+		computed: {
+			stat: {
+				get: function () {
+					if (this.chara && this.chara.stat) {
+						return this.chara.stat;
+					}
+					else {
+						return new PlayerStat();//dummy
+					}
+				},
+				set: function () {
+					this.$forceUpdate();
+				}
+			}
 		},
 		methods: {
 			trigger_editor_mode: function () {

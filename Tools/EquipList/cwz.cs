@@ -59,6 +59,9 @@ public class Startup
 			case "_images":
 				return DataProvider.get_image_gif_file((string)input.args.path);
 				break;
+			case "font":
+				return DataProvider._get_binary_file((string)input.args.path, "application/x-font-ttf");
+				break;
 			case "ls":
 				return DataProvider.get_identities((string)input.args.path);
 				break;
@@ -90,6 +93,16 @@ internal class DataSource
 
 	public static string tag_version = "";
 
+	public static void writeLog(string text)
+	{
+#if DEBUG
+		Console.Write(DataSource.tag_version);
+		Console.Write("> ");
+		Console.Write(text);
+		Console.Write("\n");
+#endif
+	}
+
 	static void saveConfig()
 	{
 		DataSource.iniFile.Write("resource", "path", DataSource.location);
@@ -115,7 +128,7 @@ internal class DataSource
 
 			if (DataSource.archives != null && DataSource.packages != null)
 			{
-				Console.WriteLine("Already loaded");
+				DataSource.writeLog("Already loaded");
 				return false;
 			}
 			DataSource.archives = new wzarchives(DataSource.location + "\\" + "base.wz");
@@ -130,8 +143,8 @@ internal class DataSource
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine(ex.Message);
-			Console.WriteLine(ex.StackTrace);
+			DataSource.writeLog(ex.Message);
+			DataSource.writeLog(ex.StackTrace);
 		}
 		return true;
 	}
@@ -177,32 +190,15 @@ internal class DataSource
 			}
 			return;
 		}
-		catch (Exception)
+		catch (Exception ex)
 		{
-			try
-			{
-				var p = link.Split('/');
-				p[0] += "2";
-				link = String.Join("/", p);
-				DataSource._get_data(link, out outPack, out outProp);
-				if (outPack == null && outProp == null)
-				{
-					throw new Exception();
-				}
-				return;
-
-				//System.Windows.Forms.MessageBox.Show(link, "2");
-			}
-			catch (Exception ex)
-			{
-				outPack = null;
-				outProp = null;
-				//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
-				Console.WriteLine(Startup.setting + "> can not get: " + link);
-				Console.WriteLine(" ? " + ex.Message);
-				Console.WriteLine(" ? " + ex.StackTrace);
-				return;
-			}
+			outPack = null;
+			outProp = null;
+			//System.Windows.Forms.MessageBox.Show(link + "\n" + ex.Message + "\n" + ex.StackTrace);
+			DataSource.writeLog("can not get: " + link);
+			DataSource.writeLog(" ? " + ex.Message);
+			DataSource.writeLog(" ? " + ex.StackTrace);
+			return;
 		}
 	}
 
@@ -408,6 +404,24 @@ internal class DataProvider
 			returns.mime = "application/octet-stream";
 			//returns.mime = "text/plain";
 			//returns.mime = "text/html";
+			returns.data = sound.data;
+
+			return returns;
+		}
+		return null;
+	}
+	public static Returns _get_binary_file(string path, string mime)
+	{
+		wzproperty prop;
+		Returns returns = new Returns();
+
+		DataSource.get_data(path, out prop);
+
+		if (prop != null)
+		{
+			var sound = prop.data as wzsound;
+
+			returns.mime = mime;
 			returns.data = sound.data;
 
 			return returns;
@@ -992,7 +1006,7 @@ internal class POD_XML
 		}
 		catch (Exception ex)
 		{
-			Console.Write("<cs Error: " + ex.Message + "\n" + ex.StackTrace + ">");
+			DataSource.writeLog("<cs Error: " + ex.Message + "\n" + ex.StackTrace + ">");
 		}
 		return sb;
 	}

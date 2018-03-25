@@ -3,7 +3,7 @@ import { AddInitTask } from "../../init.js";
 
 import { ItemCategoryInfo, ResourceManager, CharacterRenderConfig } from '../../../public/resource.js';
 
-import { Vec2 } from '../math.js';
+import { Vec2, Rectangle } from '../math.js';
 import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
 import { engine, Graph } from '../Engine.js';
 
@@ -14,6 +14,125 @@ import { SkillAnimation } from '../Skill.js';
 
 let zMap = {};
 let sMap = {};
+
+class ChatBalloon {
+	constructor() {
+		this._raw = null;
+	}
+
+	/**
+	 * @param {any} style
+	 */
+	async load(style) {
+		const _d_path = [this.constructor._base_path, style].join("/");
+		const _i_path = "/images" + _d_path;
+
+		this._raw = JSON.parse(await $get.data(_d_path));
+
+		this.nw = new Sprite(this._raw.nw);
+		this.nw._url = _i_path + "/nw";
+
+		this.n = new Sprite(this._raw.n);
+		this.n._url = _i_path + "/n";
+
+		this.ne = new Sprite(this._raw.ne);
+		this.ne._url = _i_path + "/ne";
+
+		this.w = new Sprite(this._raw.w);
+		this.w._url = _i_path + "/w";
+
+		this.c = new Sprite(this._raw.c);
+		this.c._url = _i_path + "/c";
+
+		this.e = new Sprite(this._raw.e);
+		this.e._url = _i_path + "/e";
+
+		this.sw = new Sprite(this._raw.sw);
+		this.sw._url = _i_path + "/sw";
+
+		this.s = new Sprite(this._raw.s);
+		this.s._url = _i_path + "/s";
+
+		this.se = new Sprite(this._raw.se);
+		this.se._url = _i_path + "/se";
+
+		this.arrow = new Sprite(this._raw.arrow);
+		this.arrow._url = _i_path + "/arrow";
+
+		//this._pat_c = ctx.createPattern(this.c, "repeat");
+
+		ChatBalloon.cache[style] = this;
+	}
+
+	/*
+	1 12345 12345 12345
+	2 12345 12345 12345
+	3 12345 12345 12345
+	4 12345 12345 12345
+	5 12345 12345 12345
+	6 xxx12 34512 34
+	 */
+
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {string} text - 84 character
+	 * @param {number} x - chat balloon arrow bottom x
+	 * @param {number} y - chat balloon arrow bottom y
+	 */
+	draw(renderer, text, x, y) {
+		const LINE_HEIGHT = 12;
+		const ctx = renderer.ctx;
+
+		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.textBaseline = "top";//alphabetic
+
+		let lines = [];
+		text = text.slice(0, 84);
+
+		for (let i = 0; i < 84; i += 15) {
+			let line = text.slice(i, i + 15);
+			lines.push(line);
+		}
+
+		const tw = ctx.measureText(lines[0]).width;
+		let cy = 0;
+
+		this.nw.draw2(x, y);
+		
+		this.n.draw2(x, y);
+
+		this.ne.draw2(x, y);
+
+		for (let line of lines) {
+			const w = ctx.measureText(line).width;
+
+			this.w.draw2(x, cy);
+
+			//ctx.rect(x, cy, w, LINE_HEIGHT);
+			//ctx.fillStyle = this._pat_c;
+
+			ctx.fillStyle = "black";
+			ctx.fillText(line, x, cy);
+
+			this.e.draw2(x + w, cy);
+
+			cy += LINE_HEIGHT;
+		}
+
+		this.sw.draw2(x, y + cy);
+		this.s.draw2(x, y + cy);
+		this.se.draw2(x, y + cy);
+	}
+
+	static get _base_path() {
+		return "/UI/ChatBalloon.img";
+	}
+}
+
+/** @type {{[style:number]:ChatBalloon}} */
+ChatBalloon.cache = {};
+
+window.$images_ChatBalloon = ChatBalloon.cache;
 
 /**
  * 00026623.blink[1].brow has bug
@@ -109,7 +228,13 @@ class FragmentTexture extends SpriteBase {
 	/** @returns {Vec2} */
 	get _earOverHead() { return this._raw.map.earOverHead; }
 	isAnchor_EarOverHead() { return !!this._raw.map.earOverHead; }
-		
+
+	/**
+	 * @param {FragmentTexture} that
+	 * @param {FragmentTexture} base
+	 * @param {string} anchor - anchor name
+	 * @returns {Vec2}
+	 */
 	_anchor(that, base, anchor) {
 		return base[anchor].sub(that[anchor]).add(base.origin.sub(that.origin));
 	}
@@ -1379,31 +1504,42 @@ class CharacterSlots {
 			value: []
 		});
 
-		Object.defineProperty(this, "_hair", {
-			writable: true,
-			enumerable: false,
-			value: null,
-		});
-		Object.defineProperty(this, "_hair2", {
-			writable: true,
-			enumerable: false,
-			value: null,
-		});
-		Object.defineProperty(this, "_hairMix2", {	// 0~1.0
-			writable: true,
-			enumerable: false,
-			value: null,
-		});
-		Object.defineProperty(this, "_hair3", {
-			writable: true,
-			enumerable: false,
-			value: null,
-		});
-		Object.defineProperty(this, "_hairMix3", {	// 0~1.0
-			writable: true,
-			enumerable: false,
-			value: null,
-		});
+		/** @type {CharacterEquipHair} */
+		this._hair = null;
+		/** @type {CharacterEquipHair} */
+		this._hair2 = null;
+		/** @type {CharacterEquipHair} 0~1.0 */
+		this._hairMix2 = null;
+		/** @type {CharacterEquipHair} */
+		this._hair3 = null;
+		/** @type {CharacterEquipHair} 0~1.0 */
+		this._hairMix3 = null;
+
+		//Object.defineProperty(this, "_hair", {
+		//	writable: true,
+		//	enumerable: false,
+		//	value: null,
+		//});
+		//Object.defineProperty(this, "_hair2", {
+		//	writable: true,
+		//	enumerable: false,
+		//	value: null,
+		//});
+		//Object.defineProperty(this, "_hairMix2", {	// 0~1.0
+		//	writable: true,
+		//	enumerable: false,
+		//	value: null,
+		//});
+		//Object.defineProperty(this, "_hair3", {
+		//	writable: true,
+		//	enumerable: false,
+		//	value: null,
+		//});
+		//Object.defineProperty(this, "_hairMix3", {	// 0~1.0
+		//	writable: true,
+		//	enumerable: false,
+		//	value: null,
+		//});
 
 		/** @type {CharacterEquipBody} */
 		this.body = null;
@@ -1495,22 +1631,34 @@ class CharacterSlots {
 		}
 	}
 	set hairColor2(color) {
-		if (color != null && (!this._hair2 || this._hair2.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
-			const that = this;
+		if (!color) {
+			console.error(new TypeError());
+			return;
+		}
+		let hc2Id = CharacterRenderConfig.getColorHairID(this.hair.id, color);
 
-			this.hair.$promise_hair2 = this.__loadColoredHair(color);
+		if (!this._hair2 || hc2Id != this._hair2.id) {
+			if (hc2Id == this._hair.id) {
+				that._hair2 = null;
+				that.hairMix2 = 0;
+			}
+			else {
+				const that = this;
 
-			this.hair.$promise_hair2.then(function (hair2) {
-				delete that.hair.$promise_hair2;
+				this.hair.$promise_hair2 = this.__loadColoredHair(color);
 
-				that._hair2 = hair2;
-				if (that._hair2 && that.hairMix2 != null) {
-					that.hairMix2 = that.hairMix2;//force update
-				}
-				//else {
-				//	that.hairMix2 = 0;//disable
-				//}
-			});
+				this.hair.$promise_hair2.then(function (hair2) {
+					delete that.hair.$promise_hair2;
+
+					that._hair2 = hair2;
+					if (that._hair2 && that.hairMix2 != null) {
+						that.hairMix2 = that.hairMix2;//force update
+					}
+					//else {
+					//	that.hairMix2 = 0;//disable
+					//}
+				});
+			}
 		}
 	}
 	/** @returns {number} 0~1.0 */
@@ -1557,22 +1705,34 @@ class CharacterSlots {
 		}
 	}
 	set hairColor3(color) {
-		if (color != null && (!this._hair3 && this._hair3.id != CharacterRenderConfig.getColorHairID(this.hair.id, color))) {
-			const that = this;
+		if (!color) {
+			console.error(new TypeError());
+			return;
+		}
+		let hc3Id = CharacterRenderConfig.getColorHairID(this.hair.id, color);
 
-			this.hair.$promise_hair3 = this.__loadColoredHair(color);
+		if (!this._hair3 || this._hair3.id != hc3Id) {
+			if (this._hair.id == hc3Id || this._hair2.id == hc3Id) {
+				that._hair3 = null;
+				that.hairMix3 = 0;
+			}
+			else {
+				const that = this;
 
-			this.hair.$promise_hair3.then(function (hair3) {
-				delete this.hair.$promise_hair3;
+				this.hair.$promise_hair3 = this.__loadColoredHair(color);
 
-				that._hair3 = hair3;
-				if (that._hair3 && that.hairMix2 != null) {
-					that.hairMix2 = that.hairMix2;//force update
-				}
-				//else {
-				//	that.hairMix2 = 0;//disable
-				//}
-			});
+				this.hair.$promise_hair3.then(function (hair3) {
+					delete this.hair.$promise_hair3;
+
+					that._hair3 = hair3;
+					if (that._hair3 && that.hairMix3 != null) {
+						that.hairMix3 = that.hairMix3;//force update
+					}
+					//else {
+					//	that.hairMix3 = 0;//disable
+					//}
+				});
+			}
 		}
 	}
 	/** @returns {number} */
@@ -2007,6 +2167,13 @@ export class CharacterAnimationBase {
 		this._action_time = 0;
 		this._action_frame = value;
 		this.__require_update |= true;
+
+		if (process.env.NODE_ENV !== 'production') {
+			if (!(typeof value == 'number')) {
+				debugger;
+				this._action_frame = Number(value) | 0;
+			}
+		}
 	}
 
 	/**
@@ -2099,6 +2266,13 @@ export class CharacterAnimationBase {
 		this._emotion_frame = value;
 		this._emotion_time = 0;
 		this.__require_update |= true;
+
+		if (process.env.NODE_ENV !== 'production') {
+			if (!(typeof value == 'number')) {
+				debugger;
+				this._emotion_frame = Number(value) | 0;
+			}
+		}
 	}
 
 	/**
@@ -2386,6 +2560,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		/** @type {function(IRenderer)} */
 		this.render = function (renderer) {
 			//not ready to render
+			//if load then set load render = _render
 		}
 	}
 
@@ -2424,8 +2599,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		this.waitLoaded();
 		super.update(stamp);
 	}
-	
-	/** @type {function(IRenderer)} */
+
+	/**
+	 * @param {IRenderer} renderer
+	 */
 	_render(renderer) {
 		const x = Math.trunc(this.x + this.tx);
 		const y = Math.trunc(this.y + this.ty);
@@ -2435,6 +2612,89 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		//this.tx = 0;//auto clear
 		//this.ty = 0;//auto clear
 	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 */
+	_$draw_name(renderer, text) {
+		const ctx = renderer.ctx;
+
+		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.textBaseline = "middle";
+		const r = 2, h = 12;
+		const w = ctx.measureText(text).width + 3;
+		const x = Math.trunc(this.x + this.tx) - w * 0.5;
+		const y = Math.trunc(this.y + this.ty);
+
+		const left = x + r;
+		const _left = x;
+		const top = y;
+		const _top = y + r;
+		const _right = x + w;
+		const right = _right + r;
+		const bottom = y + r + h + r;
+		const _bottom = y + r + h;
+		
+		ctx.fillStyle = "rgba(0,0,0,0.7)";
+		ctx.strokeStyle = "rgba(0,0,0,0.7)";
+		ctx.beginPath();
+		{
+			ctx.moveTo(left, top);
+
+			ctx.lineTo(_right, top);
+			ctx.arcTo(right, top, right, _top, r);
+
+			ctx.lineTo(right, _bottom);
+			ctx.arcTo(right, bottom, _right, bottom, r);
+
+			ctx.lineTo(left, bottom);
+			ctx.arcTo(_left, bottom, _left, _bottom, r);
+
+			ctx.lineTo(_left, _top);
+			ctx.arcTo(_left, top, left, top, r);
+		}
+		ctx.fill();
+
+		if (0) {//inner
+			ctx.fillStyle = "yellow";
+			ctx.strokeStyle = "yellow";
+			ctx.beginPath();
+			{
+				ctx.moveTo(left, _top);
+
+				ctx.lineTo(_right, _top);
+
+				ctx.lineTo(_right, _bottom);
+
+				ctx.lineTo(left, _bottom);
+
+				ctx.closePath();
+			}
+			ctx.stroke();
+		}
+		ctx.fillStyle = "white";
+		ctx.strokeStyle = "white";
+		ctx.fillText(text, left, (top + bottom) * 0.5);
+
+		//this.$_draw_chatBalloon(renderer, "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 0);
+	}
+	
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {string} text
+	 * @param {number} style
+	 */
+	async $_draw_chatBalloon(renderer, text, style = 0) {
+		/** @type {ChatBalloon} */
+		let cb = ChatBalloon.cache[style];
+		if (!cb) {
+			cb = new ChatBalloon();
+			await cb.load(style);
+		}
+
+		cb.draw(renderer, text, (window.$x || 0) + this.x, (window.$y || -100) + this.y);
+	}
+
 	
 	_setup_test() {
 		this.use("00026509");
@@ -2608,26 +2868,33 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		window.open(this._outlink());
 	}
 
+	/**
+	 * calc current frame bound box
+	 * @returns {Rectangle}
+	 */
 	_calcBoundBox() {
 		let left = 0, top = 0, right = 0, bottom = 0;
 		
 		for (let i in this.__frag_list) {
 			let ft = this.__frag_list[i];
 			if (ft.texture) {
-				let x0 = Math.trunc(ft.relative.x);
-				let y0 = Math.trunc(ft.relative.y);
-				let x1 = Math.trunc(ft.width);
-				let y1 = Math.trunc(ft.height);
+				let x0 = ft.relative.x;
+				let y0 = ft.relative.y;
+				let x1 = x0 + ft.width;
+				let y1 = y0 + ft.height;
 		
 				left = Math.min(left, x0);
-				top = Math.min(left, y0);
+				top = Math.min(top, y0);
 				right = Math.max(right, x1);
 				bottom = Math.max(bottom, y1);
 			}
 		}
-		return {
-			left, top, right, bottom
-		}
+		return new Rectangle(
+			Math.trunc(left),
+			Math.trunc(top),
+			Math.trunc(right - left),
+			Math.trunc(bottom - top)
+		);
 	}
 
 	_save_as_svg() {
@@ -2660,6 +2927,75 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			//window.open(url);
 			DownloadData(svg, "image/svg+xml;utf8", file_name);
 		});
+	}
+
+	/**
+	 * "data:image/png;base64,[...]"
+	 * @param {IRenderer} renderer
+	 * @param {string} filename
+	 * @returns {string}
+	 */
+	_save_as_png(renderer, filename) {
+		let bound = this._calcBoundBox();
+		let size = bound.size;
+		let x = -bound.left;
+		let y = bound.height;
+		let angle = 0;
+		let front = false;
+
+		// use Canvas2, must not fail
+		try {
+			renderer.$swapCanvas();
+		}
+		catch (ex) {
+			console.error(ex);
+			return;
+		}
+
+		//save Canvas2 size, current ctx is _ctx2
+		const c2w = renderer._ctx2.canvas.width;
+		const c2h = renderer._ctx2.canvas.height;
+		//
+		renderer.ctx.canvas.width = size.x;
+		renderer.ctx.canvas.height = size.y;
+
+		try {
+			this._draw(renderer, x, y, angle, front);
+		}
+		catch (ex) {
+			console.error(ex);
+			// nothing
+		}
+
+		let base64 = renderer.ctx.canvas.toDataURL("image/png");
+		{
+			let elem = document.createElement("a");
+
+			let name = `${filename ? (filename+"."):""}${this.action}[${this.action_frame}].${this.emotion}[${this.emotion_frame}].png`;
+
+			elem.id = name;
+			elem.download = name;
+			elem.href = base64;
+
+			document.body.appendChild(elem);
+			elem.click();
+			document.body.removeChild(elem);
+		}
+
+		//restore Canvas2 size, current ctx is _ctx2
+		renderer.ctx.canvas.width = c2w;
+		renderer.ctx.canvas.height = c2h;
+
+		// restore Canvas, must not fail
+		try {
+			renderer.$swapCanvas();
+		}
+		catch (ex) {
+			console.error(ex);
+			// nothing
+		}
+
+		return base64;
 	}
 
 	async __texture_to_base64() {

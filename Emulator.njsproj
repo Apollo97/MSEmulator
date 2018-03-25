@@ -6,7 +6,7 @@
     <ProjectGuid>{97e9329a-30d6-40ee-b133-d6a2385ed9db}</ProjectGuid>
     <ProjectHome />
     <ProjectView>ShowAllFiles</ProjectView>
-    <StartupFile>app.js</StartupFile>
+    <StartupFile>wvs.js</StartupFile>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
@@ -45,6 +45,15 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="public\spine\SpineBinary.js" />
     <Compile Include="public\spine\SSAnim.js" />
     <Compile Include="src\app.js" />
+    <Compile Include="src\Client\Client.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\Client\PlayerStat.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\Client\PMovePath.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\components\CorePosition.js" />
     <Compile Include="src\game\Animation.js" />
     <Compile Include="src\game\Canvas2DRenderer.js" />
@@ -81,6 +90,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\init.js" />
     <Compile Include="src\util.js" />
     <Compile Include="webpack.config.js" />
+    <Compile Include="wvs.js" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".eslintrc" />
@@ -229,6 +239,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Folder Include="src\game\MobSkill\" />
     <Folder Include="src\game\Physics\" />
     <Folder Include="src\game\Renderer\" />
+    <Folder Include="src\Client\" />
     <Folder Include="src\ui\" />
     <Folder Include="src\ui\UIToolTip\" />
     <Folder Include="src\ui\UIWindow\" />

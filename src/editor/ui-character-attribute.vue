@@ -135,10 +135,10 @@
 								<td></td>
 								<td>sat</td>
 								<td>
-									<input type="range" v-model.number="equip.filter.sat" min="0" max="200" />
+									<input type="range" v-model.number="equip.filter.sat" min="0" max="999" />
 								</td>
 								<td>
-									<input type="number" v-model.number="equip.filter.sat" min="0" max="200" />
+									<input type="number" v-model.number="equip.filter.sat" min="0" max="999" />
 								</td>
 								<td><button @click="equip.filter.sat=100;" class="btn">×</button></td>
 							</tr>
@@ -148,10 +148,10 @@
 								<td></td>
 								<td>bri</td>
 								<td>
-									<input type="range" v-model.number="equip.filter.bri" min="0" max="200" />
+									<input type="range" v-model.number="equip.filter.bri" min="0" max="999" />
 								</td>
 								<td>
-									<input type="number" v-model.number="equip.filter.bri" min="0" max="200" />
+									<input type="number" v-model.number="equip.filter.bri" min="0" max="999" />
 								</td>
 								<td><button @click="equip.filter.bri=100;" class="btn">×</button></td>
 							</tr>

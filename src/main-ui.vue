@@ -10,7 +10,10 @@
 		</transition>
 
 		<transition name="fade" style="position: absolute;">
-			<status-bar ref="statusBar" v-show="!editor_mode"></status-bar>
+			<status-bar ref="statusBar"
+						v-show="!editor_mode"
+						:chara="chara"
+						></status-bar>
 		</transition>
 
 		<div @contextmenu.prevent class="gui" style="position: absolute; width: 0; height: 0;">
@@ -150,14 +153,9 @@
 	});
 
 	export default {
+		store: Editor.store,
 		data: function () {
 			return {
-				chara: {
-					level: 150,
-					str: 123, luk: 4,
-					dex: 999, int: 4,
-					_job: 3, _spec_job: 3,
-				},
 				equip: null,
 				isShowEquipTip: true,
 				isShowUWEquipSlot: false,
@@ -175,6 +173,16 @@
 
 				onkeydown: null,
 			};
+		},
+		computed: {
+			chara: {
+				get: function () {
+					return this.$store.state.chara;
+				},
+				set: function () {
+					this.$forceUpdate();
+				}
+			}
 		},
 		methods: {
 			showItemTip: function (_ref) {

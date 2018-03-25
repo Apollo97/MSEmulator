@@ -23,7 +23,7 @@ chara.y = screen_size.y / 2;
 
 $get.data("/Skill/MobSkill.img/238/level/4").then(async function (_data) {
 	let _raw = JSON.parse(_data);
-	window.anima = new Animation(_raw["ball0"], "Skill/MobSkill.img/238/level/4/ball0");
+	window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
 	anima.is_loop = true;
 	anima.load();
 }).then(() => {

@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div class="UIToolTip">
-		<template v-if="chara != null && equip != null">
+		<template v-if="chara != null && stat != null && equip != null">
 			<div v-if="isShow" class="UIToolTip frame" style="/*height: 658px;*/">
 				<table style="position:absolute; left:0px; top:0px; width:100%; height:100%;">
 					<thead>
@@ -90,20 +90,20 @@
 								</div>
 							</div>
 							<div class="UIToolTip attrLeft" style="float: left; width: 50%;">
-								<equip-req-level attr-name="Level" :equip="equip" :chara="chara"></equip-req-level>
+								<equip-req-level attr-name="Level" :equip="equip" :stat="stat"></equip-req-level>
 
 								<!--padding--><div class="c1" style="position: relative; width: 100%; height: 9px; margin-left: 2px;"></div>
-								<equip-req attr-name="STR" :equip="equip" :chara="chara"></equip-req>
+								<equip-req attr-name="STR" :equip="equip" :stat="stat"></equip-req>
 
 								<!--padding--><div class="c1" style="position: relative; width: 100%; height: 3px; margin-left: 2px;"></div>
-								<equip-req attr-name="DEX" :equip="equip" :chara="chara"></equip-req>
+								<equip-req attr-name="DEX" :equip="equip" :stat="stat"></equip-req>
 							</div>
 							<div class="UIToolTip attrRight" style="float: left; width: 50%;">
 								<!--padding--><div class="c1" style="position: relative; width: 100%; height: 15px; margin-left: 2px;"></div>
-								<equip-req attr-name="LUK" :equip="equip" :chara="chara"></equip-req>
+								<equip-req attr-name="LUK" :equip="equip" :stat="stat"></equip-req>
 
 								<!--padding--><div class="c1" style="position: relative; width: 100%; height: 3px; margin-left: 2px;"></div>
-								<equip-req attr-name="INT" :equip="equip" :chara="chara"></equip-req>
+								<equip-req attr-name="INT" :equip="equip" :stat="stat"></equip-req>
 							</div>
 						</div>
 					</div>
@@ -133,7 +133,7 @@
 							</div>
 						</div>
 						<div v-if="'reqSpecJob' in equip">
-							<!--<div :if="equip.reqSpecJob != null && chara._spec_job == equip.reqSpecJob"></div>-->
+							<!--<div :if="equip.reqSpecJob != null && stat._spec_job == equip.reqSpecJob"></div>-->
 						</div>
 					</div>
 
@@ -221,8 +221,10 @@
 <script>
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../../../public/resource.js';
 
+	import { PlayerStat } from "../../Client/PlayerStat.js";
 
-	const _init_chara_data = {
+
+	const _init_data = {
 		level: 150,
 		str: 123, luk: 4,
 		dex: 999, int: 4,
@@ -384,7 +386,7 @@
 				"texture": Texture,
 			};
 
-			this.props = ['attrName', 'equip', 'chara'];
+			this.props = ['attrName', 'equip', 'stat'];
 
 			this.methods = {
 				getReqState: this.getReqState,
@@ -435,7 +437,7 @@
 		}
 		getReqState() {
 			const required = this.equip[`req${this.attrName}`];
-			const refer = this.chara[this.attrName.toLowerCase()];
+			const refer = this.stat[this.attrName.toLowerCase()];
 			if (required != 0 && required != null && refer != null) {
 				if (refer >= required) {
 					return "Can";
@@ -469,7 +471,7 @@
 		}
 		getReqState() {
 			const required = this.equip[`req${this.attrName}`];
-			const refer = this.chara[this.attrName.toLowerCase()];
+			const refer = this.stat[this.attrName.toLowerCase()];
 			if (required != 0 && required != null && refer != null) {
 				if (refer >= required) {
 					return "YellowNumber";
@@ -502,6 +504,21 @@
 				default: true
 			}
 		},
+		computed: {
+			stat: {
+				get: function () {
+					if (this.chara && this.chara.stat) {
+						return this.chara.stat;
+					}
+					else {
+						return new PlayerStat();//dummy
+					}
+				},
+				set: function () {
+					this.$forceUpdate();
+				}
+			}
+		},
 		methods: {
 			_update_frame: function () {
 				let container = $(this.$el);
@@ -512,7 +529,7 @@
 				frame.innerHeight(height);
 			},
 			canUseEquip: function () {
-				return EquipJobInfo.canUseEquip(this.chara._job, this.equip.reqJob);
+				return EquipJobInfo.canUseEquip(this.stat._job, this.equip.reqJob);
 			},
 			adjAttr: function (num) {
 				return num > 0 ? ("+" + num) : num.toString();

@@ -542,11 +542,20 @@ function DataServer(app) {
 				sendFile(task, req, res, next);
 			}
 		});
-		a_pp.get(/\/binary\/.*/, function (req, res, next) {//wav/mp3
+		a_pp.get(/\/binary\/.*/, function (req, res, next) {
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
 				let data_path = url.slice(8);
 				let task = _data_provider.getAsync("binary", data_path);
+
+				sendFile(task, req, res, next);
+			}
+		});
+		a_pp.get(/\/font\/.*/, function (req, res, next) {//font
+			if (_data_provider.isNeedResponse(req, res, next)) {
+				let url = decodeURI(req.path);
+				let data_path = url.slice(6);
+				let task = _data_provider.getAsync("font", data_path);
 
 				sendFile(task, req, res, next);
 			}

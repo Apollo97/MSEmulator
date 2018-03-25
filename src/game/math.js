@@ -68,6 +68,12 @@ export class Vec2 {
 }
 
 export class Rectangle {
+	/**
+	 * Rectangle(left: number, top: number, width: number, height: number)
+	 * Rectangle(position: Vec2, size: Vec2)
+	 * Rectangle(rect: Rectangle)
+	 * Rectangle() => Rectangle(0, 0, 0, 0)
+	 */
 	constructor() {
 		if (arguments.length == 4) {
 			/** @type {number} */

@@ -22,9 +22,11 @@ export class World extends box2d.b2World {
 
 		this.SetContactListener(new ContactListener());
 
-		this.player = null;
-		this._player_rebirth();
-		this.player.setPosition(0, 0, true);
+		if (!window.io) {
+			this.player = null;
+			this._player_rebirth();
+			this.player.setPosition(0, 0, true);
+		}
 
 		this.ground = new Ground();
 		
@@ -152,9 +154,11 @@ export class World extends box2d.b2World {
 		
 		shape.SetAsEdge(new box2d.b2Vec2(right, top), new box2d.b2Vec2(right, bottom));
 		bb.CreateFixture2(shape, 1.0);
-		
-		this.player.setPosition((right + left) * 0.5, (bottom + top) * 0.5, true);
-			
+
+		if (this.player) {
+			this.player.setPosition((right + left) * 0.5, (bottom + top) * 0.5, true);
+		}
+
 		this.mapBound_body = bb;
 	}
 
@@ -168,6 +172,17 @@ export class World extends box2d.b2World {
 				return window.chara ? window.chara.renderer : null;
 			}
 		});
+	}
+
+	$createPlayer() {
+		let player = new PPlayer();
+
+		player._create(this);
+
+		//init ?
+		player.renderer = null;
+
+		return player;
 	}
 	
 	doAfterStep(func) {

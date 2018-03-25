@@ -200,6 +200,7 @@
 		<transition name="fade">
 			<ui-menu :show="is_show_chara_dl_menu" ref="chara_dl_menu" @close="closeCharacterDLMenu" style="position: absolute; width: 8em; z-index: 99999;">
 				<template v-if="chara">
+					<a @click="_save_as_png">Save as PNG</a>
 					<a @click="chara.renderer._save_as_svg()">Save as SVG</a>
 					<template v-if="progressMaximum == 0 || progressValue >= progressMaximum">
 						<a :href="chara.renderer._outlink()">Outlink</a>
@@ -232,23 +233,25 @@
 	import UICharacter from './ui-character.vue';
 	import UICharacterSVG from './ui-character-svg.vue';
 	import UICharacterAttribute from './ui-character-attribute.vue';
-	
+
 	import UIMobList from "./ui-mob-list.vue";
 	import UIMapEditor from "./ui-map-editor.vue";
 
 	//import { GameStateManager } from '../game/GameState.js';
 
 	import { ItemCategoryInfo } from '../../public/resource.js';
-	import { SceneCharacter } from '../game/SceneCharacter.js';
+	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
+
+	import { engine } from '../game/Engine.js';
 
 	const store = new Vuex.Store({
 		//strict: process.env.NODE_ENV !== 'production',
 		state: {
 			charaList: [],
-			chara: null,/** @type {SceneCharacter} chara */
+			chara: null,/** @type {BaseSceneCharacter} chara */
 			selected: null,/** @type {string} id */
 			_last_id: 0,
-			
+
 			progressValue: 0,
 			progressMaximum: 0,
 		},
@@ -307,9 +310,12 @@
 				});
 			},
 			selectChara: function (context, payload) {
+				if (context.state.chara && context.state.chara.$remote) {
+					return;
+				}
 				const state = context.state;
 				const id = payload.id;
-				
+
 				let index = -1;
 				for (let i = 0; i < state.charaList.length; ++i) {
 					const chara = state.charaList[i];
@@ -331,24 +337,24 @@
 					selected_chara.$physics = scene_map.controller.player;
 
 					window.chara = state.chara = selected_chara;
-					
+
 					return id;
 				}
 			},
 			_addChara: async function (context, payload) {//add exist
 				const state = context.state;
 
-				if (payload && payload.chara instanceof SceneCharacter) {
+				if (payload && payload.chara instanceof BaseSceneCharacter) {
 					const chara = payload.chara;
 
 					await chara.renderer.__synchronize();
-					
+
 					state.charaList.push(chara);
 
 					context.dispatch('selectChara', {
 						id: chara.id,
 					});
-					
+
 					context.commit("increaseProgress", { amount: 1 });
 
 					return chara;
@@ -356,12 +362,24 @@
 				debugger;
 			},
 			_createChara: async function (context, payload) {
+				if (window.$io && payload.remote_chara) {
+					//alert("dont use _createChara in online mode");
+					//return;
+					payload.emplace = payload.remote_chara;
+				}
 				const state = context.state;
-				
+
 				context.commit("increaseId");
 				const id = context.getters.lastId;
-				
-				let chara = new SceneCharacter();
+
+				let chara;
+
+				if (payload.remote_chara) {
+					chara = new SceneRemoteCharacter();
+				}
+				else {
+					chara = new SceneCharacter();
+				}
 				chara.id = id;
 
 				//step 1: load base data
@@ -370,7 +388,7 @@
 
 				//step 2: load equip...
 				if (payload) {
-					if (payload.chara instanceof SceneCharacter) {//clone
+					if (payload.chara instanceof BaseSceneCharacter) {//clone
 						chara.renderer._parse(payload.chara.renderer._stringify(false));
 
 						chara.renderer.x = payload.chara.renderer.x;
@@ -385,6 +403,9 @@
 					chara.renderer._setup_test();
 				}
 
+				if (!payload.remote_chara) {
+					chara.$remote = true;
+				}
 				return await context.dispatch('_addChara', {
 					chara: chara,
 				});
@@ -401,19 +422,19 @@
 				if (!list) {
 					return;
 				}
-				
+
 				//clear
 				context.commit("clear");
-				
+
 				context.commit("increaseProgressMax", { amount: list.length * 2 });
-				
+
 				for (let index = 0; index < list.length; ++index) {
 					const savedChara = list[index];
-					
+
 					let isIdExist = await context.dispatch('isIdExist', {
 						id: savedChara.id,
 					});
-					
+
 					if (isIdExist) {
 						//console.log("replace character[" + index + "]: " + savedChara.id);
 						console.log("character: " + savedChara.id + "is exist");
@@ -454,19 +475,19 @@
 		data: function () {
 			let scr_rat_x = window.innerWidth / 1366;
 			let scr_rat_y = window.innerHeight / 768;
-		
+
 			return {
 				dirty: 0,
-				
+
 				//chara: {},
 				//windowOrder: [1, 2, 3],
 				is_show_chara_dl_menu: false,
-				
+
 				mapEditorMode: "layeredObject",
 				displayMode: 0,
 				selectedLayer: 0,
 				wnd_debug_style: { background: "#ffffff", padding: "0 0.5em" },
-				
+
 				wnds: {
 					menu: { name: "$menu", visable: true, pos: { x: 0, y: 0 } },
 					character_list: { name: "Characters", visable: true, pos: { x: 900 * scr_rat_x, y: 220 * scr_rat_y } },
@@ -496,7 +517,7 @@
 				return window.scene_map;
 			},
 			loadCharacters: function () {
-				console.log("load character");				
+				console.log("load character");
 				this.$store.dispatch('loadCharacters');
 			},
 			saveCharacters: function () {
@@ -638,6 +659,9 @@
 				let code = this.chara.renderer._stringify(false);
 				copyToClipboard(code);
 			},
+			_save_as_png: function () {
+				this.chara.renderer._save_as_png(engine, this.chara.id);
+			},
 		},
 		components: {
 			"ui-draggable": UIDraggable,
@@ -650,7 +674,7 @@
 			"ui-character-svg": UICharacterSVG,
 			"ui-character-attribute": UICharacterAttribute,
 			"ui-equip-box": UIEquipBox,
-			
+
 			"ui-mob-list": UIMobList,
 			"ui-map-editor": UIMapEditor,
 		}
