@@ -7,7 +7,7 @@ import { Vec2, Rectangle } from '../math.js';
 import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
 import { engine, Graph } from '../Engine.js';
 
-import { SpriteBase, Sprite } from '../Sprite.js';
+import { SpriteBase, Sprite, PatternSprite } from '../Sprite.js';
 
 import { SkillAnimation } from '../Skill.js';
 
@@ -15,7 +15,7 @@ import { SkillAnimation } from '../Skill.js';
 let zMap = {};
 let sMap = {};
 
-class ChatBalloon {
+export class ChatBalloon {
 	constructor() {
 		this._raw = null;
 	}
@@ -29,35 +29,45 @@ class ChatBalloon {
 
 		this._raw = JSON.parse(await $get.data(_d_path));
 
-		this.nw = new Sprite(this._raw.nw);
+		this.nw = new PatternSprite(this._raw.nw);
 		this.nw._url = _i_path + "/nw";
+		this.nw.direction = this.nw.e_noRepeat;
 
-		this.n = new Sprite(this._raw.n);
+		this.n = new PatternSprite(this._raw.n);
 		this.n._url = _i_path + "/n";
+		this.n.direction = this.n.e_repeat;
 
-		this.ne = new Sprite(this._raw.ne);
+		this.ne = new PatternSprite(this._raw.ne);
 		this.ne._url = _i_path + "/ne";
+		this.ne.direction = this.ne.e_noRepeat;
 
-		this.w = new Sprite(this._raw.w);
+		this.w = new PatternSprite(this._raw.w);
 		this.w._url = _i_path + "/w";
+		this.w.direction = this.w.e_repeat;
 
-		this.c = new Sprite(this._raw.c);
+		this.c = new PatternSprite(this._raw.c);
 		this.c._url = _i_path + "/c";
+		this.c.direction = this.c.e_repeat;
 
-		this.e = new Sprite(this._raw.e);
+		this.e = new PatternSprite(this._raw.e);
 		this.e._url = _i_path + "/e";
+		this.e.direction = this.e.e_repeat;
 
-		this.sw = new Sprite(this._raw.sw);
+		this.sw = new PatternSprite(this._raw.sw);
 		this.sw._url = _i_path + "/sw";
+		this.sw.direction = this.sw.e_noRepeat;
 
-		this.s = new Sprite(this._raw.s);
+		this.s = new PatternSprite(this._raw.s);
 		this.s._url = _i_path + "/s";
+		this.s.direction = this.s.e_repeat;
 
-		this.se = new Sprite(this._raw.se);
+		this.se = new PatternSprite(this._raw.se);
 		this.se._url = _i_path + "/se";
+		this.se.direction = this.se.e_noRepeat;
 
-		this.arrow = new Sprite(this._raw.arrow);
+		this.arrow = new PatternSprite(this._raw.arrow);
 		this.arrow._url = _i_path + "/arrow";
+		this.arrow.direction = this.arrow.e_noRepeat;
 
 		//this._pat_c = ctx.createPattern(this.c, "repeat");
 
@@ -95,33 +105,29 @@ class ChatBalloon {
 		}
 
 		const tw = ctx.measureText(lines[0]).width;
-		let cy = 0;
+		const th = lines.length * LINE_HEIGHT;
+		let cy = y + this.nw.y * 0.5;
 
 		this.nw.draw2(x, y);
+		this.n.drawPattern2(x + this.nw.x, y, tw - this.nw.x, this.n.height);
+		this.ne.draw2(x + tw, y);
+
+		this.w.drawPattern2(x, y + this.nw.y, this.w.width, th);
+		this.c.drawPattern2(x + this.nw.x, y + this.nw.y, tw - this.e.width, th);
+		this.e.drawPattern2(x + tw, y + this.nw.y, this.w.width, th);
 		
-		this.n.draw2(x, y);
-
-		this.ne.draw2(x, y);
-
-		for (let line of lines) {
-			const w = ctx.measureText(line).width;
-
-			this.w.draw2(x, cy);
-
-			//ctx.rect(x, cy, w, LINE_HEIGHT);
-			//ctx.fillStyle = this._pat_c;
-
+		for (let i = 0; i < lines.length; ++i) {
+			let line = lines[i];
+		
 			ctx.fillStyle = "black";
-			ctx.fillText(line, x, cy);
-
-			this.e.draw2(x + w, cy);
-
+			ctx.fillText(line, x + this.nw.x * 0.5, cy);
+		
 			cy += LINE_HEIGHT;
 		}
 
-		this.sw.draw2(x, y + cy);
-		this.s.draw2(x, y + cy);
-		this.se.draw2(x, y + cy);
+		this.sw.draw2(x, y + this.nw.y + th);
+		this.s.drawPattern2(x + this.sw.x, y + this.nw.y+ th, tw - this.sw.x, this.s.height);
+		this.se.draw2(x + tw, y + this.nw.y + th);
 	}
 
 	static get _base_path() {
@@ -2676,7 +2682,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		ctx.strokeStyle = "white";
 		ctx.fillText(text, left, (top + bottom) * 0.5);
 
-		//this.$_draw_chatBalloon(renderer, "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 0);
+		this.$_draw_chatBalloon(renderer, this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 0);
 	}
 	
 	/**

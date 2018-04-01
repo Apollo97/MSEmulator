@@ -4,28 +4,37 @@ import { IGraph, IRenderer } from './IRenderer.js';
 
 import { engine, Graph } from './Engine.js';
 
-import { CharacterRenderer } from './Renderer/CharacterRenderer.js';
+import { CharacterRenderer, ChatBalloon } from './Renderer/CharacterRenderer.js';
 import { Animation } from './Animation.js';
 
 window.m_is_run = true;
 
 window.$engine = engine;
 
-window.chara = new CharacterRenderer();
+//window.chara = new CharacterRenderer();
 
 var screen_size = engine.screen_size;
 
-chara.load();
-chara._setup_test();
+if (window.chara) {
+	chara.load();
+	chara._setup_test();
 
-chara.x = screen_size.x / 2;
-chara.y = screen_size.y / 2;
+	chara.x = screen_size.x / 2;
+	chara.y = screen_size.y / 2;
+}
 
-$get.data("/Skill/MobSkill.img/238/level/4").then(async function (_data) {
-	let _raw = JSON.parse(_data);
-	window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
-	anima.is_loop = true;
-	anima.load();
+let chatBalloon = new ChatBalloon();
+
+Promise.all([
+	//$get.data("/Skill/MobSkill.img/238/level/4"),
+	chatBalloon.load(0),
+]).then(async function (_data) {
+	//let _raw = JSON.parse(_data);
+	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
+	if (window.anima) {
+		anima.is_loop = true;
+		anima.load();
+	}
 }).then(() => {
 	if (!animationRequestID){
 		render(0);
@@ -34,6 +43,9 @@ $get.data("/Skill/MobSkill.img/238/level/4").then(async function (_data) {
 window.$angle = 0;
 window.$rota = 0;
 window.$flip = false;
+
+window.$x = 300;
+window.$y = 300;
 
 var animationRequestID = null;
 var time0 = 0;
@@ -47,24 +59,29 @@ function render(time) {
 	engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
 	engine.clearDrawScreen();
 	engine.beginScene();
-	
-	if (window.mouse_dl) {
-		chara.speed = 1;
-		chara.x = window.mouse_x;
-		chara.y = window.mouse_y;
+
+	if (window.chara) {
+		if (window.mouse_dl) {
+			chara.speed = 1;
+			chara.x = window.mouse_x;
+			chara.y = window.mouse_y;
+		}
+		if (window.mouse_dr) {
+			chara.speed = 0;
+		}
+
+		chara.update(stamp);
 	}
-	if (window.mouse_dr) {
-		chara.speed = 0;
-	}
-	
-	chara.update(stamp);
+	chatBalloon.draw(engine, window.$text || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", (window.$x || 0), (window.$y || 0));
 	
 	engine.loadIdentity();
 	engine.scale(1, (screen_size.y + 1) / screen_size.y);
+
+	if (window.chara) {
+		chara.render(engine);
+	}
 	
-	chara.render(engine);
-	
-	if (anima) {
+	if (window.anima) {
 		anima.update(stamp);
 		anima.draw(engine, screen_size.x / 2, screen_size.y / 2, window.$angle || 0, window.$flip != undefined ? window.$flip : false);
 		
@@ -133,11 +150,11 @@ function render(time) {
 	engine.drawRect(0, 0, 1, 600);
 	
 	//x
-	engine.color = [1, 0, 0, 0.5];
+	engine.color = [0.8, 0.2, 0.2, 0.5];
 	engine.drawRect(screen_size.x - 800, screen_size.y - 2, screen_size.x, 1);
 	
 	//y
-	engine.color = [0, 1, 0, 0.5];
+	engine.color = [0.2, 0.8, 0.2, 0.5];
 	engine.drawRect(screen_size.x - 1, screen_size.y - 600, 1, screen_size.y);
 
 	//engine.drawRect(0, -1000, 1000, 1000, [1, 0, 0, 0.5]);
