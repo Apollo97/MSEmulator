@@ -160,7 +160,7 @@
 									<dir-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
 										<template slot-scope="{img, path, width}">
 											<div v-if="ui.chat.size!='min'" :data-src="path" :style="{ width:`${width}px`, background:`url(${img})` }">
-												<input type="text" v-model="ui.chat.inputText" @keydown.enter="ui.chat.records.push(chara.id+': '+ui.chat.inputText);ui.chat.inputText='';ui.chat.records.length>10?ui.chat.records.shift():undefined;" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
+												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
 											</div>
 											<div v-else :data-src="path" :style="{ width:`${width}px`,  color: 'white' }">
 												<div v-if="ui.chat.records.length" style="position: absolute;">{{ui.chat.records[ui.chat.records.length-1]}}</div>
@@ -260,6 +260,19 @@
 				m_editor_mode = !m_editor_mode;
 
 				app.vue.editor_mode = m_editor_mode;
+			},
+			enterChatText: function () {
+				this.ui.chat.inputText = this.ui.chat.inputText.slice(0, 70);
+
+				this.chara.chatCtrl.enter(this.ui.chat.inputText);
+
+				this.ui.chat.records.push(this.chara.id + ' : ' + this.ui.chat.inputText);
+
+				this.ui.chat.inputText = '';
+
+				if (this.ui.chat.records.length > 10) {
+					this.ui.chat.records.shift();
+				}
 			}
 		},
 		mounted: function () {

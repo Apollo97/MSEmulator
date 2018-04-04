@@ -1,4 +1,6 @@
 ﻿
+import { IRenderer } from './IRenderer.js';
+
 export class SceneObject {
 	constructor() {
 		this.$uid = null;	//null if not in scene

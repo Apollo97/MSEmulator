@@ -100,6 +100,13 @@ export class SpriteBase extends Graph {
 	draw2(x, y) {
 		this._engine.drawGraph2(this, x, y);
 	}
+	/**
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 */
+	draw2i(x, y) {
+		this._engine.drawGraph2(this, x, y);
+	}
 }
 
 
@@ -119,9 +126,224 @@ export class Sprite extends SpriteBase {
 
 		this.delay = this._get(100, "delay", Number);
 	}
+	
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	drawPattern(x, y, w, h) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		ctx.save();
+		try {
+			ctx.rect(x, y, w, h);
+			ctx.clip();
+
+			let left = x;
+			let top = y;
+			let right = x + w;
+			let bottom = y + h;
+
+			for (let i = top; i < bottom; i += this.height) {
+				for (let j = left; j < right; j += this.width) {
+					this.draw2(j, i);
+				}
+			}
+		}
+		catch (ex) {
+			console.error(ex);
+			debugger;
+		}
+		ctx.restore();
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 */
+	drawHorizontalPattern(x, y, w) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		ctx.save();
+		try {
+			const left = x;
+			const right = x + w;
+
+			for (let j = left; j < right; j += this.width) {
+				this.draw2(j, y);
+			}
+		}
+		catch (ex) {
+			console.error(ex);
+			debugger;
+		}
+		ctx.restore();
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} h
+	 */
+	drawVerticalPattern(x, y, h) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		ctx.save();
+		try {
+			const top = y;
+			const bottom = y + h;
+
+			for (let i = top; i < bottom; i += this.height) {
+				this.draw2(x, i);
+			}
+		}
+		catch (ex) {
+			console.error(ex);
+			debugger;
+		}
+		ctx.restore();
+	}
+
+	/**
+	 * without clip
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	_drawPattern(x, y, w, h) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		const left = x;
+		const top = y;
+		const right = x + w;
+		const bottom = y + h;
+
+		for (let i = top; i < bottom; i += this.height) {
+			for (let j = left; j < right; j += this.width) {
+				this.draw2(j, i);
+			}
+		}
+	}
+
+	/**
+	 * without clip
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 */
+	_drawHorizontalPattern(x, y, w) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		const left = x;
+		const right = x + w;
+
+		for (let j = left; j < right; j += this.width) {
+			this.draw2(j, y);
+		}
+	}
+
+	/**
+	 * without clip
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} h
+	 */
+	_drawVerticalPattern(x, y, h) {
+		if (!this.isLoaded()) {
+			return;//sprite require property: width, height
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = this._engine.ctx;
+
+		const top = y;
+		const bottom = y + h;
+
+		for (let i = top; i < bottom; i += this.height) {
+			this.draw2(x, i);
+		}
+	}
+
+
+	/**
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} w - type: int
+	 * @param {number} h - type: int
+	 */
+	drawPattern4i(x, y, w, h) {
+		this.drawPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w), Math.trunc(h));
+	}
+	/**
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} w - type: int
+	 */
+	drawHorizontalPattern3i(x, y, w) {
+		this.drawHorizontalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w));
+	}
+	/**
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} h - type: int
+	 */
+	drawVerticalPattern3i(x, y, h) {
+		this.drawVerticalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(h));
+	}
+	/**
+	 * without clip
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} w - type: int
+	 * @param {number} h - type: int
+	 */
+	_drawPattern4i(x, y, w, h) {
+		this._drawPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w), Math.trunc(h));
+	}
+	/**
+	 * without clip
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} w - type: int
+	 */
+	_drawHorizontalPattern3i(x, y, w) {
+		this._drawHorizontalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w));
+	}
+	/**
+	 * without clip
+	 * @param {number} x - type: int
+	 * @param {number} y - type: int
+	 * @param {number} h - type: int
+	 */
+	_drawVerticalPattern3i(x, y, h) {
+		this._drawVerticalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(h));
+	}
 }
 
-export class _PatternSprite_Loaded extends Sprite {
+export class _$PatternSprite_Loaded extends Sprite {
 	/**
 	 * @param {!any} raw
 	 * @param {string=} url
@@ -136,73 +358,79 @@ export class _PatternSprite_Loaded extends Sprite {
 		this._pattern = null;
 	}
 
-	///** @type {string} */
-	//get direction() {
-	//	return this._direction;
-	//}
-	//set direction(value) {
-	//	if (value && this._direction != value) {
-	//		this._direction = value;
-	//
-	//		//reload;
-	//		this._pattern = null;
-	//		this.__proto__ = PatternSprite.prototype;
-	//	}
-	//}
+	/** @type {string} */
+	get direction() {
+		return this._direction;
+	}
+	set direction(value) {
+		if (value && this._direction != value) {
+			this._direction = value;
+	
+			//reload;
+			this._pattern = null;
+			this.__proto__ = $PatternSprite.prototype;
+		}
+	}
 
-	//drawPattern(w, h) {
-	//	if (this.direction && this._pattern) {
-	//		/** @type {IRenderer} */
-	//		const _engine = this._engine;
-	//		const ctx = _engine.ctx;
-	//
-	//		ctx.rect(-this.x, -this.y, w, h);
-	//		ctx.fillStyle = this._pattern;
-	//		ctx.fill();
-	//		ctx.fillStyle = "no-repeat";
-	//	}
-	//}
+	/**
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	drawPattern(w, h) {
+		if (this.direction && this._pattern) {
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = this._engine.ctx;
+	
+			ctx.rect(-this.x, -this.y, w, h);
+			ctx.fillStyle = this._pattern;
+			ctx.fill();
+			ctx.fillStyle = "no-repeat";
+		}
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	drawPattern2(x, y, w, h) {
+		if (this.direction && this._pattern) {
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = this._engine.ctx;
+	
+			ctx.rect(x - this.x, y - this.y, w, h);
+			ctx.fillStyle = this._pattern;
+			ctx.fill();
+			ctx.fillStyle = "no-repeat";
+		}
+	}
 
-	//drawPattern2(x, y, w, h) {
-	//	if (this.direction && this._pattern) {
-	//		/** @type {IRenderer} */
-	//		const _engine = this._engine;
-	//		const ctx = _engine.ctx;
-	//
-	//		ctx.rect(x - this.x, y - this.y, w, h);
-	//		ctx.fillStyle = this._pattern;
-	//		ctx.fill();
-	//		ctx.fillStyle = "no-repeat";
-	//	}
-	//}
-
-	///** @returns {"repeat"} */
-	//get e_repeat() {
-	//	return "repeat";
-	//}
-	///** @returns {"repeat-x"} */
-	//get e_repeat_x() {
-	//	return "repeat-x";
-	//}
-	///** @returns {"repeat-y"} */
-	//get e_repeat_y() {
-	//	return "repeat-y";
-	//}
-	///** @returns {"no-repeat"} */
-	//get e_noRepeat() {
-	//	return "no-repeat";
-	//}
+	/** @returns {"repeat"} */
+	get e_repeat() {
+		return "repeat";
+	}
+	/** @returns {"repeat-x"} */
+	get e_repeat_x() {
+		return "repeat-x";
+	}
+	/** @returns {"repeat-y"} */
+	get e_repeat_y() {
+		return "repeat-y";
+	}
+	/** @returns {"no-repeat"} */
+	get e_noRepeat() {
+		return "no-repeat";
+	}
 }
 
-export class PatternSprite extends _PatternSprite_Loaded {
+export class $PatternSprite extends _$PatternSprite_Loaded {
 	drawPattern(w, h) {
 		this.drawPattern2(0, 0, w, h);
 	}
 	drawPattern2(x, y, w, h) {
 		if (this.isLoaded()) {
-			/** @type {IRenderer} */
-			const _engine = this._engine;
-			const ctx = _engine.ctx;
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = this._engine.ctx;
 
 			ctx.save();
 			{
@@ -214,45 +442,52 @@ export class PatternSprite extends _PatternSprite_Loaded {
 				let right = x + w;
 				let bottom = y + h;
 
-				for (let i = left; i < right; i += this.width) {
-					for (let j = top; j < bottom; j += this.height) {
-						this.draw2(i, j);
+				for (let i = top; i < bottom; i += this.height) {
+					for (let j = left; j < right; j += this.width) {
+						this.draw2(j, i);
 					}
 				}
 			}
 			ctx.restore();
 		}
 	}
+	/**
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	drawPattern(w, h) {
+		if (this.direction) {
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = this._engine.ctx;
+	
+			if (!this._pattern) {
+				if (this.isLoaded()) {
+					this._pattern = ctx.createPattern(this.texture, this.direction);
+					this.__proto__ = _$PatternSprite_Loaded.prototype;
+					this.drawPattern(w, h);
+				}
+			}
+		}
+	}
 
-	//drawPattern(w, h) {
-	//	if (this.direction) {
-	//		/** @type {IRenderer} */
-	//		const _engine = this._engine;
-	//		const ctx = _engine.ctx;
-	//
-	//		if (!this._pattern) {
-	//			if (this.isLoaded()) {
-	//				this._pattern = ctx.createPattern(this.texture, this.direction);
-	//				this.__proto__ = _PatternSprite_Loaded.prototype;
-	//				this.drawPattern(w, h);
-	//			}
-	//		}
-	//	}
-	//}
-
-	//drawPattern2(x, y, w, h) {
-	//	if (this.direction) {
-	//		/** @type {IRenderer} */
-	//		const _engine = this._engine;
-	//		const ctx = _engine.ctx;
-	//
-	//		if (!this._pattern) {
-	//			if (this.isLoaded()) {
-	//				this._pattern = ctx.createPattern(this.texture, this.direction);
-	//				this.__proto__ = _PatternSprite_Loaded.prototype;
-	//				this.drawPattern2(x, y, w, h);
-	//			}
-	//		}
-	//	}
-	//}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} w
+	 * @param {number} h
+	 */
+	drawPattern2(x, y, w, h) {
+		if (this.direction) {
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = this._engine.ctx;
+	
+			if (!this._pattern) {
+				if (this.isLoaded()) {
+					this._pattern = ctx.createPattern(this.texture, this.direction);
+					this.__proto__ = _$PatternSprite_Loaded.prototype;
+					this.drawPattern2(x, y, w, h);
+				}
+			}
+		}
+	}
 }

@@ -1,12 +1,112 @@
 ﻿
+import { IRenderer } from './IRenderer.js';
+
 import { SceneObject } from "./SceneObject.js";
-import { CharacterRenderer } from "./Renderer/CharacterRenderer.js";
+import { CharacterRenderer, ChatBalloon } from "./Renderer/CharacterRenderer.js";
 import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 
 import { SkillAnimation } from "./Skill.js";
 
 import { CharaMoveElem } from "../Client/PMovePath.js";
 import { PlayerStat } from "../Client/PlayerStat.js";
+
+
+class TimeElapsed {
+	constructor() {
+		/** @type {Date} */
+		this._date = new Date();
+	}
+	reset() {
+		this._date = new Date();
+	}
+	get elapsed() {
+		const elapsed = (new Date()).getMilliseconds() - this._date.getMilliseconds();
+		return elapsed;
+	}
+}
+
+
+class ChatController {
+	constructor() {
+		/** @type {string} */
+		this.text = "";
+
+		/** @type {string} */
+		this.$outputText = null;
+
+		/** @type {number} */
+		this.elapsed = 0;
+
+		/** @type {boolean} */
+		this._isDisplay = false;
+	}
+
+	/**
+	 * @param {string} text
+	 */
+	enter(text) {
+		this.text = String(text);
+		this.$outputText = null;
+		this.isDisplay = true;
+	}
+
+	/**
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		const $displayDuration = this.constructor.displayDuration;
+
+		if (this.elapsed > $displayDuration) {
+			this.isDisplay = false;
+		}
+		else {
+			this.elapsed += stamp;
+		}
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {BaseSceneCharacter} chara
+	 * @param {number} style
+	 */
+	async draw(renderer, chara, style = 0) {
+		if (this._isDisplay) {
+			/** @type {ChatBalloon} */
+			let cb = ChatBalloon.cache[style];
+			if (!cb) {
+				cb = new ChatBalloon();
+				await cb.load(style);
+			}
+
+			const $colon = this.constructor.colon;
+			const crr = chara.renderer;
+			const boundBox = crr._boundBox;
+
+			if (!this.$outputText) {
+				this.$outputText = chara.id + $colon + this.text;
+			}
+			cb.draw(renderer, this.$outputText, crr.x, crr.y - boundBox.height);
+		}
+	}
+
+	get isDisplay() {
+		return this._isDisplay;
+	}
+	set isDisplay(value) {
+		this._isDisplay = !!value;
+		this.elapsed = 0;
+	}
+
+	static get colon() {
+		return " : ";
+	}
+	static get $maxLength() {
+		return 70;
+	}
+	static get displayDuration() {
+		return 5000;
+	}
+}
 
 
 /**
@@ -49,6 +149,9 @@ export class BaseSceneCharacter extends SceneObject {
 
 		/** @type {string} */
 		this.id = null;
+
+		/** @type {ChatController} */
+		this.chatCtrl = new ChatController();
 	}
 
 	/** @type {string} */
@@ -110,8 +213,13 @@ export class BaseSceneCharacter extends SceneObject {
 		cr.emotion = anim.emotion;
 		//cr.emotion_frame = anim.emotion_frame;
 	}
-	
+
+	/**
+	 * @param {number} stamp
+	 */
 	update(stamp) {
+		this.chatCtrl.update(stamp);
+
 		if (m_editor_mode) {
 			if (this.renderer.speed > 0 && this.$physics && !this.$physics.disable) {
 				this._applyState({
@@ -148,6 +256,78 @@ export class BaseSceneCharacter extends SceneObject {
 		this._player_control();
 
 		this.renderer.update(stamp);
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 */
+	_$drawName(renderer) {
+		const name = this.id;
+		const crr = chara.renderer;
+		const ctx = renderer.ctx;
+
+		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.textBaseline = "middle";
+		const r = 2, h = 12;
+		const w = ctx.measureText(name).width + 3;
+		const x = Math.trunc(crr.x + crr.tx) - w * 0.5;
+		const y = Math.trunc(crr.y + crr.ty);
+
+		const left = x + r;
+		const _left = x;
+		const top = y;
+		const _top = y + r;
+		const _right = x + w;
+		const right = _right + r;
+		const bottom = y + r + h + r;
+		const _bottom = y + r + h;
+
+		ctx.fillStyle = "rgba(0,0,0,0.7)";
+		ctx.strokeStyle = "rgba(0,0,0,0.7)";
+		ctx.beginPath();
+		{
+			ctx.moveTo(left, top);
+
+			ctx.lineTo(_right, top);
+			ctx.arcTo(right, top, right, _top, r);
+
+			ctx.lineTo(right, _bottom);
+			ctx.arcTo(right, bottom, _right, bottom, r);
+
+			ctx.lineTo(left, bottom);
+			ctx.arcTo(_left, bottom, _left, _bottom, r);
+
+			ctx.lineTo(_left, _top);
+			ctx.arcTo(_left, top, left, top, r);
+		}
+		ctx.fill();
+
+		if (0) {//inner
+			ctx.fillStyle = "yellow";
+			ctx.strokeStyle = "yellow";
+			ctx.beginPath();
+			{
+				ctx.moveTo(left, _top);
+
+				ctx.lineTo(_right, _top);
+
+				ctx.lineTo(_right, _bottom);
+
+				ctx.lineTo(left, _bottom);
+
+				ctx.closePath();
+			}
+			ctx.stroke();
+		}
+		ctx.fillStyle = "white";
+		ctx.strokeStyle = "white";
+		ctx.fillText(name, left, (top + bottom) * 0.5);
+	}
+	/**
+	 * @param {IRenderer} renderer
+	 */
+	_$drawChatBalloon(renderer) {
+		this.chatCtrl.draw(renderer, this, 0);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
 	}
 
 	_player_control() {

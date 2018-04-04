@@ -72,7 +72,7 @@ function render(time) {
 
 		chara.update(stamp);
 	}
-	chatBalloon.draw(engine, window.$text || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", (window.$x || 0), (window.$y || 0));
+	chatBalloon.draw(engine, window.$text || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", (window.$x || 0), (window.$y || 0), 84);
 	
 	engine.loadIdentity();
 	engine.scale(1, (screen_size.y + 1) / screen_size.y);

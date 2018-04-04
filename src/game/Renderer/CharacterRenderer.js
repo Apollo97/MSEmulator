@@ -7,7 +7,7 @@ import { Vec2, Rectangle } from '../math.js';
 import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
 import { engine, Graph } from '../Engine.js';
 
-import { SpriteBase, Sprite, PatternSprite } from '../Sprite.js';
+import { SpriteBase, Sprite } from '../Sprite.js';
 
 import { SkillAnimation } from '../Skill.js';
 
@@ -29,45 +29,35 @@ export class ChatBalloon {
 
 		this._raw = JSON.parse(await $get.data(_d_path));
 
-		this.nw = new PatternSprite(this._raw.nw);
+		this.nw = new Sprite(this._raw.nw);
 		this.nw._url = _i_path + "/nw";
-		this.nw.direction = this.nw.e_noRepeat;
 
-		this.n = new PatternSprite(this._raw.n);
+		this.n = new Sprite(this._raw.n);
 		this.n._url = _i_path + "/n";
-		this.n.direction = this.n.e_repeat;
 
-		this.ne = new PatternSprite(this._raw.ne);
+		this.ne = new Sprite(this._raw.ne);
 		this.ne._url = _i_path + "/ne";
-		this.ne.direction = this.ne.e_noRepeat;
 
-		this.w = new PatternSprite(this._raw.w);
+		this.w = new Sprite(this._raw.w);
 		this.w._url = _i_path + "/w";
-		this.w.direction = this.w.e_repeat;
 
-		this.c = new PatternSprite(this._raw.c);
+		this.c = new Sprite(this._raw.c);
 		this.c._url = _i_path + "/c";
-		this.c.direction = this.c.e_repeat;
 
-		this.e = new PatternSprite(this._raw.e);
+		this.e = new Sprite(this._raw.e);
 		this.e._url = _i_path + "/e";
-		this.e.direction = this.e.e_repeat;
 
-		this.sw = new PatternSprite(this._raw.sw);
+		this.sw = new Sprite(this._raw.sw);
 		this.sw._url = _i_path + "/sw";
-		this.sw.direction = this.sw.e_noRepeat;
 
-		this.s = new PatternSprite(this._raw.s);
+		this.s = new Sprite(this._raw.s);
 		this.s._url = _i_path + "/s";
-		this.s.direction = this.s.e_repeat;
 
-		this.se = new PatternSprite(this._raw.se);
+		this.se = new Sprite(this._raw.se);
 		this.se._url = _i_path + "/se";
-		this.se.direction = this.se.e_noRepeat;
 
-		this.arrow = new PatternSprite(this._raw.arrow);
+		this.arrow = new Sprite(this._raw.arrow);
 		this.arrow._url = _i_path + "/arrow";
-		this.arrow.direction = this.arrow.e_noRepeat;
 
 		//this._pat_c = ctx.createPattern(this.c, "repeat");
 
@@ -75,7 +65,7 @@ export class ChatBalloon {
 	}
 
 	/*
-	1 12345 12345 12345
+	1 12345 12345 1 : 5
 	2 12345 12345 12345
 	3 12345 12345 12345
 	4 12345 12345 12345
@@ -85,49 +75,53 @@ export class ChatBalloon {
 
 	/**
 	 * @param {IRenderer} renderer
-	 * @param {string} text - 84 character
-	 * @param {number} x - chat balloon arrow bottom x
-	 * @param {number} y - chat balloon arrow bottom y
+	 * @param {string} text - length = chat.value.length + " : ".length + name.length = 70 + 3 + name.length
+	 * @param {number} x - chat balloon arrow bottom pos.x
+	 * @param {number} y - chat balloon arrow bottom pos.y
 	 */
 	draw(renderer, text, x, y) {
 		const LINE_HEIGHT = 12;
 		const ctx = renderer.ctx;
+		const PADDING_LEFT = 2, PADDING_TOP = 2, PADDING_RIGHT = 2, PADDING_BOTTOM = 0;
 
 		ctx.font = "12px 微軟正黑體";//新細明體
 		ctx.textBaseline = "top";//alphabetic
 
 		let lines = [];
-		text = text.slice(0, 84);
-
-		for (let i = 0; i < 84; i += 15) {
-			let line = text.slice(i, i + 15);
+		for (let i = 0; i < text.length; i += 12) {
+			let line = text.slice(i, i + 12);
 			lines.push(line);
 		}
 
-		const tw = ctx.measureText(lines[0]).width;
-		const th = lines.length * LINE_HEIGHT;
+		const tw = ctx.measureText(lines[0]).width + PADDING_LEFT + PADDING_RIGHT;
+		const th = lines.length * LINE_HEIGHT + PADDING_TOP + PADDING_BOTTOM;
+		const bottom = th + this.s.height + this.s.y + this.arrow.height + this.arrow.y;
+		x = x - (tw * 0.5);
+		y = y - bottom;
 		let cy = y + this.nw.y * 0.5;
 
 		this.nw.draw2(x, y);
-		this.n.drawPattern2(x + this.nw.x, y, tw - this.nw.x, this.n.height);
+		this.n.drawPattern(x + this.nw.x, y, tw - this.nw.x, this.n.height);
 		this.ne.draw2(x + tw, y);
 
-		this.w.drawPattern2(x, y + this.nw.y, this.w.width, th);
-		this.c.drawPattern2(x + this.nw.x, y + this.nw.y, tw - this.e.width, th);
-		this.e.drawPattern2(x + tw, y + this.nw.y, this.w.width, th);
+		this.w.drawPattern(x,             y + this.nw.y, this.w.width,      th);
+		this.c.drawPattern(x + this.nw.x, y + this.nw.y, tw - this.e.width, th);
+		this.e.drawPattern(x + tw,        y + this.nw.y, this.e.width,      th);
 		
 		for (let i = 0; i < lines.length; ++i) {
 			let line = lines[i];
 		
 			ctx.fillStyle = "black";
-			ctx.fillText(line, x + this.nw.x * 0.5, cy);
+			ctx.fillText(line, x + this.nw.x * 0.5 + PADDING_LEFT, cy + PADDING_TOP);
 		
 			cy += LINE_HEIGHT;
 		}
+		
+		this.sw.draw2(x, y + th + this.nw.y);
+		this.s.drawPattern(x + this.sw.x, y + th + this.nw.y, tw - this.sw.x, this.s.height);
+		this.se.draw2(x + tw, y + th + this.nw.y);
 
-		this.sw.draw2(x, y + this.nw.y + th);
-		this.s.drawPattern2(x + this.sw.x, y + this.nw.y+ th, tw - this.sw.x, this.s.height);
-		this.se.draw2(x + tw, y + this.nw.y + th);
+		this.arrow.draw2(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom);
 	}
 
 	static get _base_path() {
@@ -2530,11 +2524,44 @@ export class CharacterAnimationBase {
 				this.__frag_list.push(ae);
 			}
 		}
+
+		this._calcBoundBox();
 	}
 	/** @param {FragmentTexture} ft */
 	__add_frag_to_list(ft) {
 		ft.update(this);
 		this.__frag_list[ft.z] = ft;
+	}
+
+
+	/**
+	 * calc current frame bound box and restore value
+	 * @returns {Rectangle}
+	 */
+	_calcBoundBox() {
+		let left = 0, top = 0, right = 0, bottom = 0;
+
+		for (let i in this.__frag_list) {
+			let ft = this.__frag_list[i];
+			if (ft.texture) {
+				let x0 = ft.relative.x;
+				let y0 = ft.relative.y;
+				let x1 = x0 + ft.width;
+				let y1 = y0 + ft.height;
+
+				left = Math.min(left, x0);
+				top = Math.min(top, y0);
+				right = Math.max(right, x1);
+				bottom = Math.max(bottom, y1);
+			}
+		}
+		this._boundBox = new Rectangle(
+			Math.trunc(left),
+			Math.trunc(top),
+			Math.trunc(right - left),
+			Math.trunc(bottom - top)
+		);
+		return this._boundBox;
 	}
 }
 
@@ -2568,6 +2595,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			//not ready to render
 			//if load then set load render = _render
 		}
+
+		/** @type {Rectangle} */
+		this._boundBox = null;
 	}
 
 	static async Init() {
@@ -2618,89 +2648,6 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		//this.tx = 0;//auto clear
 		//this.ty = 0;//auto clear
 	}
-
-	/**
-	 * @param {IRenderer} renderer
-	 */
-	_$draw_name(renderer, text) {
-		const ctx = renderer.ctx;
-
-		ctx.font = "12px 微軟正黑體";//新細明體
-		ctx.textBaseline = "middle";
-		const r = 2, h = 12;
-		const w = ctx.measureText(text).width + 3;
-		const x = Math.trunc(this.x + this.tx) - w * 0.5;
-		const y = Math.trunc(this.y + this.ty);
-
-		const left = x + r;
-		const _left = x;
-		const top = y;
-		const _top = y + r;
-		const _right = x + w;
-		const right = _right + r;
-		const bottom = y + r + h + r;
-		const _bottom = y + r + h;
-		
-		ctx.fillStyle = "rgba(0,0,0,0.7)";
-		ctx.strokeStyle = "rgba(0,0,0,0.7)";
-		ctx.beginPath();
-		{
-			ctx.moveTo(left, top);
-
-			ctx.lineTo(_right, top);
-			ctx.arcTo(right, top, right, _top, r);
-
-			ctx.lineTo(right, _bottom);
-			ctx.arcTo(right, bottom, _right, bottom, r);
-
-			ctx.lineTo(left, bottom);
-			ctx.arcTo(_left, bottom, _left, _bottom, r);
-
-			ctx.lineTo(_left, _top);
-			ctx.arcTo(_left, top, left, top, r);
-		}
-		ctx.fill();
-
-		if (0) {//inner
-			ctx.fillStyle = "yellow";
-			ctx.strokeStyle = "yellow";
-			ctx.beginPath();
-			{
-				ctx.moveTo(left, _top);
-
-				ctx.lineTo(_right, _top);
-
-				ctx.lineTo(_right, _bottom);
-
-				ctx.lineTo(left, _bottom);
-
-				ctx.closePath();
-			}
-			ctx.stroke();
-		}
-		ctx.fillStyle = "white";
-		ctx.strokeStyle = "white";
-		ctx.fillText(text, left, (top + bottom) * 0.5);
-
-		this.$_draw_chatBalloon(renderer, this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 0);
-	}
-	
-	/**
-	 * @param {IRenderer} renderer
-	 * @param {string} text
-	 * @param {number} style
-	 */
-	async $_draw_chatBalloon(renderer, text, style = 0) {
-		/** @type {ChatBalloon} */
-		let cb = ChatBalloon.cache[style];
-		if (!cb) {
-			cb = new ChatBalloon();
-			await cb.load(style);
-		}
-
-		cb.draw(renderer, text, (window.$x || 0) + this.x, (window.$y || -100) + this.y);
-	}
-
 	
 	_setup_test() {
 		this.use("00026509");
@@ -2739,15 +2686,16 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	 * @param {string} id
 	 * @param {string} category - category of cash-weapon
 	 */
-	use(id, category) {
-		//const item_type = id[0];
-		//switch (item_type) {
-		//	case "0"://equip
+	async use(id, category) {
+		const item_type = id[0];
+		switch (item_type) {
+			case "0"://equip
 				let task = this.slots._use(id, null, category);
 				this.__load_task.push(task);
+				await task;
+				this._calcBoundBox();
 				return task;
-		//		break;
-		//}
+		}
 	}
 
 	/**
@@ -2767,6 +2715,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			}
 			if (id[0] == "0") {//equip
 				if (this.slots._unuse(id)) {
+					this._calcBoundBox();
 					return true;
 				}
 			}
@@ -2872,35 +2821,6 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 	_download() {
 		window.open(this._outlink());
-	}
-
-	/**
-	 * calc current frame bound box
-	 * @returns {Rectangle}
-	 */
-	_calcBoundBox() {
-		let left = 0, top = 0, right = 0, bottom = 0;
-		
-		for (let i in this.__frag_list) {
-			let ft = this.__frag_list[i];
-			if (ft.texture) {
-				let x0 = ft.relative.x;
-				let y0 = ft.relative.y;
-				let x1 = x0 + ft.width;
-				let y1 = y0 + ft.height;
-		
-				left = Math.min(left, x0);
-				top = Math.min(top, y0);
-				right = Math.max(right, x1);
-				bottom = Math.max(bottom, y1);
-			}
-		}
-		return new Rectangle(
-			Math.trunc(left),
-			Math.trunc(top),
-			Math.trunc(right - left),
-			Math.trunc(bottom - top)
-		);
 	}
 
 	_save_as_svg() {

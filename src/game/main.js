@@ -374,7 +374,8 @@ export class Game {
 		//else {
 		//	return;
 		//}
-		
+
+	/////
 		engine.beginScene();
 		{
 			engine.clearDrawScreen();
@@ -454,7 +455,10 @@ export class Game {
 				}
 			}
 			for (let i = 0; i < charaList.length; ++i) {
-				charaList[i].renderer._$draw_name(engine, charaList[i].id);
+				charaList[i]._$drawName(engine);
+			}
+			for (let i = 0; i < charaList.length; ++i) {
+				charaList[i]._$drawChatBalloon(engine);
 			}
 			
 			if (m_is_rendering_map && this._isMapReady) {

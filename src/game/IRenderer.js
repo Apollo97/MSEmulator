@@ -374,7 +374,10 @@ _ImageFilter.prototype.set = function (hue, sat, bri) {
  */
 export class IGraph {
 	constructor(url, info) {
-		let width, height;
+		/** @type {number} */
+		let width;
+		/** @type {number} */
+		let height;
 		
 		/** @type {Promise} if loaded will delete */
 		this.$promise = null;
@@ -384,8 +387,6 @@ export class IGraph {
 
 		this.x = 0;
 		this.y = 0;
-		//this.width = 0;
-		//this.height = 0;
 
 		if (info) {
 			if (info.width > 0) {
@@ -399,6 +400,11 @@ export class IGraph {
 			width = 0;
 			height = 0;
 		}
+		/** @type {number} */
+		this.width = width;
+		/** @type {number} */
+		this.height = height;
+		//
 		Object.defineProperty(this, "width", {
 			configurable: true,
 			enumerable: true,
