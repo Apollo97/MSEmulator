@@ -80,52 +80,87 @@ export class ChatBalloon {
 	 * @param {number} y - chat balloon arrow bottom pos.y
 	 */
 	draw(renderer, text, x, y) {
-		const LINE_HEIGHT = 12;
-		const ctx = renderer.ctx;
-		const PADDING_LEFT = 2, PADDING_TOP = 2, PADDING_RIGHT = 2, PADDING_BOTTOM = 0;
-
-		ctx.font = "12px 微軟正黑體";//新細明體
-		ctx.textBaseline = "top";//alphabetic
-
 		let lines = [];
 		for (let i = 0; i < text.length; i += 12) {
 			let line = text.slice(i, i + 12);
 			lines.push(line);
 		}
+		if (!lines.length) {
+			return;
+		}
 
-		const tw = ctx.measureText(lines[0]).width + PADDING_LEFT + PADDING_RIGHT;
+		const LINE_HEIGHT = 14;// = fontSize(12) + PADDING_TOP(2)
+		const ctx = renderer.ctx;
+		const PADDING_LEFT = Math.trunc(this.n.width * 0.5 + 0.5), PADDING_TOP = 0, PADDING_RIGHT = 0, PADDING_BOTTOM = 0;
+
+		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.textAlign = "center";
+		ctx.textBaseline = "top";//alphabetic
+
+		const linesWidth = lines.map(line => ctx.measureText(line).width + PADDING_LEFT + PADDING_RIGHT);
+		const tw = linesWidth.sort((a, b) => b - a)[0];
 		const th = lines.length * LINE_HEIGHT + PADDING_TOP + PADDING_BOTTOM;
-		const bottom = th + this.s.height + this.s.y + this.arrow.height + this.arrow.y;
-		x = x - (tw * 0.5);
-		y = y - bottom;
-		let cy = y + this.nw.y * 0.5;
+		const bottom = th + (this.nw.height + this.nw.y) + (this.arrow.height + this.arrow.y);
+		x = Math.trunc((x - tw * 0.5));
+		y = Math.trunc((y - bottom));
 
-		this.nw.draw2(x, y);
-		this.n.drawPattern(x + this.nw.x, y, tw - this.nw.x, this.n.height);
-		this.ne.draw2(x + tw, y);
+		const nw_xw = this.nw.width;
+		const nw_xh = this.nw.height + this.nw.y;
+		let cy = y + this.nw.y;
 
-		this.w.drawPattern(x,             y + this.nw.y, this.w.width,      th);
-		this.c.drawPattern(x + this.nw.x, y + this.nw.y, tw - this.e.width, th);
-		this.e.drawPattern(x + tw,        y + this.nw.y, this.e.width,      th);
+		this.nw.draw2i(x - this.nw.x + this.w.width, y + + this.nw.y);
+		this.n.drawPattern4i(
+			x - this.nw.x + this.w.width + this.nw.width,
+			y - this.n.height + nw_xh,
+			tw - this.w.width,
+			this.n.height
+		);
+		this.ne.draw2i(x + tw, y - this.n.height + nw_xh - this.ne.y + this.n.height);
+
+		this.w.drawPattern4i(x,         y + nw_xh, this.w.width,      th);
+		this.c.drawPattern4i(x - this.nw.x + this.w.width + this.nw.width, y + nw_xh, tw - this.w.width, th);
+		this.e.drawPattern4i(x + tw,    y + nw_xh, this.e.width,      th);
 		
 		for (let i = 0; i < lines.length; ++i) {
 			let line = lines[i];
+
+			if (this.constructor.DEBUG) {
+				ctx.beginPath();
+				ctx.strokeStyle = "red";
+				ctx.strokeRect(x + PADDING_LEFT, cy + PADDING_TOP, linesWidth[i], LINE_HEIGHT);
+			}
 		
 			ctx.fillStyle = "black";
-			ctx.fillText(line, x + this.nw.x * 0.5 + PADDING_LEFT, cy + PADDING_TOP);
+			ctx.fillText(line, x + tw * 0.5 + PADDING_LEFT, cy + this.nw.y + PADDING_TOP);
 		
 			cy += LINE_HEIGHT;
 		}
 		
-		this.sw.draw2(x, y + th + this.nw.y);
-		this.s.drawPattern(x + this.sw.x, y + th + this.nw.y, tw - this.sw.x, this.s.height);
-		this.se.draw2(x + tw, y + th + this.nw.y);
+		this.sw.draw2i(x, y + th + nw_xh);
+		this.s.drawPattern4i(x + this.sw.x, y + th + nw_xh, tw - this.sw.x, this.s.height);
+		this.se.draw2i(x + tw, y + th + nw_xh);
 
-		this.arrow.draw2(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom);
+		this.arrow.draw2i(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom);
+
+		if (this.constructor.DEBUG) {
+			//origin
+			ctx.beginPath();
+			ctx.fillStyle = "#FF07";
+			ctx.fillRect(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom, 32, 32);
+
+			//ChatBalloon border
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			ctx.strokeRect(x + nw_xw, y + nw_xh, tw - this.e.width, th);
+		}
 	}
 
 	static get _base_path() {
 		return "/UI/ChatBalloon.img";
+	}
+
+	static get DEBUG() {
+		return false;
 	}
 }
 

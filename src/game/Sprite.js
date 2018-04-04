@@ -105,7 +105,7 @@ export class SpriteBase extends Graph {
 	 * @param {number} y - type: int
 	 */
 	draw2i(x, y) {
-		this._engine.drawGraph2(this, x, y);
+		this._engine.drawGraph2(this, Math.trunc(x + 0.5), Math.trunc(y + 0.5));
 	}
 }
 
@@ -295,7 +295,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} h - type: int
 	 */
 	drawPattern4i(x, y, w, h) {
-		this.drawPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w), Math.trunc(h));
+		this.drawPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(w + 0.5), Math.trunc(h + 0.5));
 	}
 	/**
 	 * @param {number} x - type: int
@@ -303,7 +303,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} w - type: int
 	 */
 	drawHorizontalPattern3i(x, y, w) {
-		this.drawHorizontalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w));
+		this.drawHorizontalPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(w + 0.5));
 	}
 	/**
 	 * @param {number} x - type: int
@@ -311,7 +311,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} h - type: int
 	 */
 	drawVerticalPattern3i(x, y, h) {
-		this.drawVerticalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(h));
+		this.drawVerticalPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(h + 0.5));
 	}
 	/**
 	 * without clip
@@ -321,7 +321,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} h - type: int
 	 */
 	_drawPattern4i(x, y, w, h) {
-		this._drawPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w), Math.trunc(h));
+		this._drawPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(w + 0.5), Math.trunc(h + 0.5));
 	}
 	/**
 	 * without clip
@@ -330,7 +330,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} w - type: int
 	 */
 	_drawHorizontalPattern3i(x, y, w) {
-		this._drawHorizontalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(w));
+		this._drawHorizontalPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(w + 0.5));
 	}
 	/**
 	 * without clip
@@ -339,7 +339,7 @@ export class Sprite extends SpriteBase {
 	 * @param {number} h - type: int
 	 */
 	_drawVerticalPattern3i(x, y, h) {
-		this._drawVerticalPattern(Math.trunc(x), Math.trunc(y), Math.trunc(h));
+		this._drawVerticalPattern(Math.trunc(x + 0.5), Math.trunc(y + 0.5), Math.trunc(h + 0.5));
 	}
 }
 

@@ -24,10 +24,11 @@ if (window.chara) {
 }
 
 let chatBalloon = new ChatBalloon();
+window.chatBalloon = chatBalloon;
 
 Promise.all([
 	//$get.data("/Skill/MobSkill.img/238/level/4"),
-	chatBalloon.load(0),
+	chatBalloon.load(136),
 ]).then(async function (_data) {
 	//let _raw = JSON.parse(_data);
 	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
@@ -73,6 +74,10 @@ function render(time) {
 		chara.update(stamp);
 	}
 	chatBalloon.draw(engine, window.$text || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", (window.$x || 0), (window.$y || 0), 84);
+	//ChatBalloon origin
+	engine.ctx.beginPath();
+	engine.ctx.fillStyle = "#FFF7";
+	engine.ctx.fillRect((window.$x || 0), (window.$y || 0), 32, 32);
 	
 	engine.loadIdentity();
 	engine.scale(1, (screen_size.y + 1) / screen_size.y);

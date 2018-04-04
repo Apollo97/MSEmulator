@@ -25,6 +25,8 @@ class TimeElapsed {
 	}
 }
 
+window.$Character_ChatBalloon_DisplayDuration = 5000;
+window.$Character_ChatBalloon_Style = 0;
 
 class ChatController {
 	constructor() {
@@ -104,7 +106,7 @@ class ChatController {
 		return 70;
 	}
 	static get displayDuration() {
-		return 5000;
+		return window.$Character_ChatBalloon_DisplayDuration;
 	}
 }
 
@@ -327,7 +329,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {IRenderer} renderer
 	 */
 	_$drawChatBalloon(renderer) {
-		this.chatCtrl.draw(renderer, this, 0);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
+		this.chatCtrl.draw(renderer, this, window.$Character_ChatBalloon_Style);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
 	}
 
 	_player_control() {
