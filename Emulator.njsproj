@@ -6,14 +6,13 @@
     <ProjectGuid>{97e9329a-30d6-40ee-b133-d6a2385ed9db}</ProjectGuid>
     <ProjectHome />
     <ProjectView>ShowAllFiles</ProjectView>
-    <StartupFile>wvs.js</StartupFile>
+    <StartupFile>app.js</StartupFile>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <NodeExePath>
-    </NodeExePath>
+    <NodeExePath>./bin/node.exe</NodeExePath>
     <StartWebBrowser>True</StartWebBrowser>
     <Environment>EDGE_CS_DEBUG=1
 _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt\dist\electron.exe</Environment>
@@ -24,11 +23,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
     <Compile Include="app.js" />
-    <Compile Include="public\box2d-html5.js" />
     <Compile Include="public\classList.js" />
-    <Compile Include="public\gl-matrix.js" />
-    <Compile Include="public\jquery-1.12.4.js" />
-    <Compile Include="public\jquery-ui.js" />
     <Compile Include="public\resource.js" />
     <Compile Include="public\spine\atlas.js" />
     <Compile Include="public\spine\build\spine-all.js" />
@@ -54,6 +49,11 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\Client\PMovePath.js">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\Common\Packet\ChatPacket.js" />
+    <Compile Include="src\Common\Packet\CharacterPacket.js" />
+    <Compile Include="src\Common\Packet\index.js" />
+    <Compile Include="src\Common\Packet\LoginPacket.js" />
+    <Compile Include="src\Common\PlayerData.js" />
     <Compile Include="src\components\CorePosition.js" />
     <Compile Include="src\game\Animation.js" />
     <Compile Include="src\game\Canvas2DRenderer.js" />
@@ -75,6 +75,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\Physics\PMob.js" />
     <Compile Include="src\game\Physics\PPlayer.js" />
     <Compile Include="src\game\Physics\World.js" />
+    <Compile Include="src\game\Renderer\CharacterActionAnimation.js" />
     <Compile Include="src\game\Renderer\CharacterRenderer.js" />
     <Compile Include="src\game\Renderer\LifeRenderer.js" />
     <Compile Include="src\game\Renderer\MobRenderer.js" />
@@ -196,7 +197,6 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="public\images\ui-icons_ffffff_256x240.png" />
     <Content Include="public\images\warning.png" />
     <Content Include="public\index.html" />
-    <Content Include="public\jquery-ui.css" />
     <Content Include="public\spine\bg.png" />
     <Content Include="public\spine\index.html" />
     <Content Include="public\stylesheets\style.css" />
@@ -233,6 +233,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Folder Include="public\spine\build\" />
     <Folder Include="public\stylesheets\" />
     <Folder Include="src\" />
+    <Folder Include="src\Common\Packet\" />
     <Folder Include="src\components\" />
     <Folder Include="src\editor\" />
     <Folder Include="src\game\" />
@@ -240,11 +241,29 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Folder Include="src\game\Physics\" />
     <Folder Include="src\game\Renderer\" />
     <Folder Include="src\Client\" />
+    <Folder Include="src\Common\" />
     <Folder Include="src\ui\" />
     <Folder Include="src\ui\UIToolTip\" />
     <Folder Include="src\ui\UIWindow\" />
+    <Folder Include="typings\" />
+    <Folder Include="typings\globals\" />
+    <Folder Include="typings\globals\electron-prebuilt\" />
+    <Folder Include="typings\globals\electron\" />
+    <Folder Include="typings\globals\node\" />
+    <Folder Include="typings\globals\socket.io\" />
+    <Folder Include="typings\globals\vue\" />
+    <Folder Include="typings\globals\webpack-dev-server\" />
+    <Folder Include="typings\socket.io\" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="typings\globals\electron-prebuilt\index.d.ts" />
+    <TypeScriptCompile Include="typings\globals\electron\index.d.ts" />
+    <TypeScriptCompile Include="typings\globals\node\index.d.ts" />
+    <TypeScriptCompile Include="typings\globals\socket.io\index.d.ts" />
+    <TypeScriptCompile Include="typings\globals\vue\index.d.ts" />
+    <TypeScriptCompile Include="typings\globals\webpack-dev-server\index.d.ts" />
+    <TypeScriptCompile Include="typings\index.d.ts" />
+    <TypeScriptCompile Include="typings\socket.io\index.d.ts" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <!--Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them.-->

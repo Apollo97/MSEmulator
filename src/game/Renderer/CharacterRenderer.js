@@ -9,6 +9,7 @@ import { engine, Graph } from '../Engine.js';
 
 import { SpriteBase, Sprite } from '../Sprite.js';
 
+import { ActionAnimation } from './CharacterActionAnimation.js';
 import { SkillAnimation } from '../Skill.js';
 
 
@@ -89,69 +90,53 @@ export class ChatBalloon {
 			return;
 		}
 
-		const LINE_HEIGHT = 14;// = fontSize(12) + PADDING_TOP(2)
+		const LINE_HEIGHT = this.c.height;// = fontSize(12) + PADDING_TOP(2)
 		const ctx = renderer.ctx;
-		const PADDING_LEFT = Math.trunc(this.n.width * 0.5 + 0.5), PADDING_TOP = 0, PADDING_RIGHT = 0, PADDING_BOTTOM = 0;
+		const PADDING_LEFT = 0, PADDING_TOP = 0, PADDING_RIGHT = 0, PADDING_BOTTOM = 0;
 
 		ctx.font = "12px 微軟正黑體";//新細明體
 		ctx.textAlign = "center";
 		ctx.textBaseline = "top";//alphabetic
 
-		const linesWidth = lines.map(line => ctx.measureText(line).width + PADDING_LEFT + PADDING_RIGHT);
-		const tw = linesWidth.sort((a, b) => b - a)[0];
+		const _tw = lines.map(line => ctx.measureText(line).width + PADDING_LEFT + PADDING_RIGHT).sort((a, b) => b - a)[0];
+		const tw = Math.ceil(_tw / this.n.width) * this.n.width;
+		const hw = tw / 2;
 		const th = lines.length * LINE_HEIGHT + PADDING_TOP + PADDING_BOTTOM;
-		const bottom = th + (this.nw.height + this.nw.y) + (this.arrow.height + this.arrow.y);
-		x = Math.trunc((x - tw * 0.5));
-		y = Math.trunc((y - bottom));
 
-		const nw_xw = this.nw.width;
-		const nw_xh = this.nw.height + this.nw.y;
-		let cy = y + this.nw.y;
+		x = Math.trunc((x - hw));
+		y = Math.trunc((y - th) - this.arrow.height);
 
-		this.nw.draw2i(x - this.nw.x + this.w.width, y + + this.nw.y);
-		this.n.drawPattern4i(
-			x - this.nw.x + this.w.width + this.nw.width,
-			y - this.n.height + nw_xh,
-			tw - this.w.width,
-			this.n.height
-		);
-		this.ne.draw2i(x + tw, y - this.n.height + nw_xh - this.ne.y + this.n.height);
+		this.nw.draw2(x, y);
+		this.n._drawPattern(x, y, tw, this.n.height);
+		this.ne.draw2(x + tw, y);
 
-		this.w.drawPattern4i(x,         y + nw_xh, this.w.width,      th);
-		this.c.drawPattern4i(x - this.nw.x + this.w.width + this.nw.width, y + nw_xh, tw - this.w.width, th);
-		this.e.drawPattern4i(x + tw,    y + nw_xh, this.e.width,      th);
+		const xw = this.w.width - this.w.x;
+
+		this.w._drawPattern(x + xw, y, this.w.width, th);
+		this.c._drawPattern(x + xw, y, tw, th);
+		this.e._drawPattern(x + xw + tw, y, this.e.width, th);
+
+		const arrow_hw = this.arrow.width / 2;
+		const hw_arrow_hw = hw - arrow_hw;
+
+		this.sw.draw2(x, y + th);
+		this.s._drawPattern(x, y + th, hw_arrow_hw, this.s.height);
+		this.s._drawPattern(x + hw + arrow_hw, y + th, hw_arrow_hw, this.s.height);
+		this.se.draw2(x + tw, y + th);
+
+		this.arrow.draw2i(x - arrow_hw + hw, y + th);
 		
-		for (let i = 0; i < lines.length; ++i) {
+		for (let i = 0, cy = y; i < lines.length; ++i, cy += LINE_HEIGHT) {
 			let line = lines[i];
 
-			if (this.constructor.DEBUG) {
-				ctx.beginPath();
-				ctx.strokeStyle = "red";
-				ctx.strokeRect(x + PADDING_LEFT, cy + PADDING_TOP, linesWidth[i], LINE_HEIGHT);
-			}
+			//if (this.constructor.DEBUG) {
+			//	ctx.beginPath();
+			//	ctx.strokeStyle = "red";
+			//	ctx.strokeRect(x + PADDING_LEFT, cy + PADDING_TOP, tw, LINE_HEIGHT);
+			//}
 		
 			ctx.fillStyle = "black";
-			ctx.fillText(line, x + tw * 0.5 + PADDING_LEFT, cy + this.nw.y + PADDING_TOP);
-		
-			cy += LINE_HEIGHT;
-		}
-		
-		this.sw.draw2i(x, y + th + nw_xh);
-		this.s.drawPattern4i(x + this.sw.x, y + th + nw_xh, tw - this.sw.x, this.s.height);
-		this.se.draw2i(x + tw, y + th + nw_xh);
-
-		this.arrow.draw2i(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom);
-
-		if (this.constructor.DEBUG) {
-			//origin
-			ctx.beginPath();
-			ctx.fillStyle = "#FF07";
-			ctx.fillRect(x - this.arrow.width * 0.5 + (tw + this.sw.x) * 0.5, y - this.arrow.height + bottom, 32, 32);
-
-			//ChatBalloon border
-			ctx.beginPath();
-			ctx.strokeStyle = "blue";
-			ctx.strokeRect(x + nw_xw, y + nw_xh, tw - this.e.width, th);
+			ctx.fillText(line, x + hw + PADDING_LEFT, cy + PADDING_TOP);
 		}
 	}
 
@@ -159,9 +144,9 @@ export class ChatBalloon {
 		return "/UI/ChatBalloon.img";
 	}
 
-	static get DEBUG() {
-		return false;
-	}
+	//static get DEBUG() {
+	//	return false;
+	//}
 }
 
 /** @type {{[style:number]:ChatBalloon}} */
@@ -648,6 +633,7 @@ class ItemEffect {
 	}
 
 	/**
+	 * if (!exist) return null
 	 * @param {string} equipID
 	 * @returns {Promise<ItemEffect>}
 	 */
@@ -920,6 +906,44 @@ class EquipImageFilter {
 			}
 		}
 	}
+
+	get contrast() {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						return ft.filter.contrast;
+					}
+				}
+			}
+		}
+	}
+	set contrast(value) {
+		const equip = this.equip;
+		for (let i in equip.fragments) {
+			for (let j in equip.fragments[i].textures) {
+				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
+					/** @type {FragmentTexture} */
+					let ft = equip.fragments[i].textures[j][k];
+					if (ft) {
+						ft.filter.contrast = value;
+					}
+				}
+			}
+		}
+	}
+
+	toJSON() {
+		return {
+			hue: this.hue,
+			sat: this.sat,
+			bri: this.bri,
+			contrast: this.contrast,
+		};
+	}
 }
 
 class ICharacterEquip {
@@ -952,12 +976,27 @@ class ICharacterEquip {
 	getDelay(chara) {
 		return 0;
 	}
+
+	toJSON() {
+		return {
+			id: -1,//invalid ID
+		};
+	}
 }
 
+/**
+ * ??
+ */
 class _CharacterEquipSlotLink extends ICharacterEquip {
 	constructor(slot_link) {
 		super();
-		this.slot_link = slot_link;
+		this.slot_link = slot_link;//??
+	}
+
+	toJSON() {
+		return {
+			id: slot_link,//??
+		};
 	}
 }
 
@@ -973,9 +1012,10 @@ class CharacterEquipBase extends ICharacterEquip {
 		/** @type {ItemEffect} */
 		this.effect = null;
 
-		/** @type {Object.<string, Object.<string, FragmentTexture>[]>} - object */
-
-		//this.fragments[place][action][frame]
+		/**
+		 * this.fragments[place][action][frame]
+		 * @type {{[place:string]:{[action:string]:FragmentTexture[]}}}
+		 */
 		this.fragments = null;
 
 		this._onload = null;
@@ -998,6 +1038,13 @@ class CharacterEquipBase extends ICharacterEquip {
 		this.filter = new EquipImageFilter(this);
 	}
 
+	toJSON() {
+		return {
+			id: this.id,
+			filter: this.filter.toJSON(),
+		};
+	}
+
 	isLoaded() {
 		return this.fragments != null;
 	}
@@ -1017,11 +1064,11 @@ class CharacterEquipBase extends ICharacterEquip {
 	 * @param {string} url
 	 * @param {string} id
 	 * @param {ItemCategoryInfo} cateInfo
-	 * @param {} use_category - no use
-	 * @returns {boolean} - true if item exist
+	 * @param {void} use_category - no use
+	 * @returns {Promise<boolean>} - true if item exist
 	 */
 	async load(url, id, cateInfo, use_category) {
-		let that = this, promise_raw, promise_name;
+		let promise_raw, promise_name;
 
 		this.id = id;
 		this.categoryInfo = cateInfo;
@@ -1029,11 +1076,11 @@ class CharacterEquipBase extends ICharacterEquip {
 		promise_raw = this.__load(url, id, cateInfo);
 
 		if (cateInfo.path) {
-			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(function (data) {
+			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
 				let ss = JSON.parse(data);
 				if (ss) {
-					that.name = ss.name;
-					that.desc = ss.desc;
+					this.name = ss.name;
+					this.desc = ss.desc;
 				}
 			});
 		}
@@ -1073,10 +1120,8 @@ class CharacterEquipBase extends ICharacterEquip {
 
 		//// if not body, head, face, hair then try load effect
 		//if (id >= "00050000") {
-		(function (that) {
 			// load if exist
-			ItemEffect.load(that.id).then(a => that.effect = a);//01102918	//01102915
-		})(this);
+			ItemEffect.load(this.id).then(a => this.effect = a);//01102918	//01102915
 		//}
 
 		return true;
@@ -1260,6 +1305,46 @@ class CharacterEquipBase extends ICharacterEquip {
 		}
 	}
 
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		const type = ItemCategoryInfo.get(this.id).slot;
+		switch (type) {
+			case "head":
+				return "/images" + this._url + "stand1/0/head";
+			case "body":
+				return "/images" + this._url + "stand1/0/body";
+			case "hair":
+				return "/images" + this._url + "stand1/0/hair";
+			case "face":
+				return "/images" + this._url + "blink/0/face";
+			default:
+				return "/images" + this._url + "info/icon";
+		}
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		const type = ItemCategoryInfo.get(this.id).slot;
+		switch (type) {
+			case "head":
+				return "/images" + this._url + "stand1/0/head";
+			case "body":
+				return "/images" + this._url + "stand1/0/body";
+			case "hair":
+				return "/images" + this._url + "stand1/0/hair";
+			case "face":
+				return "/images" + this._url + "blink/0/face";
+			default:
+				return "/images" + this._url + "info/iconRaw";
+		}
+	}
+
 	get _action_list() {
 		console.warn("Not implement");
 	}
@@ -1317,12 +1402,28 @@ class CharacterEquip extends CharacterEquipBase {
 		return 120;
 	}
 
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		return "/images" + this._url + "info/icon";
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		return "/images" + this._url + "info/iconRaw";
+	}
+
 	get fragmentConstructor() {
 		return CharacterBodyFragment;
 	}
 
 	get _action_list() {
-		return character_action_list;
+		return window.character_action_list;
 	}
 }
 
@@ -1338,6 +1439,22 @@ class CharacterEquipBody extends CharacterEquip {
 	//getFrameCount(chara) {
 	//	return this.fragments.body.textures[chara.action].length;
 	//}
+	
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		return "/images" + this._url + "stand1/0/body";
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		return "/images" + this._url + "stand1/0/body";
+	}
 }
 
 class CharacterEquipCashWeapon extends CharacterEquip {
@@ -1351,9 +1468,9 @@ class CharacterEquipCashWeapon extends CharacterEquip {
 	 * @param {string} id
 	 * @param {ItemCategoryInfo} cateInfo
 	 * @param {string} use_category - cash-weapon as [category]
-	 * @returns {boolean} - true if item exist
+	 * @returns {Promise<boolean>} - true if item exist
 	 */
-	load(url, id, cateInfo, use_category) {
+	async load(url, id, cateInfo, use_category) {
 		if (!use_category && use_category != "") {
 			console.warn("no use_category");
 			debugger;
@@ -1446,6 +1563,23 @@ class CharacterEquipHead extends CharacterEquip {
 			delete this.fragments.highlefEar;
 		}
 	}
+
+
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		return "/images" + this._url + "stand1/0/head";
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		return "/images" + this._url + "stand1/0/head";
+	}
 }
 
 class CharacterEquipHair extends CharacterEquip {
@@ -1453,12 +1587,28 @@ class CharacterEquipHair extends CharacterEquip {
 		super();
 	}
 
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		return "/images" + this._url + "stand1/0/hair";
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		return "/images" + this._url + "stand1/0/hair";
+	}
+
 	get FragmentTextureType() {
 		return HairFragmentTexture;
 	}
 }
 
-class CharacterEquipFace extends CharacterEquipBase {
+class CharacterEquipFaceAcc extends CharacterEquipBase {
 	constructor() {
 		super();
 	}
@@ -1504,18 +1654,39 @@ class CharacterEquipFace extends CharacterEquipBase {
 	}
 
 	get _action_list() {
-		return character_emotion_list;
+		return window.character_emotion_list;
+	}
+}
+class CharacterEquipFace extends CharacterEquipFaceAcc {
+	constructor() {
+		super();
+	}
+
+	/**
+	 * get icon url
+	 * @returns {string}
+	 */
+	getIconUrl() {
+		return "/images" + this._url + "blink/0/face";
+	}
+
+	/**
+	 * get iconRaw url
+	 * @returns {string}
+	 */
+	getIconRawUrl() {
+		return "/images" + this._url + "blink/0/face";
 	}
 }
 
 ItemCategoryInfo._info['0000'].fragmentType = CharacterEquipBody;
-ItemCategoryInfo._info['0001'].fragmentType = CharacterEquipHead;//elfEar
+ItemCategoryInfo._info['0001'].fragmentType = CharacterEquipHead;	//	elfEar
 ItemCategoryInfo._info['0002'].fragmentType = CharacterEquipFace;	//	Face
-ItemCategoryInfo._info['0003'].fragmentType = CharacterEquipHair;//CharacterEquipHair;	//	Hair
-ItemCategoryInfo._info['0004'].fragmentType = CharacterEquipHair;//CharacterEquipHair;	//	Hair
+ItemCategoryInfo._info['0003'].fragmentType = CharacterEquipHair;	//	CharacterEquipHair;	//	Hair
+ItemCategoryInfo._info['0004'].fragmentType = CharacterEquipHair;	//	CharacterEquipHair;	//	Hair
 
 ItemCategoryInfo._info['0100'].fragmentType = CharacterEquip;		//	Cap
-ItemCategoryInfo._info['0101'].fragmentType = CharacterEquipFace;	//	accessoryFace
+ItemCategoryInfo._info['0101'].fragmentType = CharacterEquipFaceAcc;//	accessoryFace
 ItemCategoryInfo._info['0102'].fragmentType = CharacterEquip;		//	accessoryEyes
 ItemCategoryInfo._info['0103'].fragmentType = CharacterEquip;		//	accessoryEars
 ItemCategoryInfo._info['0104'].fragmentType = CharacterEquip;		//	Coat
@@ -1532,12 +1703,8 @@ class CharacterSlots {
 	constructor() {
 			
 		/** @type {CharacterEquipBase[]} */
-		Object.defineProperty(this, "_ordered_slot", {
-			configurable: true,
-			writable: true,
-			enumerable: false,
-			value: []
-		});
+		this._ordered_slot = [];
+
 
 		/** @type {CharacterEquipHair} */
 		this._hair = null;
@@ -1550,31 +1717,6 @@ class CharacterSlots {
 		/** @type {CharacterEquipHair} 0~1.0 */
 		this._hairMix3 = null;
 
-		//Object.defineProperty(this, "_hair", {
-		//	writable: true,
-		//	enumerable: false,
-		//	value: null,
-		//});
-		//Object.defineProperty(this, "_hair2", {
-		//	writable: true,
-		//	enumerable: false,
-		//	value: null,
-		//});
-		//Object.defineProperty(this, "_hairMix2", {	// 0~1.0
-		//	writable: true,
-		//	enumerable: false,
-		//	value: null,
-		//});
-		//Object.defineProperty(this, "_hair3", {
-		//	writable: true,
-		//	enumerable: false,
-		//	value: null,
-		//});
-		//Object.defineProperty(this, "_hairMix3", {	// 0~1.0
-		//	writable: true,
-		//	enumerable: false,
-		//	value: null,
-		//});
 
 		/** @type {CharacterEquipBody} */
 		this.body = null;
@@ -1588,41 +1730,76 @@ class CharacterSlots {
 		/** @type {CharacterEquip} */
 		this.hair = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 1 */
 		this.cap = null;
 
-		/** @type {CharacterEquipFace} */
+		/** @type {CharacterEquipFace} - 2 */
 		this.accessoryFace = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 3*/
 		this.accessoryEyes = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 4 */
 		this.accessoryEars = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 5 */
 		this.coat = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 5 */
 		this.longcoat = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 6 */
 		this.pants = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 7 */
 		this.shoes = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 8 */
 		this.glove = null;
 
-		/** @type {CharacterEquip} */
-		this.shield = null;
-
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 9 */
 		this.cape = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterEquip} - 10 */
+		this.shield = null;
+
+		/** @type {CharacterEquip} - 11 */
 		this.weapon = null;
+	
+		{
+			Object.defineProperty(this, "_ordered_slot", {
+				configurable: true,
+				writable: true,
+				enumerable: false,
+				value: []
+			});
+
+			Object.defineProperty(this, "_hair", {
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+			Object.defineProperty(this, "_hair2", {
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+			Object.defineProperty(this, "_hairMix2", {	// 0~1.0
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+			Object.defineProperty(this, "_hair3", {
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+			Object.defineProperty(this, "_hairMix3", {	// 0~1.0
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+		}
 	}
 
 	/** @type {CharacterEquipHair} */
@@ -1674,23 +1851,21 @@ class CharacterSlots {
 
 		if (!this._hair2 || hc2Id != this._hair2.id) {
 			if (hc2Id == this._hair.id) {
-				that._hair2 = null;
-				that.hairMix2 = 0;
+				this._hair2 = null;
+				this.hairMix2 = 0;
 			}
 			else {
-				const that = this;
-
 				this.hair.$promise_hair2 = this.__loadColoredHair(color);
 
-				this.hair.$promise_hair2.then(function (hair2) {
-					delete that.hair.$promise_hair2;
+				this.hair.$promise_hair2.then(hair2 => {
+					delete this.hair.$promise_hair2;
 
-					that._hair2 = hair2;
-					if (that._hair2 && that.hairMix2 != null) {
-						that.hairMix2 = that.hairMix2;//force update
+					this._hair2 = hair2;
+					if (this._hair2 && this.hairMix2 != null) {
+						this.hairMix2 = this.hairMix2;//force update
 					}
 					//else {
-					//	that.hairMix2 = 0;//disable
+					//	this.hairMix2 = 0;//disable
 					//}
 				});
 			}
@@ -1701,15 +1876,13 @@ class CharacterSlots {
 		return this._hairMix2;
 	}
 	set hairMix2(value) {
-		const that = this;
-
 		value = Number(value);
 
-		Promise.resolve(this.hair.$promise_hair2).then(function () {
+		Promise.resolve(this.hair.$promise_hair2).then(() => {
 			/** @type {CharacterEquipBase} */
-			let item = that._hair2;
+			let item = this._hair2;
 			/** @type {CharacterEquipBase} */
-			let base = that.hair;
+			let base = this.hair;
 
 			if (!item || !base) {
 				return;
@@ -1729,7 +1902,7 @@ class CharacterSlots {
 					}
 				}
 			}
-			that._hairMix2 = value;
+			this._hairMix2 = value;
 		});
 	}
 
@@ -1748,23 +1921,21 @@ class CharacterSlots {
 
 		if (!this._hair3 || this._hair3.id != hc3Id) {
 			if (this._hair.id == hc3Id || this._hair2.id == hc3Id) {
-				that._hair3 = null;
-				that.hairMix3 = 0;
+				this._hair3 = null;
+				this.hairMix3 = 0;
 			}
 			else {
-				const that = this;
-
 				this.hair.$promise_hair3 = this.__loadColoredHair(color);
 
-				this.hair.$promise_hair3.then(function (hair3) {
+				this.hair.$promise_hair3.then(hair3 => {
 					delete this.hair.$promise_hair3;
 
-					that._hair3 = hair3;
-					if (that._hair3 && that.hairMix3 != null) {
-						that.hairMix3 = that.hairMix3;//force update
+					this._hair3 = hair3;
+					if (this._hair3 && this.hairMix3 != null) {
+						this.hairMix3 = this.hairMix3;//force update
 					}
 					//else {
-					//	that.hairMix3 = 0;//disable
+					//	this.hairMix3 = 0;//disable
 					//}
 				});
 			}
@@ -1775,15 +1946,13 @@ class CharacterSlots {
 		return this._hairMix3;
 	}
 	set hairMix3(value) {
-		const that = this;
-
 		value = Number(value);
 
-		Promise.resolve(this.hair.$promise_hair3).then(function () {
+		Promise.resolve(this.hair.$promise_hair3).then(() => {
 			/** @type {CharacterEquipBase} */
-			let item = that._hair3;
+			let item = this._hair3;
 			/** @type {CharacterEquipBase} */
-			let base = that.hair;
+			let base = this.hair;
 
 			if (!item || !base) {
 				return;
@@ -1803,7 +1972,7 @@ class CharacterSlots {
 					}
 				}
 			}
-			that._hairMix3 = value;
+			this._hairMix3 = value;
 		});
 	}
 
@@ -1820,7 +1989,7 @@ class CharacterSlots {
 	/**
 	 * @param {string} id
 	 * @param {CharacterEquipBase} loadedEquip
-	 * @param {string} category - category which used of cash-weapon
+	 * @param {string} use_category - category which used of cash-weapon
 	 */
 	async _use(id, loadedEquip, use_category) {
 		if (!id) {
@@ -1835,9 +2004,15 @@ class CharacterSlots {
 			let item;
 
 			if (loadedEquip instanceof CharacterEquipBase) {
+				alert("CharacterSlots # _use: param loadedEquip ??");
+				debugger;
 				item = loadedEquip;
 			}
 			else {
+				if (loadedEquip) {
+					alert("CharacterSlots # _use: param loadedEquip ??");
+					debugger;
+				}
 				const fragmentType = cateInfo.fragmentType || CharacterEquip;
 
 				item = new fragmentType();
@@ -1852,7 +2027,7 @@ class CharacterSlots {
 				this._ordered_slot[item.slot_order] = item;
 			}
 
-			let is_exist = await item.load(url, id, cateInfo, use_category);
+			let is_exist = loadedEquip || await item.load(url, id, cateInfo, use_category);
 			if (is_exist) {
 				/** _use_loaded_equip */
 				if (1) {
@@ -1918,8 +2093,8 @@ class CharacterSlots {
 		this.pants = null;
 		this.shoes = null;
 		this.glove = null;
-		this.shield = null;
 		this.cape = null;
+		this.shield = null;
 
 		//temp
 		let head = this.head;
@@ -1966,6 +2141,29 @@ class CharacterSlots {
 		return slots.join(",");
 	}
 
+	toJSON() {
+		let slots = [];
+
+		if (this.body) slots.push(this.body.id);
+		if (this.head) slots.push(this.head.id);
+		if (this.face) slots.push(this.face.id);
+		if (this.hair) slots.push(this.hair.id);
+		if (this.cap) slots.push(this.cap.id);
+		if (this.accessoryFace) slots.push(this.accessoryFace.id);
+		if (this.accessoryEyes) slots.push(this.accessoryEyes.id);
+		if (this.accessoryEars) slots.push(this.accessoryEars.id);
+		if (this.coat) slots.push(this.coat.id);
+		if (this.longcoat) slots.push(this.longcoat.id);
+		if (this.pants) slots.push(this.pants.id);
+		if (this.shoes) slots.push(this.shoes.id);
+		if (this.glove) slots.push(this.glove.id);
+		if (this.shield) slots.push(this.shield.id);
+		if (this.cape) slots.push(this.cape.id);
+		if (this.weapon) slots.push(this.weapon.id);
+
+		return slots;
+	}
+
 	/**
 	 * returns: [face, hair, cap, ..., weapon]
 	 */
@@ -1995,13 +2193,58 @@ class CharacterSlots {
 	}
 }
 
+class CharacterChangeLog {
+	constructor() {
+		/** @type {"human"|"elf"|"lef"|"highlef"} */
+		this.ear = undefined;
+
+		/** @type {string[]} */
+		this.useEquip = [];
+
+		/** @type {string[]} */
+		this.unuseEquip = [];
+		
+		/** @type {string} - hair2 id */
+		this.hair2 = undefined;
+
+		/** @type {string} */
+		this.hairMix2 = undefined;
+
+		///** @type {string} */
+		//this.hair3 = undefined;
+
+		///** @type {string} */
+		//this.hairMix3 = undefined;
+
+		/** @type {string} weapon => equip id */
+		this.weapon = undefined;
+
+		/** @type {string} */
+		this.weaponType = undefined;
+	}
+
+	clear() {
+		this.ear = undefined;
+		this.useEquip = [];
+		this.unuseEquip = [];
+		this.hair2 = undefined;
+		this.hairMix2 = undefined;
+		//this.hair3 = undefined;
+		//this.hairMix3 = undefined;
+		this.weaponType = undefined;
+	}
+}
+
 export class CharacterAnimationBase {
 	constructor() {
 		this._$dirty = 0;
 
+		/** @type {ActionAnimation} */
+		this.actani = new ActionAnimation();
+
 		/** @type {number} - animation speed rate */
 		this.speed = 1;
-
+		
 		this._action = "stand1";
 		this._action_frame = 0;
 		this._action_time = 0;
@@ -2012,7 +2255,7 @@ export class CharacterAnimationBase {
 		this._emotion_frame_sequence = [0, 1, 2, 1];
 
 		/** @type {CharacterSlots} */
-		this.slots = null;
+		this.slots = new CharacterSlots();
 
 		/**
 		 * is require update render data
@@ -2022,6 +2265,9 @@ export class CharacterAnimationBase {
 
 		/** @type {FragmentTexture[]} */
 		this.__frag_list = [];
+
+		/** @type {CharacterChangeLog} **/
+		this.$$changeLog = new CharacterChangeLog();
 	}
 
 	_clone() {
@@ -2049,7 +2295,7 @@ export class CharacterAnimationBase {
 		for (let i in this.slots) {
 			let item = this.slots[i];
 			if (item) {
-				nc.slots[i] = this.slots[i];//not need colne
+				nc.slots[i] = this.slots[i];//not need colne ?
 			}
 		}
 		return nc;
@@ -2112,7 +2358,7 @@ export class CharacterAnimationBase {
 	}
 	set elfEar(value) {
 		if (this.slots.head) {
-			return this.slots.head.elfEar = value;
+			this.slots.head.elfEar = value;
 		}
 	}
 
@@ -2126,7 +2372,7 @@ export class CharacterAnimationBase {
 	}
 	set lefEar(value) {
 		if (this.slots.head) {
-			return this.slots.head.lefEar = value;
+			this.slots.head.lefEar = value;
 		}
 	}
 
@@ -2140,37 +2386,45 @@ export class CharacterAnimationBase {
 	}
 	set highlefEar(value) {
 		if (this.slots.head) {
-			return this.slots.head.highlefEar = value;
+			this.slots.head.highlefEar = value;
 		}
 	}
 
+	/** @returns {"human"|"elf"|"lef"|"highlef"} */
 	get ear() {
 		if (this.slots.head) {
-			return this.slots.head.lefEar ? "lefEar" : (this.slots.head.elfEar ? "elfEar" : (this.slots.head.highlefEar ? "highlefEar" : "human"));
+			return this.slots.head.lefEar ? "lef" : (this.slots.head.elfEar ? "elf" : (this.slots.head.highlefEar ? "highlef" : "human"));
 		}
 	}
 	set ear(value) {
 		if (this.slots.head) {
-			if (value == "elfEar") {
+			if (value == "elf") {
 				this.slots.head.elfEar = true;
 				this.slots.head.lefEar = false;
 				this.slots.head.highlefEar = false;
+				this.$$changeLog.ear = value;
 			}
-			else if (value == "lefEar") {
+			else if (value == "lef") {
 				this.slots.head.lefEar = true;
 				this.slots.head.elfEar = false;
 				this.slots.head.highlefEar = false;
+				this.$$changeLog.ear = value;
 			}
-			else if (value == "highlefEar") {
+			else if (value == "highlef") {
 				this.slots.head.elfEar = false;
 				this.slots.head.lefEar = false;
 				this.slots.head.highlefEar = true;
+				this.$$changeLog.ear = value;
 			}
 			else {
 				this.slots.head.elfEar = false;
 				this.slots.head.lefEar = false;
 				this.slots.head.highlefEar = false;
+				this.$$changeLog.ear = "human";
 			}
+		}
+		else {
+			this.$$changeLog.ear = undefined;
 		}
 	}
 
@@ -2179,12 +2433,18 @@ export class CharacterAnimationBase {
 		return this._action;
 	}
 	set action(act) {
-		if (this._action != act && this.slots.body && this.slots.body._action_list.indexOf(act) >= 0) {
-			this._action = act;
-			this._action_frame = 0;
-			this._action_time = 0;
+		if (this.actani._action != act && this.slots.body) {
+		//if (this._action != act && this.slots.body) {
+			//if (this.slots.body._action_list.indexOf(act) >= 0) {
+			//	this._action = act;
+			//}
+			//this._action_frame = 0;
+			//this._action_time = 0;
+			////
+			////this.action_frame_sequence = [...circularSequence(this.action_frame_count)];
 
-			//this.action_frame_sequence = [...circularSequence(this.action_frame_count)];
+			this._action = act;
+			this.actani.reload(act);
 
 			this.__require_update |= true;
 		}
@@ -2365,7 +2625,16 @@ export class CharacterAnimationBase {
 	 * @param {any} number  0 <= stamp < Infinity
 	 */
 	_update(stamp) {
-		this.action_time += stamp;
+		if (this.actani) {
+			if (this.actani.isEnd() && this.actani.loop) {
+				this.actani.reset();
+			}
+
+			this.actani.update(stamp, this);
+		}
+		else {
+			this.action_time += stamp;
+		}
 
 		this.emotion_time += stamp;
 
@@ -2570,7 +2839,7 @@ export class CharacterAnimationBase {
 
 
 	/**
-	 * calc current frame bound box and restore value
+	 * calc current frame bound box and restore result
 	 * @returns {Rectangle}
 	 */
 	_calcBoundBox() {
@@ -2598,6 +2867,26 @@ export class CharacterAnimationBase {
 		);
 		return this._boundBox;
 	}
+	
+	toJSON() {
+		let obj = {
+			hair2: this.slots._hair2.id,
+			hairMix2: this.slots.hairMix2,
+			slots: this.slots.toJSON(),
+		};
+
+		if (this.slots.head.elfEar) {
+			obj.ear = "elf";
+		}
+		else if (this.slots.head.lefEar) {
+			obj.ear = "lef";
+		}
+		else if (this.slots.head.highlefEar) {
+			obj.ear = "highlef";
+		}
+
+		return obj;
+	}
 }
 
 export class CharacterRenderer extends CharacterAnimationBase {
@@ -2623,8 +2912,6 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		/** @type {Promise<void>[]} */
 		this.__load_task = [];
 
-		this.slots = new CharacterSlots();
-
 		/** @type {function(IRenderer)} */
 		this.render = function (renderer) {
 			//not ready to render
@@ -2640,7 +2927,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			$get("/make_zorders"),
 			$get.data("/smap.img/"),
 			ItemEffect.Init(),
-			SkillAnimation.Init(),
+			ActionAnimation.Init(),//action definition
 		]);
 
 		zMap = JSON.parse(result[0]);
@@ -2708,9 +2995,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	async waitLoaded() {
 		let tasks = this.__load_task;
 		if (tasks && tasks.length) {
-			let that = this;
-			await Promise.all(tasks).then(function () {
-				that.__load_task = [];
+			await Promise.all(tasks).then(() => {
+				this.__load_task = [];
 			});
 		}
 	}
@@ -2725,6 +3011,14 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		const item_type = id[0];
 		switch (item_type) {
 			case "0"://equip
+				if (id.startsWith("0170")) {
+					//this.$$changeLog.weaponType = ss[1];/??
+					this.$$changeLog.weapon = id;
+				}
+				else {
+					this.$$changeLog.useEquip.push(id);
+				}
+				//
 				let task = this.slots._use(id, null, category);
 				this.__load_task.push(task);
 				await task;
@@ -2734,28 +3028,16 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	}
 
 	/**
-	 * @param {...string} id_list
-	 * @returns {boolean}
+	 * @param {string} id
 	 */
-	unuse(...id_list) {
-		if (!id_list.length) {
-			debugger;
-			return;
-		}
-		for (let i = 0; i < id_list.length; ++i) {
-			const id = id_list[i];
-			if (!id) {
-				debugger;
-				continue;
-			}
-			if (id[0] == "0") {//equip
-				if (this.slots._unuse(id)) {
-					this._calcBoundBox();
-					return true;
-				}
+	unuse(id) {
+		debugger;
+		if (id[0] == "0") {//equip
+			if (this.slots._unuse(id)) {
+				this.$$changeLog.unuseEquip.push(id);
+				this._calcBoundBox();
 			}
 		}
-		return false;
 	}
 
 	_parse(code) {
@@ -2766,29 +3048,52 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		this.slots._clear();
 		es.forEach((v, i, a) => {
 			if (v.indexOf("|") >= 0) {
-				let ss = v.split("|");
+				const ss = v.split("|");
 				const cate = ItemCategoryInfo.get(ss[0]);
+				let id;
 				if (cate.slot == "face") {
-					this.use(ss[1]);
+					id = ss[1];
+					this.$$changeLog.useEquip.push(id);
+					//
+					this.use(id);
+
 				}
 				else if (cate.slot == "hair") {
 					const slots = this.slots;
 					let h2 = ss[1];
 					let h3 = ss[2];
-					this.use(ss[0]).then(function () {
+					//
+					id = ss[0];
+					this.$$changeLog.useEquip.push(id);
+					//
+					this.use(id).then(() => {
 						if (h2 && h2.indexOf("%") >= 0) {
 							let hc = h2.split("%");
-							slots.hairColor2 = hc[0];
-							slots.hairMix2 = hc[1] / 100;
+							const c2 = hc[0];
+							const m2 = hc[1] / 100;
+							//
+							this.$$changeLog.hair2 = c2;
+							this.$$changeLog.hairMix2 = m2;
+							//
+							slots.hairColor2 = c2;
+							slots.hairMix2 = m2;
 						}
 						if (h3 && h3.indexOf("%") >= 0) {
 							let hc = h3.split("%");
+							const c3 = hc[0];
+							const m3 = hc[1] / 100;
+							//
+							this.$$changeLog.hair3 = c3;
+							this.$$changeLog.hairMix3 = m3;
+							//
 							slots.hairColor3 = hc[0];
 							slots.hairMix4 = hc[1] / 100;
 						}
 					});
 				}
 				else if (cate.slot == "weapon") {
+					this.$$changeLog.weaponType = ss[1];
+					this.$$changeLog.weapon = id;
 					this.use.apply(this, ss, ss[1]);//this.use(ss[0], ss[1]);
 				}
 			}
@@ -2830,6 +3135,41 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		}
 	}
 
+	/**
+	 * @param {CharacterChangeLog} changeLog
+	 */
+	commitChange(changeLog) {
+		if (changeLog.ear) {
+			this.ear = changeLog.ear;
+		}
+
+		if (this.useEquip) {
+			for (let id of this.useEquip) {
+				this.use(id);
+			}
+		}
+
+		if (this.unuseEquip) {
+			for (let id of this.unuseEquip) {
+				this.unuse(id);
+			}
+		}
+
+		if (changeLog.hair2 && changeLog.hairMix2) {
+			this.slots.hairColor2 = changeLog.hair2;
+			this.slots.hairMix2 = changeLog.hairMix2;
+		}
+
+		if (changeLog.hair3 && changeLog.hairMix3) {
+			//this.slots.hairColor3 = changeLog.hair3;
+			//this.slots.hairMix3 = changeLog.hairMix3;
+		}
+		
+		if (changeLog.weapon && changeLog.weaponType) {
+			this.use(changeLog.weapon, changeLog.weaponType);
+		}
+	}
+
 	_stringify(genCode) {
 		let result = this.slots._stringify();
 		if (genCode) {
@@ -2859,10 +3199,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	}
 
 	_save_as_svg() {
-		let that = this;
-		that.__texture_to_base64().then(function (frag_list) {
-			let file_name = that.id + ".svg";
-			//let frag_list = that.__frag_list;
+		this.__texture_to_base64().then(frag_list => {
+			let file_name = this.id + ".svg";
+			//let frag_list = this.__frag_list;
 	
 			let svg = '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >';
 
@@ -2872,12 +3211,12 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			frag_list.forEach(function (ft) {
 				if (ft) {
 					let clz = ft.classList;
-					svg += `\t<image class="${clz}" opacity="${ft.opacity}" x="${ft.relative.x}" y="${ft.relative.y}" width="${ft.width}" height="${ft.height}" xlink:href="${ft.texture.src}"></image>\n`;
+					svg += `\t<image class="${clz}" opacity="${ft.opacity}" x="${ft.relative.x}" y="${ft.relative.y}" width="${ft.width}" height="${ft.height}" xlink:href="${ft._url}"></image>\n`;
 				}
 			});
 			svg += '</g>';
 
-			svg += '<text x="0" y="122" fill="transparent">' + that._stringify(false) + '</text>';
+			svg += '<text x="0" y="122" fill="transparent">' + this._stringify(false) + '</text>';
 
 			svg += '</svg>';
 
@@ -2958,7 +3297,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 		return base64;
 	}
-
+	
 	async __texture_to_base64() {
 		let frag_list = this.__frag_list;
 		let tasks = [];
@@ -2967,9 +3306,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			if (!ft) {
 				return;
 			}
-			if (!ft.texture.src.startsWith("data:")) {
+			if (!ft._url.startsWith("data:")) {
 				tasks.push((async function () {
-					ft.texture.src = await toDataURL(ft.texture.src);
+					ft.texture.$src = ft._url;
+					ft._url = await toDataURL(ft._url);
 					return ft;
 				})());
 			}
@@ -2977,10 +3317,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				tasks.push(ft);
 			}
 			if (ft.graph2) {
-				let src = ft.graph2.texture.src;
+				let src = ft.graph2._url;
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
-						ft.graph2.texture.src = await toDataURL(src);
+						ft.texture.$src = ft._url;
+						ft.graph2._url = await toDataURL(src);
 						return ft.graph2;
 					})());
 				}
@@ -2989,10 +3330,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				}
 			}
 			if (ft.graph3) {
-				let src = ft.graph3.texture.src;
+				let src = ft.graph3._url;
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
-						ft.graph3.texture.src = await toDataURL(src);
+						ft.texture.$src = ft._url;
+						ft.graph3._url = await toDataURL(src);
 						return ft.graph3;
 					})());
 				}
@@ -3027,6 +3369,9 @@ function extract_number(input) {
 	return String(input).match(/(-?\d+\.?\d*)|(\.\d*)/g);
 }
 
+/**
+ * image href to data url
+ */
 function toDataURL(url) {
 	return new Promise(function (resolve, reject) {
 		let xhr = new XMLHttpRequest();

@@ -10,14 +10,17 @@ import { Vec2, Rectangle } from './math.js';
 window.m_is_run = true;
 
 (function () {
+	window.MAX_FPS = 60;
+	window.FRAME_ELAPSED = 1000 / 60;
 	window.CANVAS_SCALE = 32;
 
-	window.m_display_physics_debug = true;
-	window.m_display_debug_info = false;
+	window.m_display_physics_debug = false;//true;
+	window.m_display_debug_info = false;//false;
 })();
 
 (function () {
-	window.input_keys = {};
+	window.input_keyDown = {};
+	window.input_keyUp = {};
 
 	window.mouse_move = 0;
 	window.mouse_x = 0;
@@ -35,11 +38,15 @@ window.m_is_run = true;
 
 	window.m_is_rendering_map = true;
 
-	window.m_display_back = true;
+	window.m_display_back = false;//true;
 	window.m_display_front = true;
 	window.m_display_mapobj = true;
 	window.m_display_maptile = true;
-	window.m_display_particle_system = true;
+	window.m_display_particle_system = false;//true;
+
+	window.m_display_skeletal_anim = false;//true;
+
+	window.m_display_portal = true;
 
 	window.m_display_player = true;
 	window.m_display_life = true;
@@ -48,18 +55,14 @@ window.m_is_run = true;
 	//window.m_display_mob_skill;
 	//window.m_display_mob_effect = true;
 	//window.m_display_mob_etc = true;
-
-	window.m_display_portal = true;
-
-	window.m_display_skeletal_anim = true;
 })();
 
 (function () {
-	window.m_editor_mode = true;
+	window.m_editor_mode = false;//true;
 
-	window.m_display_foothold = true;
+	window.m_display_foothold = false;//true;
 
-	window.m_display_selected_object = true;
+	window.m_display_selected_object = false;//true;
 	window.m_selected_object = null;
 	window.m_hover_object = null;
 })();

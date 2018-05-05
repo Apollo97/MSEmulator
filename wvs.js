@@ -3,6 +3,7 @@ let repl = require('repl');
 //let app = require('express')();
 let http = require('http').Server(/*app*/);
 let io = require('socket.io')(http);
+let { $PlayerData } = require("./src/Common/PlayerData.js");
 
 let repl_context = repl.start({ prompt: '> ' }).context;
 
@@ -24,27 +25,6 @@ Object.defineProperties(repl_context, {
 	},
 });
 
-class CharaData {
-	constructor() {
-		/** @type {string} */
-		this.id = null;
-
-		/** @type {string} number */
-		this.mapId = null;
-
-		/** @type {string} */
-		this.equips_code = null;
-	}
-
-	getRemoteData() {
-		return {
-			id: this.id,
-			mapId: this.mapId,
-			equips_code: this.equips_code,
-		};
-	}
-}
-
 class ClientState {
 	constructor() {
 		/** @type {string} number */
@@ -56,7 +36,7 @@ class ClientState {
 		/** @type {number} number */
 		this.channel = null;
 
-		/** @type {CharaData} number */
+		/** @type {$PlayerData} number */
 		this.chara = null;
 	}
 }
@@ -80,8 +60,12 @@ io.on("connection", function (socket) {
 		delete $clients[id];
 	});
 
-	socket.on("chat", function (msg) {
-		console.log(`user[${id}]: ${msg}`);
+	socket.on("chat", function (packet, fnAck) {
+		console.log(`user[${id}]: ${packet.text}`);
+		packet.id = id;
+
+		fnAck(true);
+		socket.broadcast.emit("remoteChat", packet);
 	});
 
 	socket.on("login", function (packet, fnAck) {
@@ -94,15 +78,27 @@ io.on("connection", function (socket) {
 		fnAck(true);//charaList
 	});
 	socket.on("selectChara", function (packet, fnAck) {
-		const $$aa = ["c,00002012,00012012,00026539|00026539,00044833,01012083,01051437,01071078", "c,00002000,00012000,00024163|00024163,00044847,01012083,01051529,01071110"];
+		const $$aa = [
+			"c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392"
+			, "c,00002000,00012000,00025346|00025346,00044591,01051469,01072392"
+			, "c,00002012,00012012,00026539|00026539,00044833,01012083,01051437,01071078"
+			, "c,00002000,00012000,00024163|00024163,00044847,01012083,01051529,01071110"
+		];
 
 		if (!state.chara) {
-			state.chara = new CharaData();
+			state.chara = new $PlayerData();
 		}
 
-		state.chara.id = id;
+		state.chara.id = id;//id == name
 		state.chara.equips_code = $$aa[client_number % $$aa.length];
 		state.chara.mapId = repl_context.mapId || "000000000";
+
+		if (state.chara.guildId) {
+			socket.join(state.chara.guildId);//guildId == guildName
+		}
+		if (state.chara.partyId) {
+			socket.join(state.chara.partyId);//partyId == partyName
+		}
 
 		fnAck({
 			charaData: state.chara,
@@ -112,20 +108,39 @@ io.on("connection", function (socket) {
 		socket.broadcast.emit("enterRemoteChara", [state.chara.getRemoteData()]);
 	});
 	socket.on("charaMove", function (packet, fnAck) {
-		let data = {
-			id, id,
-			path: packet,
-		};
+		/** @type {$Packet_CharacterMove} */
+		let data = packet;
+
+		data.id = id;
 		
 		socket.broadcast.emit("remoteCharaMove", data);
 	});
 	socket.on("charaAnim", function (packet, fnAck) {
-		let data = {
-			id, id,
-			anim: packet,
-		};
+		console.log(JSON.stringify(packet));
+	});
+	socket.on("skill", function (packet, fnAck) {
+		let data = packet;
 
-		socket.broadcast.emit("remoteCharaAnim", data);
+		data.id = id;
+		//data.skillId
+
+		fnAck(true);
+
+		socket.broadcast.emit("remoteCharaSkill", data);
+	});
+	socket.on("useItem", function (packet, fnAck) {
+		let data = packet;
+
+		if (data.itemId[0] == "0") {//equip
+			data.id = id;
+
+			fnAck(true);
+
+			socket.broadcast.emit("remoteAvatarModified", data);
+		}
+		else {
+			fnAck(false);
+		}
 	});
 	
 	function enumEnterRemoteCharaData(clients) {
@@ -135,7 +150,7 @@ io.on("connection", function (socket) {
 			const client = clients[i];
 
 			if (socket != client) {
-				/** @type {CharaData} */
+				/** @type {$PlayerData} */
 				let chara = client.clientState.chara;
 
 				if (chara) {

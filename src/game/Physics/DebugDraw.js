@@ -16,7 +16,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-import box2d from "../../../public/box2d-html5.js";
+import box2d from "box2d-html5";
 
 /**
  * Test settings. Some can be controlled in the GUI.

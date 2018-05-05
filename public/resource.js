@@ -28,6 +28,57 @@ class ItemCategoryInfo {
 		this.categoryName = categoryName;
 		this.fragmentType = null;
 	}
+
+	/**
+	 * @param {string} id - 4+ digit string
+	 * @returns {string}
+	 */
+	static getIconRawUrl(id) {
+		/** @type {ItemCategoryInfo} */
+		let info = ItemCategoryInfo.get(id);
+		if (info) {
+			let type = info.slot;
+			let path = ["/Character", info.path, id + ".img"].join("/");
+			switch (type) {
+				case "head":
+					return "/images" + path + "/stand1/0/head";
+				case "body":
+					return "/images" + path + "/stand1/0/body";
+				case "hair":
+					return "/images" + path + "/stand1/0/hair";
+				case "face":
+					return "/images" + path + "/blink/0/face";
+				default:
+					return "/images" + path + "/info/iconRaw";
+			}
+		}
+	}
+
+	/**
+	 * @param {string} id - 4+ digit string
+	 * @returns {string}
+	 */
+	static getIconUrl(id) {
+		/** @type {ItemCategoryInfo} */
+		let info = ItemCategoryInfo.get(id);
+		if (info) {
+			let type = info.slot;
+			let path = ["/Character", info.path, id + ".img"].join("/");
+			switch (type) {
+				case "head":
+					return "/images" + path + "/stand1/0/head";
+				case "body":
+					return "/images" + path + "/stand1/0/body";
+				case "hair":
+					return "/images" + path + "/stand1/0/hair";
+				case "face":
+					return "/images" + path + "/blink/0/face";
+				default:
+					return "/images" + path + "/info/icon";
+			}
+		}
+	}
+
 	/**
 	 * @param {string} id - 4+ digit string
 	 * @returns {ItemCategoryInfo}
@@ -74,26 +125,28 @@ class ItemCategoryInfo {
 		return (cate >= "0100" && cate < "0180");
 	}
 }
-module.exports.ItemCategoryInfo = ItemCategoryInfo;
+if (!module.exports.ItemCategoryInfo) {
+	module.exports.ItemCategoryInfo = ItemCategoryInfo;
+}
 ItemCategoryInfo._info = {
-	'0000': new ItemCategoryInfo("", "body", "body", ""),
-	'0001': new ItemCategoryInfo("", "head", "head", ""),
+	'0000': new ItemCategoryInfo("",			"body",				"body",			""),
+	'0001': new ItemCategoryInfo("",			"head",				"head",			""),
 
-	'0002': new ItemCategoryInfo("Face", "Face", "face", "臉型"),
-	'0003': new ItemCategoryInfo("Hair", "Hair", "hair", "髮型"),
-	'0004': new ItemCategoryInfo("Hair", "Hair", "hair", "髮型"),
+	'0002': new ItemCategoryInfo("Face",		"Face",				"face",			"臉型"),
+	'0003': new ItemCategoryInfo("Hair",		"Hair",				"hair",			"髮型"),
+	'0004': new ItemCategoryInfo("Hair",		"Hair",				"hair",			"髮型"),
 
-	'0100': new ItemCategoryInfo("Cap", "Cap", "cap", "帽子"),
-	'0101': new ItemCategoryInfo("Accessory", "accessoryFace", "accessoryFace", "臉飾"),
-	'0102': new ItemCategoryInfo("Accessory", "accessoryEyes", "accessoryEyes", "眼飾"),
-	'0103': new ItemCategoryInfo("Accessory", "accessoryEars", "accessoryEars", "耳環"),
-	'0104': new ItemCategoryInfo("Coat", "Coat", "coat", "上衣"),
-	'0105': new ItemCategoryInfo("Longcoat", "Longcoat", "longcoat", "套服"),
-	'0106': new ItemCategoryInfo("Pants", "Pants", "pants", "褲子"),
-	'0107': new ItemCategoryInfo("Shoes", "Shoes", "shoes", "鞋子"),
-	'0108': new ItemCategoryInfo("Glove", "Glove", "glove", "手套"),
-	'0109': new ItemCategoryInfo("Shield", "Shield", "shield", "盾牌"),
-	'0110': new ItemCategoryInfo("Cape", "Cape", "cape", "披風"),
+	'0100': new ItemCategoryInfo("Cap",			"Cap",				"cap",			"帽子"),
+	'0101': new ItemCategoryInfo("Accessory",	"accessoryFace",	"accessoryFace", "臉飾"),
+	'0102': new ItemCategoryInfo("Accessory",	"accessoryEyes",	"accessoryEyes", "眼飾"),
+	'0103': new ItemCategoryInfo("Accessory",	"accessoryEars",	"accessoryEars", "耳環"),
+	'0104': new ItemCategoryInfo("Coat",		"Coat",				"coat",			"上衣"),
+	'0105': new ItemCategoryInfo("Longcoat",	"Longcoat",			"longcoat",		"套服"),
+	'0106': new ItemCategoryInfo("Pants",		"Pants",			"pants",		"褲子"),
+	'0107': new ItemCategoryInfo("Shoes",		"Shoes",			"shoes",		"鞋子"),
+	'0108': new ItemCategoryInfo("Glove",		"Glove",			"glove",		"手套"),
+	'0109': new ItemCategoryInfo("Shield",		"Shield",			"shield",		"盾牌"),
+	'0110': new ItemCategoryInfo("Cape",		"Cape",				"cape",			"披風"),
 
 	"0121": new ItemCategoryInfo("Weapon", "閃亮克魯", "weapon", "閃亮克魯"),
 	"0122": new ItemCategoryInfo("Weapon", "靈魂射手", "weapon", "靈魂射手"),
@@ -171,7 +224,7 @@ class ResourceManager {
 			let xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
 
-			xhr.timeout = 60000;//20000;
+			xhr.timeout = 10 * 60 * 1000;//20000;
 
 			xhr.onload = function () {
 				if (this.status == 404 || this.status == 500) {
@@ -218,8 +271,9 @@ ResourceManager.equip_path_map = {
 	'0109': "Shield",
 	'0110': "Cape",
 }
-module.exports.ResourceManager = ResourceManager;
-
+if (!module.exports.ResourceManager) {
+	module.exports.ResourceManager = ResourceManager;
+}
 
 /**
  * @param {string} url
@@ -298,8 +352,9 @@ class ItemAttrNormalize {
 		item.gender = g == 0 ? 0 : (g == 1 ? 1 : 2);
 	}
 }
-module.exports.ItemAttrNormalize = ItemAttrNormalize;
-
+if (!module.exports.ItemAttrNormalize) {
+	module.exports.ItemAttrNormalize = ItemAttrNormalize;
+}
 
 const regexp_getHairStyleID = /(\d{4,7})\d$/;
 const regexp_getFaceStyleID = /(\d{2,5})\d(\d{2})$/;
@@ -398,8 +453,9 @@ class CharacterRenderConfig {
 		}
 	}
 }
-module.exports.CharacterRenderConfig = CharacterRenderConfig;
-
+if (!module.exports.CharacterRenderConfig) {
+	module.exports.CharacterRenderConfig = CharacterRenderConfig;
+}
 
 var _external_data = {
 	"RequiredJobs": [
@@ -497,37 +553,43 @@ async function load_external_resource(url) {
 	}
 	
 	for (let i = 0; i < raw.length; ++i) {
-		let item = raw[i];
-		let id = String(item.Id);
-		while (id.length < 8) id = "0" + id;
+		try {
+			let item = raw[i];
+			let id = String(item.Id).padStart(8, "0");
 
-		if (!ItemTypeInfo[item.TypeInfo.OverallCategory]) {
-			continue;
-		}
+			if (!(item.TypeInfo && ItemTypeInfo[item.TypeInfo.OverallCategory])) {
+				continue;
+			}
 
-		let clz = item.TypeInfo.OverallCategory.toLowerCase();
-		let cate = ItemTypeInfo[item.TypeInfo.OverallCategory][item.TypeInfo.SubCategory];
-		if (!cate) {
-			continue;
-		}
-		else if (cate == "Face") {
-			cate += CharacterRenderConfig.getFaceColor(id);
-		}
-		else if (cate == "Hair") {
-			cate += CharacterRenderConfig.getHairColor(id);
-		}
+			let clz = item.TypeInfo.OverallCategory.toLowerCase();
+			let cate = ItemTypeInfo[item.TypeInfo.OverallCategory][item.TypeInfo.SubCategory];
+			if (!cate) {
+				continue;
+			}
+			else if (cate == "Face") {
+				cate += CharacterRenderConfig.getFaceColor(id);
+			}
+			else if (cate == "Hair") {
+				cate += CharacterRenderConfig.getHairColor(id);
+			}
 
-		let it = {
-			id: id,
-			name: item.Name,
-			desc: item.Desc,
-			cash: item.IsCash ? 1 : 0,
-			icon: {
-				"": `//labs.maplestory.io/api/gms/latest/item/${item.Id}/icon`,
-			},
-		};
+			let it = {
+				id: id,
+				name: item.Name,
+				desc: item.Desc,
+				cash: item.IsCash ? 1 : 0,
+				icon: {
+					"": `//labs.maplestory.io/api/gms/latest/item/${item.Id}/icon`,
+				},
+			};
 
-		ResourceManager.external[clz][cate].push(it);
+			ResourceManager.external[clz][cate].push(it);
+		}
+		catch (ex) {
+			console.error("external resource: id(" + id + ")");
+			console.error(ex);
+			debugger;
+		}
 	}
 }
 

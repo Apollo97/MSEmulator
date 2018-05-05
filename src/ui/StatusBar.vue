@@ -146,9 +146,14 @@
 						</dir>
 						<table class="table" style="position: relative; top: -5px;">
 							<template v-if="ui.chat.size!='min'">
-								<tr v-for="ch in ui.chat.records" style="height: 1.2em; color: white; font-family: monospace;">
+								<tr v-for="ch in ui.chat.history" style="height: 1.2em; color: white; font-family: monospace;">
 									<td style="padding-left: 4px; padding-bottom: 0.2em;">
 										<div style="position: absolute;">{{ch}}</div>
+									</td>
+								</tr>
+								<tr v-for="i in ui.chat.maxHistory - ui.chat.history.length" style="height: 1.2em; color: white; font-family: monospace;">
+									<td style="padding-left: 4px; padding-bottom: 0.2em;">
+										<div style="position: absolute;"></div>
 									</td>
 								</tr>
 							</template>
@@ -160,10 +165,10 @@
 									<dir-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
 										<template slot-scope="{img, path, width}">
 											<div v-if="ui.chat.size!='min'" :data-src="path" :style="{ width:`${width}px`, background:`url(${img})` }">
-												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
+												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText(ui.chat.inputText.slice(0, 70))" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
 											</div>
-											<div v-else :data-src="path" :style="{ width:`${width}px`,  color: 'white' }">
-												<div v-if="ui.chat.records.length" style="position: absolute;">{{ui.chat.records[ui.chat.records.length-1]}}</div>
+											<div v-else :data-src="path" :style="{ width:`${width}px`, color: 'white' }">
+												<div v-if="ui.chat.history.length" style="position: absolute;">{{ui.chat.history[ui.chat.history.length-1]}}</div>
 											</div>
 										</template>
 									</dir-frame>
@@ -235,7 +240,9 @@
 					chat: {
 						inputText: "",
 						size: "min",
-						records: []
+						maxHistory: 10,
+						history: [],
+						inputHistory: [],
 					},
 				}
 			};
@@ -261,17 +268,19 @@
 
 				app.vue.editor_mode = m_editor_mode;
 			},
-			enterChatText: function () {
-				this.ui.chat.inputText = this.ui.chat.inputText.slice(0, 70);
+			enterChatText: async function (inputText) {
+				let result = await this.chara.say(inputText);
+				if (result) {
+					this.pushChatHistory(this.chara.id + ' : ' + inputText);
+	
+					this.ui.chat.inputText = '';
+				}
+			},
+			pushChatHistory(type, style, text) {
+				this.ui.chat.history.push(text);
 
-				this.chara.chatCtrl.enter(this.ui.chat.inputText);
-
-				this.ui.chat.records.push(this.chara.id + ' : ' + this.ui.chat.inputText);
-
-				this.ui.chat.inputText = '';
-
-				if (this.ui.chat.records.length > 10) {
-					this.ui.chat.records.shift();
+				if (this.ui.chat.history.length > this.ui.chat.maxHistory) {
+					this.ui.chat.history.shift();
 				}
 			}
 		},

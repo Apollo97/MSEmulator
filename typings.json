@@ -2,6 +2,9 @@
   "globalDependencies": {
     "electron": "registry:dt/electron#1.4.8+20170316233216",
     "electron-prebuilt": "registry:dt/electron-prebuilt#0.30.1+20160405225030",
-    "node": "registry:dt/node#7.0.0+20170322231424"
+    "node": "registry:dt/node#7.0.0+20170322231424",
+    "socket.io": "registry:dt/socket.io#1.4.4+20170313110830",
+    "vue": "registry:dt/vue#1.0.21+20160929090511",
+    "webpack-dev-server": "registry:dt/webpack-dev-server#1.12.1+20170117213337"
   }
 }

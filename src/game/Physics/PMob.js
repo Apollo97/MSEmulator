@@ -1,10 +1,10 @@
 
-import box2d from "../../../public/box2d-html5.js";
+import box2d from "box2d-html5";
 
-import { PCharacterBase } from "./PPlayer.js";
+import { PRemoteCharacter } from "./PPlayer.js";
 
 
-export class PMob extends PCharacterBase {
+export class PMob extends PRemoteCharacter {
 	/**
 	 * @param {MapMob} mapMob
 	 */

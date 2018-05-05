@@ -251,29 +251,29 @@ public class wzpackage : wzlist<wzpackage>
 	}
 
 
-	internal void merge(wzpackage package)
-	{
-		if (package.identities.Count > 0)
-		{
-			foreach (var identity in package.identities)
-			{
-				wzpackage value = package[identity];
-
-				if (this[identity] == null)
-				{
-					this.append(identity, value);
-				}
-				else
-				{
-					this[identity].merge(value);
-				}
-			}
-		}
-		else if (this.root[""] != null && package.root[""] != null)
-		{
-			this.root[""]._merge(package.root[""]);
-		}
-	}
+	//internal void merge(wzpackage package)
+	//{
+	//	if (package.identities.Count > 0)
+	//	{
+	//		foreach (var identity in package.identities)
+	//		{
+	//			wzpackage value = package[identity];
+	//
+	//			if (this[identity] == null)
+	//			{
+	//				this.append(identity, value);
+	//			}
+	//			else
+	//			{
+	//				this[identity].merge(value);
+	//			}
+	//		}
+	//	}
+	//	else if (this.root[""] != null && package.root[""] != null)
+	//	{
+	//		this.root[""]._merge(package.root[""]);
+	//	}
+	//}
 }
 
 public class wzlist<T> where T : wzlist<T>
@@ -341,20 +341,20 @@ public class wzlist<T> where T : wzlist<T>
 		values.Add(value);
 	}
 
-	internal void _merge(T package)
-	{
-		foreach (var identity in package.identities)
-		{
-			T value = package[identity];
-
-			if (this[identity] == null)
-			{
-				append(identity, value);
-			}
-			else
-			{
-				this[identity]._merge(value);
-			}
-		}
-	}
+	//internal void _merge(T package)
+	//{
+	//	foreach (var identity in package.identities)
+	//	{
+	//		T value = package[identity];
+	//
+	//		if (this[identity] == null)
+	//		{
+	//			append(identity, value);
+	//		}
+	//		else
+	//		{
+	//			this[identity]._merge(value);
+	//		}
+	//	}
+	//}
 }

@@ -1,6 +1,6 @@
 ﻿const webpack = require('webpack');
 
-module.exports = {
+let config = {
   entry: {
     'index': [
       'babel-polyfill',
@@ -16,7 +16,7 @@ module.exports = {
     ],
   },
   output: {
-    path: `${__dirname}/dist`,
+    path: `${__dirname}/public`,
     filename: '[name].bundle.js',
     publicPath: '/'
   },
@@ -28,7 +28,7 @@ module.exports = {
   module: {
     rules: [
       {
-        enforce: "pre",
+        enforce: 'pre',
         loader: 'eslint-loader',
         include: `${__dirname}/app`,
         exclude: /bundle\.js$/,
@@ -36,7 +36,21 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue-loader',
-      }
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      },
+	  {
+		test: /\.(png|jp(e*)g|svg)$/,  
+		use: [{
+          loader: 'url-loader',
+          options: { 
+            limit: 8000, // Convert images < 8kb to base64 strings
+            name: 'images/[hash]-[name].[ext]'
+          } 
+	    }]
+	  }
     ],
   },
   resolve: {
@@ -47,3 +61,16 @@ module.exports = {
     }
   },
 };
+
+if (process.env.NODE_ENV === 'production') {
+  config.module.rules.push({
+    test: /\.js$/,
+    loader: 'babel-loader',
+    query: {
+      presets: ['env', 'es2015', 'stage-3', 'es2017'],
+      plugins: ["transform-remove-strict-mode"]
+    }
+  });
+}
+
+module.exports = config;

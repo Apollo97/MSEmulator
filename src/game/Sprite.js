@@ -98,14 +98,14 @@ export class SpriteBase extends Graph {
 	 * @param {number} y
 	 */
 	draw2(x, y) {
-		this._engine.drawGraph2(this, x, y);
+		this._engine.drawGraph2(this, x - this.x, y - this.y);
 	}
 	/**
 	 * @param {number} x - type: int
 	 * @param {number} y - type: int
 	 */
 	draw2i(x, y) {
-		this._engine.drawGraph2(this, Math.trunc(x + 0.5), Math.trunc(y + 0.5));
+		this._engine.drawGraph2(this, Math.trunc(x - this.x + 0.5), Math.trunc(y - this.y + 0.5));
 	}
 }
 

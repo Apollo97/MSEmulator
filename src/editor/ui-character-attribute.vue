@@ -4,18 +4,20 @@
 		<div style="display: inline-block; vertical-align: top;">
 			<table>
 				<tr>
-					<td></td>
 					<td>
-						<template v-if="chara.speed">
-							<button @click="pauseAnimation" title="pause animation" class="btn">
-								<img src="/images/player_pause.png" alt="pause" />
-							</button>
-						</template>
-						<template v-else>
-							<button @click="pauseAnimation" title="play animation" class="btn">
-								<img src="/images/player_play.png" alt="play" />
-							</button>
-						</template>
+            <template v-if="chara.speed">
+              <button @click="pauseAnimation" title="pause animation">
+                <img src="/images/player_pause.png" alt="pause" />
+              </button>
+            </template>
+            <template v-else="">
+              <button @click="pauseAnimation" title="play animation">
+                <img src="/images/player_play.png" alt="play" />
+              </button>
+            </template>
+          </td>
+          <td title="animation speed">
+            <input type="number" v-model.number="chara.speed" min="0" max="5" step="0.01" />
 					</td>
 					<td>
 						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">禁用物理</button>
@@ -57,9 +59,11 @@
 				</tr>
 				<tr>
 					<th>位置</th>
-					<td><input type="number" v-model.number="chara.x" min="-9999" max="9999" style="width: 5em;" /></td>
-					<td><input type="number" v-model.number="chara.y" min="-9999" max="9999" style="width: 5em;" /></td>
-					<td><input type="number" v-model.number="sceneChara.$layer" min="0" max="7" style="width: 5em;" /></td>
+					<td colspan="3" style="display: flex; position: absolute;">
+            <input type="number" v-model.number="chara.x" min="-9999" max="9999" />
+            <input type="number" v-model.number="chara.y" min="-9999" max="9999" />
+            <input type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
+          </td>
 				</tr>
 				<tr>
 					<th rowspan="2">耳朵</th>
@@ -67,15 +71,15 @@
 						<label class="chara_ear">人類<input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked /></label>
 					</td>
 					<td>
-						<label class="chara_ear">妖精<input type="radio" name="chara_ear" v-model="chara.ear" value="elfEar" /></label>
+						<label class="chara_ear">妖精<input type="radio" name="chara_ear" v-model="chara.ear" value="elf" /></label>
 					</td>
 					<td>
-						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lefEar" /></label>
+						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lef" /></label>
 					</td>
 				</tr>
 				<tr>
 					<td>
-						<label class="chara_ear">亥雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="highlefEar" /></label>
+						<label class="chara_ear">亥雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" /></label>
 					</td>
 				</tr>
 				<!--<tr>
@@ -95,7 +99,7 @@
 								{{getEquipCategoryName(equip)}}
 							</td>
 							<td style="width: 32px; height: 32px;">
-								<img :src="getEquipIcon(equip)" class="equip-icon" />
+								<img :src="equip.getIconUrl()" class="equip-icon" />
 							</td>
 							<td>
 								<div>{{equip.name}}</div>
@@ -156,6 +160,19 @@
 								<td><button @click="equip.filter.bri=100;" class="btn">×</button></td>
 							</tr>
 						</transition>
+						<transition name="fade">
+							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
+								<td></td>
+								<td>contrast</td>
+								<td>
+									<input type="range" v-model.number="equip.filter.contrast" min="0" max="999" />
+								</td>
+								<td>
+									<input type="number" v-model.number="equip.filter.contrast" min="0" max="999" />
+								</td>
+								<td><button @click="equip.filter.contrast=100;" class="btn">×</button></td>
+							</tr>
+						</transition>
 					</template>
 				</template>
 			</table>
@@ -187,21 +204,6 @@
 			},
 			isEquip: function (id) {
 				return ItemCategoryInfo.isEquip(id);
-			},
-			getEquipIcon(equip) {
-				const type = ItemCategoryInfo.get(equip.id).slot;
-				switch (type) {
-					case "head":
-						return "/images" + equip._url + "stand1/0/head";
-					case "body":
-						return "/images" + equip._url + "stand1/0/body";
-					case "hair":
-						return "/images" + equip._url + "stand1/0/hair";
-					case "face":
-						return "/images" + equip._url + "blink/0/face";
-					default:
-						return "/images" + equip._url + "info/iconRaw";
-				}
 			},
 			getEquipCategoryName: function (equip) {
 				return ItemCategoryInfo.get(equip.id).categoryName;

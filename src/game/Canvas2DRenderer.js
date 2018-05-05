@@ -1,8 +1,81 @@
 ﻿
+import { mat2d, vec2, mat4, quat } from 'gl-matrix';
 import { Vec2 } from './math.js';
 import { IGraph, IRenderer, ColorRGB } from './IRenderer.js';
 
+//import WebGL2D from "./WebGL2D/WebGL2D.js";
+//window.$WebGL2D = WebGL2D;
+
 window._experimental_particle = true;
+
+class MyMatrix2D {
+	constructor() {
+		this.$temp_vec2 = vec2.create();
+
+		/** @type {mat2d} */
+		this.$transform = mat2d.create();
+	}
+	loadIdentity() {
+		mat2d.identity(this.$transform);
+	}
+	/**
+	 * @param {number} m11
+	 * @param {number} m12
+	 * @param {number} m21
+	 * @param {number} m22
+	 * @param {number} dx
+	 * @param {number} dy
+	 */
+	setTransform(m11, m12, m21, m22, dx, dy) {
+		this.$transform[0] = m11;
+		this.$transform[1] = m12;
+		this.$transform[2] = m21;
+		this.$transform[3] = m22;
+		this.$transform[4] = dx;
+		this.$transform[5] = dy;
+	}
+	/**
+	 * @param {Canvas2DContextAttributes} ctx
+	 */
+	applyTransform(ctx) {
+		const m11 = this.$transform[0], m12 = this.$transform[1],
+			m21 = this.$transform[2], m22 = this.$transform[3],
+			dx = this.$transform[4], dy = this.$transform[5];
+		ctx.setTransform(m11, m12, m21, m22, dx, dy);
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	translate(x, y) {
+		this.$temp_vec2[0] = x;
+		this.$temp_vec2[1] = y;
+		mat2d.translate(this.$transform, this.$transform, this.$temp_vec2);
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	scale(x, y) {
+		this.$temp_vec2[0] = x;
+		this.$temp_vec2[1] = y;
+		mat2d.scale(this.$transform, this.$transform, this.$temp_vec2);
+	}
+	/**
+	 * @param {number} r - rad
+	 */
+	rotate(r) {
+		mat2d.rotate(this.$transform, this.$transform, a);
+	}
+
+	toMat4() {
+		mat4.fromScaling
+	}
+}
+
+window.$mat2d = mat2d;
+window.$mat4 = mat4;
+window.$quat = quat;
 
 /**
  * @implements {IRenderer}
@@ -35,7 +108,7 @@ export class Engine extends IRenderer {
 		let canvas = document.getElementById(id);
 		let canvas2 = this._canvas2 = document.getElementById(id + "2");
 
-		this.ctx = canvas.getContext("2d", { alpha: false });
+		this.ctx = canvas.getContext("2d", { alpha: true });//new WebGL2D(canvas);//
 		this._ctx2 = canvas2.getContext("2d", { alpha: true });
 
 		this.ctx.imageSmoothingEnabled = false;
@@ -105,6 +178,18 @@ export class Engine extends IRenderer {
 		this.ctx = ctx2;
 	}
 
+	/**
+	 * @param {number} m11
+	 * @param {number} m12
+	 * @param {number} m21
+	 * @param {number} m22
+	 * @param {number} dx
+	 * @param {number} dy
+	 */
+	setTransform(m11, m12, m21, m22, dx, dy) {
+		this.ctx.setTransform(m11, m12, m21, m22, dx, dy);
+	}
+
 	loadIdentity() {
 		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 	}
@@ -124,27 +209,9 @@ export class Engine extends IRenderer {
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} z
-	 */
-	translate3d(x, y, z) {
-		this.ctx.translate(x, y);
-		throw new Error("Not implement");
-	}
-	/**
-	 * @param {number} x
-	 * @param {number} y
 	 */
 	scale(x, y) {
 		this.ctx.scale(x, y);
-	}
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} z
-	 */
-	scale3d(x, y, z) {
-		this.ctx.scale(x, y);
-		throw new Error("Not implement");
 	}
 	/**
 	 * @param {number} r - rad
@@ -177,13 +244,6 @@ export class Engine extends IRenderer {
 		//this._color = f4v;
 	}
 
-	/**
-	 * @param {vec4} f4v - vec4: array
-	 */
-	Color4fv(f4v) {
-		this.color = f4v;
-	}
-
 	get globalAlpha() {
 		return this._globalAlpha;//this.ctx.globalAlpha;
 	}
@@ -201,9 +261,16 @@ export class Engine extends IRenderer {
 	}
 
 	beginScene() {
+		// nothing
 	}
 
 	endScene() {
+		// nothing
+	}
+
+	clearDrawScreen() {
+		const c = this.ctx.canvas;
+		this.ctx.clearRect(0, 0, c.width, c.height);
 	}
 
 	/**
@@ -223,11 +290,6 @@ export class Engine extends IRenderer {
 		else {
 			debugger;
 		}
-	}
-
-	clearDrawScreen() {
-		var c = this.ctx.canvas;
-		this.ctx.clearRect(0, 0, c.width, c.height);
 	}
 
 	/**

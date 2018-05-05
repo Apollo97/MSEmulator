@@ -1,5 +1,5 @@
 
-import { Vec2, Rectangle } from './init.js';
+import { } from './init.js';
 import { Vec2, Rectangle } from './math.js';
 import { IGraph, IRenderer } from './IRenderer.js';
 import { engine, Graph } from './Engine.js';
@@ -16,8 +16,6 @@ import { Client } from "../Client/Client.js";
 
 import { SceneCharacter } from "./SceneCharacter.js";//debug
 import gApp from "../app.js";//debug
-
-window.REC_FRAME_MAX = 12;
 
 
 window.SCREEN_PRINTLN = function (getText, getValue) {
@@ -51,8 +49,8 @@ window.onkeydown = function (e) {
 	}
 	let k = e.key;
 
-	if (k != null && !input_keys[k]) {
-		input_keys[k] != null ? (++input_keys[k]) : (input_keys[k] = 1);
+	if (k != null && !input_keyDown[k]) {
+		input_keyDown[k] != null ? (++input_keyDown[k]) : (input_keyDown[k] = 1);
 	}
 
 	if (e.code == 'Space') {
@@ -71,8 +69,9 @@ window.onkeyup = function (e) {
 	}
 	let k = e.key;
 
-	if (k != null && input_keys[k]) {
-		input_keys[k] = 0;
+	if (k != null && input_keyDown[k]) {
+		input_keyDown[k] = 0;
+		input_keyUp[k] = 1;
 	}
 }
 
@@ -174,12 +173,12 @@ export class Game {
 			GameStateManager.PushState(this, window.chara);
 		}
 		
-		this.render = this.render.bind(this);
+		this._loop = this._loop.bind(this);
 		
 		document.getElementById("m_is_run").onchange = (function (e) {
 			this.m_is_run = e.target.checked ? true : false;
 			if (this.m_is_run) {
-				animationRequestID = requestAnimationFrame(this.render);
+				animationRequestID = requestAnimationFrame(this._loop);
 				document.getElementById("Screenshot").innerHTML = "";
 			}
 		}).bind(this);
@@ -190,20 +189,20 @@ export class Game {
 	moveViewport(inBound) {
 		const scene_map = this.scene_map;
 
-		const speed = input_keys['z'] ? (this._$moveViewportSpeed * 10) : this._$moveViewportSpeed;
+		const speed = input_keyDown['z'] ? (this._$moveViewportSpeed * 10) : this._$moveViewportSpeed;
 
 		//m_viewRect = scene_map.viewArea(new Vec2(m_viewRect.left, m_viewRect.top));
 
-		if (input_keys['ArrowLeft'] > 0) {
+		if (input_keyDown['ArrowLeft'] > 0) {
 			m_viewRect.left -= speed;
 		}
-		if (input_keys['ArrowRight'] > 0) {
+		if (input_keyDown['ArrowRight'] > 0) {
 			m_viewRect.left += speed;
 		}
-		if (input_keys['ArrowUp'] > 0) {
+		if (input_keyDown['ArrowUp'] > 0) {
 			m_viewRect.top -= speed;
 		}
-		if (input_keys['ArrowDown'] > 0) {
+		if (input_keyDown['ArrowDown'] > 0) {
 			m_viewRect.top += speed;
 		}
 
@@ -235,7 +234,7 @@ export class Game {
 			else {
 				let params = _parseUrlParameter();
 
-				let map_id = params["map"] || "000000000";
+				let map_id = params["map"] || "450003000";
 				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
 
 				GameStateManager.PopState({
@@ -254,7 +253,7 @@ export class Game {
 	
 	async run() {
 		console.log("begin render");
-		this.render(0);//start render
+		this._loop(0);//start render
 	}
 	
 	async forceUpdateScreen() {
@@ -275,17 +274,50 @@ export class Game {
 		
 		chara.renderer.__require_update = true;//update once
 		
-		this.render(0);
+		this._loop(0);
 	}
-	
-	/**
-	 * @param {DOMHighResTimeStamp} timeStamp
-	 */
-	render(timeStamp) {
-		const scene_map = this.scene_map;
 
+	/**
+	 * @param {number} stamp
+	 */
+	_calcFPS(stamp) {
+		try {
+			if ((this.timer - this.timer_) >= 1000) {
+				if (this.fps_arr.length) {
+					let sum = this.fps_arr.reduce(function (a, b) { return a + b; });
+					let avg = sum / this.fps_arr.length;
+
+					document.getElementById("FPS").innerHTML = avg.toFixed(2);
+				}
+				if (this.frame_s_arr.length) {
+					let sum = this.frame_s_arr.reduce(function (a, b) { return a + b; });
+					let avg = sum / this.frame_s_arr.length;
+
+					document.getElementById("frame").innerHTML = avg.toFixed(2);
+				}
+
+				this.frame_s_arr = [];
+				this.fps_arr = [];
+
+				this.timer_ = this.timer;
+			}
+			else if (stamp > 0 && Number.isFinite(stamp)) {
+				this.fps_arr.push(1000 / stamp);
+				this.frame_s_arr.push(stamp);
+			}
+		}
+		catch (ex) {
+			debugger;
+			document.getElementById("FPS").innerHTML = "-";
+			document.getElementById("frame").innerHTML = "-";
+			this.fps_arr = [];
+			this.frame_s_arr = [];
+		}
+	}
+
+	_requestNextFrame() {
 		if (this.m_is_run) {
-			animationRequestID = requestAnimationFrame(this.render);
+			animationRequestID = requestAnimationFrame(this._loop);
 		}
 		else {
 			//async
@@ -296,44 +328,12 @@ export class Game {
 				document.getElementById("Screenshot").appendChild(elem);
 			}, 0);
 		}
-	////
-		let stamp = timeStamp - this.timer;
-		
-		this.timer = timeStamp;
-		
-		try {
-			if ((timeStamp - this.timer_) >= 1000) {
-				if (this.fps_arr.length) {
-					let sum = this.fps_arr.reduce(function (a, b) { return a + b; });
-					let avg = sum / this.fps_arr.length;
-					
-					document.getElementById("FPS").innerHTML = avg.toFixed(2);
-				}
-				if (this.frame_s_arr.length) {
-					let sum = this.frame_s_arr.reduce(function (a, b) { return a + b; });
-					let avg = sum / this.frame_s_arr.length;
-					
-					document.getElementById("frame").innerHTML = avg.toFixed(2);
-				}
-				
-				this.frame_s_arr = [];
-				this.fps_arr = [];
-				
-				this.timer_ = timeStamp;
-			}
-			else if (stamp > 0 && Number.isFinite(stamp)) {
-				this.fps_arr.push(1000 / stamp);
-				this.frame_s_arr.push(stamp);
-			}
-		}
-		catch (ex) {
-			document.getElementById("FPS").innerHTML = "-";
-			document.getElementById("frame").innerHTML = "-";
-			this.fps_arr = [];
-			this.frame_s_arr = [];
-		}
-	/////
+	}
 
+	/**
+	 * @param {number} stamp
+	 */
+	_updateScene(stamp) {
 		/** @type {SceneCharacter} */
 		const chara = this.chara;
 
@@ -341,13 +341,7 @@ export class Game {
 		const charaList = this.charaList;
 
 		{
-			for (let i in input_keys) {
-				if (input_keys[i] > 0) {
-					++input_keys[i];
-				}
-			}
-
-			if (scene_map) {
+			if (this._isMapReady) {
 				scene_map.update(stamp);//include world.update
 			}
 
@@ -355,32 +349,43 @@ export class Game {
 
 			EffectManager.Update(stamp);
 
-			// must before world.update
+			// before world.update ??
 			for (let i = 0; i < charaList.length; ++i) {
 				charaList[i].update(stamp);
 			}
 		}
-		if ((timeStamp - this._dTimer) >= (1000 / (window.REC_FRAME_MAX || 20))) {
-			this._dTimer = timeStamp;
-			{
-				let client = gApp.client;
-				if (client && client.chara) {
-					/** @type {SceneCharacter} */
-					let ch = client.chara;
-					ch.$recMove(window.$io);
-				}
+		{
+			const client = gApp.client;//not offline character
+
+			if (client && client.chara) {
+				/** @type {SceneCharacter} */
+				const ch = client.chara;
+
+				//let dt = (this.timer - this._dTimer);
+
+				//if (dt >= (window.$REC_TIME || 60)) {
+				//	this._dTimer = this.timer;
+
+				ch.$emit(window.$io);
+				//}
+				//else if ((dt % (window.$REC_DIV || 1)) == 0) {
+				ch.$recMove();
+				//}
 			}
 		}
-		//else {
-		//	return;
-		//}
+	}
+	
+	_renderScene() {
+		/** @type {SceneCharacter} */
+		const chara = this.chara;
 
-	/////
+		/** @type {SceneCharacter[]} */
+		const charaList = this.charaList;
+
 		engine.beginScene();
 		{
-			engine.clearDrawScreen();
 			engine.loadIdentity();
-			//engine.color = [1, 1, 1, 1];
+			engine.clearDrawScreen();
 			
 			m_viewRect.size = engine.screen_size;
 			if (!m_editor_mode) {
@@ -412,8 +417,8 @@ export class Game {
 						}
 					}
 					for (let i = 0; i < scene_map.layeredObject.length; ++i) {
-						scene_map.renderLayeredTile(engine, i);
 						scene_map.renderLayeredObject(engine, i);
+						scene_map.renderLayeredTile(engine, i);
 						
 						scene_map.applyCamera(engine);
 						{
@@ -505,80 +510,111 @@ export class Game {
 				}
 				engine.loadIdentity();
 			}
-
-			//print debug info
+			
 			if (m_display_debug_info) {
-				if (this._isMapReady && scene_map.controller && scene_map.controller.player) {
-					/** @type {CanvasRenderingContext2D} */
-					const ctx = engine.ctx;
-
-					const ta = ctx.textAlign, tb = ctx.textBaseline, lw = ctx.lineWidth;
-					ctx.textBaseline = "top";
-					ctx.lineWidth = 2.5;
-					ctx.strokeStyle = "#000";
-					let x = 400, y = 5;
-					for (let line of window._SCREEN_PRINTLN) {
-						const val = line.getValue();
-						const text = line.getText();
-
-						ctx.fillStyle = "#FFF";
-						{
-							ctx.textAlign = "right";
-							ctx.strokeText(text, x - 2, y);
-							ctx.fillText(text, x - 2, y);
-
-							ctx.textAlign = "center";
-							ctx.strokeText(":", x, y);
-							ctx.fillText(":", x, y);
-
-							ctx.textAlign = "left";
-							ctx.strokeText(val, x + 2, y);
-							ctx.fillText(val, x + 2, y);
-						}
-
-						if ("_val" in line) {
-							let _val;
-							if (line._val != val) {
-								_val = line._val;//display new value
-								line.__val = line._val;
-								line._val = val;
-							}
-							else {
-								_val = line.__val;//display old value
-							}
-							if (_val != val) {
-								ctx.fillStyle = "#0FF";
-							}
-
-							ctx.fillStyle = "#FFF";
-							{
-								ctx.textAlign = "right";
-								ctx.strokeText(text, x - 2 + 200, y);
-								ctx.fillText(text, x - 2 + 200, y);
-
-								ctx.textAlign = "center";
-								ctx.strokeText(":", x + 200, y);
-								ctx.fillText(":", x + 200, y);
-
-								ctx.textAlign = "left";
-								ctx.strokeText(_val, x + 2 + 200, y);
-								ctx.fillText(_val, x + 2 + 200, y);
-							}
-						}
-						else {
-							line.__val = val;
-							line._val = val;
-						}
-
-						y += 16;
-					}
-					ctx.textAlign = ta;
-					ctx.textBaseline = tb;
-					ctx.lineWidth = lw;
-				}
+				this._render_debug_info();
 			}
 		}
 		engine.endScene();
+	}
+
+	_render_debug_info() {
+		if (this._isMapReady && scene_map.controller && scene_map.controller.player) {
+			/** @type {CanvasRenderingContext2D} */
+			const ctx = engine.ctx;
+
+			const ta = ctx.textAlign, tb = ctx.textBaseline, lw = ctx.lineWidth;
+			ctx.textBaseline = "top";
+			ctx.lineWidth = 2.5;
+			ctx.strokeStyle = "#000";
+			let x = 400, y = 5;
+			for (let line of window._SCREEN_PRINTLN) {
+				const val = line.getValue();
+				const text = line.getText();
+
+				ctx.fillStyle = "#FFF";
+				{
+					ctx.textAlign = "right";
+					ctx.strokeText(text, x - 2, y);
+					ctx.fillText(text, x - 2, y);
+
+					ctx.textAlign = "center";
+					ctx.strokeText(":", x, y);
+					ctx.fillText(":", x, y);
+
+					ctx.textAlign = "left";
+					ctx.strokeText(val, x + 2, y);
+					ctx.fillText(val, x + 2, y);
+				}
+
+				if ("_val" in line) {
+					let _val;
+					if (line._val != val) {
+						_val = line._val;//display new value
+						line.__val = line._val;
+						line._val = val;
+					}
+					else {
+						_val = line.__val;//display old value
+					}
+					if (_val != val) {
+						ctx.fillStyle = "#0FF";
+					}
+
+					ctx.fillStyle = "#FFF";
+					{
+						ctx.textAlign = "right";
+						ctx.strokeText(text, x - 2 + 200, y);
+						ctx.fillText(text, x - 2 + 200, y);
+
+						ctx.textAlign = "center";
+						ctx.strokeText(":", x + 200, y);
+						ctx.fillText(":", x + 200, y);
+
+						ctx.textAlign = "left";
+						ctx.strokeText(_val, x + 2 + 200, y);
+						ctx.fillText(_val, x + 2 + 200, y);
+					}
+				}
+				else {
+					line.__val = val;
+					line._val = val;
+				}
+
+				y += 16;
+			}
+			ctx.textAlign = ta;
+			ctx.textBaseline = tb;
+			ctx.lineWidth = lw;
+		}
+	}
+	
+	/**
+	 * @param {DOMHighResTimeStamp} timeStamp
+	 */
+	_loop(timeStamp) {
+		const scene_map = this.scene_map;
+		let stamp = timeStamp - this.timer;
+		
+		this.timer = timeStamp;
+
+		this._requestNextFrame();
+
+		this._calcFPS(stamp);
+		
+		for (let i in input_keyDown) {
+			if (input_keyDown[i] > 0) {
+				++input_keyDown[i];
+			}
+		}
+	
+		this._updateScene(stamp);
+
+		this._renderScene();
+
+		for (let i in input_keyUp) {
+			input_keyUp[i] = 0;
+		}
 	}
 	
 	get chara() {

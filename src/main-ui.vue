@@ -16,16 +16,16 @@
 						></status-bar>
 		</transition>
 
+		<transition name="fade" style="position: absolute;">
+			<ui-window-equip v-show="isShowUWEquipSlot" :chara="chara"></ui-window-equip>
+		</transition>
+
 		<div @contextmenu.prevent class="gui" style="position: absolute; width: 0; height: 0;">
 			<ui-tool-tip :isShow="isShowEquipTip"
 							:equip="equip"
 							:chara="chara"
 							:state="ItemTip_state"></ui-tool-tip>
 		</div>
-		
-		<transition name="fade" style="position: absolute;">
-			<ui-window-equip v-show="isShowUWEquipSlot"></ui-window-equip>
-		</transition>
 
 		<frame-2 ref="smallTip" style="position: absolute;"></frame-2>
 	</div>

@@ -6,7 +6,8 @@
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title><xsl:value-of select="/xmldump/wzimg/@name"/></title>
+        <title><xsl:value-of select="/xmldump/wzimg/@name"/></title>
+
         <style>
           table {
             border-collapse:collapse;
@@ -59,7 +60,7 @@
           <xsl:apply-templates select="int"/>
           
           <xsl:for-each select="imgdir">
-            <table class="property">
+            <table border="1" class="property">
               <tr>
                 <th>Name</th>
                 <th>Value</th>
@@ -108,10 +109,10 @@
   
   <xsl:template match="canvas">
     <div class="canvas" title="canvas">      
-      <table>
+      <table border="1">
         <tr>
           <th><xsl:value-of select="@name"/></th>
-          <th>
+          <td>
             <img>
               <xsl:attribute name="width">
                 <xsl:value-of select="@width" />
@@ -119,12 +120,16 @@
               <xsl:attribute name="height">
                 <xsl:value-of select="@height" />
               </xsl:attribute>
-			  
               <xsl:apply-templates select="@basedata"/>
               <xsl:apply-templates select="@url"/>
 			  
             </img>
-          </th>
+          </td>
+          <td>
+            <div title="size">
+              (<xsl:value-of select="@width"/>, <xsl:value-of select="@height"/>)
+            </div>
+          </td>
         </tr>
         <xsl:for-each select=".">
           <tr>

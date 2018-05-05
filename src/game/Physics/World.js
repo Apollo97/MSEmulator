@@ -1,14 +1,22 @@
 ﻿
-import box2d from "../../../public/box2d-html5.js";
+import box2d from "box2d-html5";
 import DebugDraw from "./DebugDraw.js";
 
 import { ContactListener } from "./Physics.js";
 
 import { Ground } from "./Ground.js";
-import { PPlayer } from "./PPlayer.js";
+import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
 import { PMob } from "./PMob.js";
 
+import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
 
+
+window.$box2d = box2d;
+
+window.$gravityAcc = 2000;
+
+window.$positionIterations = 3;//00;
+window.$velocityIterations = 8;//00;
 
 const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / CANVAS_SCALE);
 
@@ -174,13 +182,29 @@ export class World extends box2d.b2World {
 		});
 	}
 
-	$createPlayer() {
+	/**
+	 * @param {CharacterAnimationBase} renderer
+	 */
+	$createPlayer(renderer) {
 		let player = new PPlayer();
 
 		player._create(this);
 
 		//init ?
-		player.renderer = null;
+		player.renderer = renderer;
+
+		return player;
+	}
+	/**
+	 * @param {CharacterAnimationBase} renderer
+	 */
+	$createRemotePlayer(renderer) {
+		let player = new PRemoteCharacter();
+
+		player._create(this);
+
+		//init ?
+		player.renderer = renderer;
 
 		return player;
 	}
@@ -287,7 +311,7 @@ export class World extends box2d.b2World {
 			body.Step();
 		}
 
-		super.Step(1 / 60, window.$velocityIterations, window.$positionIterations);
+		super.Step(1 / window.MAX_FPS, window.$velocityIterations, window.$positionIterations);
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
 			body.PostStep();
 		}

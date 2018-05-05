@@ -24,7 +24,12 @@
 						<div :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px', width: raw[sType].backgrnd.__w+'px', height: raw[sType].backgrnd.__h+'px'}"></div><!--not drag-->
 						<template v-for="(obj, slot) in raw[sType].Slots">
 							<div :title="slot" @click="alert(slot)">
-								<img :style="{position: 'absolute', left: -obj.origin.x+'px', top: -obj.origin.y+'px'}" :src="'/images/UI/UIWindow4.img/Equip/'+sType+'/Slots/'+slot" />
+								<img :style="{position: 'absolute', left: -obj.origin.x+'px', top: -obj.origin.y+'px'}"
+									 :src="'/images/UI/UIWindow4.img/Equip/'+sType+'/Slots/'+slot"
+									 />
+								<img :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
+									 :src="getCharaEquipIconUrl(slotMap[sType][slot])"
+									 />
 							</div>
 						</template>
 					</template>
@@ -40,13 +45,37 @@
 </template>
 
 <script>
+	import { ItemCategoryInfo } from "../../../public/resource.js";
 	import WindowBase from "./WindowBase.vue";
+
+	let slot_map = {
+		Equip: {
+			1: "cap",
+			2: "accessoryFace",
+			3: "accessoryEyes",
+			4: "accessoryEars",
+			5: "coat",
+			5: "longcoat",
+			6: "pants",
+			7: "shoes",
+			8: "glove",
+			9: "cape",
+			10: "shield",
+			11: "weapon",
+		},
+		Cash: {
+		},
+	};
+	Object.keys(slot_map.Equip).forEach(slot => {
+		slot_map.Cash[slot + 100] = slot_map.Equip[slot];
+	});
+	window.$WND_EQUIP_SLOT_MAP = slot_map;
 
 	export default {
 		name: "equip-slot",
 		props: {
 			"chara": {
-				required: false
+				required: true,
 			},
 		},
 		data: function () {
@@ -57,10 +86,36 @@
 		},
 		methods: {
 			alert: function (msg) {
+				debugger;
 				//window.alert(msg);
 			},
 			loadData: async function () {
 				this.raw = JSON.parse(await $get.data("/UI/UIWindow4.img/Equip"));
+				this.slot_imgWidth = this.raw.Equip.Slots[1].__w;
+				this.slot_imgHeight = this.raw.Equip.Slots[1].__h;
+			},
+			getCharaEquipIconPos: function(slot) {
+				if (this.chara && this.chara.renderer) {
+					let equip = this.chara.renderer.slots[slot];
+					if (equip && equip._raw && equip._raw.info && equip._raw.info.icon && equip._raw.info.icon.origin) {
+						const sw = this.slot_imgWidth;
+						const sh = this.slot_imgHeight;
+						let pos = equip._raw.info.icon.origin;
+						let size = equip._raw.info.icon;
+						let result={ x: (sw - size.__w) / 2, y: (sh - size.__h) / 2 };
+						return result;
+					}
+				}
+				return { x: 0, y: 0 };
+			},
+			getCharaEquipIconUrl: function(slot) {
+				if (this.chara && this.chara.renderer) {
+					let equip = this.chara.renderer.slots[slot];
+					if (equip) {
+						return equip.getIconUrl();
+					}
+				}
+				return "";
 			},
 		},
 		computed: {
@@ -88,6 +143,15 @@
 				}
 				return list;
 			},
+			slotMap: {
+				get: function() {
+					return slot_map;
+				},
+				set: function (value) {
+					debugger;
+					slot_map = value;
+				},
+			},
 		},
 		mounted: function () {
 			this.loadData();
@@ -97,4 +161,18 @@
 		}
 		//mixins: [],
 	};
+/*
+cap = 1
+accessoryFace	= 2
+accessoryEyes	= 3
+accessoryEars	= 4
+coat = 5
+longcoat = 5
+pants = 6
+shoes		= 7
+glove		= 8
+shield		= 10
+cape		= 9
+weapon		= 11
+*/
 </script>

@@ -310,9 +310,6 @@
 				});
 			},
 			selectChara: function (context, payload) {
-				if (context.state.chara && context.state.chara.$remote) {
-					return;
-				}
 				const state = context.state;
 				const id = payload.id;
 
@@ -325,18 +322,26 @@
 					}
 				}
 				if (index >= 0) {
-					state.selected = id;
-
 					const selected_chara = state.charaList[index];
-
-					if (state.chara) {
-						delete state.chara.$physics;
+					if (selected_chara.$remote) {
+						return;
 					}
 
-					delete selected_chara.$physics;
-					selected_chara.$physics = scene_map.controller.player;
+					try {
+						if (state.chara) {
+							delete state.chara.$physics;
+						}
+						//
+						delete selected_chara.$physics;
+						selected_chara.$physics = scene_map.controller.player;
+					}
+					catch(ex) {
+						debugger;
+					}
 
 					window.chara = state.chara = selected_chara;
+					//
+					state.selected = id;
 
 					return id;
 				}
@@ -403,9 +408,6 @@
 					chara.renderer._setup_test();
 				}
 
-				if (!payload.remote_chara) {
-					chara.$remote = true;
-				}
 				return await context.dispatch('_addChara', {
 					chara: chara,
 				});
@@ -599,6 +601,13 @@
 				let { id, category, equip } = payload;
 
 				if (this.chara) {
+					if (window.$io) {
+						let result = await this.chara.useItem(id, category);
+						if (result) {
+							console.log("can't use item: " + id);
+							return;
+						}
+					}
 					if (!this.chara.renderer.unuse(id)) {
 						this.$store.commit("increaseProgressMax", { amount: 2 });
 						try {
@@ -623,7 +632,7 @@
 						app.updateScreen();
 					}
 				}
-				this.$emit("hoverItem", payload);
+				//this.$emit("hoverItem", payload);
 			},
 			hoverItem: function (payload) {
 				this.$emit("hoverItem", payload);

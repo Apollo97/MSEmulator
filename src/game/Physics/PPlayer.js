@@ -1,7 +1,11 @@
 ﻿
-import box2d from "../../../public/box2d-html5.js";
+import box2d from "box2d-html5";
 
+import { PBody, PFixture, PMouseJoint } from "./Physics.js"
 import { Foothold } from "./Foothold.js";
+
+import { CharacterMoveElem } from "../../Client/PMovePath.js"
+
 
 const DEGTORAD = Math.PI / 180;
 
@@ -59,8 +63,8 @@ export class PPlayerState {
 }
 
 /**
- * @param{number} jump_height
- * @param{box2d.b2Vec2} gravity
+ * @param {number} jump_height
+ * @param {box2d.b2Vec2} gravity
  */
 function _CalcJumpImpulse(jump_height, gravity) {
 	let impulse = Math.sqrt(jump_height * 2.0 * Math.abs(gravity.y));
@@ -68,7 +72,7 @@ function _CalcJumpImpulse(jump_height, gravity) {
 	return impulse;
 }
 
-export class PCharacterBase {
+export class PEntityBase {
 	constructor() {
 		/** @type {boolean} */
 		this.disable = false;
@@ -77,10 +81,10 @@ export class PCharacterBase {
 		
 		this.setMovementSpeed(100);
 
-		/** @type {box2d.b2Body} */
+		/** @type {PBody} */
 		this.body = null;
 
-		/** @type {box2d.b2Body} */
+		/** @type {PBody} */
 		this.foot_walk = null;
 
 		/** @type {box2d.b2Joint} */
@@ -294,20 +298,35 @@ export class PCharacterBase {
 	}
 
 	/**
+	 * @param {number} speed - speed = pixel / second
+	 */
+	setMovementSpeedPixel(speed) {
+		let v = speed / CANVAS_SCALE;
+		if (v > 0) {
+			this.movement_omega = v;
+		}
+		else {
+			this.movement_omega = 0;
+		}
+	}
+
+	/**
 	 * @param {number} increment_percent - increment_percent >= -100
 	 */
 	setMovementSpeed(increment_percent) {
 		if (!(Number.isSafeInteger(increment_percent) || (!Number.isNaN(increment_percent) && Number.isFinite(increment_percent)))) {
 			debugger
-			throw new TypeError("increment_percent must is number");
+			if (process.env.NODE_ENV !== '') {
+				throw new TypeError("increment_percent must is number");
+			}
 		}
 		
 		let scale = (100 + increment_percent) / 100;
-		if (scale <= 0) {
-			this.movement_omega = 0;
+		if (scale > 0) {
+			this.movement_omega = MOVEMENT_VELOCITY * scale;
 		}
 		else {
-			this.movement_omega = MOVEMENT_VELOCITY * scale;
+			this.movement_omega = 0;
 		}
 	}
 	set movement_omega(movement_velocity) {
@@ -337,10 +356,18 @@ export class PCharacterBase {
 	}
 
 	/**
-	 * @returns{number}
+	 * @returns {number}
 	 */
 	_getMass() {
 		return this.body.GetMass() + this.foot_walk.GetMass();
+	}
+
+	/**
+	 * @param {number} s
+	 */
+	setGravityScale(s) {
+		this.body.SetGravityScale(s);
+		this.foot_walk.SetGravityScale(s);
 	}
 
 	/**
@@ -597,6 +624,96 @@ export class PCharacterBase {
 	}
 }
 
+export class PCharacterBase extends PEntityBase {
+	constructor() {
+		super(...arguments);
+	}
+
+	/**
+	 * @param {World} world
+	 */
+	_create_anchor(world) {
+		let md = new box2d.b2MouseJointDef();
+		md.bodyA = world.ground.bodies[0];
+		md.bodyB = this.body;
+		md.target.Copy(this.getPosition());
+		md.maxForce = 1000 * this._getMass();
+		return world.CreateJoint(md);
+	}
+
+	/**
+	 * @param {CharacterMoveElem} moveElem
+	 */
+	moveTo(moveElem) {
+		const body = this.body;
+
+		if (moveElem.elapsed == 0) {
+			body.SetLinearVelocity2(vx, vy);
+		}
+		else {
+			const ALPHA = 0.7;
+			const ONE_MINUS_ALPHA = 1 - ALPHA;
+			let dx = moveElem.x - pos.x;
+			let dy = moveElem.y - pos.y;
+			let sx = dx / (moveElem.elapsed / window.FRAME_ELAPSED);//speed = pixel / second
+			let sy = dy / (moveElem.elapsed / window.FRAME_ELAPSED);
+			let oldVel = body.GetLinearVelocity();
+
+			let vx, vy;
+
+			if (moveElem.pState.jump) {
+				this.setGravityScale(0);
+			}
+			else {
+				this.setGravityScale(1);
+				
+				if (moveElem.pState.walk || sx) {
+					this.walker.EnableMotor(false);//this.$physics.walker.IsMotorEnabled() == true
+				}
+				else {
+					this.walker.EnableMotor(true);//keep stop
+				}
+			}
+
+			if (sx) {
+				if (moveElem.vx) {
+					if (Math.sign(moveElem.vx) == Math.sign(sx)) {
+						vx = oldVel.x * ONE_MINUS_ALPHA + moveElem.vx * ALPHA;
+					}
+					else {
+						vx = oldVel.x * ONE_MINUS_ALPHA + sx * ALPHA;//修正座標
+					}
+				}
+				else {
+					vx = sx;//修正座標
+				}
+			}
+			else {
+				vx = 0;
+			}
+
+			if (sy) {
+				if (moveElem.vy) {
+					if (Math.sign(moveElem.vy) == Math.sign(sy)) {
+						vy = oldVel.y * ONE_MINUS_ALPHA + moveElem.vy * ALPHA;
+					}
+					else {
+						vy = oldVel.y * ONE_MINUS_ALPHA + sy * ALPHA;//修正座標
+					}
+				}
+				else {
+					vy = sy;//修正座標
+				}
+			}
+			else {
+				vy = 0;
+			}
+
+			body.SetLinearVelocity2(vx, vy);
+		}
+	}
+}
+
 export class PPlayer extends PCharacterBase {
 	constructor() {
 		super(...arguments);
@@ -634,13 +751,13 @@ export class PPlayer extends PCharacterBase {
 	Step(stamp) {
 		super.Step(stamp);
 		
-		if (input_keys['B'] == 2 && !window.mouse_dl) {
+		if (input_keyDown['B'] == 1 && !window.mouse_dl) {
 			const px = m_viewRect.left + window.mouse_x;
 			const py = m_viewRect.top + window.mouse_y;
 
 			this.setPosition(px / CANVAS_SCALE, py / CANVAS_SCALE, true);
 		}
-		else if (input_keys['B'] > 0 && window.mouse_dl) {
+		else if (input_keyDown['B'] > 0 && window.mouse_dl) {
 			const center = m_viewRect.center;
 			const px = m_viewRect.left + window.mouse_x - center.x;
 			const py = m_viewRect.top + window.mouse_y - center.y;
@@ -653,5 +770,30 @@ export class PPlayer extends PCharacterBase {
 			const py = m_viewRect.top + window.mouse_y;
 			this.setPosition(px / CANVAS_SCALE, py / CANVAS_SCALE, true);
 		}
+	}
+}
+
+export class PRemoteCharacter extends PCharacterBase {
+	constructor() {
+		super(...arguments);
+
+		/** @type {PMouseJoint} */
+		this._anchor = null;
+	}
+
+	/**
+	 * @param {World} world
+	 * @returns {void}
+	 */
+	_create(world) {
+		super._create(world);
+		this._anchor = this._create_anchor(world);
+	}
+
+	/**
+	 * @param {CharacterMoveElem} moveElem
+	 */
+	moveTo(moveElem) {
+		this._anchor.SetTarget2(moveElem.x, moveElem.y);
 	}
 }

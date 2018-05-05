@@ -247,11 +247,13 @@ export class _ImageFilter {
 	 * @param {number} hue 0 ~ 360
 	 * @param {number} sat 0 ~ 100
 	 * @param {number} bri 0 ~ 100
+	 * @param {number} contrast 0 ~ 100
 	 */
-	constructor(hue = 0, sat = 100, bri = 100) {
+	constructor(hue = 0, sat = 100, bri = 100, contrast = 100) {
 		this._hue = hue;
 		this._sat = sat;
 		this._bri = bri;
+		this._contrast = contrast;
 	}
 	/** @returns {number} */
 	get hue() {
@@ -259,7 +261,7 @@ export class _ImageFilter {
 	}
 	set hue(value) {
 		this._hue = value % 360;
-		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100 && this._contrast == 100) {
 			this.reset();
 		}
 	}
@@ -269,7 +271,7 @@ export class _ImageFilter {
 	}
 	set sat(value) {
 		this._sat = Math.max(0, value);
-		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100 && this._contrast == 100) {
 			this.reset();
 		}
 	}
@@ -279,7 +281,18 @@ export class _ImageFilter {
 	}
 	set bri(value) {
 		this._bri = Math.max(0, value);
-		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100) {
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100 && this._contrast == 100) {
+			this.reset();
+		}
+	}
+
+	/** @returns {number} */
+	get contrast() {
+		return this._contrast;
+	}
+	set contrast(value) {
+		this._contrast = Math.max(0, value);
+		if ((this._hue % 360 == 0) && this._sat == 100 && this._bri == 100 && this._contrast == 100) {
 			this.reset();
 		}
 	}
@@ -289,7 +302,7 @@ export class _ImageFilter {
 	}
 
 	toString() {
-		return `hue-rotate(${this._hue}deg) saturate(${this._sat}%) brightness(${this._bri}%)`;// + ImageFilter.globalFilter
+		return `hue-rotate(${this._hue}deg) saturate(${this._sat}%) brightness(${this._bri}%) contrast(${this._contrast}%)`;// + ImageFilter.globalFilter
 	}
 }
 
@@ -301,9 +314,10 @@ export class ImageFilter extends _ImageFilter {
 	 * @param {number} hue 0 ~ 360
 	 * @param {number} sat 0 ~ 100
 	 * @param {number} bri 0 ~ 100
+	 * @param {number} contrast 0 ~ 100
 	 */
-	constructor(hue = 0, sat = 100, bri = 100) {
-		super(hue, sat, bri);
+	constructor(hue = 0, sat = 100, bri = 100, contrast = 100) {
+		super(hue, sat, bri, contrast);
 		if (arguments.length) {
 			this.__proto__ = _ImageFilter.prototype;
 		}
@@ -333,6 +347,15 @@ export class ImageFilter extends _ImageFilter {
 		this.__proto__ = _ImageFilter.prototype;
 	}
 
+	/** @returns {number} */
+	get contrast() {
+		return 100;
+	}
+	set contrast(value) {
+		this._contrast = Math.max(0, value);
+		this.__proto__ = _ImageFilter.prototype;
+	}
+
 	toRgb() {
 		return new ColorRGB(255, 255, 255);
 	}
@@ -350,6 +373,7 @@ _ImageFilter.prototype.reset = function () {
 	this._hue = 0;
 	this._sat = 100;
 	this._bri = 100;
+	this._contrast = 100;
 	this.__proto__ = ImageFilter.prototype;
 }
 
@@ -357,15 +381,17 @@ _ImageFilter.prototype.reset = function () {
  * @param {number} hue 0 ~ 360
  * @param {number} sat 0 ~ 100
  * @param {number} bri 0 ~ 100
+ * @param {number} contrast 0 ~ 100
  */
-_ImageFilter.prototype.set = function (hue, sat, bri) {
-	if ((hue % 360 == 0) && sat == 100 && bri == 100) {
+_ImageFilter.prototype.set = function (hue, sat, bri, contrast) {
+	if ((hue % 360 == 0) && sat == 100 && bri == 100 && contrast == 100) {
 		this.reset();
 	}
 	else {
 		this.hue = hue;
 		this.sat = sat;
 		this.bri = bri;
+		this._contrast = contrast;
 	}
 }
 
@@ -648,6 +674,29 @@ export class IRenderer {
 		return null;
 	}
 
+	/**
+	 * @param {number} r
+	 * @param {number} dx
+	 * @param {number} dy
+	 * @param {number} sx
+	 * @param {number} sy
+	 */
+	setRotationTranslationScale(r, dx, dy, sx, sy) {
+		throw new Error("Not implement");
+	}
+	
+	/**
+	 * @param {number} m11
+	 * @param {number} m12
+	 * @param {number} m21
+	 * @param {number} m22
+	 * @param {number} dx
+	 * @param {number} dy
+	 */
+	setTransform(m11, m12, m21, m22, dx, dy) {
+		throw new Error("Not implement");
+	}
+
 	loadIdentity() {
 		throw new Error("Not implement");
 	}
@@ -670,7 +719,8 @@ export class IRenderer {
 	 * @param {number} z
 	 */
 	translate3d(x, y, z) {
-		throw new Error("Not implement");
+		alert("'translate3d' is deprecated");
+		throw new Error("'translate3d' is deprecated");
 	}
 	/**
 	 * @param {number} x
@@ -685,7 +735,8 @@ export class IRenderer {
 	 * @param {number} z
 	 */
 	scale3d(x, y, z) {
-		throw new Error("Not implement");
+		alert("'scale3d' is deprecated");
+		throw new Error("'scale3d' is deprecated");
 	}
 	/**
 	 * @param {number} r - rad
@@ -708,7 +759,8 @@ export class IRenderer {
 	 * @param {vec4} f4v - vec4: array
 	 */
 	Color4fv(f4v) {
-		throw new Error("Not implement");
+		alert("'Color4fv' is deprecated");
+		throw new Error("'Color4fv' is deprecated");
 	}
 
 	/**

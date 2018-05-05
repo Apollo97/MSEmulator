@@ -7,8 +7,9 @@ import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 
 import { SkillAnimation } from "./Skill.js";
 
-import { CharaMoveElem } from "../Client/PMovePath.js";
+import { CharacterMoveElem } from "../Client/PMovePath.js";
 import { PlayerStat } from "../Client/PlayerStat.js";
+import { $Packet_CharacterMove } from "../Common/Packet";
 
 
 class TimeElapsed {
@@ -30,6 +31,9 @@ window.$Character_ChatBalloon_Style = 0;
 
 class ChatController {
 	constructor() {
+		/** @type {number} */
+		this.style = 0;
+
 		/** @type {string} */
 		this.text = "";
 
@@ -69,10 +73,11 @@ class ChatController {
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {BaseSceneCharacter} chara
-	 * @param {number} style
 	 */
-	async draw(renderer, chara, style = 0) {
+	async draw(renderer, chara) {
 		if (this._isDisplay) {
+			const style = this.style || window.$Character_ChatBalloon_Style;
+
 			/** @type {ChatBalloon} */
 			let cb = ChatBalloon.cache[style];
 			if (!cb) {
@@ -135,6 +140,8 @@ const keyboard_map = [{
 	v: "skill_3",
 	}];
 
+
+
 export class BaseSceneCharacter extends SceneObject {
 	constructor() {
 		super();
@@ -147,13 +154,23 @@ export class BaseSceneCharacter extends SceneObject {
 
 		this.$layer = 5;
 
-		this.stat = new PlayerStat();
-
 		/** @type {string} */
 		this.id = null;
 
+		this.stat = new PlayerStat();
+		
+		this.skill = null;//not complete
+
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
+
+		/** @type {{move:$Packet_CharacterMove}} */
+		this.$inPacket = {};
+		this.$inPacket.move = null;
+
+		/** @type {{move:$Packet_CharacterMove}} */
+		this.$outPacket = {};
+		this.$outPacket.move = null;
 	}
 
 	/** @type {string} */
@@ -163,57 +180,56 @@ export class BaseSceneCharacter extends SceneObject {
 	set name(value) {
 		this.id = value;
 	}
-	
-	$recMove(socket) {
-		let body = this.$physics.body;
-		let vel = body.GetLinearVelocity();
-		let pos = this.$physics.getPosition();
 
-		/** @type {CharaMoveElem[]} */
-		let elems = [];
-		elems[0] = {
-			x: pos.x,
-			y: pos.y,
-			vx: vel.x,
-			vy: vel.y,
-			pState: this.$physics.state,
-		};
+	/**
+	 * @param {$Packet_CharacterMove} move
+	 */
+	$move(_move) {
+		let move = _move || this.$inPacket.move;
+		this.$inPacket.move = move;
+	}
 
-		socket.emit("charaMove", elems);
-		socket.emit("charaAnim", {
-			action: this.renderer.action,
-			//action_frame: this.renderer.action_frame,
-			emotion: this.renderer.emotion,
-			//emotion_frame: this.renderer.emotion_frame,
-		});
+	_remote_control() {
+		let move = this.$inPacket.move;
+
+		if (move && move.path && move.path.length) {
+			const crr = this.renderer;
+			let elem = move.path.shift();
+
+			if (elem.isAwake) {
+				this.$physics.moveTo(elem);
+				this.$physics.state = elem.pState;//??
+
+				crr.front = elem.pState.front;
+			}
+		
+			if (elem.action) {
+				crr.action = elem.action;
+				//crr.action_frame = elem.action_frame;
+			}
+			if (elem.emotion) {
+				crr.emotion = elem.emotion;
+				//crr.emotion_frame = elem.emotion_frame;
+			}
+		}
 	}
 
 	/**
-	 * @param {CharaMoveElem[]} elems
+	 * @param {number} itemSN
+	 * @param {number} from
+	 * @param {number} to
 	 */
-	$move(elems) {
-		let elem = elems[0];
-		let body = this.$physics.body;
-
-		this.$physics.setPosition(elem.x, elem.y);
-
-		let vel = body.GetLinearVelocity();
-
-		vel.x = elem.vx;
-		vel.y = elem.vy;
-		body.SetLinearVelocity(vel);
-
-		this.$physics.state = elem.pState;
-		this.renderer.front = elem.pState.front;//force update any appMode
+	$moveItem(equipId, from, to) {
 	}
 
-	$anim(anim) {
-		const cr = this.renderer;
-		cr.action = anim.action;
-		//cr.action_frame = anim.action_frame;
-
-		cr.emotion = anim.emotion;
-		//cr.emotion_frame = anim.emotion_frame;
+	/**
+	 * @param {string} skillId
+	 */
+	_invokeSkill(skillId) {
+		let skill = new SkillAnimation();
+		skill.owner = this;
+		skill.load(skillId);
+		this.skill = skill;
 	}
 
 	/**
@@ -264,12 +280,14 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {IRenderer} renderer
 	 */
 	_$drawName(renderer) {
-		const name = this.id;
-		const crr = chara.renderer;
 		const ctx = renderer.ctx;
+		const name = this.id;
+		const crr = this.renderer;
 
 		ctx.font = "12px 微軟正黑體";//新細明體
 		ctx.textBaseline = "middle";
+		ctx.textAlign = "start";
+
 		const r = 2, h = 12;
 		const w = ctx.measureText(name).width + 3;
 		const x = Math.trunc(crr.x + crr.tx) - w * 0.5;
@@ -329,7 +347,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {IRenderer} renderer
 	 */
 	_$drawChatBalloon(renderer) {
-		this.chatCtrl.draw(renderer, this, window.$Character_ChatBalloon_Style);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
+		this.chatCtrl.draw(renderer, this);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
 	}
 
 	_player_control() {
@@ -340,6 +358,46 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {PPlayerState} player_state
 	 */
 	_applyState(player_state) {
+		const charaRenderer = this.renderer;
+
+		if (!this.skill) {
+			const { front, jump, walk, prone, fly } = player_state;
+
+			if (front != null) {
+				charaRenderer.front = front;
+			}
+
+			if (jump) {
+				charaRenderer.action = "jump";
+			}
+			else if (walk) {
+				charaRenderer.action = "walk1";
+			}
+			else if (prone) {
+				charaRenderer.action = "prone";
+			}
+			else if (fly) {
+				charaRenderer.action = "fly";
+			}
+			else {
+				charaRenderer.action = "stand1";
+			}
+
+			for (let i = 0; i <= 9; ++i) {
+				if (input_keyDown[i]) {
+					let a = [
+						"blink", "hit", "smile",
+						"troubled", "cry", "angry",
+						"bewildered", "stunned", "vomit",
+						"oops"
+					];
+					let e = a[i % a.length];
+					charaRenderer.emotion = e;
+				}
+			}
+
+			charaRenderer.actani.loop = true;
+		}
 	}
 }
 
@@ -364,30 +422,21 @@ export class SceneCharacter extends BaseSceneCharacter {
 	_player_control() {
 		if (this.$physics) {
 			let ikey = {};
-			for (let i in input_keys) {
+			for (let i in input_keyDown) {
 				const k = keyboard_map[m_editor_mode ? 1 : 0][i];
 				if (k) {
-					ikey[k] = input_keys[i];
+					ikey[k] = input_keyDown[i];
 				}
 			}
 			if (this.skill == null) {
 				if (ikey.skill_1) {
-					let skill = new SkillAnimation();
-					skill.owner = this;
-					skill.load("1001005");
-					this.skill = skill;
+					this.invokeSkill("1001005");
 				}
 				else if (ikey.skill_2) {
-					let skill = new SkillAnimation();
-					skill.owner = this;
-					skill.load("64120000");
-					this.skill = skill;
+					this.invokeSkill("64120000");
 				}
 				else if (ikey.skill_3) {
-					let skill = new SkillAnimation();
-					skill.owner = this;
-					skill.load("152001001");
-					this.skill = skill;
+					this.invokeSkill("152001001");
 				}
 			}
 			if (this.skill) {
@@ -395,8 +444,29 @@ export class SceneCharacter extends BaseSceneCharacter {
 				ikey.left = 0;
 				ikey.down = 0;
 				ikey.right = 0;
+				ikey.jump = 0;
 			}
 			this.$physics.control(ikey);
+		}
+	}
+
+	/**
+	 * @param {string} skillId
+	 * @returns {Promise<boolean>}
+	 */
+	async invokeSkill(skillId) {
+		if (window.$io) {
+			let result = await window.$io.emit("skill", {
+				skillId: skillId,
+			});
+			if (result) {
+				this._invokeSkill(skillId);
+			}
+			return result;
+		}
+		else {
+			this._invokeSkill(skillId);
+			return true;
 		}
 	}
 
@@ -405,40 +475,76 @@ export class SceneCharacter extends BaseSceneCharacter {
 	 * @param {PPlayerState} player_state
 	 */
 	_applyState(player_state) {
-		const { front, jump, walk, prone, fly } = player_state;
-		const charaRenderer = this.renderer;
+		super._applyState(player_state);
 
-		if (front != null) {
-			charaRenderer.front = front;
-		}
+		this.$recMove();
+	}
 
-		if (jump) {
-			charaRenderer.action = "jump";
-		}
-		else if (walk) {
-			charaRenderer.action = "walk1";
-		}
-		else if (prone) {
-			charaRenderer.action = "prone";
-		}
-		else if (fly) {
-			charaRenderer.action = "fly";
+	
+	$emit(socket) {
+		if (this.$outPacket.move) {
+			socket.emit("charaMove", this.$outPacket.move);
+			this.$outPacket.move = null;
 		}
 		else {
-			charaRenderer.action = "stand1";
+			let charaMove = new $Packet_CharacterMove();
+
+			charaMove.capture(this);
+
+			socket.emit("charaMove", charaMove);
 		}
 
-		for (let i = 0; i <= 9; ++i) {
-			if (input_keys[i]) {
-				let a = [
-					"blink", "hit", "smile",
-					"troubled", "cry", "angry",
-					"bewildered", "stunned", "vomit",
-					"oops"
-				];
-				let e = a[i % a.length];
-				charaRenderer.emotion = e;
+		this.$outPacket.move = null;
+	}
+	
+	$recMove() {
+		let move = this.$outPacket.move || new $Packet_CharacterMove();
+		move.capture(this);
+		this.$outPacket.move = move;
+	}
+
+	/**
+	 * @param {number} from
+	 * @param {number} to
+	 */
+	moveItemToSlot(from, to) {
+		debugger;
+	}
+
+	///**
+	// * @param {any} id
+	// */
+	//$getItem(id) {
+	//	this.itemSlot
+	//}
+
+	/**
+	 * @param {number} itemId
+	 */
+	useItem(itemId) {
+		window.$io.emit("useItem", {
+			itemId: itemId
+		});
+	}
+
+	/**
+	 * @param {string} text
+	 * @returns {Promise<boolean>}
+	 */
+	async say(text) {
+		if (window.$io) {
+			let result = await window.$io.emit("chat", {
+				$style: this.chatCtrl.style,
+				text: text,
+			});
+			if (result) {
+				this.chatCtrl.enter(text);
 			}
+			return result;//boolean
+		}
+		else {
+			this.chatCtrl.enter(text);
+			return true;
 		}
 	}
 }
@@ -462,8 +568,8 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 			},
 			set: function (value) {
 				if (value == null) {
-					alert("can not set SceneRemoteCharacter.$physics = null;");
 					console.error("can not set SceneRemoteCharacter.$physics = null;");
+					alert("can not set SceneRemoteCharacter.$physics = null;");
 				}
 				this.$$physics = value;
 			},
@@ -478,16 +584,29 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 			},
 			set: function (value) {
 				if (value == null) {
-					alert("can not set SceneRemoteCharacter.renderer = null;");
 					console.error("can not set SceneRemoteCharacter.renderer = null;");
+					alert("can not set SceneRemoteCharacter.renderer = null;");
 				}
 				this.$$renderer = value;
 			},
 		});
 	}
 
+	get $remote() {
+		return true;
+	}
+
 	_player_control() {
-		//nothing
+		this._remote_control();
+	}
+
+	/**
+	 * @param {string} skillId
+	 * @returns {Promise<boolean>}
+	 */
+	async invokeSkill(skillId) {
+		this._invokeSkill(skillId);
+		return true;
 	}
 }
 

@@ -6,10 +6,21 @@
 		<meta name="theme-color" content="#317EFB"/>
 		<title>Hello World!</title>
 
-        <link rel="stylesheet" href="/jquery-ui.css">
 		<link rel="stylesheet" href="/stylesheets/style.css">
         <style>
+			button, input {
+				-webkit-app-region: no-drag;
+			}
+			#sys_info {
+				-webkit-user-select: none;
+				-webkit-app-region: drag;
+				position: fixed;
+				right: 0px;
+				top: 0px;
+				background: rgba(255,255,255,0.625);
+			}
 			body {
+				text-shadow: 1px 1px 1px rgba(0,0,0,0.1875);
 				position: fixed;
 				left: 0;
 				top: 0;
@@ -91,9 +102,71 @@
 				display: none
 			}
         </style>
+		
+		<script>
+if (window.require) {
+	let win = require('electron').remote.getCurrentWindow();
+	window.$e$win = win;
 
-        <script src="/jquery-1.12.4.js"></script>
-        <script src="/jquery-ui.js"></script>
+	//win.on("resize", () => {
+	//	win.center();
+	//});
+
+	win.setIgnoreMouseEvents(false);
+
+	let mouseover = true;
+	
+	window.addEventListener('mouseover', () => {
+		mouseover = true;
+		//win.setIgnoreMouseEvents(false);
+		//document.getElementById("trClick").innerHTML = "over false";
+	})
+	window.addEventListener('mouseout', () => {
+		mouseover = false;
+		////win.setIgnoreMouseEvents(false);//reset
+		//win.setIgnoreMouseEvents(true, {forward: true});
+		//document.getElementById("trClick").innerHTML = "out true";
+	})
+
+	setTimeout(transparentClick, 100);
+
+	function transparentClick() {
+		if (mouseover) {
+			window.addEventListener('mousemove', mousemove);
+		}
+		else {
+			setTimeout(transparentClick, 100);
+		}
+	}
+
+	function mousemove(e) {
+		let x = e.pageX, y = e.pageY;
+		win.capturePage({x:x,y:y,width:1,height:1}, function(image) {
+			let buffer = image.getBitmap();
+
+			let text = [buffer[0],buffer[1],buffer[2],buffer[3]].join(",");
+			//document.getElementById("trClick").innerHTML = text;
+
+			if (buffer[3] >= 32) {
+				document.getElementById("trClick").innerHTML = text + " false";
+				win.setIgnoreMouseEvents(false);
+			}
+			else {
+				document.getElementById("trClick").innerHTML = text + " true";
+				win.setIgnoreMouseEvents(true, {forward: true});
+			}
+
+			window.removeEventListener('mousemove', mousemove);
+			setTimeout(transparentClick, 100);
+		});
+	}
+
+	window.nodeRequire = require;
+	delete window.require;
+	delete window.exports;
+	delete window.module;
+}
+		</script>
 		<script src="/classList.js"></script><!--element.classList-->
 		
 		<script src="/spine/spine.js"></script>
@@ -102,38 +175,37 @@
 		<script src="/spine/render-webgl.js"></script>
 		<script src="/spine/SpineBinary.js"></script>
 		<script src="/spine/SSAnim.js"></script>
-		<script src="gl-matrix.js"></script>
 
 	</head>
 	<body>
 		<canvas id="glcanvas" class="Scene" width="800" height="600"></canvas>
 		<canvas id="glcanvas2" class="Scene" width="800" height="600" style="display: none;"></canvas>
 		<div id="Screenshot" class="Scene"></div>
-        <!--<div class="layer" id="map_back"></div>
-        <div class="layer" id="map_object"></div>-->
-        <div class="layer" id="character_layer">
-            <!--<canvas id="scene" class="Scene" width="800" height="600"></canvas>-->
-        </div>
-        <div class="layer" id="map_front"></div>
+		<!--<div class="layer" id="map_back"></div>
+	<div class="layer" id="map_object"></div>-->
+		<div class="layer" id="character_layer">
+			<!--<canvas id="scene" class="Scene" width="800" height="600"></canvas>-->
+		</div>
+		<div class="layer" id="map_front"></div>
 
-        <!--<div class="layer_top" id="StatusBar"></div>-->
-        <!--<div class="layer2" id="StatusBar"></div>-->
-
+		<!--<div class="layer_top" id="StatusBar"></div>-->
+		<!--<div class="layer2" id="StatusBar"></div>-->
 		<!--<div class="fixed-layer" id="overlay"></div>-->
 
 		<div id="vue" v-cloak></div>
 
 		<div class="" id="layout"></div>
 
-		<div style="position: fixed; right: 0px; top: 0px; background: #FFF;">
+		<div id="sys_info">
 			<label><input type="checkbox" id="m_is_run" checked /> Run</label>
 			<div>screen width: <span id="screen_width"></span></div>
 			<div>screen height: <span id="screen_height"></span></div>
 			<div>FPS: <span id="FPS"></span></div>
 			<div>frame: <span id="frame"></span> ms</div>
 			<label><input type="checkbox" id="m_is_always_show_tip" /> always show tip</label>
+			<div id="trClick">...</div>
 		</div>
-		
+
 		<script src="//localhost:8787/socket.io/socket.io.js"></script>
 
 		<script src="/version"></script>

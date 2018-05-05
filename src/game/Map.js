@@ -1344,7 +1344,7 @@ export class MapLifeEntity {
 	 */
 	draw(renderer) {MobRenderer
 		renderer.globalAlpha = Math.max(0, Math.min(this.opacity, 1));
-		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front >= 1);
+		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front <= -1);
 	}
 }
 class MapMob extends MapLifeEntity {
@@ -1370,16 +1370,23 @@ class MapMob extends MapLifeEntity {
 		await super.load(id);
 		
 		await this._load_skill_by_mob_id(id);
-		
-		this._load_skill_info();
-		
-		const firstAttack = this.renderer._raw.info.attack[this.renderer._raw.info.firstAttack].info;
-		if (this.skill_map[firstAttack]) {
-			const firstSkillInfo = this.skill_map[firstAttack].skill_list[0];
-			
-			this.invokeSkill(firstSkillInfo.skill, firstSkillInfo.level);
+
+		// experiment
+		try {
+			this._load_skill_info();
+
+			const firstAttack = this.renderer._raw.info.attack[this.renderer._raw.info.firstAttack].info;
+			if (this.skill_map[firstAttack]) {
+				const firstSkillInfo = this.skill_map[firstAttack].skill_list[0];
+
+				this.invokeSkill(firstSkillInfo.skill, firstSkillInfo.level);
+			}
+
 		}
-		
+		catch (ex) {
+			//not thing
+		}
+
 		this.$physics = mapController.createMob(this);
 	}
 	
@@ -1642,8 +1649,7 @@ class MapLifeManager {
 		delete this.entities[entity.lifeId];
 	}
 	killAll() {
-		let that = this;
-		this.entities.forEach(a=>that.killLife(a))
+		this.entities.forEach(a => this.killLife(a))
 	}
 
 	/**
@@ -1713,6 +1719,8 @@ export class SceneMap {
 
 		/** @type {Promise<any>} */
 		this.$promise = null;
+
+		this.$loading_status = "loading";
 	}
 
 	static async _Init() {
@@ -1821,8 +1829,8 @@ export class SceneMap {
 			let tiles = this.__constructLayeredObject_tile(i, layer, loading_task_map);
 
 			// ?? map:867116550 雷射在 tiles 前面
-			tiles.sort(function (a, b) { return a.z - b.z; });
-			objs.sort(function (a, b) { return a.z - b.z; });
+			tiles.sort((a, b) => { return a.z - b.z; });
+			objs.sort((a, b) => { return a.z - b.z; });
 
 			//this.layeredObject[i] = objs.concat(tiles);//(objs.concat(tiles)).sort(function (a, b) { return a.z - b.z; });
 			
@@ -2053,8 +2061,9 @@ export class SceneMap {
 	 * @param {{[String]:any}} raw
 	 */
 	_load(raw) {
-		const that = this;
 		const map_id = this.map_id;
+
+		this.$loading_status = "loading";
 		
 		this.controller.stop = true;//begin load
 		
@@ -2069,12 +2078,12 @@ export class SceneMap {
 
 		this.$load_tasks.push(this._constructBack(raw, this));
 		
-		this.$load_tasks.push(this._constructLayeredObject(raw, this).then(function (mapobj) {
-			//that.layeredObject
-			//that.layeredTile
+		this.$load_tasks.push(this._constructLayeredObject(raw, this).then((mapobj) => {
+			//this.layeredObject
+			//this.layeredTile
 		}));
 		
-		this.$load_tasks.push(this.portalMgr.load(raw, this).then(function (portals) {
+		this.$load_tasks.push(this.portalMgr.load(raw, this).then((portals) => {
 		}));
 		
 		this.$load_tasks.push(this.__constructMiniMap(raw, this));
@@ -2085,18 +2094,19 @@ export class SceneMap {
 		this.$load_tasks.push(MapParticle.construct(raw, this));
 
 		this.$promise = Promise.all(this.$load_tasks);
-		this.$promise.then(function (results) {
-			const viewRect = that._compute_map_bound();
+		this.$promise.then((results) => {
+			const viewRect = this._compute_map_bound();
 			const viewCenter = viewRect.center;
 			
 			m_viewRect.setCenter(viewCenter.x, viewCenter.y);
 			
-			that.controller._createMapBound(viewRect);
+			this.controller._createMapBound(viewRect);
 			
-			that.controller.stop = false;//end load
+			this.controller.stop = false;//end load
 			
-			that.$load_tasks = null;
-			that.$promise = null;
+			this.$load_tasks = [];
+			this.$promise = null;
+			delete this.$loading_status;
 			console.log("completed scene_map.waitLoaded: [...]");
 		});
 		
@@ -2128,6 +2138,8 @@ export class SceneMap {
 	}
 
 	unload() {
+		this.$loading_status = "loading";
+
 		for (let i = 0; i < this.background.length; ++i) {
 			this.background[i].unload();
 		}
@@ -2235,7 +2247,7 @@ export class SceneMap {
 	}
 
 	isLoaded() {
-		return this.$load_tasks == null;
+		return ((!this.$load_tasks || !this.$load_tasks.length) && this._raw && !this.$loading_status);
 	}
 
 	/**
@@ -2252,7 +2264,9 @@ export class SceneMap {
 
 			this.lifeMgr.update(stamp);
 
-			this.controller.update(stamp);
+			if (this.isLoaded()) {
+				this.controller.update(stamp);
+			}
 		}
 		else {
 			debugger;

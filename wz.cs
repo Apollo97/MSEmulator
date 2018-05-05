@@ -208,26 +208,41 @@ internal class DataSource
 
 		if (0 <= index)
 		{
-			if (!link.EndsWith(".img/"))
+			int i2 = link.IndexOf("/");
+			string archiveName = link.Substring(0, i2);
+			string[] names = { archiveName, archiveName + "2", archiveName + "001" };
+
+			i2 += 1;
+
+			foreach (var aName in names)
 			{
-				outProp = DataSource._get_property(DataSource.packages[link.Substring(0, index + 4).Split('/')].root[""], link.Substring(index + 5).Split('/'), 0);
-				outPack = null;
-				return;
-				//return MInspect.packages[link.Substring(0, index + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
-			}
-			else
-			{
-				try
+				if (!link.EndsWith(".img/"))
 				{
-					outProp = DataSource.packages[link.Substring(0, index + 4).Split('/')].root[""];
+					outProp = DataSource._get_property(DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""], link.Substring(index + 5).Split('/'), 0);
 					outPack = null;
 					return;
+					//return MInspect.packages[link.Substring(0, index - i2 + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
 				}
-				catch (Exception)
+				else
 				{
-					outProp = null;
-					outPack = DataSource.packages[link.Substring(0, index + 4).Split('/')];
-					return;
+					try
+					{
+						outProp = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""];
+						outPack = null;
+						return;
+					}
+					catch (Exception)//no found property
+					{
+						try
+						{
+							outProp = null;
+							outPack = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')];
+							return;
+						}
+						catch (Exception)
+						{
+						}
+					}
 				}
 			}
 		}
@@ -237,6 +252,8 @@ internal class DataSource
 			outPack = DataSource.packages[link.Split('/')];
 			return;
 		}
+		outPack = null;
+		outProp = null;
 	}
 
 	protected static wzproperty _get_property(wzproperty property, string[] link, int step)

@@ -343,8 +343,16 @@
 	}
 	.ui-dialog > .header .header-buttons > * {
 		padding: 0;
+    border: none;
+    background: transparent;
 	}
 	.ui-dialog > .header .header-buttons > .header-button {
+	}
+	.ui-dialog > .header .header-buttons > .header-button:hover {
+    background: lightgray;
+	}
+	.ui-dialog > .header .header-buttons > .header-button:active {
+    background: lightblue;
 	}
 
 	.ui-dialog > .content {

@@ -175,15 +175,19 @@ function WebServer(app) {
 	if (!app) {
 		app = express();
 	}
-	
-	const webpack = require('webpack');
-	const webpackDevMiddleware = require('webpack-dev-middleware');
-	const webpackHotMiddleware = require('webpack-hot-middleware');
-	const webpackConfig = require('./webpack.config');
-		
-	const compiler = webpack(webpackConfig);
-	app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: webpackConfig.output.publicPath }));
-	app.use(webpackHotMiddleware(compiler));
+
+	if (process.env.NODE_ENV !== 'production') {
+		console.log("use webpackHotMiddleware");
+
+		const webpack = require('webpack');
+		const webpackDevMiddleware = require('webpack-dev-middleware');
+		const webpackHotMiddleware = require('webpack-hot-middleware');
+		const webpackConfig = require('./webpack.config');
+
+		const compiler = webpack(webpackConfig);
+		app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: webpackConfig.output.publicPath }));
+		app.use(webpackHotMiddleware(compiler));
+	}
 	
 	app.use(function (req, res, next) {
 		if (req.path.endsWith(".json") || req.path.startsWith("/data/") || req.path.startsWith("/pack/")) {
@@ -310,18 +314,14 @@ function DataServer(app) {
 		/**
 		 * @param {string} method
 		 * @param {string} path
-		 * @param {boolean} output_canvas
-		 * @param {boolean} reload
-		 * @param {string=} func
 		 */
-		getAsync(method, path, output_canvas) {
+		getAsync(method, path) {
 			const that = this;
 			return new Promise(function (resolve, reject) {
 				that._get({
 					func: method,
 					args: {
 						path: path,
-						output_canvas: !!output_canvas
 					}
 				}, function (error, result) {
 					if (error) {
@@ -410,7 +410,7 @@ function DataServer(app) {
 				"Content-Type": mime,
 				"Access-Control-Allow-Origin": "*",
 				"Cache-Control": "public, max-age=86400",
-				"Cache-Control": "no-cache",
+				//"Cache-Control": "no-cache",
 				"Last-Modified": _data_provider.mtime_utcs,
 				"data-tag": _dp.setting.tag,
 				"data-version": _dp.version,
@@ -514,6 +514,65 @@ function DataServer(app) {
 			});
 		}
 
+		/**
+		 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
+		 * @param {string} output_path
+		 * @param {string} data_path
+		 * @param {string} isObject to JSON
+		 */
+		function saveCacheFile(loadFileTask, output_path, data_path, isObject) {
+			loadFileTask.then(function (results) {
+				if (!results) {
+					return;
+				}
+
+				if (data_path.endsWith("/")) {
+					data_path = data_path.slice(0, data_path.length - 1);
+				}
+
+				let filePath = path.join(output_path, data_path);
+				if (fs.existsSync(filePath)) {
+					return;
+				}
+				let dirArr = filePath.split(path.sep);
+
+				dirArr.pop();//remove file nmae
+
+				dirArr.reduce((parentDir, childDir) => {
+					const curDir = path.resolve(".", parentDir, childDir);
+					try {
+						fs.mkdirSync(curDir);
+						//console.log(`Directory ${curDir} created!`);
+					}
+					catch (err) {
+						if (err.code !== 'EEXIST') {
+							throw err;
+						}
+						//console.log(`Directory ${curDir} already exists!`);
+					}
+
+					return curDir;
+				}, "");
+
+				let data = isObject ? JSON.stringify(results.data, null, "\t") : results.data;
+
+				fs.writeFile(filePath, data, function (err) {
+					if (err) {
+						let filePath = path.join(output_path, data_path);
+						console.log("no cache: ", filePath);
+						console.log("err: ");
+						console.log(JSON.stringify(err));
+
+						fs.writeFile("./public/log.html", "<div style='background:red;'>" + Date() + " false " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
+					}
+					else {
+						fs.writeFile("./public/log.html", "<div>" + Date() + " true " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
+					}
+				});
+			}, function (reason) {
+			});
+		}
+
 		a_pp.get(/\/images\/.*/, function (req, res, next) {//png
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
@@ -522,6 +581,7 @@ function DataServer(app) {
 				let task = _data_provider.getAsync("images", data_path);
 
 				sendFile(task, req, res, next);
+				saveCacheFile(task, "public/images", data_path, false);
 			}
 		});
 		a_pp.get(/\/_images\/.*/, function (req, res, next) {//gif
@@ -540,6 +600,7 @@ function DataServer(app) {
 				let task = _data_provider.getAsync("sound", data_path);
 
 				sendFile(task, req, res, next);
+				saveCacheFile(task, "public/sound", data_path, false);
 			}
 		});
 		a_pp.get(/\/binary\/.*/, function (req, res, next) {
@@ -549,6 +610,7 @@ function DataServer(app) {
 				let task = _data_provider.getAsync("binary", data_path);
 
 				sendFile(task, req, res, next);
+				saveCacheFile(task, "public/binary", data_path, false);
 			}
 		});
 		a_pp.get(/\/font\/.*/, function (req, res, next) {//font
@@ -557,10 +619,13 @@ function DataServer(app) {
 				let data_path = url.slice(6);
 				let task = _data_provider.getAsync("font", data_path);
 
+				//need transform format to web spo
+
 				sendFile(task, req, res, next);
 			}
 		});
 
+		//
 		const $sendFile_options = {
 			root: path.join(__dirname, "public"),
 		};
@@ -581,18 +646,20 @@ function DataServer(app) {
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
 				let data_path = url.slice(6);
-				let task = _data_provider.getAsync("pack", data_path, true);
+				let task = _data_provider.getAsync("pack", data_path);
 
 				sendJSON(task, req, res, next);
+				saveCacheFile(task, "public/pack", data_path, true);
 			}
 		});
 		a_pp.get(/\/data\/.*/, function (req, res, next) {//json: text
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
 				let data_path = url.slice(6);
-				let task = _data_provider.getAsync("data", data_path, false);
+				let task = _data_provider.getAsync("data", data_path);
 
 				sendJSON(task, req, res, next);
+				saveCacheFile(task, "public/data", data_path, true);
 			}
 		});
 		a_pp.get(/\/ls\/.*/, function (req, res, next) {
@@ -714,5 +781,32 @@ function inspect_locale(obj) {
 	catch (ex) {
 		console.log(ex);
 	}
+}
+
+/**
+ * source: https://stackoverflow.com/a/40686853
+ * @param {string} targetDir
+ * @param param1
+ */
+function mkDirByPathSync(targetDir, {isRelativeToScript = false} = {}) {
+	const sep = path.sep;
+	const initDir = path.isAbsolute(targetDir) ? sep : '';
+	const baseDir = isRelativeToScript ? __dirname : '.';
+
+	targetDir.split(sep).reduce((parentDir, childDir) => {
+		const curDir = path.resolve(baseDir, parentDir, childDir);
+		try {
+			fs.mkdirSync(curDir);
+			console.log(`Directory ${curDir} created!`);
+		} catch (err) {
+			if (err.code !== 'EEXIST') {
+				throw err;
+			}
+
+			console.log(`Directory ${curDir} already exists!`);
+		}
+
+		return curDir;
+	}, initDir);
 }
 

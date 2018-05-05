@@ -1,6 +1,7 @@
 
 import { Sprite } from "./Sprite.js";
 import { Animation } from "./Animation";
+import { ActionAnimation } from './Renderer/CharacterActionAnimation.js';
 
 /**
  * @interface {IEffectAnimation}
@@ -106,102 +107,6 @@ EffectManager._effects = [];
 
 window.$EffectManager = EffectManager;
 
-
-class ActionAnimationBase {
-	constructor(raw, action) {
-		/** @type {number} */
-		this.time = 0;
-		
-		/** @type {number} */
-		this.frame = 0;
-		
-		/** @type {number} this.delay = delay < 0 ? -delay:0; if (this.delay == 0) launch attack */
-		this.delay = 0;
-		
-		this.raw = null;
-		
-		if (!raw && action) {
-			this._load(action);
-		}
-		else {
-			throw new Error("Not implement");
-		}
-	}
-	
-	_load(action) {
-		this.raw = ActionAnimationBase.Adef[action];
-	}
-	
-	reset() {
-		this.time = 0;
-		this.frame = 0;
-	}
-	
-	/**
-	 * update action delay, target.action, target.action_frame, target.tx, target.ty
-	 * @param {number} stamp
-	 * @param {CharacterRenderer} target
-	 */
-	update(stamp, target) {
-		const fdat = this.fdat;
-		let delay = 0;
-		
-		this.time = this.time + stamp;
-		
-		if (fdat.delay < 0) {
-			fdat.delay = -fdat.delay;
-		}
-		
-		if (fdat.delay > 0) {
-			delay = fdat.delay;
-			this.delay = 0;
-		}
-		else {
-			delay = -fdat.delay;
-			this.delay = delay;
-		}
-		
-		if (this.time > delay) {
-			this.frame = ++this.frame;
-			this.time = 0;
-		}
-		
-		//translate target position
-		if (fdat.move) {
-			target.tx = -fdat.move.x * target.front;
-			target.ty = -fdat.move.y * target.front;
-		}
-		else {
-			target.tx = 0;
-			target.ty = 0;
-		}
-		if (this.isEnd()) {
-			target.tx = 0;
-			target.ty = 0;
-		}
-		
-		target.action = fdat.action;
-		target.action_frame = fdat.frame;
-	}
-	
-	isEnd() {
-		return this.fdat == null;
-	}
-	
-	get fdat () {
-		return this.raw[this.frame];
-	}
-	
-	static async Init() {
-		//action definition
-		ActionAnimationBase.Adef = JSON.parse(await $get.data(ActionAnimationBase.base_path));
-	}
-	
-	static get base_path () {
-		return "/Character/00002000.img/";
-	}
-}
-
 /**
  * Skill type 1
  */
@@ -224,14 +129,16 @@ class SkillAnimationBase {
 		//		"0": []
 		//	},
 		//}
-		
-		/** @type {ActionAnimationBase} */
-		this.actani = null;
+
+		this.skillId = null;
 		
 		this.actType = 0;//??
 		
 		/** @type {SceneObject} */
-		this.owner = null;
+		this._owner = null;
+
+		/** @type {CharacterAnimationBase} */
+		this._crr = null;
 		
 		/** @type {number} */
 		this.type = 0;
@@ -246,46 +153,78 @@ class SkillAnimationBase {
 			this._load(url, raw);
 		}
 	}
+
+	/** @type {ActionAnimation} */
+	get owner() {
+		return this._owner;
+	}
+	set owner(value) {
+		this._owner = value;
+		this._crr = this.owner.renderer;
+	}
+	
+	/** @type {ActionAnimation} */
+	get actani() {
+		return this._crr.actani;
+	}
+	set actani(value) {
+		if (this.owner) {
+			this._crr.actani = value;
+		}
+	}
 	
 	/**
 	 * download data
-	 * @param {string} skillID
+	 * @param {string} skillId
 	 */
-	async load(skillID) {
-		const jobID = /^(\d+)\d{4}$/.exec(skillID)[1];
-			
-		const url = `${this.constructor.base_path}/${jobID}.img/skill/${skillID}`;
-		
+	async load(skillId) {
+		const jobID = /^(\d+)\d{4}$/.exec(skillId)[1];
+
+		const url = `${this.constructor._base_path}/${jobID}.img/skill/${skillId}`;
+
 		const raw = JSON.parse(await $get.pack(url));
 		if (!raw) {
 			alert("SkillAnimationBase");
 			return;
 		}
-		
+
+		this.skillId = skillId;
+
 		this._load(url, raw);
 	}
-	
+
+	/**
+	 * process raw data
+	 */
 	async _load(url, raw) {
 		this.url = url;
 		
 		let data = this._transformRawData(raw);
 		
 		this.type = data.info ? (data.info.type || 0) : 0;//const
-		
-		this.actani = new ActionAnimationBase(null, data.action[this.actType]);//action ? 0, 1
+
+		//this.owner.actani
+		//this.actani = new ActionAnimation();
+		this.actani.reload(data.action[this.actType]);//action ? 0, 1
+		this.actani.loop = false;
 		
 		this.data = data;
 	}
 	
-	/** @param {SkillAnimationBase} skill_anim */
+	/** @param {SkillAnimationBase} skill_anim - clone */
 	_assign(skill_anim) {
+		this.skillId = skill_anim.skillId;
+
 		this.data = skill_anim.data;
 		
 		this.type = skill_anim.type;//const
 		
 		this.url = skill_anim.url;
-		
-		this.actani = new ActionAnimationBase(null, skill_anim.data.action[skill_anim.actType]);//action ? 0, 1
+
+		//this.owner.actani
+		//this.actani = new ActionAnimation();
+		this.actani.reload(skill_anim.data.action[skill_anim.actType]);//action ? 0, 1
+		this.actani.loop = false;
 	}
 	
 	_transformRawData(raw) {
@@ -343,26 +282,32 @@ class SkillAnimationBase {
 	 */
 	update(stamp) {
 		/** @type {CharacterRenderer} */
-		const ownerRenderer = this.owner.renderer;
+		const ownerRenderer = this._crr;
 		
 		stamp *= ownerRenderer.speed;
 		
 		if (this.actani) {
-			this.actani.update(stamp, ownerRenderer);
-			
 			if (this.actani.delay) {// not start yet
 				return;
 			}
 			else if (!this.is_launch) {
 				const type = window.$skill_wt || 0;
-				
-				this.addEffect(ownerRenderer.x, ownerRenderer.y, ownerRenderer, type);
-				
+
+				try {
+					this.addEffect(ownerRenderer.x, ownerRenderer.y, ownerRenderer, type);
+				}
+				catch (ex) {
+				}
+
 				this.is_launch = true;
 			}
 			if (this.actani.isEnd()) {
 				this.is_end = true;
 			}
+		}
+		else {
+			this.is_launch = true;
+			this.is_end = true;
 		}
 	}
 	
@@ -402,7 +347,7 @@ class SkillAnimationBase {
 		EffectManager.AddEffect(hit);
 	}
 	
-	static get base_path () {
+	static get _base_path() {
 		return "/Skill";
 	}
 }
@@ -413,33 +358,28 @@ export class SkillAnimation extends SkillAnimationBase {
 	}
 	
 	/**
-	 * @param {number|string} skillID
+	 * @param {number|string} skillId
 	 */
-	load(skillID) {
-		if (!skillID) {
+	load(skillId) {
+		if (!skillId) {
 			throw new Error("1 argument required");
 		}
-		skillID = String(skillID);
+		skillId = String(skillId);
 		
-		if (String(skillID).length <= 4) {
+		if (String(skillId).length <= 4) {
 			throw new Error("skill ID format");
 		}
-		skillID = window.$skill || skillID || 1120017;//1001005;// jobId + 4-digit
+		skillId = window.$skill || skillId || 1120017;//1001005;// jobId + 4-digit
 		
-		let loaded_skill = this.constructor.__loaded_skill[skillID];
-		if (loaded_skill) {
+		let loaded_skill = this.constructor.__loaded_skill[skillId];
+		if (loaded_skill && loaded_skill.data) {
 			this._assign(loaded_skill);
 		}
 		else {
-			let promise = super.load(skillID);
-			this.constructor.__loaded_skill[skillID] = this;
+			let promise = super.load(skillId);
+			this.constructor.__loaded_skill[skillId] = this;
 			return promise;
 		}
-	}
-	
-	static async Init() {
-		//action definition
-		ActionAnimationBase.Init();
 	}
 }
 SkillAnimation.__loaded_skill = {};

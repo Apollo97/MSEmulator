@@ -87,17 +87,17 @@ public class wzarchives
 						}
 					}
 				}
-			Regex rgx = new Regex(@"([A-Za-z]+)(\d+)");
-			foreach (wzpackage package in this.root)
-			{
-				Match m = rgx.Match(package.identity);
-				if (m.Success)
-				{
-					string identity = m.Groups[1].Value;
-
-					this.root[identity].merge(package);
-				}
-			}
+			//Regex rgx = new Regex(@"([A-Za-z]+)(\d+)");
+			//foreach (wzpackage package in this.root)
+			//{
+			//	Match m = rgx.Match(package.identity);
+			//	if (m.Success)
+			//	{
+			//		string identity = m.Groups[1].Value;
+			//
+			//		this.root[identity].merge(package);
+			//	}
+			//}
 		}
 	}
 

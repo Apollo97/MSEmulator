@@ -1,7 +1,97 @@
 ﻿
+import { mat2d, vec2, mat4, quat } from 'gl-matrix';
 import { Vec2 } from './math.js';
 import { IGraph, IRenderer } from './IRenderer.js';
 
+
+class Drawing2D {
+	constructor(engine) {
+		this.engine = engine;
+	}
+
+	/**
+	 * @type {number} global alpha
+	 */
+	get globalAlpha() {
+		return this.engine._color[3];
+	}
+	set globalAlpha(value) {
+		this.engine._color[3] = value;
+	}
+}
+
+Drawing2D.prototype.fillText = function (text, x, y) {
+};
+Drawing2D.prototype.strokeText = function (text, x, y) {
+};
+Drawing2D.prototype.measureText = function (text) {
+	return {
+		width: text.length * 12,
+	};
+};
+
+Drawing2D.prototype.save = function () {
+	throw new Error("Not implement");
+};
+Drawing2D.prototype.restore = function () {
+	throw new Error("Not implement");
+};
+Drawing2D.prototype.translate = function (x, y) {
+	throw new Error("Not implement");
+};
+Drawing2D.prototype.rotate = function (a) {
+	throw new Error("Not implement");
+};
+Drawing2D.prototype.scale = function (x, y) {
+	throw new Error("Not implement");
+};
+Drawing2D.prototype.setTransform = function (m11, m12, m21, m22, dx, dy) {
+	this.engine.setRotationTranslationScale(0, dx, dy, m11, m22);
+};
+
+Drawing2D.prototype.createImageData = function (width, height) {
+};
+Drawing2D.prototype.getImageData = function (x, y, width, height) {
+};
+Drawing2D.prototype.putImageData = function (imageData, x, y) {
+};
+Drawing2D.prototype.fillRect = function (x, y, width, height) {
+};
+Drawing2D.prototype.strokeRect = function (x, y, width, height) {
+};
+Drawing2D.prototype.clearRect = function (x, y, width, height) {
+};
+Drawing2D.prototype.beginPath = function () {
+};
+Drawing2D.prototype.closePath = function () {
+};
+Drawing2D.prototype.moveTo = function (x, y) {
+};
+Drawing2D.prototype.lineTo = function (x, y) {
+};
+Drawing2D.prototype.quadraticCurveTo = function (cp1x, cp1y, x, y) {
+};
+Drawing2D.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
+};
+Drawing2D.prototype.arcTo = function () {
+};
+Drawing2D.prototype.rect = function (x, y, w, h) {
+};
+Drawing2D.prototype.arc = function (x, y, radius, startAngle, endAngle, anticlockwise) {
+};
+Drawing2D.prototype.fill = function () {
+};
+Drawing2D.prototype.stroke = function () {
+};
+Drawing2D.prototype.clip = function () {
+};
+Drawing2D.prototype.isPointInPath = function () {
+};
+Drawing2D.prototype.drawFocusRing = function () {
+};
+Drawing2D.prototype.drawImage = function (image, a, b, c, d, e, f, g, h) {
+	// throw new Error();
+}
 
 /**
  * @implements {IRenderer}
@@ -82,7 +172,7 @@ export class WebGLRenderer extends IRenderer {
 	 * @param {string} id
 	 */
 	init(id) {
-		var canvas = document.getElementById(id);
+		let canvas = document.getElementById(id);
 
 		// 初始化 GL 背景資料
 		this._initWebGL(canvas);
@@ -104,11 +194,86 @@ export class WebGLRenderer extends IRenderer {
 		}
 		this._graph_rect._url = "/1x1.png";
 	}
+	/**
+	 * @param {"shader"|"fxaa"} target
+	 * @param {string} code
+	 */
+	_$reloadFragmentShader(target, code) {
+		const gl = this.gl;
+		let programName = target + "Program";
+		let vertexShader, fragmentShader;
+
+		try {
+			fragmentShader = this._createFragmentShader(code, "_$reloadFragmentShader");
+		}
+		catch (ex) {
+			return;
+		}
+
+		vertexShader = this.shaderProgram.vertexShader;
+
+		if (this[programName].fragmentShader) {
+			gl.deleteShader(this[programName].fragmentShader);
+			this[programName].fragmentShader = null;
+		}
+
+		if (this[programName]) {
+			gl.deleteProgram(this[programName]);
+			this[programName] = null;
+		}
+
+		let sp = gl.createProgram();
+		{
+			gl.attachShader(sp, vertexShader);
+			sp.vertexShader = vertexShader;
+
+			gl.attachShader(sp, fragmentShader);
+			sp.fragmentShader = fragmentShader;
+		}
+		gl.linkProgram(sp);
+
+		this.__resetProgramParamLocation(sp);
+		
+		this[programName] = sp;
+	}
+	reloadShader() {
+		const gl = this.gl;
+
+		if (this.shaderProgram) {
+			this._deleteProgramShader(this.shaderProgram);
+			this.shaderProgram = null;
+		}
+		this.shaderProgram = this._createShader(_getDefaultVertexShaderSource(), _getDefaultFragmentShaderSource());
+		
+		if (this.fxaaProgram) {
+			this._deleteProgramShader(this.fxaaProgram);
+			this.fxaaProgram = null;
+		}
+		this.fxaaProgram = this._createFXAAShader();
+	}
+	_deleteProgramShader(program) {
+		const gl = this.gl;
+
+		if (program.vertexShader) {
+			gl.deleteShader(program.vertexShader);
+			program.vertexShader = null;
+		}
+
+		if (program.fragmentShader) {
+			gl.deleteShader(program.fragmentShader);
+			program.fragmentShader = null;
+		}
+
+		if (program) {
+			gl.deleteProgram(program);
+		}
+	}
 	_initWebGL(canvas) {
 		// 嘗試獲得標準背景資料。如果失敗，退而獲取試驗版本
 		this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 		const gl = this.gl;
-		var that = this;
+
+		this.$ctx = new Drawing2D(this);
 
 		// 如果再次失敗則放棄
 		if (!gl) {
@@ -116,12 +281,11 @@ export class WebGLRenderer extends IRenderer {
 			throw new Error('Unable to initialize WebGL. Your browser may not support it.');
 		}
 
-		this.shaderProgram = this._createShader(_getDefaultVertexShaderSource(), _getDefaultFragmentShaderSource());
-		this.fxaaProgram = this._createFXAAShader();
+		this.reloadShader();
 
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		
-		window.onresize = function () {
+		window.onresize = e => {
 			_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 
 			//console.log([canvas.width, canvas.height]);
@@ -130,7 +294,7 @@ export class WebGLRenderer extends IRenderer {
 
 			gl.viewport(0, 0, canvas.width, canvas.height);
 
-			mat4.ortho(that._projectionMatrix, 0, canvas.width, canvas.height, 0, -1000, 1000);
+			mat4.ortho(this._projectionMatrix, 0, canvas.width, canvas.height, 0, -1000, 1000);
 		}
 		window.onresize();
 
@@ -140,6 +304,11 @@ export class WebGLRenderer extends IRenderer {
 			canvas.width  = width;
 			canvas.height = height;
 		}
+	}
+	set ctx(value) {
+	}
+	get ctx() {
+		return this.$ctx;
 	}
 
 	/**
@@ -152,7 +321,7 @@ export class WebGLRenderer extends IRenderer {
 
 		graph._vbo = this._createVertexBuffer(graph.width, graph.height);
 
-		var texture = gl.createTexture();
+		let texture = gl.createTexture();
 
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -205,7 +374,7 @@ export class WebGLRenderer extends IRenderer {
 		
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-		var renderbuffer = gl.createRenderbuffer();
+		let renderbuffer = gl.createRenderbuffer();
 		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
 		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, gl.canvas.width, gl.canvas.height);
 
@@ -236,7 +405,7 @@ export class WebGLRenderer extends IRenderer {
 
 		// Create a buffer for the cube's vertices.
 
-		var cubeVerticesBuffer = gl.createBuffer();
+		let cubeVerticesBuffer = gl.createBuffer();
 
 		// Select the cubeVerticesBuffer as the one to apply vertex
 		// operations to from here out.
@@ -245,13 +414,13 @@ export class WebGLRenderer extends IRenderer {
 
 		// Now create an array of vertices for the cube.
 
-		//var vertices = [
+		//let vertices = [
 		//	0, 0, 0,
 		//	0, 1, 0,
 		//	1, 0, 0,
 		//	1, 1, 0,
 		//];
-		var vertices = [
+		let vertices = [
 			0, 0, 0,
 			0, height, 0,
 			width, 0, 0,
@@ -271,10 +440,10 @@ export class WebGLRenderer extends IRenderer {
 
 		// Map the texture onto the cube's faces.
 
-		var cubeVerticesTextureCoordBuffer = gl.createBuffer();
+		let cubeVerticesTextureCoordBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, cubeVerticesTextureCoordBuffer);
 
-		var textureCoordinates = [
+		let textureCoordinates = [
 			0, 0,
 			0, 1,
 			1, 0,
@@ -291,17 +460,17 @@ export class WebGLRenderer extends IRenderer {
 		// Build the element array buffer; this specifies the indices
 		// into the vertex array for each face's vertices.
 
-		var cubeVerticesIndexBuffer = gl.createBuffer();
+		let cubeVerticesIndexBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVerticesIndexBuffer);
 
 		// This array defines each face as two triangles, using the
 		// indices into the vertex array to specify each triangle's
 		// position.
 
-		//var cubeVertexIndices = [
+		//let cubeVertexIndices = [
 		//	0, 1, 2, 3
 		//]
-		var cubeVertexIndices = [
+		let cubeVertexIndices = [
 			0, 1, 2,
 			3, 2, 1
 		]
@@ -329,8 +498,8 @@ export class WebGLRenderer extends IRenderer {
 
 		this.useShader(this.fxaaProgram);
 		{
-			var rt_w = this.gl.canvas.width;
-			var rt_h = this.gl.canvas.height;
+			let rt_w = this.gl.canvas.width;
+			let rt_h = this.gl.canvas.height;
 
 			gl.uniform1i(this.fxaaProgram.uniform_enable, this.fxaaProgram.enable);
 
@@ -348,34 +517,44 @@ export class WebGLRenderer extends IRenderer {
 	}
 	_createFXAAShader() {
 		const gl = this.gl;
-		var fxaa = this._createShader(_getFXAAVertexShaderSource(), _getFXAAFragmentShaderSource());
+		let fxaa = this._createShader(_getFXAAVertexShaderSource(), _getFXAAFragmentShaderSource());
 		gl.useProgram(fxaa);
 		fxaa.uniform_rt_w = gl.getUniformLocation(fxaa, "rt_w");
 		fxaa.uniform_rt_h = gl.getUniformLocation(fxaa, "rt_h");
-		fxaa.uniform_enable = gl.getUniformLocation(fxaa, "uFXAA");
+		//fxaa.uniform_enable = gl.getUniformLocation(fxaa, "uFXAA");
 		fxaa.enable = false;
 		return fxaa;
 	}
 	_createShader(vs_src, fs_src) {
 		const gl = this.gl;
 
-		var vertexShader = this._createVertexShader(vs_src, "default-vs");//this._getShader("shader-vs");
-		var fragmentShader = this._createFragmentShader(fs_src, "default-fs");//this._getShader("shader-fs");
+		let vertexShader = this._createVertexShader(vs_src, "default-vs");//this._getShader("shader-vs");
+		let fragmentShader = this._createFragmentShader(fs_src, "default-fs");//this._getShader("shader-fs");
 
 		// Create the shader program
-
-		const shaderProgram = gl.createProgram();
+		let shaderProgram = gl.createProgram();
 		gl.attachShader(shaderProgram, vertexShader);
 		gl.attachShader(shaderProgram, fragmentShader);
 		gl.linkProgram(shaderProgram);
 
 		// If creating the shader program failed, alert
-
 		if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-			var err = "Unable to initialize the shader program: \n" + gl.getProgramInfoLog(shaderProgram);
+			let err = "Unable to initialize the shader program: \n" + gl.getProgramInfoLog(shaderProgram);
 			console.error(err);
 			alert(err);
 		}
+
+		{
+			shaderProgram.vertexShader = vertexShader;
+			shaderProgram.fragmentShader = fragmentShader;
+		}
+
+		this.__resetProgramParamLocation(shaderProgram);
+
+		return shaderProgram;
+	}
+	__resetProgramParamLocation(shaderProgram) {
+		const gl = this.gl;
 
 		gl.useProgram(shaderProgram);
 
@@ -384,7 +563,7 @@ export class WebGLRenderer extends IRenderer {
 
 		shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
 		gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-		
+
 		shaderProgram.matrix_projection_location = gl.getUniformLocation(shaderProgram, "uPMatrix");
 		shaderProgram.matrix_modelView_location = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 
@@ -395,14 +574,12 @@ export class WebGLRenderer extends IRenderer {
 
 		//this.uniform_only_depth = gl.getUniformLocation(shaderProgram, "uOnlyDepth");
 		//this.uniform_only_depth._m_flag = false;
-
-		return shaderProgram;
 	}
 
 	_createVertexShader(theSource, id) {
 		const gl = this.gl;
 
-		var shader = gl.createShader(gl.VERTEX_SHADER);
+		let shader = gl.createShader(gl.VERTEX_SHADER);
 
 		if (!this._compileShader(shader, theSource, id)) {
 			return null;
@@ -413,7 +590,7 @@ export class WebGLRenderer extends IRenderer {
 	_createFragmentShader(theSource, id) {
 		const gl = this.gl;
 
-		var shader = gl.createShader(gl.FRAGMENT_SHADER);
+		let shader = gl.createShader(gl.FRAGMENT_SHADER);
 
 		if (!this._compileShader(shader, theSource, id)) {
 			return null;
@@ -431,7 +608,7 @@ export class WebGLRenderer extends IRenderer {
 	_getShader(id) {
 		const gl = this.gl;
 
-		var shaderScript = document.getElementById(id);
+		let shaderScript = document.getElementById(id);
 
 		// Didn't find an element with the specified ID; abort.
 
@@ -442,8 +619,8 @@ export class WebGLRenderer extends IRenderer {
 		// Walk through the source element's children, building the
 		// shader source string.
 
-		var theSource = "";
-		var currentChild = shaderScript.firstChild;
+		let theSource = "";
+		let currentChild = shaderScript.firstChild;
 
 		while (currentChild) {
 			if (currentChild.nodeType == 3) {
@@ -456,7 +633,7 @@ export class WebGLRenderer extends IRenderer {
 		// Now figure out what type of shader script we have,
 		// based on its MIME type.
 
-		var shader;
+		let shader;
 
 		if (shaderScript.type == "x-shader/x-fragment") {
 			shader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -484,7 +661,7 @@ export class WebGLRenderer extends IRenderer {
 
 		// See if it compiled successfully
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			var err = "An error occurred compiling the shaders (" + id + "): \n" + gl.getShaderInfoLog(shader);
+			let err = "An error occurred compiling the shaders (" + id + "): \n" + gl.getShaderInfoLog(shader);
 			console.error(err);
 			alert(err);
 			return false;
@@ -539,11 +716,26 @@ export class Engine extends WebGLRenderer {
 	constructor() {
 		super();
 
+		/** @type {number} */
+		this._globalAlpha = 1;
+
 		/** @type {number[]} */
-		this.color = [1, 1, 1, 1];//default
+		this._color = [1, 1, 1, 1];//default
 
 		/** @type {mat4[]} */
 		this._viewMatrix_stack = [];
+	}
+
+	/**
+	 * @param {number} r
+	 * @param {number} dx
+	 * @param {number} dy
+	 * @param {number} sx
+	 * @param {number} sy
+	 */
+	setRotationTranslationScale(r, dx, dy, sx, sy) {
+		mat4.fromRotationTranslationScale(this.viewMatrix, quat.fromEuler([], 0, 0, r), [dx, dy, 0], [sx, sy, 0])
+		//mat4.fromRotationTranslationScale(a, quat.fromEuler([], 180, 180, 0), [0, 0, 0], [1, 1, 1])
 	}
 
 	loadIdentity() {
@@ -576,23 +768,6 @@ export class Engine extends WebGLRenderer {
 	//	mat4.rotate(this.viewMatrix, this.viewMatrix, y, [0, 1, 0]);
 	//	mat4.rotate(this.viewMatrix, this.viewMatrix, z, [0, 0, 1]);
 	//}
-	
-	/**
-	 * @type {number} global alpha
-	 */
-	get globalAlpha() {
-		return this._color[3];
-	}
-	set globalAlpha(value) {
-		this._color[3] = value;
-	}
-
-	/**
-	 * @param {vec4} f4v - vec4: array
-	 */
-	Color4fv(f4v) {
-		this._color = f4v;
-	}
 
 	/** @type {number[]} */
 	get color() {
@@ -601,21 +776,48 @@ export class Engine extends WebGLRenderer {
 
 	/** @type {number[]} */
 	set color(f4v) {
+		const gl = this.gl;
+
 		this._color = f4v;
+		gl.blendColor(f4v[0], f4v[1], f4v[2], f4v[3] * this._globalAlpha);
+	}
+
+	/**
+	 * @type {number} global alpha
+	 */
+	get globalAlpha() {
+		return this._globalAlpha;
+	}
+	set globalAlpha(value) {
+		const gl = this.gl;
+
+		this._globalAlpha = value;
+		gl.blendColor(this.color[0], this.color[1], this.color[2], this.color[3] * value);
+	}
+	pushGlobalAlpha() {
+		this._globalAlphaStack.push(this._globalAlpha);
+	}
+	popGlobalAlpha() {
+		this.globalAlpha = this._globalAlphaStack.pop();
+	}
+
+	_useAlphaBlend() {
+		const gl = this.gl;
+
+		gl.enable(gl.BLEND);
+
+		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
+		gl.blendEquation(gl.FUNC_ADD);
+
+		//blendColor = vec4(rgba(fillStyle).rgb, rgba(fillStyle).a * globalAlpha);
+		gl.blendColor(this.color[0], this.color[1], this.color[2], this.color[3] * this._globalAlpha);
 	}
 	
 	beginScene(/*drawSceneFunc*/) {
 		const gl = this.gl;
 	
-		{
-			gl.enable(gl.BLEND);
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-		}
-		{
-			//gl.enable(gl.BLEND);
-			//gl.blendEquation(gl.FUNC_ADD);
-			//gl.blendFuncSeparate(gl.DST_ALPHA, gl.ONE, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA); 
-		}
+		this._useAlphaBlend();
+
 		//gl.enable(gl.DEPTH_TEST);
 		//gl.depthFunc(gl.LEQUAL);
 
@@ -623,7 +825,7 @@ export class Engine extends WebGLRenderer {
 
 		//this._drawToBuffer(drawSceneFunc);
 
-		this.Color4fv([1, 1, 1, 1]);
+		this.color = [1, 1, 1, 1];
 
 		if (this.fxaaProgram.enable) {
 			this._beginDrawToBuffer();
@@ -643,31 +845,24 @@ export class Engine extends WebGLRenderer {
 		this.gl.finish();
 	}
 
+	clearDrawScreen() {
+		const gl = this.gl;
+
+		//gl.clearColor(0.2, 0.4, 0.6, 0.0);
+		//gl.clearColor(0.5, 0.5, 0.7, 1.0);
+		//gl.clearColor(1.0, 1.0, 1.0, 1.0);
+		//gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearColor(0, 0, 0, 0);
+
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	}
+
 	//set backgroundColor() {
 	//	this._backgroundColor;
 	//}
 	//get backgroundColor() {
 	//	return this._backgroundColor || [0.0, 0.0, 0.0, 1.0];
 	//}
-	
-	pushGlobalAlpha() {
-		this._globalAlphaStack.push([...this._color]);
-	}
-
-	popGlobalAlpha(value) {
-		
-		this._color = this._globalAlphaStack.pop();
-	}
-
-	clearDrawScreen() {
-		const gl = this.gl;
-
-		//gl.clearColor(0.5, 0.5, 0.7, 1.0);
-		//gl.clearColor(1.0, 1.0, 1.0, 1.0);
-		gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	}
 
 	/**
 	 * @param {IGraph} graph
@@ -749,6 +944,148 @@ export class Engine extends WebGLRenderer {
 			this.__drawRect(this._graph_rect._vbo);
 		}
 	}
+
+
+	/**
+	 * @param {IGraph} graph
+	 * @param {number} sx - The x coordinate where to start clipping
+	 * @param {number} sy - The y coordinate where to start clipping
+	 * @param {number} swidth - The width of the clipped image
+	 * @param {number} sheight - The height of the clipped image
+	 * @param {number} x - The x coordinate where to place the image on the canvas
+	 * @param {number} y - The y coordinate where to place the image on the canvas
+	 * @param {number} width - The width of the image to use (stretch or reduce the image)
+	 * @param {number} height - The height of the image to use (stretch or reduce the image)
+	 */
+	_drawImage(graph, sx, sy, swidth, sheight, x, y, width, height) {
+		if (graph.isLoaded()) {
+			this.ctx.drawImage(graph.texture, sx, sy, swidth, sheight, x, y, width, height);
+		}
+	}
+
+	/**
+	 * whitout save/restore canvas
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} angle
+	 * @param {boolean} flip
+	 */
+	_drawRotaGraph(graph, x, y, angle, flip) {
+		if (1) {
+			this.translate(x, y);//zorder ? graph.z
+
+			this.rotate(angle);
+
+			this.scale(flip ? -1 : 1, 1);
+
+			this.translate(-graph.x, -graph.y);//reset rotation center
+
+			this.drawGraph(graph);
+		}
+		else {
+			const px = (x - (flip ? -graph.x + graph.width : graph.x));
+			const py = (y - graph.y);
+
+			const cx = graph.width * 0.5;
+			const cy = graph.height * 0.5;
+
+			this.translate(px, py);//zorder ? graph.z
+
+			this.translate(cx, cy);//回転行列の中心 (rotationCenter)
+			this.rotate(angle);
+
+			this.scale(flip ? -1 : 1, 1);
+
+			this.translate(-cx, -cy);//reset rotation center
+
+			this.drawGraph(graph);
+		}
+	}
+	/**
+	 * whit save/restore canvas
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} angle
+	 * @param {boolean} flip
+	 */
+	drawRotaGraph(graph, x, y, angle, flip) {
+		//if (flip || angle > 0.001 || angle < -0.001) {
+		this.pushMatrix();
+		this._drawRotaGraph(graph, x, y, angle, flip);
+		this.popMatrix();
+		//}
+		//else {
+		//	this.drawGraph2(graph, x - graph.x, y - graph.y);
+		//}
+	}
+	/**
+	 * whitout save/restore canvas
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} angle
+	 * @param {Vec2} center
+	 * @param {Rectangle} clip
+	 * @param {boolean} flip
+	 */
+	_drawRotaClipGraph(graph, x, y, angle, center, clip, flip) {
+		const orix = center.x;
+		const oriy = center.y;
+
+		const px = (x - (flip ? -orix + clip.width : orix));
+		const py = (y - oriy);
+
+		const cx = clip.width * 0.5;
+		const cy = clip.height * 0.5;
+
+		this.translate(px, py);//zorder ? graph.z
+
+		this.translate(cx, cy);//回転行列の中心 (rotationCenter)
+		this.rotate(angle);
+
+		this.scale(flip ? -1 : 1, 1);
+
+		this.translate(-cx, -cy);//reset rotation center
+
+		this._drawImage(graph, clip.x, clip.y, clip.width, clip.height, 0, 0, clip.width, clip.height);
+	}
+	/**
+	 * whit save/restore canvas
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} angle
+	 * @param {Vec2} center
+	 * @param {Rectangle} clip
+	 * @param {boolean} flip
+	 */
+	drawRotaClipGraph(graph, x, y, angle, center, clip, flip) {
+		this.pushMatrix();
+		this._drawRotaClipGraph(graph, x, y, angle, center, clip, flip);
+		this.popMatrix();
+	}
+
+	/**
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {ColorRGB} color
+	 */
+	drawColoredGraph(graph, x, y, color) {
+	}
+
+	/**
+	 * @param {IGraph} graph
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} scaleX
+	 * @param {number} scaleY
+	 * @param {ColorRGB} color
+	 */
+	drawColoredGraph2(graph, x, y, scaleX, scaleY, color) {
+	}
 }
 
 function _getDefaultVertexShaderSource() {
@@ -777,14 +1114,14 @@ void main(void) {
 }
 `;
 }
-function _getDefaultFragmentShaderSource() {
-	return `
+window.$defaultFragmentShaderSource = `
 #ifdef GL_ES
 	precision mediump float;
 #endif
 
 varying vec2 vTextureCoord;
 varying vec4 vColor;
+//varying float vGlobalAlpha;//globalAlpha
 //varying float vDepth;
 
 uniform sampler2D uSampler;
@@ -793,7 +1130,13 @@ uniform sampler2D uSampler;
 //uniform bool uOnlyDepth;
 
 void main(void) {
-	gl_FragColor = texture2D(uSampler, vTextureCoord) * vColor;
+	vec4 col = texture2D(uSampler, vTextureCoord);
+	if (col.a > 0.001) {
+		gl_FragColor = col;
+	}
+	else {
+		discard;
+	}
 	
 	////if (uOnlyDepth) {
 	////	float c = vDepth;
@@ -823,6 +1166,8 @@ void main(void) {
 	////}
 }
 `;
+function _getDefaultFragmentShaderSource() {
+	return window.$defaultFragmentShaderSource;
 }
 
 function _getFXAAVertexShaderSource() {
@@ -861,13 +1206,11 @@ function _getFXAAFragmentShaderSource() {
 	precision mediump float;
 #endif
 
-uniform bool uFXAA;
+//uniform bool uFXAA;
 
 uniform sampler2D uSampler; // 0
 uniform float rt_w; // GeeXLab built-in
 uniform float rt_h; // GeeXLab built-in
-float FXAA_SPAN_MAX = 8.0;
-float FXAA_REDUCE_MUL = 1.0/8.0;
 varying vec4 posPos;
 
 #define FxaaInt2 ivec2
@@ -886,8 +1229,8 @@ vec3 FxaaPixelShader(
 {   
 /*---------------------------------------------------------*/
 	#define FXAA_REDUCE_MIN   (1.0/128.0)
-	//#define FXAA_REDUCE_MUL   (1.0/8.0)
-	//#define FXAA_SPAN_MAX	 8.0
+	#define FXAA_SPAN_MAX	  (8.0)
+	#define FXAA_REDUCE_MUL   (1.0/FXAA_SPAN_MAX)
 /*---------------------------------------------------------*/
 	vec3 rgbNW = FxaaTexLod0(tex, posPos.zw).xyz;
 	vec3 rgbNE = FxaaTexOff(tex, posPos.zw, FxaaVec2(1,0), rcpFrame.xy).xyz;
@@ -938,37 +1281,113 @@ vec4 PostFX(sampler2D tex, vec2 uv, float time)
 	return c;
 }
 
-//vec2 vec2Scale(vec2 v, float sx, float sy) {
-//	vec2 hs = vec2(1.0/rt_w, 1.0/rt_h) * 0.5;
-//	mat4 scale1 = mat4(
-//		vec4( sx,	0.0,	0.0,	0.0),
-//		vec4(0.0,	 sy,	0.0,	0.0),
-//		vec4(0.0,	0.0,	1.0,	0.0),
-//		vec4(hs.x,	hs.y,	0.0,	1.0)
-//		);
-//	return (scale1 * vec4(v.x, v.y, 0.0, 1.0)).xy;
-//}
+vec2 vec2Scale(vec2 v, float sx, float sy) {
+	vec2 hs = vec2(1.0/rt_w, 1.0/rt_h) * 0.5;
+	mat4 scale1 = mat4(
+		vec4( sx,	0.0,	0.0,	0.0),
+		vec4(0.0,	 sy,	0.0,	0.0),
+		vec4(0.0,	0.0,	1.0,	0.0),
+		vec4(hs.x,	hs.y,	0.0,	1.0)
+		);
+	return (scale1 * vec4(v.x, v.y, 0.0, 1.0)).xy;
+}
+
+vec4 Gaussian55(vec2 uv, float r) {
+	vec4 col = vec4(0.0, 0.0, 0.0, 0.0);
+
+	float rw = r / rt_w;
+	float rh = r / rt_h;
+
+	col += texture2D(uSampler, uv + vec2(-rw * 2.0, -rh * 2.0)) * 0.003765;
+	col += texture2D(uSampler, uv + vec2(-rw      , -rh * 2.0)) * 0.015019;
+	col += texture2D(uSampler, uv + vec2(0.0      , -rh * 2.0)) * 0.023792;
+	col += texture2D(uSampler, uv + vec2( rw      , -rh * 2.0)) * 0.015019;
+	col += texture2D(uSampler, uv + vec2( rw * 2.0, -rh * 2.0)) * 0.003765;
+
+	col += texture2D(uSampler, uv + vec2(-rw * 2.0, -rh      )) * 0.015019;
+	col += texture2D(uSampler, uv + vec2(-rw      , -rh      )) * 0.059912;
+	col += texture2D(uSampler, uv + vec2(0.0      , -rh      )) * 0.094907;
+	col += texture2D(uSampler, uv + vec2( rw      , -rh      )) * 0.059912;
+	col += texture2D(uSampler, uv + vec2( rw * 2.0, -rh      )) * 0.015019;
+
+
+	col += texture2D(uSampler, uv + vec2(-rw * 2.0, 0.0      )) * 0.023792;
+	col += texture2D(uSampler, uv + vec2(-rw      , 0.0      )) * 0.094907;
+	col += texture2D(uSampler, uv + vec2(0.0      , 0.0      )) * 0.150342;
+	col += texture2D(uSampler, uv + vec2( rw      , 0.0      )) * 0.094907;
+	col += texture2D(uSampler, uv + vec2( rw * 2.0, 0.0      )) * 0.023792;
+
+
+	col += texture2D(uSampler, uv + vec2(-rw * 2.0,  rh      )) * 0.015019;
+	col += texture2D(uSampler, uv + vec2(-rw      ,  rh      )) * 0.059912;
+	col += texture2D(uSampler, uv + vec2(0.0      ,  rh      )) * 0.094907;
+	col += texture2D(uSampler, uv + vec2( rw      ,  rh      )) * 0.059912;
+	col += texture2D(uSampler, uv + vec2( rw * 2.0,  rh      )) * 0.015019;
+
+	col += texture2D(uSampler, uv + vec2(-rw * 2.0,  rh * 2.0)) * 0.003765;
+	col += texture2D(uSampler, uv + vec2(-rw      ,  rh * 2.0)) * 0.015019;
+	col += texture2D(uSampler, uv + vec2(0.0      ,  rh * 2.0)) * 0.023792;
+	col += texture2D(uSampler, uv + vec2( rw      ,  rh * 2.0)) * 0.015019;
+	col += texture2D(uSampler, uv + vec2( rw * 2.0,  rh * 2.0)) * 0.003765;
+
+	return col;
+}
+
+vec4 Gaussian33(vec2 uv, float r) {
+	vec4 col = vec4(0.0, 0.0, 0.0, 0.0);
+
+	float rw = r / rt_w;
+	float rh = r / rt_h;
+
+	col += texture2D(uSampler, uv + vec2(-rw, -rh)) * 0.077847;
+	col += texture2D(uSampler, uv + vec2(0.0, -rh)) * 0.123317;
+	col += texture2D(uSampler, uv + vec2( rw, -rh)) * 0.077847;
+
+
+	col += texture2D(uSampler, uv + vec2(-rw, 0.0)) * 0.123317;
+	col += texture2D(uSampler, uv + vec2(0.0, 0.0)) * 0.195346;
+	col += texture2D(uSampler, uv + vec2( rw, 0.0)) * 0.123317;
+
+
+	col += texture2D(uSampler, uv + vec2(-rw,  rh)) * 0.077847;
+	col += texture2D(uSampler, uv + vec2(0.0,  rh)) * 0.123317;
+	col += texture2D(uSampler, uv + vec2( rw,  rh)) * 0.077847;
+
+	return col;
+}
 
 void main() 
 {
 	vec2 uv = vec2(posPos.x, 1.0 - posPos.y);
 
-	if (uFXAA) {
-		vec4 pp = vec4(uv.x, uv.y, posPos.z, posPos.w);
+	////if (uFXAA) {
+	//	vec4 pp = vec4(uv.x, uv.y, posPos.z, posPos.w);
 
-		vec2 rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
+	//	vec2 rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
 
-		vec4 col_1 = vec4(FxaaPixelShader(pp, uSampler, rcpFrame), 1.0);
-		gl_FragColor = col_1;
+	//	vec4 col_1 = vec4(FxaaPixelShader(pp, uSampler, rcpFrame), 1.0);
+	//	gl_FragColor = col_1;
 
-		//vec4 col_2 = texture2D(uSampler, vec2Scale(uv, 0.9, 0.9));
+	//	//vec4 col_2 = texture2D(uSampler, vec2Scale(uv, 0.9, 0.9));
+	//	//
+	//	//vec4 finCol = mix(col_1, col_2, 0.5);
+	//	//
+	//	//gl_FragColor = finCol;
+	////}
+	////else {
+	////	gl_FragColor = texture2D(uSampler, uv);
+	////}
 
-		//vec4 finCol = mix(col_1, col_2, 0.5);
+	vec4 col1 = texture2D(uSampler, uv);
 
-		//gl_FragColor = finCol;
+	if (col1.a > 0.001) {
+		vec4 col2 = Gaussian33(uv, 1.0);
+		vec4 col3 = Gaussian55(uv, 1.0);
+		//
+		gl_FragColor = vec4(min(col1.rgb, col2.rgb) + (col1.rgb - col3.rgb) * 0.5, col1.a);
 	}
 	else {
-		gl_FragColor = texture2D(uSampler, uv);
+		discard;
 	}
 }
 `;

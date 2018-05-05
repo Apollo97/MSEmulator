@@ -1,12 +1,5 @@
 ﻿
-import box2d from "../../../public/box2d-html5.js";
-
-window.$box2d = box2d;
-
-window.$gravityAcc = 2000;
-
-window.$positionIterations = 300;
-window.$velocityIterations = 800;
+import box2d from "box2d-html5";
 
 
 export class ContactListener /** @extends box2d.b2ContactListener */ {
@@ -95,6 +88,8 @@ export class PFilter extends box2d.b2Filter {
 }
 box2d.b2Filter = PFilter;
 
+let b2Vec2_temp = new box2d.b2Vec2(0, 0)
+
 export class PBody extends box2d.b2Body {
 	constructor() {
 		super(...arguments);
@@ -103,6 +98,26 @@ export class PBody extends box2d.b2Body {
 	Step() {
 	}
 	PostStep() {
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	SetLinearVelocity2(x, y) {
+		b2Vec2_temp.x = x;
+		b2Vec2_temp.y = y;
+		this.SetLinearVelocity(b2Vec2_temp);
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	ApplyForce2(x, y) {
+		b2Vec2_temp.x = x;
+		b2Vec2_temp.y = y;
+		this.ApplyForce(b2Vec2_temp);
 	}
 
 	/**
@@ -310,4 +325,17 @@ export class PFixture extends box2d.b2Fixture {
 }
 box2d.b2Fixture = PFixture;
 
+export class PMouseJoint extends box2d.b2MouseJoint {
+	constructor() {
+		super(...arguments);
+	}
 
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	SetTarget2(x, y) {
+		0 == this.m_bodyB.IsAwake() && this.m_bodyB.SetAwake(!0), this.m_targetA.x = x, this.m_targetA.y = y
+	}
+}
+box2d.b2MouseJoint = PMouseJoint;
