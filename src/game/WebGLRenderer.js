@@ -109,6 +109,9 @@ export class WebGLRenderer extends IRenderer {
 
 		/** @type {WebGLRenderingContext} */
 		this.gl = null;
+
+		/** @type {vec2} */
+		//this._resolution = new vec2.create(0, 0);
 		
 		//this.rttFramebuffer = null;
 		//this.rttTexture = null;
@@ -160,12 +163,6 @@ export class WebGLRenderer extends IRenderer {
 	/** @type {HTMLCanvasElement} */
 	get _canvas() {
 		return this.gl.canvas;
-	}
-
-	/** @type {Vec2} */
-	get screen_size() {
-		const canvas = this._canvas;
-		return new Vec2(canvas.width, canvas.height);
 	}
 
 	/**
@@ -250,6 +247,7 @@ export class WebGLRenderer extends IRenderer {
 			this.fxaaProgram = null;
 		}
 		this.fxaaProgram = this._createFXAAShader();
+		this.fxaaProgram.enable = true;
 	}
 	_deleteProgramShader(program) {
 		const gl = this.gl;
@@ -286,15 +284,23 @@ export class WebGLRenderer extends IRenderer {
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		
 		window.onresize = e => {
-			_resize_canvas(canvas, window.innerWidth, window.innerHeight);
+			const width = window.innerWidth;
+			const height = window.innerHeight;
 
-			//console.log([canvas.width, canvas.height]);
-			document.getElementById("screen_width").innerHTML = canvas.width;
-			document.getElementById("screen_height").innerHTML = canvas.height;
+			_resize_canvas(canvas, width, height);
 
-			gl.viewport(0, 0, canvas.width, canvas.height);
+			//console.log([width, height]);
+			document.getElementById("screen_width").innerHTML = width;
+			document.getElementById("screen_height").innerHTML = height;
 
-			mat4.ortho(this._projectionMatrix, 0, canvas.width, canvas.height, 0, -1000, 1000);
+			this.screen_size.x = width;
+			this.screen_size.y = height;
+			//this._resolution[0] = width;
+			//this._resolution[1] = height;
+
+			gl.viewport(0, 0, width, height);
+
+			mat4.ortho(this._projectionMatrix, 0, width, height, 0, -1000, 1000);
 		}
 		window.onresize();
 
@@ -341,19 +347,6 @@ export class WebGLRenderer extends IRenderer {
 
 		return texture;
 	}
-
-	///**
-	// * @param {number} local
-	// */
-	//_bindDepthTexture(local) {
-	//	if (!this.uniform_only_depth._m_flag) {
-	//		const gl = this.gl;
-	//
-	//		gl.activeTexture(gl.TEXTURE0 + local);
-	//		gl.bindTexture(gl.TEXTURE_2D, this.rttTexture);
-	//		gl.uniform1i(this.uniform_backrame, local);
-	//	}
-	//}
 
 	_initTextureFramebuffer() {
 		const gl = this.gl;
@@ -498,10 +491,10 @@ export class WebGLRenderer extends IRenderer {
 
 		this.useShader(this.fxaaProgram);
 		{
-			let rt_w = this.gl.canvas.width;
-			let rt_h = this.gl.canvas.height;
+			const rt_w = this.screen_size.x;
+			const rt_h = this.screen_size.y;
 
-			gl.uniform1i(this.fxaaProgram.uniform_enable, this.fxaaProgram.enable);
+			//gl.uniform1i(this.fxaaProgram.uniform_enable, this.fxaaProgram.enable);
 
 			gl.uniform1f(this.fxaaProgram.uniform_rt_w, rt_w);
 			gl.uniform1f(this.fxaaProgram.uniform_rt_h, rt_h);
@@ -519,10 +512,9 @@ export class WebGLRenderer extends IRenderer {
 		const gl = this.gl;
 		let fxaa = this._createShader(_getFXAAVertexShaderSource(), _getFXAAFragmentShaderSource());
 		gl.useProgram(fxaa);
+		//fxaa.uniform_enable = gl.getUniformLocation(fxaa, "uFXAA");
 		fxaa.uniform_rt_w = gl.getUniformLocation(fxaa, "rt_w");
 		fxaa.uniform_rt_h = gl.getUniformLocation(fxaa, "rt_h");
-		//fxaa.uniform_enable = gl.getUniformLocation(fxaa, "uFXAA");
-		fxaa.enable = false;
 		return fxaa;
 	}
 	_createShader(vs_src, fs_src) {
@@ -568,12 +560,8 @@ export class WebGLRenderer extends IRenderer {
 		shaderProgram.matrix_modelView_location = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 
 		shaderProgram.color_location = gl.getUniformLocation(shaderProgram, "uColor");
-
 		shaderProgram.uniform_sampler = gl.getUniformLocation(shaderProgram, "uSampler");
-		//this.uniform_backrame = gl.getUniformLocation(shaderProgram, "uBackframe");
-
-		//this.uniform_only_depth = gl.getUniformLocation(shaderProgram, "uOnlyDepth");
-		//this.uniform_only_depth._m_flag = false;
+		//shaderProgram.uniform_resolution = gl.getUniformLocation(shaderProgram, "uResolution");
 	}
 
 	_createVertexShader(theSource, id) {
@@ -688,6 +676,7 @@ export class WebGLRenderer extends IRenderer {
 	__drawRect(vbo) {
 		const gl = this.gl;
 
+		//gl.uniform2fv(this._shader.uniform_resolution, this._resolution);
 		gl.uniform4fv(this._shader.color_location, this._color);
 
 		gl.uniformMatrix4fv(this._shader.matrix_projection_location, false, this._projectionMatrix);
@@ -1099,75 +1088,38 @@ attribute vec2 aTextureCoord;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 
-uniform vec4 uColor;
-
 varying vec2 vTextureCoord;
-varying vec4 vColor;
-//varying float vDepth;
 
 void main(void) {
 	vec4 pos = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	gl_Position = pos;
 	vTextureCoord = aTextureCoord;
-	vColor = uColor;
-	//vDepth = -gl_Position.z;// * 1000.0;
 }
 `;
 }
-window.$defaultFragmentShaderSource = `
+function _getDefaultFragmentShaderSource() {
+	return `
 #ifdef GL_ES
 	precision mediump float;
 #endif
 
-varying vec2 vTextureCoord;
-varying vec4 vColor;
-//varying float vGlobalAlpha;//globalAlpha
-//varying float vDepth;
-
+//uniform vec2 uResolution;
 uniform sampler2D uSampler;
-//uniform sampler2D uBackframe;
+uniform vec4 uColor;
 
-//uniform bool uOnlyDepth;
+varying vec2 vTextureCoord;
 
 void main(void) {
-	vec4 col = texture2D(uSampler, vTextureCoord);
+	vec4 col = texture2D(uSampler, vTextureCoord) * uColor;
+
 	if (col.a > 0.001) {
 		gl_FragColor = col;
 	}
 	else {
 		discard;
 	}
-	
-	////if (uOnlyDepth) {
-	////	float c = vDepth;
-	////	gl_FragColor = vec4(c, c, c, 1);
-	////}
-	////else {
-	//	vec4 tex0 = texture2D(uSampler, vTextureCoord);
-
-	//	//float depth = texture2D(uBackframe, vTextureCoord).x;
-	//	//if (vDepth > depth) {
-	//	//	gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-	//	//	//discard;
-	//	//}
-
-	//	if (tex0.a <= 0.0) {
-	//		//gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-	//		discard;
-	//	}
-	//	else {
-	//		vec4 c = tex0 * vColor;
-	//		//c.r = tex0.r * vColor.r;
-	//		//c.g = tex0.g * vColor.g;
-	//		//c.b = tex0.b * vColor.b;
-	//		//c.a = tex0.a * vColor.a;
-	//		gl_FragColor = c;
-	//	}
-	////}
 }
 `;
-function _getDefaultFragmentShaderSource() {
-	return window.$defaultFragmentShaderSource;
 }
 
 function _getFXAAVertexShaderSource() {
@@ -1292,11 +1244,11 @@ vec2 vec2Scale(vec2 v, float sx, float sy) {
 	return (scale1 * vec4(v.x, v.y, 0.0, 1.0)).xy;
 }
 
-vec4 Gaussian55(vec2 uv, float r) {
+vec4 Gaussian55(vec2 uv) {
 	vec4 col = vec4(0.0, 0.0, 0.0, 0.0);
 
-	float rw = r / rt_w;
-	float rh = r / rt_h;
+	float rw = 1.0 / rt_w;
+	float rh = 1.0 / rt_h;
 
 	col += texture2D(uSampler, uv + vec2(-rw * 2.0, -rh * 2.0)) * 0.003765;
 	col += texture2D(uSampler, uv + vec2(-rw      , -rh * 2.0)) * 0.015019;
@@ -1333,11 +1285,11 @@ vec4 Gaussian55(vec2 uv, float r) {
 	return col;
 }
 
-vec4 Gaussian33(vec2 uv, float r) {
+vec4 Gaussian33(vec2 uv) {
 	vec4 col = vec4(0.0, 0.0, 0.0, 0.0);
 
-	float rw = r / rt_w;
-	float rh = r / rt_h;
+	float rw = 1.0 / rt_w;
+	float rh = 1.0 / rt_h;
 
 	col += texture2D(uSampler, uv + vec2(-rw, -rh)) * 0.077847;
 	col += texture2D(uSampler, uv + vec2(0.0, -rh)) * 0.123317;
@@ -1359,32 +1311,37 @@ vec4 Gaussian33(vec2 uv, float r) {
 void main() 
 {
 	vec2 uv = vec2(posPos.x, 1.0 - posPos.y);
+	vec4 col = texture2D(uSampler, uv);
 
-	////if (uFXAA) {
-	//	vec4 pp = vec4(uv.x, uv.y, posPos.z, posPos.w);
+	if (col.a > 0.001) {
+		if (length(col.rgb) < 0.9) {
+			vec3 g3 = Gaussian33(uv).rgb;
+			vec3 g5 = Gaussian55(uv).rgb;
+			gl_FragColor = vec4(col.rgb + (g3 * g5), col.a);//vec4(0.0, 0.0, 0.0, 1.0);//
+		}
+		else {
+			//vec3 g3 = Gaussian33(uv).rgb;
+			//gl_FragColor = vec4(col * 0.7 + g3 * 0.3, col.a);
+			gl_FragColor = vec4(col.rgb, col.a);
+		}
 
-	//	vec2 rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
-
-	//	vec4 col_1 = vec4(FxaaPixelShader(pp, uSampler, rcpFrame), 1.0);
-	//	gl_FragColor = col_1;
-
-	//	//vec4 col_2 = texture2D(uSampler, vec2Scale(uv, 0.9, 0.9));
-	//	//
-	//	//vec4 finCol = mix(col_1, col_2, 0.5);
-	//	//
-	//	//gl_FragColor = finCol;
-	////}
-	////else {
-	////	gl_FragColor = texture2D(uSampler, uv);
-	////}
-
-	vec4 col1 = texture2D(uSampler, uv);
-
-	if (col1.a > 0.001) {
-		vec4 col2 = Gaussian33(uv, 1.0);
-		vec4 col3 = Gaussian55(uv, 1.0);
-		//
-		gl_FragColor = vec4(min(col1.rgb, col2.rgb) + (col1.rgb - col3.rgb) * 0.5, col1.a);
+		////if (uFXAA) {
+		//	vec4 pp = vec4(uv.x, uv.y, posPos.z, posPos.w);
+		////
+		//	vec2 rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
+		////
+		//	vec4 col_1 = vec4(FxaaPixelShader(pp, uSampler, rcpFrame), col.a);
+		//	gl_FragColor = col_1;
+		////
+		//	//vec4 col_2 = texture2D(uSampler, vec2Scale(uv, 0.9, 0.9));
+		//	//
+		//	//vec4 finCol = mix(col_1, col_2, 0.5);
+		//	//
+		//	//gl_FragColor = finCol;
+		////}
+		////else {
+		////	gl_FragColor = texture2D(uSampler, uv);
+		////}
 	}
 	else {
 		discard;

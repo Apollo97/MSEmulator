@@ -3,7 +3,7 @@ import box2d from "box2d-html5";
 
 import { Vec2, Rectangle } from "../math.js";
 
-import { World } from "./World.js";
+import { World, GRAVITY } from "./World.js";
 import { Foothold } from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
@@ -366,20 +366,35 @@ export class Ground {
 			const point = new box2d.b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
 			const relativeVel = platformBody.GetLocalVector(point, new box2d.b2Vec2());
 
-			const ppw = player.foot_walk.GetPosition();
+			let ppw = player.foot_walk.GetPosition();//player.getPosition();
 			if (ppw.y > cpoint.y) {
 				continue;
 			}
 
+			{
+				const radius = player.foot_walk.m_fixtureList.m_shape.m_radius * 0.5;//point.x;//1 / CANVAS_SCALE;
+
+				if ((fh.prev == null && ((ppw.x - radius) * CANVAS_SCALE) < fh.x1) ||
+					(fh.next == null && ((ppw.x + radius) * CANVAS_SCALE) > fh.x2))
+				{
+					player._foothold = null;
+					player.$foothold = null;
+					player.state.jump = true;
+					continue;
+				}
+			}
+			
 			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
 				//player._foothold = fh;
 				if (otherBody.$type == "pl_ft_walk") {
 					if (player._which_foothold_contact(fh, new box2d.b2Vec2(cpoint.x, cpoint.y))) {
+						normal_contact();
 						return;
 					}
 					break;
 				}
-				return;//nothing: normal contact ground
+				normal_contact();
+				return;//nothing: not target, normal contact ground
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
 				//borderline case, moving only slightly out of platform
@@ -391,17 +406,27 @@ export class Ground {
 						if (player._which_foothold_contact(fh, new box2d.b2Vec2(cpoint.x, cpoint.y))) {
 							if (player.$foothold && player.$foothold.id != fh.id) {
 							}
+							normal_contact();
 							return;//contact point is less than 5cm inside front face of platfrom
 						}
 						break;
 					}
-					return;//nothing: normal contact ground
+					normal_contact();
+					return;//nothing: not target, normal contact ground
 				}
 			}
 		}
 
 		//no points are moving into platform, contact should not be solid
 		contact.SetEnabled(false);
+
+		//HACK: 防止反彈
+		function normal_contact() {
+			if (fh._is_horizontal_floor) {
+				//player.body.ApplyForceToCenter(GRAVITY);
+				player.body.ApplyForceToCenter2(0, 10);
+			}
+		}
 	}
 	endContact_bodyBase_oneway(contact, fa, fb) {
 		/** @type {PPlayer} */

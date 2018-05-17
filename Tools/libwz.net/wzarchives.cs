@@ -51,42 +51,46 @@ public class wzarchives
 
 		if (null != root)
 		{
-			string prefix = Path.GetDirectoryName(location) + "\\";
+			string prefix = Path.GetDirectoryName(location) + Path.DirectorySeparatorChar;
 			string[] fmts = new string[] { "0", "000" };
 
 			foreach (wzpackage element in root)
 				if (0 != element.type % 2 && 0 == element.count)
 				{
+					//Map += Map001
 					for (var i = 0; i < 2; ++i)
 					{
-						for (var j = 0; j < fmts.Length; ++j)
+						var num = i == 0 ? "" : i.ToString(fmts[1]);
+
+						location = prefix + element.identity + num  + ".wz";
+
+						if (File.Exists(location))
 						{
-							var num = i == 0 ? "" : (j == 0 ? (i + 1) : i).ToString(fmts[j]);
+							archive = new wzarchive(location);
+							root = archive.root;
 
-							location = prefix + element.identity + num  + ".wz";
-
-							if (File.Exists(location))
+							if (null != root)
 							{
-								archive = new wzarchive(location);
-								root = archive.root;
-
-								if (null != root)
+								foreach (wzpackage package in root)
 								{
-									foreach (wzpackage package in root)
-									{
-										package.parent = element;
+									package.parent = element;
 
+									if (element.identities.Contains(package.identity))
+									{
+										element[package.identity].merge(package);
+									}
+									else
+									{
 										element.append(package.identity, package);
 									}
-
-									archives.Add(archive);
-
-									break;//Map001.wz or Map2.wz
 								}
+
+								archives.Add(archive);
 							}
 						}
 					}
 				}
+			////Map += Map2
 			//Regex rgx = new Regex(@"([A-Za-z]+)(\d+)");
 			//foreach (wzpackage package in this.root)
 			//{

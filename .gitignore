@@ -290,6 +290,7 @@ __pycache__/
 /Tools/EquipList/libwz.net.dll
 /Tools/EquipList/EquipList.exe
 
+/setting.ini
 /setting*.ini
 
 /test.js
@@ -299,18 +300,20 @@ __pycache__/
 
 /public/_data
 /public/data
+
 /public/equip
 /public/equips
 /public/_equips
 
-/public/images/Character
-/public/images/Map
 /public/images/smap.img
-/public/images/String
-/public/images/UI
-/public/images/NPC
-/public/images/Mob
+/public/images/Character
 /public/images/Effect
+/public/images/Map
+/public/images/Mob
+/public/images/NPC
+/public/images/UI
+/public/images/Skill
+/public/images/Item
 
 /public/pack
 /public/sound/Sound

@@ -33,8 +33,8 @@ export class LifeRenderer /*extends SceneObject*/ {
 		else if(this.actions.fly) {
 			return "fly";
 		}
-		alert("default must is 'stand' or 'fly'");
-		return new Error("default must is 'stand' or 'fly'");
+		alert(this.constructor.name + " (" + this.id + ") default must is 'stand' or 'fly'");
+		return new Error(this.constructor.name + " (" + this.id + ") default must is 'stand' or 'fly'");
 	}
 	
 	/** @type {string} */

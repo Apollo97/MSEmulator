@@ -234,7 +234,7 @@ export class Game {
 			else {
 				let params = _parseUrlParameter();
 
-				let map_id = params["map"] || "450003000";
+				let map_id = params["map"] || "000000000";//450003000
 				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
 
 				GameStateManager.PopState({
@@ -601,17 +601,16 @@ export class Game {
 		this._requestNextFrame();
 
 		this._calcFPS(stamp);
+	
+		this._updateScene(stamp);
+
+		this._renderScene();
 		
 		for (let i in input_keyDown) {
 			if (input_keyDown[i] > 0) {
 				++input_keyDown[i];
 			}
 		}
-	
-		this._updateScene(stamp);
-
-		this._renderScene();
-
 		for (let i in input_keyUp) {
 			input_keyUp[i] = 0;
 		}

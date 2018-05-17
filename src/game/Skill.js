@@ -1,7 +1,31 @@
-
+﻿
+import { IRenderer } from "./IRenderer.js";
 import { Sprite } from "./Sprite.js";
 import { Animation } from "./Animation";
+import { SceneObject } from "./SceneObject";
 import { ActionAnimation } from './Renderer/CharacterActionAnimation.js';
+import { CharacterAnimationBase } from "./Renderer/CharacterRenderer.js";
+import { PPlayer } from "./Physics/PPlayer.js";
+import { SceneCharacter } from "./SceneCharacter.js";
+
+/**
+ * 23001002(藝術跳躍)
+ * 24001002(幻影瞬步)
+ */
+let jump2_info = {
+	type: 40,
+	casterMove: 1,
+	avaliableInJumpingState: 1
+};
+
+/**
+ * 23121000(伊修塔爾之環): localhost/xml2/Skill/2312.img/skill/23121000
+ */
+let rapid_attack_info = {
+	type: 2,
+	knockbackLimit: 80,
+	rapidAttack: 1
+};
 
 /**
  * @interface {IEffectAnimation}
@@ -11,8 +35,13 @@ class SkillEffectAnimation extends Animation {
 		super(raw, url);
 		this.x = 0;
 		this.y = 0;
+
+		/** @type {{x: number, y: number, front:-1|1}} */
 		this.targetRenderer = null;
+
 		this.is_loop = false;
+
+		this.opacity = 1;
 	}
 	
 	/**
@@ -22,7 +51,7 @@ class SkillEffectAnimation extends Animation {
 	load(type) {
 		if (!this._raw) {
 			throw new Error("Not implement. skill data is loaded");
-			this._url = this._url + "/" + type;
+			this._url = [this._url, type].join("/");
 			return super.load();
 		}
 		else {
@@ -46,7 +75,7 @@ class SkillEffectAnimation extends Animation {
 		super.update(stamp);
 		
 		if (this.targetRenderer) {
-			this.x = this.targetRenderer.x + this.targetRenderer.tx;
+			this.x = this.targetRenderer.x + this.targetRenderer.tx;//TODO: crr.tx and crr.ty ??
 			this.y = this.targetRenderer.y + this.targetRenderer.ty;
 		}
 	}
@@ -55,7 +84,12 @@ class SkillEffectAnimation extends Animation {
 	 * @param {IRenderer} renderer
 	 */
 	render(renderer) {
+		//renderer.pushGlobalAlpha();
+
+		renderer.globalAlpha = this.opacity;
 		this.draw(renderer, this.x, this.y, 0, this.targetRenderer.front > 0);
+
+		//renderer.popGlobalAlpha();
 	}
 }
 
@@ -65,7 +99,9 @@ class SkillHitAnimation extends SkillEffectAnimation {
 	}
 }
 
-// 被 SceneObject... 取代
+/**
+ * TODO: SceneObject 取代 EffectManager
+ */
 export class EffectManager {
 	constructor() {
 	}
@@ -96,10 +132,14 @@ export class EffectManager {
 	 * @param {IRenderer} renderer
 	 */
 	static Render(renderer) {
+		renderer.pushGlobalAlpha();
+
 		const effects = EffectManager._effects;
 		for (let  i = 0; i < effects.length; ++i) {
 			effects[i].render(renderer);
 		}
+
+		renderer.popGlobalAlpha();
 	}
 }
 /** @type {AnimationBase[]} */
@@ -107,8 +147,55 @@ EffectManager._effects = [];
 
 window.$EffectManager = EffectManager;
 
+
+class _SkillInfo {
+	constructor() {
+		this.type = 40;
+
+		/** @type {boolean} */
+		this.casterMove = 1;
+
+		/** @type {boolean} */
+		this.avaliableInJumpingState = 1;
+
+
+		/** @type {boolean} */
+		this.areaAttack = 1;
+
+		this.knockbackLimit = 80;
+		
+		/** @type {boolean} */
+		this.rapidAttack = 1;
+	}
+}
+class _SkillData {
+	constructor() {
+		/** @type {{ [actType: number]: string }} */
+		this.action = null;
+
+		/** @type {_SkillInfo} */
+		this.info = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.effect = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.prepare = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydown = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydown0 = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydownend = null;
+	}
+}
+
+
 /**
- * Skill type 1
+ * 
  */
 class SkillAnimationBase {
 	/**
@@ -117,7 +204,11 @@ class SkillAnimationBase {
 	 */
 	constructor(raw, url) {
 		//this._raw = raw;
-		
+
+		/**
+		 * cooked raw
+		 * @type {_SkillData}
+		 */
 		this.data = null;
 		
 		/** @type {string} */
@@ -130,17 +221,24 @@ class SkillAnimationBase {
 		//	},
 		//}
 
+		/** @type {string} */
 		this.skillId = null;
-		
-		this.actType = 0;//??
+
+		/**
+		 * actType = GetJobInfo(chara).avaliableWeapon.indexOf(ItemInfo.get(chara.weapon).type)
+		 */
+		this.actType = 0;
 		
 		/** @type {SceneObject} */
 		this._owner = null;
 
 		/** @type {CharacterAnimationBase} */
 		this._crr = null;
+
+		/** @type {ActionAnimation} */
+		this._actani = null;
 		
-		/** @type {number} */
+		/** @type {number} - skill type */
 		this.type = 0;
 		
 		/** @type {boolean} */
@@ -149,35 +247,78 @@ class SkillAnimationBase {
 		/** @type {boolean} */
 		this.is_launch = false;
 		
-		if (raw && url) {
-			this._load(url, raw);
-		}
+		//if (raw && url) {
+		//	this.__load(url, raw, null);
+		//}
+
+		/** @type {"prepare"|"keydown"|"keydownend"} */
+		this.state = null;
 	}
 
-	/** @type {ActionAnimation} */
+	/**
+	 * @virtual
+	 */
+	_init() {
+		// nothing
+	}
+
+	/** @type {SceneObject} */
 	get owner() {
 		return this._owner;
 	}
 	set owner(value) {
 		this._owner = value;
-		this._crr = this.owner.renderer;
-	}
-	
-	/** @type {ActionAnimation} */
-	get actani() {
-		return this._crr.actani;
-	}
-	set actani(value) {
-		if (this.owner) {
-			this._crr.actani = value;
+		if (!this.owner) {
+			return;
 		}
+
+		this._crr = this.owner.renderer;
+		if (!this._crr) {
+			return;
+		}
+
+		//const chara = value; //??
+		//this.actType = GetJobInfo(chara).avaliableWeapon.indexOf(ItemInfo.get(chara.weapon).type)
+
+		this._actani = this._crr.actani;
+		if (!this._actani) {
+			return;
+		}
+	}
+
+	/**
+	 * @alias owner
+	 * @returns {SceneCharacter}
+	 */
+	get _owner_player() {
+		return this._owner;
+	}
+	set _owner_player(value) {
+		this.owner = value;
+	}
+
+	/**
+	 * @param {string} action
+	 */
+	_applyAction(action) {
+		if (this._actani && this.data) {
+			const actions = this.data.action;
+			this._actani.reload(action);//action ? 0, 1
+			this._actani.loop = false;
+		}
+	}
+
+	/** skill default action */
+	_applyDefaultAction() {
+		const actions = this.data.action;
+		this._applyAction(actions[this.actType]);
 	}
 	
 	/**
-	 * download data
+	 * download data, load texture
 	 * @param {string} skillId
 	 */
-	async load(skillId) {
+	async _load(skillId) {
 		const jobID = /^(\d+)\d{4}$/.exec(skillId)[1];
 
 		const url = `${this.constructor._base_path}/${jobID}.img/skill/${skillId}`;
@@ -187,55 +328,53 @@ class SkillAnimationBase {
 			alert("SkillAnimationBase");
 			return;
 		}
+		this.data = raw;
+		
+		this.url = url;
 
 		this.skillId = skillId;
 
-		this._load(url, raw);
-	}
+		this.type = this.data.info ? (this.data.info.type || 0) : 0;//const
 
-	/**
-	 * process raw data
-	 */
-	async _load(url, raw) {
-		this.url = url;
-		
-		let data = this._transformRawData(raw);
-		
-		this.type = data.info ? (data.info.type || 0) : 0;//const
+		this.__proto__ = this._decide_type().prototype;
+		{
+			this._loadTexture(raw);
 
-		//this.owner.actani
-		//this.actani = new ActionAnimation();
-		this.actani.reload(data.action[this.actType]);//action ? 0, 1
-		this.actani.loop = false;
-		
-		this.data = data;
+			this._applyDefaultAction();
+
+			this._init();
+		}
 	}
 	
-	/** @param {SkillAnimationBase} skill_anim - clone */
-	_assign(skill_anim) {
-		this.skillId = skill_anim.skillId;
-
+	/**
+	 * copy
+	 * @param {SkillAnimationBase} skill_anim
+	 * @param {SkillAnimationBase} proto - skill prototype
+	 */
+	_assign(skill_anim, proto) {
 		this.data = skill_anim.data;
-		
-		this.type = skill_anim.type;//const
 		
 		this.url = skill_anim.url;
 
-		//this.owner.actani
-		//this.actani = new ActionAnimation();
-		this.actani.reload(skill_anim.data.action[skill_anim.actType]);//action ? 0, 1
-		this.actani.loop = false;
+		this.skillId = skill_anim.skillId;
+		
+		this.type = skill_anim.type;//const
+
+		this.__proto__ = this._decide_type().prototype;
+		{
+			this._applyDefaultAction();
+
+			this._init();
+		}
 	}
 	
-	_transformRawData(raw) {
-		if (raw.effect) {
-			raw.effect = arrNd_texture(raw.effect, `${this.url}/effect`);
+	_loadTexture() {
+		for (let effName of this._effect_names) {
+			let eff = this.data[effName];
+			if (eff) {
+				this.data[effName] = arrNd_texture(eff, [this.url, effName].join("/"));
+			}
 		}
-		if (raw.hit) {
-			raw.hit = arrNd_texture(raw.hit, `${this.url}/hit`);
-		}
-		
-		return raw;
 		
 		function arrNd_texture(arrNd/*, url*/) {
 			if ("0" in arrNd[0]) {
@@ -253,11 +392,12 @@ class SkillAnimationBase {
 				//tex._url = `${url}/${i}`;
 				effect[i] = tex;
 			}
+			effect.action = arr1d.action;
 			return effect;
 		}
 		function arr2d_texture(arr2d/*, url*/) {
 			let hit = [];
-			for (let  i = 0; i in arr2d; ++i) {
+			for (let i = 0; i in arr2d; ++i) {
 				//const url_i = `${url}/${i}`;
 				let group = arr2d[i];
 				hit[i] = [];
@@ -267,41 +407,51 @@ class SkillAnimationBase {
 					//tex._url = `${url_i}/${j}`;
 					hit[i][j] = tex;
 				}
+				hit[i].action = group.action;
 			}
 			return hit;
 		}
 	}
-	
+
+	/**
+	 * reset and restart
+	 */
 	reset() {
-		this.actani.reset();
+		this._actani.reset();
 		this.is_launch = false;
 	}
 	
 	/**
+	 * @virtual
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		/** @type {CharacterRenderer} */
-		const ownerRenderer = this._crr;
-		
-		stamp *= ownerRenderer.speed;
-		
-		if (this.actani) {
-			if (this.actani.delay) {// not start yet
+		if (this.$promise) {
+			//Now loading...
+		}
+		else {
+			this.is_launch = true;
+			this.is_end = true;
+			console.warn("Skill not implement: " + this.skillId);
+		}
+	}
+
+	/**
+	 * @param {number} stamp
+	 */
+	_default_update(stamp) {
+		stamp *= this._crr.speed;
+
+		if (this._actani) {
+			if (this._actani.delay) {// not start yet
 				return;
 			}
 			else if (!this.is_launch) {
-				const type = window.$skill_wt || 0;
-
-				try {
-					this.addEffect(ownerRenderer.x, ownerRenderer.y, ownerRenderer, type);
-				}
-				catch (ex) {
-				}
+				this._addEffect();
 
 				this.is_launch = true;
 			}
-			if (this.actani.isEnd()) {
+			if (this._actani.isEnd()) {
 				this.is_end = true;
 			}
 		}
@@ -314,21 +464,33 @@ class SkillAnimationBase {
 	isEnd() {
 		return this.is_end;
 	}
-	
+
+	nextState() {
+	}
+
 	/**
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {{x: number, y: number}=} targetRenderer - 'attack target renderer' or 'owner renderer'
-	 * @param {number=} type
+	 * @param {string} [effectName="effect"]
 	 */
-	addEffect(x, y, targetRenderer, type) {
-		let effect = new SkillEffectAnimation(this.data.effect, this.url + "/effect");
-		
-		effect.targetRenderer = targetRenderer;
-		
-		effect.load(type);
-		
-		EffectManager.AddEffect(effect);
+	_addEffect(effectName = "effect") {
+		let action = this.data[effectName].action;
+		if (action) {
+			this._applyAction(action);
+		}
+
+		try {
+			const type = this.actType;
+			let effect = new SkillEffectAnimation(this.data[effectName], [this.url, effectName].join("/"));
+
+			effect.targetRenderer = this._crr;
+
+			effect.load(type);
+
+			EffectManager.AddEffect(effect);
+
+			return effect;
+		}
+		catch (ex) {
+		}
 	}
 	
 	/**
@@ -346,38 +508,239 @@ class SkillAnimationBase {
 		
 		EffectManager.AddEffect(hit);
 	}
+
+
+	/**
+	 * @returns {function():(T extends SkillAnimationBase)}
+	 */
+	_decide_type() {
+		const info = this.data.info;
+
+		//TODO: register skill
+
+		switch (this.type) {
+			case 1:
+			case 2:
+				if (info.rapidAttack) {
+					return _SkillAnimation_RapidAttack;
+				}
+				break;
+			case 40:
+				if (info.casterMove && info.avaliableInJumpingState) {
+					return _SkillAnimation_N_Jump;
+				}
+				break;
+		}
+		return _SkillAnimation_Default;
+	}
+
+	/**
+	 * @virtual
+	 */
+	get _effect_names() {
+		return ["effect", "hit"];
+	}
 	
 	static get _base_path() {
 		return "/Skill";
 	}
 }
 
-export class SkillAnimation extends SkillAnimationBase {
+class _SkillAnimation_Default extends SkillAnimationBase {
 	constructor() {
-		super();
+		throw new TypeError("constructor");
+	}
+
+	/**
+	 * @override
+	 */
+	_init() {
+		// nothing
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		this._default_update(stamp);
+	}
+}
+
+class _SkillAnimation_RapidAttack extends SkillAnimationBase {
+	constructor() {
+		throw new TypeError("constructor");
+
+		/**
+		 * @type {SkillEffectAnimation}
+		 */
+		this.current_effect = null;
+	}
+
+	/**
+	 * @override
+	 */
+	_init() {
+		this.state = "prepare";
+		this._state_func = this._prepare;
+		this.current_effect = this._addEffect(this.state);
+
+		this.time = 0;
+		this.fadeTotalTime = this._actani.getTotalTime();
 	}
 	
+	nextState() {
+		switch (this.state) {
+			case "prepare":
+				this.current_effect.opacity = 0;//prepare
+
+				this.state = "keydown";
+				this._state_func = this._keydown;
+				this.current_effect = this._addEffect(this.state);
+				break;
+			case "keydown":
+				this.current_effect.opacity = 0;//keydown
+
+				this.state = "keydownend";
+				this._state_func = this._keydownend;
+				this.current_effect = this._addEffect(this.state);
+				this.fadeTotalTime = this._actani.getTotalTime();
+				break;
+		}
+		this.time = 0;//reset
+	}
+
+	_prepare() {
+		this.current_effect.opacity = this.time / this.fadeTotalTime;
+
+		if (this._actani.isEnd()) {
+			this.nextState();
+		}
+	}
+	_keydown() {
+		if (this._actani.isEnd()) {
+			this.current_effect.opacity = 1;
+			this.current_effect.reset();
+			this._actani.reset();
+		}
+	}
+	_keydownend() {
+		this.current_effect.opacity = 1 - (this.time / this.fadeTotalTime);
+
+		if (this._actani.isEnd()) {
+			this.is_launch = true;
+			this.is_end = true;
+		}
+	}
+
 	/**
-	 * @param {number|string} skillId
+	 * @override
+	 * @param {number} stamp
 	 */
-	load(skillId) {
+	update(stamp) {
+		//keydown(first step): prepare
+		//keydown(second step): keydown + keydown0
+		//keyup: keydownend
+
+		stamp *= this._crr.speed;
+
+		this.time += stamp;
+
+		this._state_func();
+	}
+
+	/**
+	 * @virtual
+	 */
+	get _effect_names() {
+		return ["prepare", "keydown", "keydownend", "hit"];
+	}
+}
+
+class _SkillAnimation_N_Jump extends SkillAnimationBase {
+	constructor() {
+		throw new TypeError("constructor");
+	}
+
+	/**
+	 * @override
+	 */
+	_init() {
+		// nothing
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		if (this._owner) {
+			if (!this.is_launch) {
+				const crr = this._crr;
+				const body = this._owner_player.$physics.body;
+
+				//set cv(24, 8) => move front 196
+				//set cv(20, 8) => move front 162
+				//set cv(16, 8) => move front 102
+				body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+			}
+		}
+
+		this._default_update(stamp);
+	}
+}
+
+/**
+ * TODO: add skill
+ */
+class __SkillAnimation_Template extends SkillAnimationBase {
+	/**
+	 * @override
+	 */
+	_init() {
+		// ...
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+	}
+}
+
+export class SkillAnimation extends SkillAnimationBase {
+	/**
+	 * @param {string} skillId
+	 * @param {SceneObject} owner
+	 */
+	load(skillId, owner) {
+		this.owner = owner;
+
 		if (!skillId) {
 			throw new Error("1 argument required");
 		}
-		skillId = String(skillId);
 		
 		if (String(skillId).length <= 4) {
 			throw new Error("skill ID format");
 		}
-		skillId = window.$skill || skillId || 1120017;//1001005;// jobId + 4-digit
+		//skillId = 1120017;//1001005;// jobId + 4-digit
 		
-		let loaded_skill = this.constructor.__loaded_skill[skillId];
+		let loaded_skill = SkillAnimation.__loaded_skill[skillId];
 		if (loaded_skill && loaded_skill.data) {
 			this._assign(loaded_skill);
 		}
 		else {
-			let promise = super.load(skillId);
-			this.constructor.__loaded_skill[skillId] = this;
+			let promise = this._load(skillId, owner);
+
+			this.$promise = promise;
+
+			SkillAnimation.__loaded_skill[skillId] = this;
+
+			promise.then(() => {
+				delete this.$promise;
+			});
+
 			return promise;
 		}
 	}
@@ -385,6 +748,27 @@ export class SkillAnimation extends SkillAnimationBase {
 SkillAnimation.__loaded_skill = {};
 
 window.$SkillAnimation = SkillAnimation;
+
+
+
+class SkillController {
+	constructor() {
+	}
+
+	update() {
+	}
+}
+
+
+class SkillsContainer {
+	constructor() {
+	}
+
+	update() {
+	}
+}
+
+
 
 window.$dummy = {
 	x: 0,

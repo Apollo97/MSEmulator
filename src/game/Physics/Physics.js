@@ -30,8 +30,8 @@ export class ContactListener /** @extends box2d.b2ContactListener */ {
 }
 
 /**
- * @param {box2d.b2Fixture} fa - self
- * @param {box2d.b2Fixture} fb - other
+ * @param {PFixture} fa - self
+ * @param {PFixture} fb - other
  * @returns {boolean}
  */
 box2d.b2Contact.prototype.isFromSelfContact = function (fa, fb) {
@@ -46,8 +46,8 @@ box2d.b2Contact.prototype.isFromSelfContact = function (fa, fb) {
 }
 
 /**
- * @param {box2d.b2Fixture} fa - self
- * @param {box2d.b2Fixture} fb - other
+ * @param {PFixture} fa - self
+ * @param {PFixture} fb - other
  * @returns {boolean} - return true if from self and disable this contact
  */
 box2d.b2Contact.prototype._ignoreSelfContact = function (fa, fb) {
@@ -88,7 +88,7 @@ export class PFilter extends box2d.b2Filter {
 }
 box2d.b2Filter = PFilter;
 
-let b2Vec2_temp = new box2d.b2Vec2(0, 0)
+let b2Vec2_temp = new box2d.b2Vec2()
 
 export class PBody extends box2d.b2Body {
 	constructor() {
@@ -114,10 +114,10 @@ export class PBody extends box2d.b2Body {
 	 * @param {number} x
 	 * @param {number} y
 	 */
-	ApplyForce2(x, y) {
+	ApplyForceToCenter2(x, y) {
 		b2Vec2_temp.x = x;
 		b2Vec2_temp.y = y;
-		this.ApplyForce(b2Vec2_temp);
+		this.ApplyForce(b2Vec2_temp, this.GetWorldCenter());
 	}
 
 	/**
@@ -193,6 +193,47 @@ export class PBody extends box2d.b2Body {
 	}
 
 	/**
+	 * @param {number} desiredVelX
+	 * @param {number} desiredVelY
+	 * @param {number} pointX
+	 * @param {number} pointY
+	 */
+	ConstantVelocity2(desiredVelX, desiredVelY, pointX, pointY) {
+		const desiredVel = new box2d.b2Vec2(desiredVelX, desiredVelY);
+		const point = new box2d.b2Vec2(pointX, pointY);
+
+		const sourceVel = this.GetLinearVelocity();
+		const m = this.GetMass();
+		
+		let impulse = new box2d.b2Vec2();
+
+		let velChange = box2d.b2SubVV(desiredVel, sourceVel, impulse);
+		impulse.x = m * velChange.x;
+		impulse.y = m * velChange.y;
+		
+		this.ApplyLinearImpulse(impulse, point, true);
+	}
+
+	/**
+	 * @param {number} desiredVelX
+	 * @param {number} desiredVelY
+	 */
+	ConstantVelocityWorldCenter2(desiredVelX, desiredVelY) {
+		const desiredVel = new box2d.b2Vec2(desiredVelX, desiredVelY);
+
+		const sourceVel = this.GetLinearVelocity();
+		const m = this.GetMass();
+		
+		let impulse = new box2d.b2Vec2();
+
+		let velChange = box2d.b2SubVV(desiredVel, sourceVel, impulse);
+		impulse.x = m * velChange.x;
+		impulse.y = m * velChange.y;
+		
+		this.ApplyLinearImpulse(impulse, this.GetWorldCenter(), true);
+	}
+
+	/**
 	 * 等速度運動 X
 	 * @param{number} desiredVelX
 	 * @param{box2d.b2Vec2} point
@@ -229,16 +270,16 @@ export class PFixture extends box2d.b2Fixture {
 	constructor() {
 		super(...arguments);
 
-		/** @type {Array<function(box2d.b2Contact, box2d.b2Fixture, box2d.b2Fixture):void>} */
+		/** @type {(function(box2d.b2Contact, PFixture, PFixture):void)[]} */
 		this._beginContact = [];
 
-		/** @type {Array<function(box2d.b2Contact, box2d.b2Fixture, box2d.b2Fixture):void>} */
+		/** @type {(function(box2d.b2Contact, PFixture, PFixture):void)[]} */
 		this._endContact = [];
 
-		/** @type {Array<function(box2d.b2Contact, box2d.b2Manifold, box2d.b2Fixture, box2d.b2Fixture):void>} */
+		/** @type {(function(box2d.b2Contact, box2d.b2Manifold, PFixture, PFixture):void)[]} */
 		this._preSolve = [];
 
-		/** @type {Array<function(box2d.b2Contact, box2d.b2ContactImpulse, box2d.b2Fixture, box2d.b2Fixture):void>} */
+		/** @type {(function(box2d.b2Contact, box2d.b2ContactImpulse, PFixture, PFixture))[]>} */
 		this._postSolve = [];
 	}
 
@@ -287,8 +328,9 @@ export class PFixture extends box2d.b2Fixture {
 		}
 	}
 
-	/** @type {function(box2d.b2Contact, box2d.b2Fixture, box2d.b2Fixture):void} */
+	/** @type {function(box2d.b2Contact, PFixture, PFixture):void} */
 	get beginContact() {
+		return this._invokeBeginContact;
 	}
 	set beginContact(event) {
 		if (typeof event == 'function')
@@ -296,8 +338,9 @@ export class PFixture extends box2d.b2Fixture {
 		else debugger
 	}
 
-	/** @type {function(box2d.b2Contact, box2d.b2Fixture, box2d.b2Fixture):void} */
+	/** @type {function(box2d.b2Contact, PFixture, PFixture):void} */
 	get endContact() {
+		return this._invokeEndContact;
 	}
 	set endContact(event) {
 		if (typeof event == 'function')
@@ -305,8 +348,9 @@ export class PFixture extends box2d.b2Fixture {
 		else debugger
 	}
 
-	/** @type {function(box2d.b2Contact, box2d.b2Manifold, box2d.b2Fixture, box2d.b2Fixture):void} */
+	/** @type {function(box2d.b2Contact, box2d.b2Manifold, PFixture, PFixture):void} */
 	get preSolve() {
+		return this._invokePreSolve;
 	}
 	set preSolve(event) {
 		if (typeof event == 'function')
@@ -314,8 +358,9 @@ export class PFixture extends box2d.b2Fixture {
 		else debugger
 	}
 
-	/** @type {function(box2d.b2Contact, box2d.b2ContactImpulse, box2d.b2Fixture, box2d.b2Fixture):void} */
+	/** @type {function(box2d.b2Contact, box2d.b2ContactImpulse, PFixture, PFixture):void} */
 	get postSolve() {
+		return this._invokePostSolve;
 	}
 	set postSolve(event) {
 		if (typeof event == 'function')

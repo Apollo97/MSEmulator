@@ -1,4 +1,5 @@
 ﻿const webpack = require('webpack');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 let config = {
   entry: {
@@ -22,8 +23,8 @@ let config = {
   },
   // 使用 Hot Module Replacement 外掛
   plugins: [
-	  new webpack.optimize.OccurrenceOrderPlugin(),
-	  new webpack.HotModuleReplacementPlugin()
+    new webpack.optimize.OccurrenceOrderPlugin(),
+    new webpack.HotModuleReplacementPlugin()
   ],
   module: {
     rules: [
@@ -63,6 +64,8 @@ let config = {
 };
 
 if (process.env.NODE_ENV === 'production') {
+  config.plugins.unshift(new UglifyJsPlugin());
+  
   config.module.rules.push({
     test: /\.js$/,
     loader: 'babel-loader',

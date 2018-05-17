@@ -21,7 +21,6 @@ const port = process_argv["--port"] || process_argv["-p"] || 80;
 
 let dataSource = null, dataTag = null;
 
-
 main(process_argv["--init"]);
 
 function main(firstInit) {
@@ -45,7 +44,9 @@ function main(firstInit) {
 	}
 	app = WebServer(app);
 
-	app = DataServer(app);
+	if (!process_argv["--static"] && !process_argv["-s"]) {
+		app = DataServer(app);
+	}
 
 	startServer(app, port);
 
@@ -86,7 +87,7 @@ function argv_parse(argv) {
 	a.forEach((name, idx, arr) => {
 		if (name.startsWith("-")) {
 			let val = arr[idx + 1];
-			paramMap[name] = val.startsWith("-") ? true : val;
+			paramMap[name] = !val || val.startsWith("-") ? true : val;
 		}
 	});
 
@@ -133,7 +134,7 @@ function getSettingList(folderPath, cbfunc) {
 			let m = fileName.match(/^(setting\d*\.ini)$/);
 			return m ? m[1] : null;
 		}).filter(function (fileName) {
-			return fileName != null;
+			return fileName != null && fs.existsSync(fileName);
 		});
 		return settingList;
 	}
@@ -174,9 +175,10 @@ function WebServer(app) {
 	let express = require('express');
 	if (!app) {
 		app = express();
+		app.set("json spaces", "\t");
 	}
 
-	if (process.env.NODE_ENV !== 'production') {
+	if (!process_argv["-P"] && process.env.NODE_ENV !== 'production') {
 		console.log("use webpackHotMiddleware");
 
 		const webpack = require('webpack');
@@ -208,9 +210,9 @@ function WebServer(app) {
 
 	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
 		let url = decodeURI(req.path);
-		let names = url.match(/\/(images\/.*)\.img\/.*/);
-		if (names.length == 2) {
-			let imgZipPath = path.join(__dirname, "public", names[1] + ".zip");
+		let match = url.match(/\/(images\/.*)\.img\/.*/);
+		if (match.length == 2) {
+			let imgZipPath = path.join(__dirname, "public", match[1] + ".zip");
 			if (fs.existsSync(imgZipPath)) {
 				let zip = null;
 
@@ -226,28 +228,69 @@ function WebServer(app) {
 				});
 				zip.on("ready", function () {
 					let data_path = url.slice(8);
-					res.end(zip.entryDataSync(data_path));
+					let data = zip.entryDataSync(data_path);
 					zip.close();
 					zip = null;
+					res.end(data);
+				});
+				return;
+			}
+		}
+		next();
+	});
+
+	//
+	const ROOT_PATH = path.join(__dirname, "public");
+	const $sendFile_options = {
+		root: ROOT_PATH,
+	};
+	app.get(/\/(pack|data)\/.*\.img\/(.*)/, function (req, res, next) {
+		let url = decodeURI(req.path);
+		let match = url.match(/\/(pack|data)\/(.*\.img)\/(.*)/);
+		if (match.length == 4) {
+			let file_path = match[1] + "/" + match[2];
+			let data_path = match[3];
+
+			if (data_path == "") {
+				//if (fs.lstatSync(full_file_path).isDirectory()) { next(); return; }
+				res.sendFile(file_path, $sendFile_options, function (err) {
+					if (err) {
+						next();//no print err
+						return;
+					}
 				});
 			}
 			else {
-				next();
+				fs.readFile(path.join(ROOT_PATH, file_path), function (err, buffer) {
+					if (err) {
+						next();//no print err
+						return;
+					}
+
+					let data = JSON.parse(buffer + "");
+
+					let result = data;
+					paths = data_path.split("/");
+					for (let p of paths) {
+						result = result[p];
+					}
+
+					res.json(result);
+				});
 			}
+			return;
 		}
-		else {
-			next();
-		}
+		next();
 	});
 
 	function get_unzip_handler(url, filepath) {
 		return function unzip_handler(req, res, next) {
-			let names = decodeURI(req.path).match(url + "(.*\.zip)\/(.*)");
-			if (names.length == 3) {
+			let match = decodeURI(req.path).match(url + "(.*\.zip)\/(.*)");
+			if (match.length == 3) {
 				let zip = null;
 
 				zip = new StreamZip({
-					file: path.join(filepath, names[1]),
+					file: path.join(filepath, match[1]),
 					//storeEntries: true
 				});
 				zip.on('error', function (err) {
@@ -257,14 +300,13 @@ function WebServer(app) {
 					next();
 				});
 				zip.on("ready", function () {
-					res.end(zip.entryDataSync(names[2]));
+					res.end(zip.entryDataSync(match[2]));
 					zip.close();
 					zip = null;
 				});
+				return;
 			}
-			else {
-				next();
-			}
+			next();
 		}
 	}
 
@@ -275,6 +317,7 @@ function DataServer(app) {
 	let express = require('express');
 	if (!app) {
 		app = express();
+		app.set("json spaces", "\t");
 	}
 
 	class DataProvider {
@@ -282,6 +325,19 @@ function DataServer(app) {
 		 * @param {string} iniFilePath
 		 */
 		constructor(iniFilePath) {
+			this.iniFilePath = iniFilePath;
+		}
+
+		/** Initialize */
+		init() {
+			this.setting = IniParser.parse(fs.readFileSync(path.join(__dirname, this.iniFilePath), "utf-8")).resource;
+			if (!this.setting.path) {
+				throw new Error("setting.resource.path is not exist");
+			}
+			if (!fs.existsSync(this.setting.path)) {
+				throw new Error("archives is not exist");
+			}
+
 			let _get = edge.func({
 				source: path.join(__dirname, "wz.cs"),
 				references: CS_PROGRAM_REFERENCES,
@@ -295,22 +351,28 @@ function DataServer(app) {
 				}
 			};
 
-			let initResult = this._get({
-				func: "load",
-				args: {
-					path: iniFilePath,
-				}
-			});
+			try {
+				let initResult = this._get({
+					func: "load",
+					args: {
+						path: this.iniFilePath,
+					}
+				});
 
-			this.version = this._get({
-				func: "version"
-			}, true);
-
-			this.iniFilePath = iniFilePath;
-			this.setting = IniParser.parse(fs.readFileSync(path.join(__dirname, this.iniFilePath), "utf-8")).resource;
+				this.version = this._get({
+					func: "version"
+				}, true);
+			}
+			catch (ex) {
+				console.error(ex);
+				throw new Error(this.constructor.name + " load archives failed");
+			}
 
 			this.updateLastModifiedTime();
+
+			return true;
 		}
+
 		/**
 		 * @param {string} method
 		 * @param {string} path
@@ -411,7 +473,7 @@ function DataServer(app) {
 				"Access-Control-Allow-Origin": "*",
 				"Cache-Control": "public, max-age=86400",
 				//"Cache-Control": "no-cache",
-				"Last-Modified": _data_provider.mtime_utcs,
+				"Last-Modified": _dp.mtime_utcs,
 				"data-tag": _dp.setting.tag,
 				"data-version": _dp.version,
 			}
@@ -455,6 +517,8 @@ function DataServer(app) {
 		a_pp.get('/version', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${_data_provider.version};`,
+				`window.DATA_TAG=${_data_provider.setting.tag};`,
+				`window.DATA_LAST_MODIFIED=${_data_provider.mtime_utcs};`,
 			].join("\n");
 
 			res.writeHead(200, makeHead("application/x-javascript; charset=utf-8", _data_provider));
@@ -520,7 +584,13 @@ function DataServer(app) {
 		 * @param {string} data_path
 		 * @param {string} isObject to JSON
 		 */
-		function saveCacheFile(loadFileTask, output_path, data_path, isObject) {
+		let saveCacheFile = (loadFileTask, output_path, data_path, isObject) => { };
+
+		if (!process_argv["-no-cache"]) {
+			saveCacheFile = _saveCacheFile;
+		}
+
+		function _saveCacheFile(loadFileTask, output_path, data_path, isObject) {
 			loadFileTask.then(function (results) {
 				if (!results) {
 					return;
@@ -625,23 +695,6 @@ function DataServer(app) {
 			}
 		});
 
-		//
-		const $sendFile_options = {
-			root: path.join(__dirname, "public"),
-		};
-		app.get(/\/(pack|data)\/.*\.img\/$/, function (req, res, next) {
-			if (_data_provider.checkDataSource(req, res, next)) {
-				let url = decodeURI(req.path);
-				let data_path = url.slice(0, url.length - 1);
-
-				res.sendFile(data_path, $sendFile_options, function (err) {
-					if (err) {
-						next();
-					}
-				});
-			}
-		});
-
 		a_pp.get(/\/pack\/.*/, function (req, res, next) {//json: text + base64
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
@@ -711,17 +764,20 @@ function DataServer(app) {
 		});
 		
 		a_pp.get("/fs/update", function (req, res, next) {
-			try {
-				let old_dp = _data_provider;
-				_data_provider = new DataProvider(old_dp.iniFilePath);
+			let old_dp = _data_provider;
 
-				_data_provider.updateLastModifiedTime();
+			try {
+				let dp = new DataProvider(old_dp.iniFilePath);
+
+				dp.init();
 
 				res.write(`<p><table border="1"><tbody>`);
-				res.write(`<tr><th>data-tag</td><td>${_data_provider.setting.tag}</td></tr>`);
-				res.write(`<tr><th>data-version</td><td>${_data_provider.version}</td></tr>`);
-				res.write(`<tr><th>Last-Modified</td><td>${_data_provider.mtime_utcs}</td></tr>`);
+				res.write(`<tr><th>data-tag</td><td>${dp.setting.tag}</td></tr>`);
+				res.write(`<tr><th>data-version</td><td>${dp.version}</td></tr>`);
+				res.write(`<tr><th>Last-Modified</td><td>${dp.mtime_utcs}</td></tr>`);
 				res.write(`</tbody></table></p>`);
+				
+				_data_provider = dp;
 			}
 			catch (ex) {
 				res.write(`<p><h1>Error</h1><table border="1"><tbody>`);
@@ -729,6 +785,7 @@ function DataServer(app) {
 				res.write(`<tr><th>stack</td><td>${ex.stack}</td></tr>`);
 				res.write(`</tbody></table></p>`);
 			}
+
 			next();
 		});
 		
@@ -744,9 +801,18 @@ function DataServer(app) {
 	let settingList = getSettingList("./");
 	
 	for (let i = 0; i < settingList.length; ++i) {
-		console.log(settingList[i]);
-		let dataProvider = new DataProvider(settingList[i]);
-		Server(app, dataProvider);
+		console.log(settingList[i] + "> loading archives");
+		try {
+			let dataProvider = new DataProvider(settingList[i]);
+
+			dataProvider.init();
+
+			Server(app, dataProvider);
+			console.log(settingList[i] + "> complete");
+		}
+		catch (ex) {
+			console.log("err: " + settingList[i] + "> " + ex.message);
+		}
 	}
 	
 	app.get("/fs/update", function (req, res, next) {

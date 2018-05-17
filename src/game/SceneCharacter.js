@@ -227,8 +227,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 */
 	_invokeSkill(skillId) {
 		let skill = new SkillAnimation();
-		skill.owner = this;
-		skill.load(skillId);
+		skill.load(skillId, this);
 		this.skill = skill;
 	}
 
@@ -290,8 +289,8 @@ export class BaseSceneCharacter extends SceneObject {
 
 		const r = 2, h = 12;
 		const w = ctx.measureText(name).width + 3;
-		const x = Math.trunc(crr.x + crr.tx) - w * 0.5;
-		const y = Math.trunc(crr.y + crr.ty);
+		const x = Math.trunc(crr.x/* + crr.tx*/) - w * 0.5;//TODO: crr.tx and crr.ty ??
+		const y = Math.trunc(crr.y/* + crr.ty*/);
 
 		const left = x + r;
 		const _left = x;
@@ -420,6 +419,9 @@ export class SceneCharacter extends BaseSceneCharacter {
 	}
 
 	_player_control() {
+		if (!this.$physics.state.jump && this.$$jump_state) {
+			delete this.$$jump_state;
+		}
 		if (this.$physics) {
 			let ikey = {};
 			for (let i in input_keyDown) {
@@ -436,17 +438,30 @@ export class SceneCharacter extends BaseSceneCharacter {
 					this.invokeSkill("64120000");
 				}
 				else if (ikey.skill_3) {
-					this.invokeSkill("152001001");
+					this.invokeSkill("23121000");//152001001
 				}
 			}
-			if (this.skill) {
-				ikey.up = 0;
-				ikey.left = 0;
-				ikey.down = 0;
-				ikey.right = 0;
-				ikey.jump = 0;
+			if (this.$physics.state.jump &&
+			    ikey.jump && (!this.$ikey || !this.$ikey.jump) &&
+			    !this.$$jump_state
+			) {
+				this.invokeSkill("23001002");
+				this.$$jump_state = true;
 			}
-			this.$physics.control(ikey);
+			if (this.skill) {
+				if (!ikey.skill_3 && this.skill.skillId == "23121000") {
+					this.skill.nextState();
+				}
+				else {
+					ikey.up = 0;
+					ikey.left = 0;
+					ikey.down = 0;
+					ikey.right = 0;
+					ikey.jump = 0;
+				}
+			}
+			this.$ikey = ikey;
+			this.$physics.control(ikey);//basic control
 		}
 	}
 

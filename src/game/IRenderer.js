@@ -630,6 +630,9 @@ export class IRenderer {
 		
 		this._globalAlpha = 1;
 		this._globalAlphaStack = [];
+		
+		/** @type {Vec2} */
+		this.screen_size = new Vec2(0, 0);
 	}
 
 	/**
@@ -656,11 +659,6 @@ export class IRenderer {
 
 	/** @type {HTMLCanvasElement} */
 	get _canvas() {
-		throw new Error("Not implement");
-	}
-
-	/** @type {Vec2} */
-	get screen_size() {
 		throw new Error("Not implement");
 	}
 

@@ -117,12 +117,18 @@ export class Engine extends IRenderer {
 		_resize_canvas(canvas, window.innerWidth, window.innerHeight);
 		_resize_canvas(canvas2, window.innerWidth, window.innerHeight);
 
-		window.onresize = function () {
-			_resize_canvas(canvas, window.innerWidth, window.innerHeight);
-			_resize_canvas(canvas2, window.innerWidth, window.innerHeight);
+		window.onresize = e => {
+			const width = window.innerWidth;
+			const height = window.innerHeight;
 
-			document.getElementById("screen_width").innerHTML = canvas.width;
-			document.getElementById("screen_height").innerHTML = canvas.height;
+			_resize_canvas(canvas, width, height);
+			_resize_canvas(canvas2, width, height);
+
+			document.getElementById("screen_width").innerHTML = width;
+			document.getElementById("screen_height").innerHTML = height;
+
+			this.screen_size.x = width;
+			this.screen_size.y = height;
 		}
 		window.onresize();
 
@@ -140,12 +146,6 @@ export class Engine extends IRenderer {
 	/** @type {HTMLCanvasElement} */
 	get _canvas() {
 		return this.ctx.canvas;
-	}
-
-	/** @type {Vec2} */
-	get screen_size() {
-		const canvas = this._canvas;
-		return new Vec2(canvas.width, canvas.height);
 	}
 
 	/**

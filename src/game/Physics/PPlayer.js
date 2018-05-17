@@ -90,7 +90,7 @@ export class PEntityBase {
 		/** @type {box2d.b2Joint} */
 		this.walker = null;
 
-		/** @type {Foothold} */
+		/** @type {Foothold} - in World::Setp */
 		this._foothold = null;
 
 		/** @type {Foothold} */
@@ -102,8 +102,8 @@ export class PEntityBase {
 		 */
 		this.prev_$fh = null;
 
-		/** @type {{ x:number, y:number }} */
-		this._foot_at = null;
+		/** @type {{ x:number, y:number }} in World::Setp */
+		this._foot_at = new box2d.b2Vec2();
 
 		/**
 		 * no contact leave_$fh
@@ -568,7 +568,7 @@ export class PEntityBase {
 			}
 		}
 		this._foothold = foothold;
-		this._foot_at = new box2d.b2Vec2(foot_at.x, foot_at.y);
+		this._foot_at = foot_at.Clone();
 		return true;
 	}
 
@@ -648,7 +648,7 @@ export class PCharacterBase extends PEntityBase {
 		const body = this.body;
 
 		if (moveElem.elapsed == 0) {
-			body.SetLinearVelocity2(vx, vy);
+			body.ConstantVelocityWorldCenter2(vx, vy);
 		}
 		else {
 			const ALPHA = 0.7;
@@ -709,7 +709,7 @@ export class PCharacterBase extends PEntityBase {
 				vy = 0;
 			}
 
-			body.SetLinearVelocity2(vx, vy);
+			body.ConstantVelocityWorldCenter2(vx, vy);
 		}
 	}
 }

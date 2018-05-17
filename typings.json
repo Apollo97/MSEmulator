@@ -2,6 +2,9 @@
   "globalDependencies": {
     "electron": "registry:dt/electron#1.4.8+20170316233216",
     "electron-prebuilt": "registry:dt/electron-prebuilt#0.30.1+20160405225030",
+    "gl-matrix": "registry:dt/gl-matrix#2.2.2+20161114212859",
+    "jquery": "registry:dt/jquery#1.10.0+20170310222111",
+    "mixto": "registry:dt/mixto#0.0.0+20160510002910",
     "node": "registry:dt/node#7.0.0+20170322231424",
     "socket.io": "registry:dt/socket.io#1.4.4+20170313110830",
     "vue": "registry:dt/vue#1.0.21+20160929090511",

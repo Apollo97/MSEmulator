@@ -132,7 +132,7 @@ export class ActionAnimation {
 		//translate target position
 		if (fdat.move) {
 			target.tx = -fdat.move.x * target.front;
-			target.ty = -fdat.move.y * target.front;
+			target.ty = fdat.move.y;//Y 軸相反
 		}
 		else {
 			target.tx = 0;
@@ -157,6 +157,16 @@ export class ActionAnimation {
 
 	isEnd() {
 		return this._is_end;
+	}
+
+	getTotalTime() {
+		let tt = 0;
+		for (let i = 0; i < this.frames.length; ++i) {
+			let fdat = this.frames[i];
+
+			tt += fdat.delay;
+		}
+		return tt;
 	}
 
 	/**

@@ -30,6 +30,7 @@ export class Vec2 {
 	clone() {
 		return new this.constructor(this.x, this.y);
 	}
+
 	/**
 	 * @param {...Vec2} v2
 	 * @returns {Vec2}
@@ -58,12 +59,76 @@ export class Vec2 {
 		}
 		return new Vec2(x, y);
 	}
+
+	/** @param {Vec2} v */
+	plus(v) {
+		return new Vec2(this.x + v.x, this.y + v.y);
+	}
+	/** @param {Vec2} v */
+	minus(v) {
+		return new Vec2(this.x - v.x, this.y - v.y);
+	}
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	plus2(v) {
+		return new Vec2(this.x + x, this.y + y);
+	}
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	minus2(v) {
+		return new Vec2(this.x - x, this.y - y);
+	}
+
+	/**
+	 * @param {number} floatVar
+	 */
 	mul(floatVar) {
 		return new Vec2(this.x * floatVar, this.y * floatVar);
 	}
+
+	/**
+	 * @param {number} s
+	 */
+	scale(s) {
+		return new Vec2(this.x * s, this.y * s);
+	}
+
+	rotate(ang) {
+		let x = Math.cos(ang) * this.x - Math.sin(ang) * this.y;
+		let y = Math.sin(ang) * this.x + Math.cos(ang) * this.y;
+		return new Vec2(x, y);
+	}
+
 	normalize() {
 		let r = Math.sqrt(this.x * this.x + this.y * this.y);
 		return new Vec2(this.x / r, this.y / r);
+	}
+
+	length() {
+		return Math.sqrt(x ** 2 + y ** 2);
+	}
+
+	/**
+	 * @param {Vec2} p2
+	 */
+	distance_sq(p2) {
+		let lx = this.x - p2.x;
+		let ly = this.y - p2.y;
+		return lx * lx + ly * ly;
+	}
+
+	/**
+	 * @param {Vec2} p2
+	 */
+	distance(p2) {
+		let lx = this.x - p2.x;
+		let ly = this.y - p2.y;
+		return Math.sqrt(lx * lx + ly * ly);
 	}
 }
 

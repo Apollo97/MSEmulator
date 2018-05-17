@@ -18,7 +18,7 @@ window.$gravityAcc = 2000;
 window.$positionIterations = 3;//00;
 window.$velocityIterations = 8;//00;
 
-const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / CANVAS_SCALE);
+export const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / CANVAS_SCALE);
 
 
 export class World extends box2d.b2World {

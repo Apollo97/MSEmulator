@@ -72,7 +72,7 @@
 							<div class="chara-ls-btn-group">
 								<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="/images/toolstrip_character.png" alt="Add new" /></button>
 								<button @click="addCloneChara" class="chara-ls-btn" title="Add clone"><img src="/images/toolstrip_duplicate.png" alt="Add clone" /></button>
-								<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open"></span></button>
+								<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open" alt="📂"></span></button>
 								<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="/images/toolstrip_save_all.png" alt="Save all" /></button>
 							</div>
 						</div>

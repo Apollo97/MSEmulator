@@ -14,8 +14,8 @@ window.m_is_run = true;
 	window.FRAME_ELAPSED = 1000 / 60;
 	window.CANVAS_SCALE = 32;
 
-	window.m_display_physics_debug = false;//true;
-	window.m_display_debug_info = false;//false;
+	window.m_display_physics_debug = false;
+	window.m_display_debug_info = false;
 })();
 
 (function () {
@@ -38,13 +38,13 @@ window.m_is_run = true;
 
 	window.m_is_rendering_map = true;
 
-	window.m_display_back = false;//true;
+	window.m_display_back = true;
 	window.m_display_front = true;
 	window.m_display_mapobj = true;
 	window.m_display_maptile = true;
-	window.m_display_particle_system = false;//true;
+	window.m_display_particle_system = true;
 
-	window.m_display_skeletal_anim = false;//true;
+	window.m_display_skeletal_anim = true;
 
 	window.m_display_portal = true;
 
@@ -58,11 +58,11 @@ window.m_is_run = true;
 })();
 
 (function () {
-	window.m_editor_mode = false;//true;
+	window.m_editor_mode = true;
 
-	window.m_display_foothold = false;//true;
+	window.m_display_foothold = false;
 
-	window.m_display_selected_object = false;//true;
+	window.m_display_selected_object = false;
 	window.m_selected_object = null;
 	window.m_hover_object = null;
 })();
