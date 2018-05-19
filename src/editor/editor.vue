@@ -27,32 +27,32 @@
 				<p>
 					<div>
 						<label>
-							Map <input @keydown.enter="window().scene_map.load($event.target.value.padLeft(9, '0'))" />
+							Map <input @keydown.enter="$gv.scene_map.load($event.target.value.padLeft(9, '0'))" />
 						</label>
 					</div>
 					<div>
-						<label><input type="checkbox" @click="window().m_is_rendering_map = !window().m_is_rendering_map" checked />Map</label>
-						<label><input type="checkbox" @click="window().m_display_back = !window().m_display_back" checked />map back</label>
-						<label><input type="checkbox" @click="window().m_display_front = !window().m_display_front" checked />map front</label>
-						<label><input type="checkbox" @click="window().m_display_mapobj = !window().m_display_mapobj" checked />map object</label>
-						<label><input type="checkbox" @click="window().m_display_maptile = !window().m_display_maptile" checked />map tile</label>
-						<label><input type="checkbox" @click="window().m_display_particle_system = !window().m_display_particle_system" checked />particle system</label>
-						<label><input type="checkbox" @click="window().m_display_skeletal_anim = !window().m_display_skeletal_anim" checked />spine</label>
+						<label><input type="checkbox" v-model="$gv.m_is_rendering_map" />Map</label>
+						<label><input type="checkbox" v-model="$gv.m_display_back" />map back</label>
+						<label><input type="checkbox" v-model="$gv.m_display_front" />map front</label>
+						<label><input type="checkbox" v-model="$gv.m_display_mapobj" />map object</label>
+						<label><input type="checkbox" v-model="$gv.m_display_maptile" />map tile</label>
+						<label><input type="checkbox" v-model="$gv.m_display_particle_system" />particle system</label>
+						<label><input type="checkbox" v-model="$gv.m_display_skeletal_anim" />spine</label>
 					</div>
 				</p>
 			</details>
 			<details>
 				<summary>editor</summary>
 				<p>
-					<label><input type="checkbox" @click="window().m_display_foothold = !window().m_display_foothold" checked /> foothold</label>
-					<label><input type="checkbox" @click="window().m_display_selected_object = !window().m_display_selected_object" checked /> selected object</label>
+					<label><input type="checkbox" v-model="$gv.m_display_foothold" /> foothold</label>
+					<label><input type="checkbox" v-model="$gv.m_display_selected_object" /> selected object</label>
 				</p>
 			</details>
 			<details>
 				<summary>debug</summary>
 				<p>
-					<label><input type="checkbox" @click="window().m_display_physics_debug = !window().m_display_physics_debug" checked /> physics debug</label>
-					<label><input type="checkbox" @click="window().m_display_debug_info = !window().m_display_debug_info" /> debug info</label>
+					<label><input type="checkbox" v-model="$gv.m_display_physics_debug" /> physics debug</label>
+					<label><input type="checkbox" v-model="$gv.m_display_debug_info" /> debug info</label>
 				</p>
 			</details>
 		</ui-dialog>
@@ -504,17 +504,17 @@
 				},
 			}
 		},
-		computed: Vuex.mapState({
-			charaList: "charaList",	// chara[]
-			selected: "selected",	// charaId
-			chara: "chara",			// current chara
-			progressValue: "progressValue",
-			progressMaximum: "progressMaximum",
-		}),
+		computed: {
+			...Vuex.mapState({
+				charaList: "charaList",	// chara[]
+				selected: "selected",	// charaId
+				chara: "chara",			// current chara
+				progressValue: "progressValue",
+				progressMaximum: "progressMaximum",
+			}),
+			$gv: () => $gv,
+		},
 		methods: {
-			window: function () {
-				return window;
-			},
 			scene_map: function () {
 				return window.scene_map;
 			},

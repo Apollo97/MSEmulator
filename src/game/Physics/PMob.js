@@ -63,7 +63,7 @@ export class PMob extends PRemoteCharacter {
 	_create(world) {
 		super._create(world);
 		
-		this.setPosition(this.chara.x / CANVAS_SCALE, this.chara.y / CANVAS_SCALE, true);
+		this.setPosition(this.chara.x / $gv.CANVAS_SCALE, this.chara.y / $gv.CANVAS_SCALE, true);
 		
 		this._appleMobCategory(this._category);
 	}
@@ -187,20 +187,20 @@ export class PMob extends PRemoteCharacter {
 		
 		if (limit_action) {
 			const cbpos = this.body.GetPosition();
-			const x = cbpos.x * CANVAS_SCALE;
-			const y = cbpos.y * CANVAS_SCALE;
+			const x = cbpos.x * $gv.CANVAS_SCALE;
+			const y = cbpos.y * $gv.CANVAS_SCALE;
 			const dx0 = rx0 - x;
 			const dx1 = x - rx1;
 			
 			if (dx0 > 0) {
 				const fwpos = this.foot_walk.GetPosition();
-				this.body.SetPositionXY(rx0 / CANVAS_SCALE, cbpos.y);
-				this.foot_walk.SetPositionXY(rx0 / CANVAS_SCALE, fwpos.y);
+				this.body.SetPositionXY(rx0 / $gv.CANVAS_SCALE, cbpos.y);
+				this.foot_walk.SetPositionXY(rx0 / $gv.CANVAS_SCALE, fwpos.y);
 			}
 			else if (dx1 > 0) {
 				const fwpos = this.foot_walk.GetPosition();
-				this.body.SetPositionXY(rx1 / CANVAS_SCALE, cbpos.y);
-				this.foot_walk.SetPositionXY(rx1 / CANVAS_SCALE, fwpos.y);
+				this.body.SetPositionXY(rx1 / $gv.CANVAS_SCALE, cbpos.y);
+				this.foot_walk.SetPositionXY(rx1 / $gv.CANVAS_SCALE, fwpos.y);
 
 				if (!this.attackTarget) {
 					this.state.front *= -1;
@@ -212,8 +212,8 @@ export class PMob extends PRemoteCharacter {
 		super.PostStep();
 		
 		const pos = this.getPosition();
-		const x = pos.x * CANVAS_SCALE;
-		const y = pos.y * CANVAS_SCALE;
+		const x = pos.x * $gv.CANVAS_SCALE;
+		const y = pos.y * $gv.CANVAS_SCALE;
 		
 		this.chara.x = x;
 		this.chara.y = y;

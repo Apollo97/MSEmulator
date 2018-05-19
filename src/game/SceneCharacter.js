@@ -237,7 +237,7 @@ export class BaseSceneCharacter extends SceneObject {
 	update(stamp) {
 		this.chatCtrl.update(stamp);
 
-		if (m_editor_mode) {
+		if ($gv.m_editor_mode) {
 			if (this.renderer.speed > 0 && this.$physics && !this.$physics.disable) {
 				this._applyState({
 					//front: this.renderer.front,
@@ -251,8 +251,8 @@ export class BaseSceneCharacter extends SceneObject {
 		if (this.$physics) {
 			if (this.renderer && !this.$physics.disable) {
 				const pos = this.$physics.getPosition();
-				const px = Math.trunc(pos.x * CANVAS_SCALE + 0.5);
-				const py = Math.trunc(pos.y * CANVAS_SCALE + 0.5);
+				const px = Math.trunc(pos.x * $gv.CANVAS_SCALE + 0.5);
+				const py = Math.trunc(pos.y * $gv.CANVAS_SCALE + 0.5);
 
 				this.renderer.x = px;
 				this.renderer.y = py;
@@ -383,7 +383,7 @@ export class BaseSceneCharacter extends SceneObject {
 			}
 
 			for (let i = 0; i <= 9; ++i) {
-				if (input_keyDown[i]) {
+				if ($gv.input_keyDown[i]) {
 					let a = [
 						"blink", "hit", "smile",
 						"troubled", "cry", "angry",
@@ -424,10 +424,10 @@ export class SceneCharacter extends BaseSceneCharacter {
 		}
 		if (this.$physics) {
 			let ikey = {};
-			for (let i in input_keyDown) {
-				const k = keyboard_map[m_editor_mode ? 1 : 0][i];
+			for (let i in $gv.input_keyDown) {
+				const k = keyboard_map[$gv.m_editor_mode ? 1 : 0][i];
 				if (k) {
-					ikey[k] = input_keyDown[i];
+					ikey[k] = $gv.input_keyDown[i];
 				}
 			}
 			if (this.skill == null) {

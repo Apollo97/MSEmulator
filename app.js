@@ -517,11 +517,14 @@ function DataServer(app) {
 		a_pp.get('/version', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${_data_provider.version};`,
-				`window.DATA_TAG=${_data_provider.setting.tag};`,
-				`window.DATA_LAST_MODIFIED=${_data_provider.mtime_utcs};`,
+				`window.DATA_TAG="${_data_provider.setting.tag}";`,
+				`window.DATA_LAST_MODIFIED="${_data_provider.mtime_utcs}";`,
 			].join("\n");
 
-			res.writeHead(200, makeHead("application/x-javascript; charset=utf-8", _data_provider));
+			res.writeHead(200, {
+				"Content-Type": "application/x-javascript; charset=utf-8",
+				"Access-Control-Allow-Origin": "*",
+			});
 
 			res.end(js);
 		});
@@ -811,7 +814,7 @@ function DataServer(app) {
 			console.log(settingList[i] + "> complete");
 		}
 		catch (ex) {
-			console.log("err: " + settingList[i] + "> " + ex.message);
+			console.log(settingList[i] + "> " + "err: " + ex.message);
 		}
 	}
 	

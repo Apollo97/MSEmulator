@@ -304,7 +304,7 @@ export class ParticleGroup {
 	render(renderer, viewRect, mx, my) {
 		const ctx = renderer.ctx;
 
-		renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-m_viewRect.x), Math.trunc(-m_viewRect.y));
+		renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-$gv.m_viewRect.x), Math.trunc(-$gv.m_viewRect.y));
 		if (this.blendFuncDst != 6 || this.blendFuncSrc != 5) {
 			ctx.globalCompositeOperation = "lighter";
 		}

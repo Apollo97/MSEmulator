@@ -13,8 +13,8 @@ const DEGTORAD = Math.PI / 180;
  * physics profile
  */
 const chara_profile = {
-	width: 25 / CANVAS_SCALE,
-	height: 48 / CANVAS_SCALE,
+	width: 25 / $gv.CANVAS_SCALE,
+	height: 48 / $gv.CANVAS_SCALE,
 	density: 1,
 	get foot_width() {
 		return (chara_profile.width * 0.5);
@@ -30,7 +30,7 @@ const chara_profile = {
 	const walkSpeed = 125;//px/s
 	
 	window.JUMP_FORCE = jumpSpeed;
-	window.MOVEMENT_VELOCITY = walkSpeed / CANVAS_SCALE;
+	window.MOVEMENT_VELOCITY = walkSpeed / $gv.CANVAS_SCALE;
 
 	window.PLAYER_USE_WHEEL_WALKER = false;
 
@@ -187,8 +187,8 @@ export class PEntityBase {
 					const tpid = parseInt(reg[2], 10);
 					const tp = mapRenderer.portalMgr.portals[tpid];
 					
-					const x = tp.x / CANVAS_SCALE;
-					const y = tp.y / CANVAS_SCALE;
+					const x = tp.x / $gv.CANVAS_SCALE;
+					const y = tp.y / $gv.CANVAS_SCALE;
 					this.setPosition(x, y, true);
 					
 					return true;
@@ -301,7 +301,7 @@ export class PEntityBase {
 	 * @param {number} speed - speed = pixel / second
 	 */
 	setMovementSpeedPixel(speed) {
-		let v = speed / CANVAS_SCALE;
+		let v = speed / $gv.CANVAS_SCALE;
 		if (v > 0) {
 			this.movement_omega = v;
 		}
@@ -375,7 +375,7 @@ export class PEntityBase {
 	 * @returns {void}
 	 */
 	_create(world) {
-		let first_pos = new box2d.b2Vec2(1 / CANVAS_SCALE, -2 / CANVAS_SCALE);
+		let first_pos = new box2d.b2Vec2(1 / $gv.CANVAS_SCALE, -2 / $gv.CANVAS_SCALE);
 		let bdef = new box2d.b2BodyDef();
 		let fdef = new box2d.b2FixtureDef();
 		let shape = new box2d.b2PolygonShape();
@@ -655,8 +655,8 @@ export class PCharacterBase extends PEntityBase {
 			const ONE_MINUS_ALPHA = 1 - ALPHA;
 			let dx = moveElem.x - pos.x;
 			let dy = moveElem.y - pos.y;
-			let sx = dx / (moveElem.elapsed / window.FRAME_ELAPSED);//speed = pixel / second
-			let sy = dy / (moveElem.elapsed / window.FRAME_ELAPSED);
+			let sx = dx / (moveElem.elapsed / $gv.FRAME_ELAPSED);//speed = pixel / second
+			let sy = dy / (moveElem.elapsed / $gv.FRAME_ELAPSED);
 			let oldVel = body.GetLinearVelocity();
 
 			let vx, vy;
@@ -728,8 +728,8 @@ export class PPlayer extends PCharacterBase {
 
 		super._create(world);
 
-		window.SCREEN_PRINTLN(() => "x", () => that.getPosition().x.toFixed(3) + " * " + CANVAS_SCALE + " = " + (that.getPosition().x * CANVAS_SCALE).toFixed(0));
-		window.SCREEN_PRINTLN(() => "y", () => that.getPosition().y.toFixed(3) + " * " + CANVAS_SCALE + " = " + (that.getPosition().y * CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "x", () => that.getPosition().x.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (that.getPosition().x * $gv.CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "y", () => that.getPosition().y.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (that.getPosition().y * $gv.CANVAS_SCALE).toFixed(0));
 		window.SCREEN_PRINTLN(() => "jump", () => that.state.jump);
 		window.SCREEN_PRINTLN(() => "_drop", () => that.state._drop);
 		window.SCREEN_PRINTLN(() => "ddrop", () => that.state.dropDown);
@@ -741,7 +741,7 @@ export class PPlayer extends PCharacterBase {
 
 		window.SCREEN_PRINTLN(() => "(jump && !$fh)", () => that.state.jump && !that.$foothold);
 
-		window.SCREEN_PRINTLN(() => "velocity.x b", () => (that.body.m_linearVelocity.x * CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "velocity.x b", () => (that.body.m_linearVelocity.x * $gv.CANVAS_SCALE).toFixed(0));
 	}
 	
 	/**
@@ -751,24 +751,24 @@ export class PPlayer extends PCharacterBase {
 	Step(stamp) {
 		super.Step(stamp);
 		
-		if (input_keyDown['B'] == 1 && !window.mouse_dl) {
-			const px = m_viewRect.left + window.mouse_x;
-			const py = m_viewRect.top + window.mouse_y;
+		if ($gv.input_keyDown['B'] == 1 && !$gv.mouse_dl) {
+			const px = $gv.m_viewRect.left + $gv.mouse_x;
+			const py = $gv.m_viewRect.top + $gv.mouse_y;
 
-			this.setPosition(px / CANVAS_SCALE, py / CANVAS_SCALE, true);
+			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);
 		}
-		else if (input_keyDown['B'] > 0 && window.mouse_dl) {
-			const center = m_viewRect.center;
-			const px = m_viewRect.left + window.mouse_x - center.x;
-			const py = m_viewRect.top + window.mouse_y - center.y;
+		else if ($gv.input_keyDown['B'] > 0 && $gv.mouse_dl) {
+			const center = $gv.m_viewRect.center;
+			const px = $gv.m_viewRect.left + $gv.mouse_x - center.x;
+			const py = $gv.m_viewRect.top + $gv.mouse_y - center.y;
 
-			this.body.SetLinearVelocity(new box2d.b2Vec2(px / CANVAS_SCALE, py / CANVAS_SCALE));
-			this.foot_walk.SetLinearVelocity(new box2d.b2Vec2(px / CANVAS_SCALE, py / CANVAS_SCALE));
+			this.body.SetLinearVelocity(new box2d.b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
+			this.foot_walk.SetLinearVelocity(new box2d.b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
 		}
-		else if (window.mouse_dm && window.mouse_dm % 12 == 1) {
-			const px = m_viewRect.left + window.mouse_x;
-			const py = m_viewRect.top + window.mouse_y;
-			this.setPosition(px / CANVAS_SCALE, py / CANVAS_SCALE, true);
+		else if ($gv.mouse_dm && $gv.mouse_dm % 12 == 1) {
+			const px = $gv.m_viewRect.left + $gv.mouse_x;
+			const py = $gv.m_viewRect.top + $gv.mouse_y;
+			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);
 		}
 	}
 }

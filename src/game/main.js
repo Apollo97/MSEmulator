@@ -49,17 +49,17 @@ window.onkeydown = function (e) {
 	}
 	let k = e.key;
 
-	if (k != null && !input_keyDown[k]) {
-		input_keyDown[k] != null ? (++input_keyDown[k]) : (input_keyDown[k] = 1);
+	if (k != null && !$gv.input_keyDown[k]) {
+		$gv.input_keyDown[k] != null ? (++$gv.input_keyDown[k]) : ($gv.input_keyDown[k] = 1);
 	}
 
 	if (e.code == 'Space') {
 		$("#m_is_run").click();
 	}
 	if (e.code == "F2") {
-		m_editor_mode = !m_editor_mode;
+		$gv.m_editor_mode = !$gv.m_editor_mode;
 
-		app.vue.editor_mode = m_editor_mode;
+		app.vue.editor_mode = $gv.m_editor_mode;
 	}
 }
 
@@ -69,9 +69,9 @@ window.onkeyup = function (e) {
 	}
 	let k = e.key;
 
-	if (k != null && input_keyDown[k]) {
-		input_keyDown[k] = 0;
-		input_keyUp[k] = 1;
+	if (k != null && $gv.input_keyDown[k]) {
+		$gv.input_keyDown[k] = 0;
+		$gv.input_keyUp[k] = 1;
 	}
 }
 
@@ -89,64 +89,64 @@ Object.defineProperty(window, "$m_is_run", {
  * @param {MouseEvent} e
  */
 window.onmousedown = function (e) {
-	if (m_editor_mode) {
+	if ($gv.m_editor_mode) {
 		if (!e.target.classList.contains("Editor")) {
 			return;
 		}
 	}
 	if (e.which == 1) {
-		window.mouse_dl = 1;
-		window.mouse_ul = 0;
+		$gv.mouse_dl = 1;
+		$gv.mouse_ul = 0;
 	}
 	else if (e.which == 2) {
-		window.mouse_dm = 1;
-		window.mouse_um = 0;
+		$gv.mouse_dm = 1;
+		$gv.mouse_um = 0;
 	}
 	else if (e.which == 3) {
-		window.mouse_dr = 1;
-		window.mouse_ur = 0;
+		$gv.mouse_dr = 1;
+		$gv.mouse_ur = 0;
 	}
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
 }
 
 /**
  * @param {MouseEvent} e
  */
 window.onmouseup = function (e) {
-	if (m_editor_mode) {
+	if ($gv.m_editor_mode) {
 		if (!e.target.classList.contains("Editor")) {
 			return;
 		}
 	}
 	if (e.which == 1) {
-		window.mouse_dl = 0;
-		window.mouse_ul = 1;
+		$gv.mouse_dl = 0;
+		$gv.mouse_ul = 1;
 	}
 	else if (e.which == 2) {
-		window.mouse_dm = 0;
-		window.mouse_um = 1;
+		$gv.mouse_dm = 0;
+		$gv.mouse_um = 1;
 	}
 	else if (e.which == 3) {
-		window.mouse_dr = 0;
-		window.mouse_ur = 1;
+		$gv.mouse_dr = 0;
+		$gv.mouse_ur = 1;
 	}
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
 }
 
 /**
  * @param {MouseEvent} e
  */
 window.onmousemove = function (e) {
-	if (m_editor_mode) {
+	if ($gv.m_editor_mode) {
 		if (!e.target.classList.contains("Editor")) {
 			return;
 		}
 	}
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
-	window.mouse_move = 1;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
+	$gv.mouse_move = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,6 +168,7 @@ export class Game {
 		this.scene_map = new SceneMap();
 
 		window.scene_map = this.scene_map;
+		$gv.scene_map = window;
 
 		scene_map.onload = function () {
 			GameStateManager.PushState(this, window.chara);
@@ -189,37 +190,37 @@ export class Game {
 	moveViewport(inBound) {
 		const scene_map = this.scene_map;
 
-		const speed = input_keyDown['z'] ? (this._$moveViewportSpeed * 10) : this._$moveViewportSpeed;
+		const speed = $gv.input_keyDown['z'] ? (this._$moveViewportSpeed * 10) : this._$moveViewportSpeed;
 
-		//m_viewRect = scene_map.viewArea(new Vec2(m_viewRect.left, m_viewRect.top));
+		//$gv.m_viewRect = scene_map.viewArea(new Vec2($gv.m_viewRect.left, $gv.m_viewRect.top));
 
-		if (input_keyDown['ArrowLeft'] > 0) {
-			m_viewRect.left -= speed;
+		if ($gv.input_keyDown['ArrowLeft'] > 0) {
+			$gv.m_viewRect.left -= speed;
 		}
-		if (input_keyDown['ArrowRight'] > 0) {
-			m_viewRect.left += speed;
+		if ($gv.input_keyDown['ArrowRight'] > 0) {
+			$gv.m_viewRect.left += speed;
 		}
-		if (input_keyDown['ArrowUp'] > 0) {
-			m_viewRect.top -= speed;
+		if ($gv.input_keyDown['ArrowUp'] > 0) {
+			$gv.m_viewRect.top -= speed;
 		}
-		if (input_keyDown['ArrowDown'] > 0) {
-			m_viewRect.top += speed;
+		if ($gv.input_keyDown['ArrowDown'] > 0) {
+			$gv.m_viewRect.top += speed;
 		}
 
 		let { left, top, right, bottom } = scene_map.mapBound;
 
 		if (inBound) {
-			if (m_viewRect.left < left) {
-				m_viewRect.left = left;
+			if ($gv.m_viewRect.left < left) {
+				$gv.m_viewRect.left = left;
 			}
-			if (m_viewRect.right > right) {
-				m_viewRect.left = right - m_viewRect.width;
+			if ($gv.m_viewRect.right > right) {
+				$gv.m_viewRect.left = right - $gv.m_viewRect.width;
 			}
-			if (m_viewRect.top < top) {
-				m_viewRect.top = top;
+			if ($gv.m_viewRect.top < top) {
+				$gv.m_viewRect.top = top;
 			}
-			if (m_viewRect.bottom > bottom) {
-				m_viewRect.top = bottom - m_viewRect.height;
+			if ($gv.m_viewRect.bottom > bottom) {
+				$gv.m_viewRect.top = bottom - $gv.m_viewRect.height;
 			}
 		}
 	}
@@ -345,7 +346,7 @@ export class Game {
 				scene_map.update(stamp);//include world.update
 			}
 
-			SceneObjectMgr.Update(stamp);
+			$gv.SceneObjectMgr.Update(stamp);
 
 			EffectManager.Update(stamp);
 
@@ -387,21 +388,21 @@ export class Game {
 			engine.loadIdentity();
 			engine.clearDrawScreen();
 			
-			m_viewRect.size = engine.screen_size;
-			if (!m_editor_mode) {
+			$gv.m_viewRect.size = engine.screen_size;
+			if (!$gv.m_editor_mode) {
 				if (chara && chara.renderer) {
-					m_viewRect.setCenter(chara.renderer.x, chara.renderer.y);
+					$gv.m_viewRect.setCenter(chara.renderer.x, chara.renderer.y);
 				}
 				else if (scene_map.controller.player) {
 					const pos = scene_map.controller.player.getPosition();
-					const px = Math.trunc(pos.x * CANVAS_SCALE + 0.5);
-					const py = Math.trunc(pos.y * CANVAS_SCALE + 0.5);
-					m_viewRect.setCenter(px, py);
+					const px = Math.trunc(pos.x * $gv.CANVAS_SCALE + 0.5);
+					const py = Math.trunc(pos.y * $gv.CANVAS_SCALE + 0.5);
+					$gv.m_viewRect.setCenter(px, py);
 				}
 			}
 			
-			if (m_is_rendering_map && this._isMapReady) {
-				if (m_editor_mode) {
+			if ($gv.m_is_rendering_map && this._isMapReady) {
+				if ($gv.m_editor_mode) {
 					this.moveViewport(false);
 				}
 				
@@ -410,7 +411,7 @@ export class Game {
 					scene_map.renderBackground(engine);
 					if (0 && window.m_display_life && scene_map._raw.info.mirror_Bottom) {
 						engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
-						engine.ctx.translate(Math.trunc(-m_viewRect.x), Math.trunc(-m_viewRect.y));
+						engine.ctx.translate(Math.trunc(-$gv.m_viewRect.x), Math.trunc(-$gv.m_viewRect.y));
 						engine.ctx.scale(1, -1);
 						for (let i = 0; i < scene_map.layeredObject.length; ++i) {
 							scene_map.renderLife(engine, i);
@@ -441,13 +442,13 @@ export class Game {
 								}
 							}
 							
-							SceneObjectMgr.RenderLayer(engine, i);
+							$gv.SceneObjectMgr.RenderLayer(engine, i);
 						}
 					}
 					scene_map.applyCamera(engine);
 					{
 						for (let i = scene_map.layeredObject.length; i < 12; ++i) {
-							SceneObjectMgr.RenderLayer(engine, i);
+							$gv.SceneObjectMgr.RenderLayer(engine, i);
 						}
 					}
 				}
@@ -466,7 +467,7 @@ export class Game {
 				charaList[i]._$drawChatBalloon(engine);
 			}
 			
-			if (m_is_rendering_map && this._isMapReady) {
+			if ($gv.m_is_rendering_map && this._isMapReady) {
 				scene_map.beginRender(engine);
 				{
 					scene_map.applyCamera(engine);
@@ -488,7 +489,7 @@ export class Game {
 				{
 					EffectManager.Render(engine);
 
-					if (m_display_debug_info) {
+					if ($gv.m_display_debug_info) {
 						/** @type {CanvasRenderingContext2D} */
 						const ctx = engine.ctx;
 						{
@@ -500,9 +501,9 @@ export class Game {
 							ctx.fillStyle = "black";
 							ctx.fillText("map origin", 5, 14, 96);
 
-							ctx.fillText("view-x: " + m_viewRect.x.toFixed(0), 5, 30, 96);
+							ctx.fillText("view-x: " + $gv.m_viewRect.x.toFixed(0), 5, 30, 96);
 
-							ctx.fillText("view-y: " + m_viewRect.y.toFixed(0), 5, 46, 96);
+							ctx.fillText("view-y: " + $gv.m_viewRect.y.toFixed(0), 5, 46, 96);
 						}
 					}
 
@@ -511,7 +512,7 @@ export class Game {
 				engine.loadIdentity();
 			}
 			
-			if (m_display_debug_info) {
+			if ($gv.m_display_debug_info) {
 				this._render_debug_info();
 			}
 		}
@@ -606,13 +607,13 @@ export class Game {
 
 		this._renderScene();
 		
-		for (let i in input_keyDown) {
-			if (input_keyDown[i] > 0) {
-				++input_keyDown[i];
+		for (let i in $gv.input_keyDown) {
+			if ($gv.input_keyDown[i] > 0) {
+				++$gv.input_keyDown[i];
 			}
 		}
-		for (let i in input_keyUp) {
-			input_keyUp[i] = 0;
+		for (let i in $gv.input_keyUp) {
+			$gv.input_keyUp[i] = 0;
 		}
 	}
 	

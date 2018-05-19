@@ -64,7 +64,7 @@ goog.global = this;
  *
  * @type {Object<string, (string|number|boolean)>|undefined}
  */
-goog.global.CLOSURE_UNCOMPILED_DEFINES;
+goog.$gv.CLOSURE_UNCOMPILED_DEFINES;
 
 
 /**
@@ -85,7 +85,7 @@ goog.global.CLOSURE_UNCOMPILED_DEFINES;
  *
  * @type {Object<string, (string|number|boolean)>|undefined}
  */
-goog.global.CLOSURE_DEFINES;
+goog.$gv.CLOSURE_DEFINES;
 
 
 /**
@@ -157,15 +157,15 @@ goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
 goog.define = function(name, defaultValue) {
   var value = defaultValue;
   if (!COMPILED) {
-    if (goog.global.CLOSURE_UNCOMPILED_DEFINES &&
+    if (goog.$gv.CLOSURE_UNCOMPILED_DEFINES &&
         Object.prototype.hasOwnProperty.call(
-            goog.global.CLOSURE_UNCOMPILED_DEFINES, name)) {
-      value = goog.global.CLOSURE_UNCOMPILED_DEFINES[name];
+            goog.$gv.CLOSURE_UNCOMPILED_DEFINES, name)) {
+      value = goog.$gv.CLOSURE_UNCOMPILED_DEFINES[name];
     } else if (
-        goog.global.CLOSURE_DEFINES &&
+        goog.$gv.CLOSURE_DEFINES &&
         Object.prototype.hasOwnProperty.call(
-            goog.global.CLOSURE_DEFINES, name)) {
-      value = goog.global.CLOSURE_DEFINES[name];
+            goog.$gv.CLOSURE_DEFINES, name)) {
+      value = goog.$gv.CLOSURE_DEFINES[name];
     }
   }
   goog.exportPath_(name, value);
@@ -641,8 +641,8 @@ goog.define('goog.ENABLE_DEBUG_LOADER', true);
  * @private
  */
 goog.logToConsole_ = function(msg) {
-  if (goog.global.console) {
-    goog.global.console['error'](msg);
+  if (goog.$gv.console) {
+    goog.$gv.console['error'](msg);
   }
 };
 
@@ -697,14 +697,14 @@ goog.basePath = '';
  * A hook for overriding the base path.
  * @type {string|undefined}
  */
-goog.global.CLOSURE_BASE_PATH;
+goog.$gv.CLOSURE_BASE_PATH;
 
 
 /**
  * Whether to write out Closure's deps file. By default, the deps are written.
  * @type {boolean|undefined}
  */
-goog.global.CLOSURE_NO_DEPS;
+goog.$gv.CLOSURE_NO_DEPS;
 
 
 /**
@@ -717,7 +717,7 @@ goog.global.CLOSURE_NO_DEPS;
  * return true if the script was imported, false otherwise.
  * @type {(function(string): boolean)|undefined}
  */
-goog.global.CLOSURE_IMPORT_SCRIPT;
+goog.$gv.CLOSURE_IMPORT_SCRIPT;
 
 
 /**
@@ -863,7 +863,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    */
   goog.inHtmlDocument_ = function() {
     /** @type {Document} */
-    var doc = goog.global.document;
+    var doc = goog.$gv.document;
     return doc != null && 'write' in doc;  // XULDocument misses write.
   };
 
@@ -873,14 +873,14 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.findBasePath_ = function() {
-    if (goog.isDef(goog.global.CLOSURE_BASE_PATH)) {
-      goog.basePath = goog.global.CLOSURE_BASE_PATH;
+    if (goog.isDef(goog.$gv.CLOSURE_BASE_PATH)) {
+      goog.basePath = goog.$gv.CLOSURE_BASE_PATH;
       return;
     } else if (!goog.inHtmlDocument_()) {
       return;
     }
     /** @type {Document} */
-    var doc = goog.global.document;
+    var doc = goog.$gv.document;
     var scripts = doc.getElementsByTagName('SCRIPT');
     // Search backwards since the current script is in almost all cases the one
     // that has base.js.
@@ -906,7 +906,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    */
   goog.importScript_ = function(src, opt_sourceText) {
     var importScript =
-        goog.global.CLOSURE_IMPORT_SCRIPT || goog.writeScriptTag_;
+        goog.$gv.CLOSURE_IMPORT_SCRIPT || goog.writeScriptTag_;
     if (importScript(src, opt_sourceText)) {
       goog.dependencies_.written[src] = true;
     }
@@ -919,7 +919,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @const @private {boolean}
    */
   goog.IS_OLD_IE_ =
-      !!(!goog.global.atob && goog.global.document && goog.global.document.all);
+      !!(!goog.$gv.atob && goog.$gv.document && goog.$gv.document.all);
 
 
   /**
@@ -953,7 +953,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.wrapModule_ = function(srcUrl, scriptText) {
-    if (!goog.LOAD_MODULE_USING_EVAL || !goog.isDef(goog.global.JSON)) {
+    if (!goog.LOAD_MODULE_USING_EVAL || !goog.isDef(goog.$gv.JSON)) {
       return '' +
           'goog.loadModule(function(exports) {' +
           '"use strict";' + scriptText +
@@ -964,7 +964,7 @@ if (goog.DEPENDENCIES_ENABLED) {
     } else {
       return '' +
           'goog.loadModule(' +
-          goog.global.JSON.stringify(
+          goog.$gv.JSON.stringify(
               scriptText + '\n//# sourceURL=' + srcUrl + '\n') +
           ');';
     }
@@ -1111,7 +1111,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.writeScriptSrcNode_ = function(src) {
-    goog.global.document.write(
+    goog.$gv.document.write(
         '<script type="text/javascript" src="' + src + '"></' +
         'script>');
   };
@@ -1137,7 +1137,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    */
   goog.appendScriptSrcNode_ = function(src) {
     /** @type {Document} */
-    var doc = goog.global.document;
+    var doc = goog.$gv.document;
     var scriptEl =
         /** @type {HTMLScriptElement} */ (doc.createElement('script'));
     scriptEl.type = 'text/javascript';
@@ -1160,7 +1160,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   goog.writeScriptTag_ = function(src, opt_sourceText) {
     if (goog.inHtmlDocument_()) {
       /** @type {!HTMLDocument} */
-      var doc = goog.global.document;
+      var doc = goog.$gv.document;
 
       // If the user tries to require a new symbol after document load,
       // something has gone terribly wrong. Doing a document.write would
@@ -1368,7 +1368,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   goog.findBasePath_();
 
   // Allow projects to manage the deps files themselves.
-  if (!goog.global.CLOSURE_NO_DEPS) {
+  if (!goog.$gv.CLOSURE_NO_DEPS) {
     goog.importScript_(goog.basePath + 'deps.js');
   }
 }
@@ -1469,8 +1469,8 @@ goog.normalizePath_ = function(path) {
  * @private
  */
 goog.loadFileSync_ = function(src) {
-  if (goog.global.CLOSURE_LOAD_FILE_SYNC) {
-    return goog.global.CLOSURE_LOAD_FILE_SYNC(src);
+  if (goog.$gv.CLOSURE_LOAD_FILE_SYNC) {
+    return goog.$gv.CLOSURE_LOAD_FILE_SYNC(src);
   } else {
     try {
       /** @type {XMLHttpRequest} */
@@ -1506,7 +1506,7 @@ goog.retrieveAndExec_ = function(src, isModule, needsTranspile) {
     src = goog.normalizePath_(src);
 
     var importScript =
-        goog.global.CLOSURE_IMPORT_SCRIPT || goog.writeScriptTag_;
+        goog.$gv.CLOSURE_IMPORT_SCRIPT || goog.writeScriptTag_;
 
     var scriptText = goog.loadFileSync_(src);
     if (scriptText == null) {
@@ -2082,18 +2082,18 @@ goog.now = (goog.TRUSTED_SITE && Date.now) || (function() {
 
 /**
  * Evals JavaScript in the global scope.  In IE this uses execScript, other
- * browsers use goog.global.eval. If goog.global.eval does not evaluate in the
+ * browsers use goog.$gv.eval. If goog.$gv.eval does not evaluate in the
  * global scope (for example, in Safari), appends a script tag instead.
  * Throws an exception if neither execScript or eval is defined.
  * @param {string} script JavaScript string.
  */
 goog.globalEval = function(script) {
-  if (goog.global.execScript) {
-    goog.global.execScript(script, 'JavaScript');
-  } else if (goog.global.eval) {
+  if (goog.$gv.execScript) {
+    goog.$gv.execScript(script, 'JavaScript');
+  } else if (goog.$gv.eval) {
     // Test to see if eval works
     if (goog.evalWorksForGlobals_ == null) {
-      goog.global.eval('var _evalTest_ = 1;');
+      goog.$gv.eval('var _evalTest_ = 1;');
       if (typeof goog.global['_evalTest_'] != 'undefined') {
         try {
           delete goog.global['_evalTest_'];
@@ -2107,10 +2107,10 @@ goog.globalEval = function(script) {
     }
 
     if (goog.evalWorksForGlobals_) {
-      goog.global.eval(script);
+      goog.$gv.eval(script);
     } else {
       /** @type {Document} */
-      var doc = goog.global.document;
+      var doc = goog.$gv.document;
       var scriptElt =
           /** @type {!HTMLScriptElement} */ (doc.createElement('SCRIPT'));
       scriptElt.type = 'text/javascript';
@@ -2226,8 +2226,8 @@ goog.getCssName = function(className, opt_modifier) {
 
   // The special CLOSURE_CSS_NAME_MAP_FN allows users to specify further
   // processing of the class name.
-  if (goog.global.CLOSURE_CSS_NAME_MAP_FN) {
-    return goog.global.CLOSURE_CSS_NAME_MAP_FN(result);
+  if (goog.$gv.CLOSURE_CSS_NAME_MAP_FN) {
+    return goog.$gv.CLOSURE_CSS_NAME_MAP_FN(result);
   }
 
   return result;
@@ -2275,13 +2275,13 @@ goog.setCssNameMapping = function(mapping, opt_style) {
  * A hook for overriding the CSS name mapping.
  * @type {!Object<string, string>|undefined}
  */
-goog.global.CLOSURE_CSS_NAME_MAPPING;
+goog.$gv.CLOSURE_CSS_NAME_MAPPING;
 
 
-if (!COMPILED && goog.global.CLOSURE_CSS_NAME_MAPPING) {
+if (!COMPILED && goog.$gv.CLOSURE_CSS_NAME_MAPPING) {
   // This does not call goog.setCssNameMapping() because the JSCompiler
   // requires that goog.setCssNameMapping() be called with an object literal.
-  goog.cssNameMapping_ = goog.global.CLOSURE_CSS_NAME_MAPPING;
+  goog.cssNameMapping_ = goog.$gv.CLOSURE_CSS_NAME_MAPPING;
 }
 
 
@@ -2355,7 +2355,7 @@ goog.getMsgWithFallback = function(a, b) {
  * @param {string} publicPath Unobfuscated name to export.
  * @param {*} object Object the name should point to.
  * @param {Object=} opt_objectToExportTo The object to add the path to; default
- *     is goog.global.
+ *     is goog.$gv.
  */
 goog.exportSymbol = function(publicPath, object, opt_objectToExportTo) {
   goog.exportPath_(publicPath, object, opt_objectToExportTo);

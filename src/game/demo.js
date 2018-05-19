@@ -62,12 +62,12 @@ function render(time) {
 	engine.beginScene();
 
 	if (window.chara) {
-		if (window.mouse_dl) {
+		if ($gv.mouse_dl) {
 			chara.speed = 1;
-			chara.x = window.mouse_x;
-			chara.y = window.mouse_y;
+			chara.x = $gv.mouse_x;
+			chara.y = $gv.mouse_y;
 		}
-		if (window.mouse_dr) {
+		if ($gv.mouse_dr) {
 			chara.speed = 0;
 		}
 
@@ -175,35 +175,35 @@ document.getElementById("m_is_run").onchange = function (e) {
 	}
 };
 
-window.mouse_move = 0;
-window.mouse_x = 0;
-window.mouse_y = 0;
-window.mouse_dl = 0;
-window.mouse_ul = 0;
-window.mouse_dm = 0;
-window.mouse_um = 0;
-window.mouse_dr = 0;
-window.mouse_ur = 0;
-window.mouse_wheel = 0;
+$gv.mouse_move = 0;
+$gv.mouse_x = 0;
+$gv.mouse_y = 0;
+$gv.mouse_dl = 0;
+$gv.mouse_ul = 0;
+$gv.mouse_dm = 0;
+$gv.mouse_um = 0;
+$gv.mouse_dr = 0;
+$gv.mouse_ur = 0;
+$gv.mouse_wheel = 0;
 
 /**
  * @param {MouseEvent} e
  */
 window.onmousedown = function (e) {
 	if (e.which == 1) {
-		window.mouse_dl = 1;
-		window.mouse_ul = 0;
+		$gv.mouse_dl = 1;
+		$gv.mouse_ul = 0;
 	}
 	else if (e.which == 2) {
-		window.mouse_dm = 1;
-		window.mouse_um = 0;
+		$gv.mouse_dm = 1;
+		$gv.mouse_um = 0;
 	}
 	else if (e.which == 3) {
-		window.mouse_dr = 1;
-		window.mouse_ur = 0;
+		$gv.mouse_dr = 1;
+		$gv.mouse_ur = 0;
 	}
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
 }
 
 /**
@@ -211,36 +211,36 @@ window.onmousedown = function (e) {
  */
 window.onmouseup = function (e) {
 	if (e.which == 1) {
-		window.mouse_dl = 0;
-		window.mouse_ul = 1;
+		$gv.mouse_dl = 0;
+		$gv.mouse_ul = 1;
 	}
 	else if (e.which == 2) {
-		window.mouse_dm = 0;
-		window.mouse_um = 1;
+		$gv.mouse_dm = 0;
+		$gv.mouse_um = 1;
 	}
 	else if (e.which == 3) {
-		window.mouse_dr = 0;
-		window.mouse_ur = 1;
+		$gv.mouse_dr = 0;
+		$gv.mouse_ur = 1;
 	}
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
 }
 
 /**
  * @param {MouseEvent} e
  */
 window.onmousemove = function (e) {
-	window.mouse_x = e.pageX;
-	window.mouse_y = e.pageY;
-	window.mouse_move = 1;
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
+	$gv.mouse_move = 1;
 }
 
 window.onwheel = function (event) {
 	if (event.deltaY < 0) {
-		window.mouse_wheel = 1;
+		$gv.mouse_wheel = 1;
 	}
 	else if (event.deltaY > 0) {
-		window.mouse_wheel = -1;
+		$gv.mouse_wheel = -1;
 	}
 }
 

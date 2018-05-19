@@ -81,7 +81,7 @@ export class FairyDust extends MobSkillBase {
 				moveSpeed: v + Randomizer.nextInt(v2),
 				angle: x + Randomizer.randInt(s, s2),
 			}, this.animations);
-			SceneObjectMgr.addToScene(10, ball);
+			$gv.SceneObjectMgr.addToScene(10, ball);
 		}
 	}
 	

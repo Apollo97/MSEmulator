@@ -115,7 +115,7 @@ class MapTexture extends Sprite {
 			}
 
 			renderer.loadIdentity();
-			renderer.translate(Math.trunc(-m_viewRect.x + 0.5), Math.trunc(-m_viewRect.y + 0.5));
+			renderer.translate(Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
 			{
 				renderer.globalAlpha = Math.max(0, Math.min(alpha / 255, 1));
 
@@ -325,18 +325,18 @@ class MapObjectBase {
 		
 		this.delta += stamp;
 		
-		if (m_editor_mode && this.aabb) {
+		if ($gv.m_editor_mode && this.aabb) {
 			this.$editor_mouse();
 		}
 	}
 	$editor_mouse() {
-		const vrect = m_viewRect;
-		const mcx = m_viewRect.left + window.mouse_x;
-		const mcy = m_viewRect.top + window.mouse_y;
+		const vrect = $gv.m_viewRect;
+		const mcx = $gv.m_viewRect.left + $gv.mouse_x;
+		const mcy = $gv.m_viewRect.top + $gv.mouse_y;
 		if (this.typeb == 0 && this.aabb.collide4f2(mcx, mcy, 1, 1))
 		{
 			this.$display_aabb = true;
-			if (window.mouse_dl == 1 && (window.m_selected_object != this || window.m_selected_object == null)) {
+			if ($gv.mouse_dl == 1 && (window.m_selected_object != this || window.m_selected_object == null)) {
 				this.$select();
 			}
 			else if (window.m_hover_object == null) {
@@ -361,7 +361,7 @@ class MapObjectBase {
 		}
 		window.m_selected_object = this;
 		window.m_hover_object = null;
-		window.mouse_dl = 0;
+		$gv.mouse_dl = 0;
 	}
 	$unselect() {
 		this.$display_aabb = false;
@@ -420,7 +420,7 @@ class MapObjectBase {
 			this.textures[index_of_texture].draw(this.f, this.x + mx, this.y + my, this.time, this.delta, display, renderer);//MapleSceneTexture#draw
 		}
 		
-		if (m_display_selected_object && m_editor_mode && display && this.aabb && this.$display_aabb) {
+		if ($gv.m_display_selected_object && $gv.m_editor_mode && display && this.aabb && this.$display_aabb) {
 			const ctx = renderer.ctx;
 			const x = Math.trunc((-canva.left + 0.5) + this.aabb.left);
 			const y = Math.trunc((-canva.top + 0.5) + this.aabb.top);
@@ -732,9 +732,9 @@ class MapObjectSkeletalAnim extends MapObject {
 	 * @param {IRenderer} renderer
 	 */
 	draw(center, canva, display, renderer) {
-		if (m_display_skeletal_anim && display) {
-			const x = Math.trunc((-m_viewRect.x + 0.5) + this.x);
-			const y = Math.trunc((-m_viewRect.y + 0.5) + this.y);
+		if ($gv.m_display_skeletal_anim && display) {
+			const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
+			const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
 			
 			renderer.ctx.setTransform(1, 0, 0, -1, x, y);
 					
@@ -746,7 +746,7 @@ class MapObjectSkeletalAnim extends MapObject {
 			if (display && this.display_aabb) {
 				const ctx = renderer.ctx;
 			
-				renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-m_viewRect.x + 0.5), Math.trunc(-m_viewRect.y + 0.5));
+				renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
 			
 				ctx.beginPath();
 				ctx.rect(this.x - this.ssanim.width * 0.5, this.y - this.ssanim.height, this.ssanim.width, this.ssanim.height);
@@ -1133,10 +1133,10 @@ class MapBackSkeletalAnim extends MapBackBase {
 	 * @param {IRenderer} renderer
 	 */
 	draw(center, canva, display, renderer) {
-		if (m_display_skeletal_anim && display && this.display != false) {
+		if ($gv.m_display_skeletal_anim && display && this.display != false) {
 			if (this.ssanim) {
-				const x = Math.trunc((-m_viewRect.x + 0.5) + this.x);
-				const y = Math.trunc((-m_viewRect.y + 0.5) + this.y);
+				const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
+				const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
 				
 				renderer.ctx.setTransform(1, 0, 0, -1, x, y);
 				
@@ -2098,7 +2098,7 @@ export class SceneMap {
 			const viewRect = this._compute_map_bound();
 			const viewCenter = viewRect.center;
 			
-			m_viewRect.setCenter(viewCenter.x, viewCenter.y);
+			$gv.m_viewRect.setCenter(viewCenter.x, viewCenter.y);
 			
 			this.controller._createMapBound(viewRect);
 			
@@ -2255,7 +2255,7 @@ export class SceneMap {
 	 */
 	update(stamp) {
 		window.m_hover_object = null;
-		if (mouse_dm || mouse_dr) {
+		if ($gv.mouse_dm || $gv.mouse_dr) {
 			window.m_selected_object = null;
 		}
 		
@@ -2277,7 +2277,7 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	applyCamera(renderer) {
-		renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-m_viewRect.x), Math.trunc(-m_viewRect.y));
+		renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-$gv.m_viewRect.x), Math.trunc(-$gv.m_viewRect.y));
 	}
 
 	/**
@@ -2302,7 +2302,7 @@ export class SceneMap {
 	 */
 	renderLife(renderer, whereLayer) {
 		const center = Vec2.empty;
-		const viewRect = m_viewRect;
+		const viewRect = $gv.m_viewRect;
 		
 		this.lifeMgr.draw(center, viewRect, true, renderer, whereLayer);
 	}
@@ -2313,7 +2313,7 @@ export class SceneMap {
 	renderPortal(renderer) {
 		const display_portal = true;
 		const center = Vec2.empty;
-		const viewRect = m_viewRect;
+		const viewRect = $gv.m_viewRect;
 
 		this.portalMgr.update(this.stamp);
 		this.portalMgr.draw(center, viewRect, display_portal, renderer);
@@ -2323,13 +2323,13 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderFrontground(renderer) {
-		const center = m_viewRect.center;
-		const viewRect = m_viewRect;
+		const center = $gv.m_viewRect.center;
+		const viewRect = $gv.m_viewRect;
 		
 		for (let i = 0; i < this.frontground.length; ++i) {
 			let back = this.frontground[i];
 			back.update(this.stamp);
-			back.draw(center, viewRect, m_display_front, renderer);
+			back.draw(center, viewRect, $gv.m_display_front, renderer);
 		}
 	}
 
@@ -2338,13 +2338,13 @@ export class SceneMap {
 	 */
 	renderLayeredObject(renderer, layerIndex) {
 		const center = Vec2.empty;
-		const viewRect = m_viewRect;
+		const viewRect = $gv.m_viewRect;
 		
 		const objs = this.layeredObject[layerIndex];
 		for (let j = 0; j < objs.length; ++j) {
 			let obj = objs[j];
 			obj.update(this.stamp);
-			obj.draw(center, viewRect, m_display_mapobj, renderer);
+			obj.draw(center, viewRect, $gv.m_display_mapobj, renderer);
 		}
 	}
 	
@@ -2353,13 +2353,13 @@ export class SceneMap {
 	 */
 	renderLayeredTile(renderer, layerIndex) {
 		const center = Vec2.empty;
-		const viewRect = m_viewRect;
+		const viewRect = $gv.m_viewRect;
 		
 		const tiles = this.layeredTile[layerIndex];
 		for (let j = 0; j < tiles.length; ++j) {
 			let tile = tiles[j];
 			tile.update(this.stamp);
-			tile.draw(center, viewRect, m_display_maptile, renderer);
+			tile.draw(center, viewRect, $gv.m_display_maptile, renderer);
 		}
 	}
 
@@ -2367,13 +2367,13 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderBackground(renderer) {
-		const center = m_viewRect.center;
-		const viewRect = m_viewRect;
+		const center = $gv.m_viewRect.center;
+		const viewRect = $gv.m_viewRect;
 		
 		for (let i = 0; i < this.background.length; ++i) {
 			let back = this.background[i];
 			back.update(this.stamp);
-			back.draw(center, viewRect, m_display_back, renderer);
+			back.draw(center, viewRect, $gv.m_display_back, renderer);
 		}
 	}
 	
@@ -2382,8 +2382,8 @@ export class SceneMap {
 	 */
 	renderParticle(renderer) {
 		//const center = Vec2.empty;
-		const center = m_viewRect.center;
-		const viewRect = m_viewRect;
+		const center = $gv.m_viewRect.center;
+		const viewRect = $gv.m_viewRect;
 		
 		for (let i = 0; i < this.particleList.length; ++i) {
 			let particle = this.particleList[i];

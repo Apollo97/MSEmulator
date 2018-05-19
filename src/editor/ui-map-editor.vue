@@ -204,7 +204,7 @@ export default {
 		},
 		scrollIntoView: function(event, obj) {
 			let center = obj.aabb.center;
-			m_viewRect.setCenter(center.x, center.y);
+			$gv.m_viewRect.setCenter(center.x, center.y);
 			obj.$select();
 			
 			event.currentTarget.scrollIntoView();

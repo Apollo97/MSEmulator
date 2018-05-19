@@ -18,7 +18,7 @@ window.$gravityAcc = 2000;
 window.$positionIterations = 3;//00;
 window.$velocityIterations = 8;//00;
 
-export const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / CANVAS_SCALE);
+export const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / $gv.CANVAS_SCALE);
 
 
 export class World extends box2d.b2World {
@@ -98,23 +98,23 @@ export class World extends box2d.b2World {
 		bdef.userData = portal;
 		bdef.type = box2d.b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//box2d.b2_dynamicBody
 		bdef.position.Set(
-			portal.x / CANVAS_SCALE,
-			portal.y / CANVAS_SCALE);
+			portal.x / $gv.CANVAS_SCALE,
+			portal.y / $gv.CANVAS_SCALE);
 
 		let body = this.CreateBody(bdef);
 		body.$type = "portal";
 		
 		const rect = portal.compute_rectangle(0);
-		const width = rect.width / 2 / CANVAS_SCALE * 0.4;
-		const height = rect.height / 2 / CANVAS_SCALE * 0.2;
+		const width = rect.width / 2 / $gv.CANVAS_SCALE * 0.4;
+		const height = rect.height / 2 / $gv.CANVAS_SCALE * 0.2;
 		
 		shape = new box2d.b2PolygonShape();
 		
 		if (window.MAP_PORTAL_FULL_SIZE) {
 			shape.SetAsOrientedBox(
-				rect.width / 2 / CANVAS_SCALE,
-				rect.height / 2 / CANVAS_SCALE,
-				new box2d.b2Vec2(-portal.textures[0].x / CANVAS_SCALE, -portal.textures[0].y / CANVAS_SCALE),
+				rect.width / 2 / $gv.CANVAS_SCALE,
+				rect.height / 2 / $gv.CANVAS_SCALE,
+				new box2d.b2Vec2(-portal.textures[0].x / $gv.CANVAS_SCALE, -portal.textures[0].y / $gv.CANVAS_SCALE),
 				0);
 		}
 		else {
@@ -141,10 +141,10 @@ export class World extends box2d.b2World {
 	_createMapBound(rect) {
 		let { left, top, right, bottom } = rect;
 		
-		left /= CANVAS_SCALE;
-		right /= CANVAS_SCALE;
-		top /= CANVAS_SCALE;
-		bottom /= CANVAS_SCALE;
+		left /= $gv.CANVAS_SCALE;
+		right /= $gv.CANVAS_SCALE;
+		top /= $gv.CANVAS_SCALE;
+		bottom /= $gv.CANVAS_SCALE;
 		
 		let bdef = new box2d.b2BodyDef();
 		//bdef.type = box2d.b2BodyType.b2_dynamicBody;
@@ -280,19 +280,19 @@ export class World extends box2d.b2World {
 	}
 	
 	$_onMouseEvent() {
-		const x = (m_viewRect.left + window.mouse_x) / CANVAS_SCALE;
-		const y = (m_viewRect.top + window.mouse_y) / CANVAS_SCALE;
+		const x = ($gv.m_viewRect.left + $gv.mouse_x) / $gv.CANVAS_SCALE;
+		const y = ($gv.m_viewRect.top + $gv.mouse_y) / $gv.CANVAS_SCALE;
 		const p = new box2d.b2Vec2(x, y);
 		
-		if (window.mouse_dl) {
+		if ($gv.mouse_dl) {
 			this.$_mouseDown(p);
 		}
-		if (window.mouse_ul) {
-			window.mouse_ul = 0;
+		if ($gv.mouse_ul) {
+			$gv.mouse_ul = 0;
 			this.$_mouseUp(p);
 		}
-		if (window.mouse_move) {
-			window.mouse_move = 0;
+		if ($gv.mouse_move) {
+			$gv.mouse_move = 0;
 			this.$_mouseMove(p);
 		}
 	}
@@ -311,7 +311,7 @@ export class World extends box2d.b2World {
 			body.Step();
 		}
 
-		super.Step(1 / window.MAX_FPS, window.$velocityIterations, window.$positionIterations);
+		super.Step(1 / $gv.MAX_FPS, window.$velocityIterations, window.$positionIterations);
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
 			body.PostStep();
 		}
@@ -324,7 +324,7 @@ export class World extends box2d.b2World {
 		/** @type {CanvasRenderingContext2D} */
 		const ctx = renderer.ctx;
 
-		if (window.m_display_physics_debug) {
+		if ($gv.m_display_physics_debug) {
 			const settings = this.m_debugDraw.m_settings;
 			this.m_debugDraw.m_ctx = ctx;
 
@@ -351,7 +351,7 @@ export class World extends box2d.b2World {
 			ctx.restore();
 		}
 		
-		if (m_display_foothold) {
+		if ($gv.m_display_foothold) {
 			ctx.save();
 			this.ground.$drawDebugInfo(renderer);
 			if (this.player && this.player._foothold) {

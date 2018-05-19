@@ -131,10 +131,10 @@ export class Ground {
 				//}
 				let x1, y1, x2, y2;
 				
-				x1 = fh.x1 / CANVAS_SCALE;
-				y1 = fh.y1 / CANVAS_SCALE;
-				x2 = fh.x2 / CANVAS_SCALE;
-				y2 = fh.y2 / CANVAS_SCALE;
+				x1 = fh.x1 / $gv.CANVAS_SCALE;
+				y1 = fh.y1 / $gv.CANVAS_SCALE;
+				x2 = fh.x2 / $gv.CANVAS_SCALE;
+				y2 = fh.y2 / $gv.CANVAS_SCALE;
 
 				const cx = (x2 + x1) * 0.5;
 				const cy = (y2 + y1) * 0.5;
@@ -160,21 +160,21 @@ export class Ground {
 				body.$type = "ground";
 
 				if (window.CREATE_SOLID_FOOTHOLD) {
-					const hheight = 1.5 / CANVAS_SCALE;
-					shape.SetAsOrientedBox(hlen, hheight, new box2d.b2Vec2(0, 0.75 / CANVAS_SCALE), 0);
+					const hheight = 1.5 / $gv.CANVAS_SCALE;
+					shape.SetAsOrientedBox(hlen, hheight, new box2d.b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
 				}
 				else {
 					shape.SetAsEdge(new box2d.b2Vec2(-hlen, 0), new box2d.b2Vec2(hlen, 0));
 					if (window.USE_GHOST_VERTEX) {
 						if (fh.prev != null) {
 							const prev = this.footholds[fh.prev];
-							let v0 = new box2d.b2Vec2(prev.x1 - cx, prev.y1 - cy);
+							let v0 = new box2d.b2Vec2(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
 							shape.m_vertex0.Copy(v0);
 							shape.m_hasVertex0 = true;
 						}
 						if (fh.next != null) {
 							const next = this.footholds[fh.next];
-							let v3 = new box2d.b2Vec2(next.x2 - cx, next.y2 - cy);
+							let v3 = new box2d.b2Vec2(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
 							shape.m_vertex3.Copy(v3);
 							shape.m_hasVertex3 = true;
 						}
@@ -372,10 +372,10 @@ export class Ground {
 			}
 
 			{
-				const radius = player.foot_walk.m_fixtureList.m_shape.m_radius * 0.5;//point.x;//1 / CANVAS_SCALE;
+				const radius = player.foot_walk.m_fixtureList.m_shape.m_radius * 0.5;//point.x;//1 / $gv.CANVAS_SCALE;
 
-				if ((fh.prev == null && ((ppw.x - radius) * CANVAS_SCALE) < fh.x1) ||
-					(fh.next == null && ((ppw.x + radius) * CANVAS_SCALE) > fh.x2))
+				if ((fh.prev == null && ((ppw.x - radius) * $gv.CANVAS_SCALE) < fh.x1) ||
+					(fh.next == null && ((ppw.x + radius) * $gv.CANVAS_SCALE) > fh.x2))
 				{
 					player._foothold = null;
 					player.$foothold = null;
@@ -484,7 +484,7 @@ export class Ground {
 	 * @param {IRenderer} renderer
 	 */
 	$drawDebugInfo(renderer) {
-		if (m_display_foothold) {
+		if ($gv.m_display_foothold) {
 			const ctx = renderer.ctx;
 
 			ctx.lineJoin = "round";

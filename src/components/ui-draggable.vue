@@ -11,15 +11,15 @@
 	//not effective in ui
 	//this func no work, mouse event from window
 	function reset_mouse() {
-		window.mouse_move = 0;
-		window.mouse_x = 0;
-		window.mouse_y = 0;
-		window.mouse_dl = 0;
-		window.mouse_ul = 0;
-		window.mouse_dm = 0;
-		window.mouse_um = 0;
-		window.mouse_dr = 0;
-		window.mouse_ur = 0;
+		$gv.mouse_move = 0;
+		$gv.mouse_x = 0;
+		$gv.mouse_y = 0;
+		$gv.mouse_dl = 0;
+		$gv.mouse_ul = 0;
+		$gv.mouse_dm = 0;
+		$gv.mouse_um = 0;
+		$gv.mouse_dr = 0;
+		$gv.mouse_ur = 0;
 	}
 
 	function _calc_origin_pos(el) {

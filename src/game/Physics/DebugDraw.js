@@ -36,10 +36,10 @@ Settings.prototype.canvasScale = 32;
 delete Settings.prototype.canvasScale;
 Object.defineProperty(Settings.prototype, "canvasScale", {
 	get: function () {
-		return CANVAS_SCALE;
+		return $gv.CANVAS_SCALE;
 	},
 	set: function (value) {
-		CANVAS_SCALE = value;
+		$gv.CANVAS_SCALE = value;
 	}
 });
 /**

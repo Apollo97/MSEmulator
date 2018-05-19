@@ -67,7 +67,7 @@ export class FlowerTrap extends MobSkillBase {
 				duration: pat.duration
 			}, this.animations);
 			
-			SceneObjectMgr.addToScene(10, ball);
+			$gv.SceneObjectMgr.addToScene(10, ball);
 		}
 	}
 	
