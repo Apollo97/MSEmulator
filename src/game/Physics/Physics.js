@@ -58,10 +58,11 @@ box2d.b2Contact.prototype._ignoreSelfContact = function (fa, fb) {
 	return false;
 }
 
+box2d.b2Filter.prototype.maskBits = 0xFFFFFFFF;
+
 export class PFilter extends box2d.b2Filter {
 	constructor() {
 		super(...arguments);
-		this.reset();
 	}
 
 	noContact() {
@@ -93,6 +94,15 @@ let b2Vec2_temp = new box2d.b2Vec2()
 export class PBody extends box2d.b2Body {
 	constructor() {
 		super(...arguments);
+		/** @type {string} */
+		this._type = null;
+	}
+	
+	get $type() {
+		return this._type;
+	}
+	set $type(value) {
+		this._type = value;
 	}
 	
 	Step() {

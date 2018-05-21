@@ -134,7 +134,7 @@ function getSettingList(folderPath, cbfunc) {
 			let m = fileName.match(/^(setting\d*\.ini)$/);
 			return m ? m[1] : null;
 		}).filter(function (fileName) {
-			return fileName != null && fs.existsSync(fileName);
+			return fileName != null;
 		});
 		return settingList;
 	}

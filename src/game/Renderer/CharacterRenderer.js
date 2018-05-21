@@ -8,6 +8,7 @@ import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
 import { engine, Graph } from '../Engine.js';
 
 import { SpriteBase, Sprite } from '../Sprite.js';
+import { Animation } from "../Animation";
 
 import { ActionAnimation } from './CharacterActionAnimation.js';
 import { SkillAnimation } from '../Skill.js';
@@ -460,20 +461,17 @@ class HairFragmentTexture extends FragmentTexture {
 }
 
 
-class ItemEffectAnimation {
+class ItemEffectAnimation extends Animation {
 	constructor(raw, url) {
+		super(raw, url);
+
 		this._raw = raw;
+		this._url = this._url;
 
 		this.__getAttr("z", -1);
 		this.__getAttr("pos", 1);
-			
-		/** @type {Sprite[]} */
-		this.textures = [];
 
-		for (let i = 0; i in raw; ++i) {
-			this.textures[i] = new Sprite(raw[i]);
-			this.textures[i]._url = ["/images", url, i].join("/");
-		}
+		super.load();
 	}
 	__getAttr(attr, defVal) {
 		if (attr in this._raw) {
@@ -486,114 +484,19 @@ class ItemEffectAnimation {
 
 	/**
 	 * @param {IRenderer} renderer
-	 * @param {number} frame
+	 * @param {boolean} actionExceptRotation
 	 * @param {CharacterAnimationBase} chara
 	 */
-	render(renderer, frame, chara) {
-		const texture = this.textures[frame];
-
+	render(renderer, actionExceptRotation, chara) {
+		const texture = this.textures[this.frame];
 		if (texture && texture.isLoaded()) {
-			if (this.pos == 0) {
-				texture.draw();
-				alert("effect_sprite.pos(" + this.pos + ") not implement");
-			}
-			else if (this.pos == 1) {
-				//let cy = chara.slots.body.fragments.body.getTexture(chara).origin.y;
-
-				//texture.draw2(0, -texture.height * 0.5 + cy);
-
-				let pos = this.getPos(texture, chara);
-
-				renderer.drawGraph2(texture, pos.x, pos.y, 0);
-				if (0) {
-					let ctx = renderer.ctx;
-
-					ctx.beginPath();
-					ctx.moveTo(0, 0);
-					ctx.lineTo(200, 0);
-					ctx.strokeStyle = "#900";
-					ctx.stroke();
-
-					ctx.beginPath();
-					ctx.moveTo(0, 0);
-					ctx.lineTo(0, 200);
-					ctx.strokeStyle = "#090";
-					ctx.stroke();
-
-					ctx.beginPath();
-					ctx.moveTo(pos.x, pos.y);
-					ctx.lineTo(pos.x + texture.width, pos.y);
-					ctx.strokeStyle = "#900";
-					ctx.stroke();
-
-					ctx.beginPath();
-					ctx.moveTo(pos.x, pos.y);
-					ctx.lineTo(pos.x, pos.y + texture.height);
-					ctx.strokeStyle = "#090";
-					ctx.stroke();
-
-					ctx.strokeStyle = "#EEE";
-
-					ctx.beginPath();
-					ctx.moveTo(pos.x, pos.y + texture.height);
-					ctx.lineTo(pos.x + texture.width, pos.y + texture.height);
-					ctx.stroke();
-
-					ctx.beginPath();
-					ctx.moveTo(pos.x + texture.width, pos.y);
-					ctx.lineTo(pos.x + texture.width, pos.y + texture.height);
-					ctx.stroke();
-				}
-			}
-			else {
-				debugger
-			}
+			//let pos = chara.slots.cape.fragments.default.textures[chara.action][frame].relative;
+			//let pos = this.getPos(texture, chara);
+			let oy = actionExceptRotation ? 0 : (-texture.height * 0.25);
+			this.draw(renderer, 0, oy, 0, chara.front > 0);
+			return;
 		}
 	}
-
-	getPos(texture, chara) {
-		let neck = chara.slots.body.fragments.body.getTexture(chara).neck;
-		let hneck = chara.slots.head.fragments.head.getTexture(chara).neck;
-		const adj_y = chara.slots.head.fragments.head.getTexture(chara).brow.y;
-		if (adj_y != -5) {
-			alert("getPos => adj_y");
-			debugger
-		}
-		return {
-			x: ((-hneck.x + neck.x - texture.x) + (-texture.width / 2)) * 0.5,//centerX to centerX
-			y: -hneck.y + neck.y - texture.y + chara.slots.head.fragments.head.getTexture(chara).brow.y//WTF?
-		};
-			
-		return this.getCenterBottomPos(texture, chara);
-	}
-	//getWingPos(texture, chara) {
-	//	let navel = chara.slots.body.fragments.body.getTexture(chara).navel;
-	//	let neck = chara.slots.body.fragments.body.getTexture(chara).neck;
-	//	let origin = -chara.slots.body.fragments.body.getTexture(chara).origin;
-	//	let hneck = chara.slots.head.fragments.head.getTexture(chara).neck;
-	//
-	//	return {
-	//		x: -hneck.x + neck.x - texture.x,
-	//		y: -hneck.y + neck.y - texture.y
-	//	};
-	//}
-	/**
-	 * Example: 01103017, 01102965, 01102988
-	 * @param {any} texture
-	 * @param {any} chara
-	 */
-	getCenterBottomPos(texture, chara) {
-		return {
-			x: -texture.width / 2,
-			y: -texture.height
-		};
-	}
-	//getNormalPos(texture, chara) {
-	//	return {
-	//		x: -texture.x,
-	//		y: -texture.y
-	//	};
-	//}
 }
 
 //	/data/Effect/ItemEff.img/1102918
@@ -638,8 +541,19 @@ class ItemEffect {
 	 * @returns {Promise<ItemEffect>}
 	 */
 	static async load(equipID) {
+		let eff = new ItemEffect();
+		await eff.load(equipID);
+		return eff;
+	}
+
+	/**
+	 * if (!exist) return null
+	 * @param {string} equipID
+	 * @returns {Promise<void>}
+	 */
+	async load(equipID) {
 		const id = Number(equipID);
-		const url = `Effect/ItemEff.img/${id}/effect`;
+		const url = `/Effect/ItemEff.img/${id}/effect`;
 
 		if (ItemEffect._list && !ItemEffect._list[id]) {
 			//if (!confirm("Try load: " + url)) {
@@ -650,10 +564,10 @@ class ItemEffect {
 
 		let raw = JSON.parse(await $get.data(url));
 		if (raw) {
-			let eff = new ItemEffect();
-			eff._load(equipID, url, raw);
-			return eff;
+			return await this._load(equipID, url, raw);
 		}
+
+		return null;
 	}
 
 	/**
@@ -669,6 +583,8 @@ class ItemEffect {
 		}
 
 		if (this.animation[this.action]) {
+			this.animation[this.action].update(stamp);
+			/*
 			const textures = this.animation[this.action].textures;
 			const fc = textures.length;
 			if (fc > 1) {
@@ -679,6 +595,7 @@ class ItemEffect {
 					this.time = 0;
 				}
 			}
+			*/
 		}
 	}
 
@@ -687,10 +604,8 @@ class ItemEffect {
 	 * @param {CharacterAnimationBase} chara
 	 */
 	render(renderer, chara) {
-		if (this.animation) {
-			if (this.animation[this.action]) {
-				this.animation[this.action].render(renderer, this.frame, chara);
-			}
+		if (this.animation && this.animation[this.action]) {
+			this.animation[this.action].render(renderer, this.actionExceptRotation, chara);
 		}
 	}
 

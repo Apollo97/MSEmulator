@@ -280,7 +280,7 @@ export class Ground {
 		}
 		let numPoints, worldManifold;
 		const platformBody = fa.GetBody();//=>this.body
-		const otherBody = fb.GetBody();
+		const playerBody = fb.GetBody();
 
 		/** @type {Foothold} */
 		const fh = fa.GetUserData();
@@ -302,8 +302,13 @@ export class Ground {
 		const $fh = player.$foothold;
 
 		if (player.state.dropDown && player.leave_$fh != null) {
-			//if (otherBody.$type == "pl_ft_walk") {
-				if (otherBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
+			//HACK: ?? foothold edge
+			if (player.leave_$fh == player.$foothold && player.$foothold != fh) {
+				contact.SetEnabled(false);
+				return;
+			}
+			//if (playerBody.$type == "pl_ft_walk") {
+				if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
 					player.leave_$fh.id != fh.id &&
 					player.leave_$fh.chain != fh.chain &&
 					(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
@@ -362,7 +367,7 @@ export class Ground {
 		for (let i = 0; i < numPoints; ++i) {
 			const cpoint = worldManifold.points[i];
 			const pointVelPlatform = platformBody.GetLinearVelocityFromWorldPoint(cpoint, new box2d.b2Vec2());
-			const pointVelOther = otherBody.GetLinearVelocityFromWorldPoint(cpoint, new box2d.b2Vec2());
+			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new box2d.b2Vec2());
 			const point = new box2d.b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
 			const relativeVel = platformBody.GetLocalVector(point, new box2d.b2Vec2());
 
@@ -377,17 +382,26 @@ export class Ground {
 				if ((fh.prev == null && ((ppw.x - radius) * $gv.CANVAS_SCALE) < fh.x1) ||
 					(fh.next == null && ((ppw.x + radius) * $gv.CANVAS_SCALE) > fh.x2))
 				{
-					player._foothold = null;
-					player.$foothold = null;
+					//HACK: ?? foothold edge ??
+
 					player.state.jump = true;
+					
+					player.state.dropDown = true;
+					player.leave_$fh = fh;
+
+					this._foothold = fh;
+					this._foot_at = cpoint.Clone();
+
+					player.$foothold = fh;
+
 					continue;
 				}
 			}
 			
 			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
 				//player._foothold = fh;
-				if (otherBody.$type == "pl_ft_walk") {
-					if (player._which_foothold_contact(fh, new box2d.b2Vec2(cpoint.x, cpoint.y))) {
+				if (playerBody.$type == "pl_ft_walk") {
+					if (player._which_foothold_contact(fh, cpoint)) {
 						normal_contact();
 						return;
 					}
@@ -401,9 +415,9 @@ export class Ground {
 				const relativePoint = platformBody.GetLocalPoint(cpoint, new box2d.b2Vec2());
 				const platformFaceY = box2d.b2_linearSlop;
 				if (relativePoint.y <= platformFaceY) {
-					if (otherBody.$type == "pl_ft_walk") {
+					if (playerBody.$type == "pl_ft_walk") {
 						//player._foothold = fh;
-						if (player._which_foothold_contact(fh, new box2d.b2Vec2(cpoint.x, cpoint.y))) {
+						if (player._which_foothold_contact(fh, cpoint)) {
 							if (player.$foothold && player.$foothold.id != fh.id) {
 							}
 							normal_contact();
@@ -422,9 +436,9 @@ export class Ground {
 
 		//HACK: 防止反彈
 		function normal_contact() {
-			if (fh._is_horizontal_floor) {
-				//player.body.ApplyForceToCenter(GRAVITY);
-				player.body.ApplyForceToCenter2(0, 10);
+			if (fh._is_horizontal_floor && !player.state.dropDown) {
+				//playerBody.ApplyForceToCenter(GRAVITY);
+				playerBody.ApplyForceToCenter2(0, 10);
 			}
 		}
 	}
