@@ -485,16 +485,18 @@ class ItemEffectAnimation extends Animation {
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {boolean} actionExceptRotation
-	 * @param {CharacterAnimationBase} chara
+	 * @param {boolean} flip
 	 */
 	render(renderer, actionExceptRotation, chara) {
 		const texture = this.textures[this.frame];
 		if (texture && texture.isLoaded()) {
-			//let pos = chara.slots.cape.fragments.default.textures[chara.action][frame].relative;
-			//let pos = this.getPos(texture, chara);
-			let oy = actionExceptRotation ? 0 : (-texture.height * 0.25);
-			this.draw(renderer, 0, oy, 0, chara.front > 0);
-			return;
+			if (actionExceptRotation) {
+				this.draw(renderer, 0, 0, 0, chara.front > 0);
+			}
+			else {
+				const oy = -texture.height * 0.25;
+				this.draw(renderer, 0, oy, chara.angle, flip);
+			}
 		}
 	}
 }
@@ -584,28 +586,16 @@ class ItemEffect {
 
 		if (this.animation[this.action]) {
 			this.animation[this.action].update(stamp);
-			/*
-			const textures = this.animation[this.action].textures;
-			const fc = textures.length;
-			if (fc > 1) {
-				this.time = this.time + stamp;
-
-				if (this.time > textures[this.frame].delay) {
-					this.frame = ++this.frame % fc;
-					this.time = 0;
-				}
-			}
-			*/
 		}
 	}
 
 	/**
 	 * @param {IRenderer} renderer
-	 * @param {CharacterAnimationBase} chara
+	 * @param {CharacterRenderer} chara
 	 */
 	render(renderer, chara) {
 		if (this.animation && this.animation[this.action]) {
-			this.animation[this.action].render(renderer, this.actionExceptRotation, chara);
+			this.animation[this.action].render(renderer, this.actionExceptRotation, chara.front > 0);
 		}
 	}
 
@@ -629,7 +619,6 @@ class ItemEffect {
 		this.__getAttr("z", -1);
 		this.__getAttr("action", 1);
 		this.__getAttr("actionExceptRotation", 0);
-		console.info(this);
 
 		for (let i in this._raw) {
 			if (this._raw[i] && typeof this._raw[i] == "object" && '0' in this._raw[i]) {//animation has frames

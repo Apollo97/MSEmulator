@@ -561,8 +561,17 @@ export class PEntityBase {
 
 	_which_foothold_contact(foothold, foot_at) {
 		if (this.$foothold != foothold && !this.state._drop) {
-			if (this._foot_at) {
-				if (foot_at.y < this._foot_at.y) {
+			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主；忽略連續 foothold 重疊的點
+			if (this._foot_at && foot_at.y < this._foot_at.y) {
+				if (this.$foothold) {
+					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
+						(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
+					}
+					else {
+						return false;
+					}
+				}
+				else {
 					return false;
 				}
 			}
@@ -579,6 +588,33 @@ export class PEntityBase {
 		return this.state.dropDown || this.state._drop;
 	}
 
+	_endContactFoothold() {
+		for (let i = 0; i < this._endContactFootholdList.length; ++i) {
+			let fh = this._endContactFootholdList[i];
+
+			if (fh == this._$fallEdge) {
+				this._$fallEdge = null;
+			}
+			else if (fh == this._foothold) {
+				this._foothold = null;
+				this._foot_at = null;
+			}
+			//else if (fh.id == this._foothold.id) {
+			//	this._foothold = null;
+			//	this._foot_at = null;
+			//}
+
+			if (this.$foothold && fh == this.$foothold) {
+				this.prev_$fh = this.$foothold;
+				this.$foothold = null;
+			}
+			if (this.leave_$fh && this.leave_$fh == fh) {
+				this.leave_$fh = null;
+			}
+		}
+		this._endContactFootholdList.length = 0;//clear
+	}
+
 	/**
 	 * before world::step
 	 * @param {number} stamp
@@ -593,6 +629,8 @@ export class PEntityBase {
 	 * after world::step
 	 */
 	PostStep() {
+		//this._endContactFoothold();
+
 		if (this.$foothold) {
 			this.state.jump = false;
 			if (this.$foothold == this._foothold) {
@@ -724,24 +762,23 @@ export class PPlayer extends PCharacterBase {
 	 * @returns {void}
 	 */
 	_create(world) {
-		let that = this;
-
 		super._create(world);
 
-		window.SCREEN_PRINTLN(() => "x", () => that.getPosition().x.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (that.getPosition().x * $gv.CANVAS_SCALE).toFixed(0));
-		window.SCREEN_PRINTLN(() => "y", () => that.getPosition().y.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (that.getPosition().y * $gv.CANVAS_SCALE).toFixed(0));
-		window.SCREEN_PRINTLN(() => "jump", () => that.state.jump);
-		window.SCREEN_PRINTLN(() => "_drop", () => that.state._drop);
-		window.SCREEN_PRINTLN(() => "ddrop", () => that.state.dropDown);
-		window.SCREEN_PRINTLN(() => "$fh", () => that.$foothold ? that.$foothold.id : null);
-		window.SCREEN_PRINTLN(() => "$fh->c", () => that.$foothold ? that.$foothold.chain : null);
-		window.SCREEN_PRINTLN(() => "_fh", () => that._foothold ? that._foothold.id : null);
-		window.SCREEN_PRINTLN(() => "p$fh", () => that.prev_$fh ? that.prev_$fh.id : null);
-		window.SCREEN_PRINTLN(() => "leave_$fh", () => that.leave_$fh ? that.leave_$fh.id : null);
+		window.SCREEN_PRINTLN(() => "x", () => this.getPosition().x.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (this.getPosition().x * $gv.CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "y", () => this.getPosition().y.toFixed(3) + " * " + $gv.CANVAS_SCALE + " = " + (this.getPosition().y * $gv.CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "jump", () => this.state.jump);
+		window.SCREEN_PRINTLN(() => "_drop", () => this.state._drop);
+		window.SCREEN_PRINTLN(() => "ddrop", () => this.state.dropDown);
+		window.SCREEN_PRINTLN(() => "$fh", () => this.$foothold ? this.$foothold.id : null);
+		window.SCREEN_PRINTLN(() => "$fh->c", () => this.$foothold ? this.$foothold.chain : null);
+		window.SCREEN_PRINTLN(() => "_fh", () => this._foothold ? this._foothold.id : null);
+		window.SCREEN_PRINTLN(() => "p$fh", () => this.prev_$fh ? this.prev_$fh.id : null);
+		window.SCREEN_PRINTLN(() => "leave_$fh", () => this.leave_$fh ? this.leave_$fh.id : null);
 
-		window.SCREEN_PRINTLN(() => "(jump && !$fh)", () => that.state.jump && !that.$foothold);
+		window.SCREEN_PRINTLN(() => "(jump && !$fh)", () => this.state.jump && !this.$foothold);
 
-		window.SCREEN_PRINTLN(() => "velocity.x b", () => (that.body.m_linearVelocity.x * $gv.CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "vel.x", () => (this.body.m_linearVelocity.x * $gv.CANVAS_SCALE).toFixed(0));
+		window.SCREEN_PRINTLN(() => "vel.y", () => (this.body.m_linearVelocity.y * $gv.CANVAS_SCALE).toFixed(0));
 	}
 	
 	/**

@@ -371,43 +371,33 @@ export class Ground {
 			const point = new box2d.b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
 			const relativeVel = platformBody.GetLocalVector(point, new box2d.b2Vec2());
 
-			let ppw = player.foot_walk.GetPosition();//player.getPosition();
-			if (ppw.y > cpoint.y) {
-				continue;
-			}
-
 			{
-				const radius = player.foot_walk.m_fixtureList.m_shape.m_radius * 0.5;//point.x;//1 / $gv.CANVAS_SCALE;
-
-				if ((fh.prev == null && ((ppw.x - radius) * $gv.CANVAS_SCALE) < fh.x1) ||
-					(fh.next == null && ((ppw.x + radius) * $gv.CANVAS_SCALE) > fh.x2))
-				{
-					//HACK: ?? foothold edge ??
-
-					player.state.jump = true;
-					
-					player.state.dropDown = true;
-					player.leave_$fh = fh;
-
-					this._foothold = fh;
-					this._foot_at = cpoint.Clone();
-
-					player.$foothold = fh;
-
+				let ppw = player.foot_walk.GetPosition();
+				if (ppw.y > cpoint.y) {
 					continue;
 				}
+				let dist = box2d.b2SubVV(ppw, cpoint, new box2d.b2Vec2()).GetLength();
+
+				player._$footCFDist = dist;
+				player._$footCFSub = Math.abs(dist - player.chara_profile.foot_width);
+
+				if (player.$foothold && player.$foothold != fh) {
+					if (player._$footCFSub > (box2d.b2_linearSlop * 2)) {
+						continue;
+					}
+				}
 			}
-			
+
 			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
 				//player._foothold = fh;
 				if (playerBody.$type == "pl_ft_walk") {
 					if (player._which_foothold_contact(fh, cpoint)) {
-						normal_contact();
+						normal_contact(cpoint);
 						return;
 					}
 					break;
 				}
-				normal_contact();
+				normal_contact(cpoint);
 				return;//nothing: not target, normal contact ground
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
@@ -420,12 +410,12 @@ export class Ground {
 						if (player._which_foothold_contact(fh, cpoint)) {
 							if (player.$foothold && player.$foothold.id != fh.id) {
 							}
-							normal_contact();
+							normal_contact(cpoint);
 							return;//contact point is less than 5cm inside front face of platfrom
 						}
 						break;
 					}
-					normal_contact();
+					normal_contact(cpoint);
 					return;//nothing: not target, normal contact ground
 				}
 			}
@@ -434,11 +424,34 @@ export class Ground {
 		//no points are moving into platform, contact should not be solid
 		contact.SetEnabled(false);
 
-		//HACK: 防止反彈
-		function normal_contact() {
-			if (fh._is_horizontal_floor && !player.state.dropDown) {
-				//playerBody.ApplyForceToCenter(GRAVITY);
-				playerBody.ApplyForceToCenter2(0, 10);
+		/** @param {box2d.b2Vec2} cpoint */
+		function normal_contact(cpoint) {
+			if (player._$fallEdge && player._$fallEdge == fh) {
+				contact.SetEnabled(false);
+				return;
+			}
+			{
+				if ((fh.prev == null && player.state.front < 0 && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
+					(fh.next == null && player.state.front > 0 && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)) {
+					player.state.jump = true;
+
+					player._$fallEdge = fh;
+
+					player._foothold = null;
+					player._foot_at = null;
+					//
+					player.$foothold = null;
+
+					contact.SetEnabled(false);
+					return;
+				}
+			}
+			{
+				player._$fallEdge = null;
+
+				if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
+					playerBody.ApplyForceToCenter(GRAVITY);
+				}
 			}
 		}
 	}
@@ -451,16 +464,20 @@ export class Ground {
 
 		/** @type {Foothold} */
 		const fh = fa.GetUserData();
-
-		//if (!player._foothold) {
+		
+		if (fh == player._$fallEdge) {
+			player._$fallEdge = null;
+			player.body.ApplyForceToCenter(GRAVITY);//立刻掉落
+		}
+		else if (fh == player._foothold) {
 			player._foothold = null;
 			player._foot_at = null;
-		//}
+		}
 		//else if (fh.id == player._foothold.id) {
 		//	player._foothold = null;
 		//	player._foot_at = null;
 		//}
-		
+
 		if (player.$foothold && fh == player.$foothold) {
 			player.prev_$fh = player.$foothold;
 			player.$foothold = null;
