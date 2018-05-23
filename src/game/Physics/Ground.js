@@ -342,16 +342,6 @@ export class Ground {
 			player.state.dropDown = false;
 		}
 
-		if ($fh && $fh != fh) {
-			if (fh.chain != $fh.chain &&//||
-				($fh.prev != null && $fh.y1 != fh.y2) &&
-				($fh.next != null && $fh.y2 != fh.y1)
-			) {
-				player.leave_$fh = fh;
-				contact.SetEnabled(false);
-				return;
-			}
-		}
 		if (player.leave_$fh && player.leave_$fh == fh) {
 			contact.SetEnabled(false);
 			return;
@@ -373,9 +363,9 @@ export class Ground {
 
 			{
 				let ppw = player.foot_walk.GetPosition();
-				if (ppw.y > cpoint.y) {
-					continue;
-				}
+				//if (ppw.y > cpoint.y) {//TODO: ??
+				//	continue;
+				//}
 				let dist = box2d.b2SubVV(ppw, cpoint, new box2d.b2Vec2()).GetLength();
 
 				player._$footCFDist = dist;
@@ -383,6 +373,7 @@ export class Ground {
 
 				if (player.$foothold && player.$foothold != fh) {
 					if (player._$footCFSub > (box2d.b2_linearSlop * 2)) {
+						player.leave_$fh = fh;
 						continue;
 					}
 				}
@@ -426,6 +417,20 @@ export class Ground {
 
 		/** @param {box2d.b2Vec2} cpoint */
 		function normal_contact(cpoint) {
+			let ccc = $fh && (
+				(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||
+				(fh != player._foothold && (fh.y1 > $fh.y1 || fh.y2 > $fh.y2))
+			);
+			if (ccc && $fh != fh && (!player._$fallEdge || player._$fallEdge != $fh)) {
+				if (fh.chain != $fh.chain &&
+					(!$fh.prev || $fh.y1 != fh.y2) &&
+					(!$fh.next || $fh.y2 != fh.y1)
+				) {
+					player.leave_$fh = fh;
+					contact.SetEnabled(false);
+					return;
+				}
+			}
 			if (player._$fallEdge && player._$fallEdge == fh) {
 				contact.SetEnabled(false);
 				return;
@@ -447,7 +452,7 @@ export class Ground {
 				}
 			}
 			{
-				player._$fallEdge = null;
+				//player._$fallEdge = null;//HACK: ??
 
 				if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
 					playerBody.ApplyForceToCenter(GRAVITY);
@@ -467,7 +472,6 @@ export class Ground {
 		
 		if (fh == player._$fallEdge) {
 			player._$fallEdge = null;
-			player.body.ApplyForceToCenter(GRAVITY);//立刻掉落
 		}
 		else if (fh == player._foothold) {
 			player._foothold = null;

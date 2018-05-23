@@ -1,4 +1,6 @@
 
+import { } from './init.js';
+
 import { Vec2, Rectangle } from './math.js';
 import { IGraph, IRenderer } from './IRenderer.js';
 
