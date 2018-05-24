@@ -1,6 +1,4 @@
 
-import box2d from "box2d-html5";
-
 import { PRemoteCharacter } from "./PPlayer.js";
 
 

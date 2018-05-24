@@ -5,8 +5,6 @@
  *	fairyDust.load(4).then(()=>fairyDust.invoke());
  */
 
-import box2d from "box2d-html5";
-
 import { Randomizer } from "../math.js";
 
 import { Animation } from "../Animation.js";

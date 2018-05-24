@@ -1,27 +1,70 @@
 ﻿
-import box2d from "box2d-html5";
-import DebugDraw from "./DebugDraw.js";
+import {
+	b2Vec2, b2AABB,
+	b2World,
+	b2Body,
+	b2BodyType, b2BodyDef, b2FixtureDef,
+	b2EdgeShape, b2PolygonShape,
+	b2MouseJointDef,
+	b2ContactListener
+} from "../../Box2D";
 
-import { ContactListener } from "./Physics.js";
+import DebugDraw from "./DebugDraw";
 
 import { Ground } from "./Ground.js";
 import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
 import { PMob } from "./PMob.js";
 
 import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
+import { setTimeout } from "timers";
 
-
-window.$box2d = box2d;
 
 window.$gravityAcc = 2000;
 
-window.$positionIterations = 3;//00;
-window.$velocityIterations = 8;//00;
+window.$positionIterations = 3;
+window.$velocityIterations = 8;
 
-export const GRAVITY = new box2d.b2Vec2(0, window.$gravityAcc / $gv.CANVAS_SCALE);
+export const GRAVITY = new b2Vec2(0, window.$gravityAcc / $gv.CANVAS_SCALE);
 
 
-export class World extends box2d.b2World {
+class ContactListener extends b2ContactListener {
+	/** @param {b2Contact} contact */
+	BeginContact(contact) {
+		let fa = contact.GetFixtureA();
+		let fb = contact.GetFixtureB();
+		fa.beginContact.call(fa.m_userData, contact, fa, fb);
+		fb.beginContact.call(fb.m_userData, contact, fb, fa);
+	}
+	/** @param {b2Contact} contact */
+	EndContact(contact) {
+		let fa = contact.GetFixtureA();
+		let fb = contact.GetFixtureB();
+		fa.endContact.call(fa.m_userData, contact, fa, fb);
+		fb.endContact.call(fb.m_userData, contact, fb, fa);
+	}
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Manifold} oldManifold
+	 */
+	PreSolve(contact, oldManifold) {
+		let fa = contact.GetFixtureA();
+		let fb = contact.GetFixtureB();
+		fa.preSolve.call(fa.m_userData, contact, oldManifold, fa, fb);
+		fb.preSolve.call(fb.m_userData, contact, oldManifold, fb, fa);
+	}
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2ContactImpulse} impulse
+	 */
+	PostSolve(contact, impulse) {
+		let fa = contact.GetFixtureA();
+		let fb = contact.GetFixtureB();
+		fa.postSolve.call(fa.m_userData, contact, impulse, fa, fb);
+		fb.postSolve.call(fb.m_userData, contact, impulse, fb, fa);
+	}
+}
+
+export class World extends b2World {
 	constructor() {
 		super(GRAVITY);
 
@@ -38,7 +81,7 @@ export class World extends box2d.b2World {
 
 		this.ground = new Ground();
 		
-		/** @type {box2d.b2Body} */
+		/** @type {b2Body} */
 		this.mapBound_body = null;
 		
 		this.stop = false;
@@ -91,12 +134,14 @@ export class World extends box2d.b2World {
 	}
 	
 	createPortal(portal) {
-		let bdef = new box2d.b2BodyDef();
-		let fdef = new box2d.b2FixtureDef();
+		let bdef = new b2BodyDef();
+		let fdef = new b2FixtureDef();
 		let shape;
 
+		fdef.filter.loadPreset("default");
+
 		bdef.userData = portal;
-		bdef.type = box2d.b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//box2d.b2_dynamicBody
+		bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
 		bdef.position.Set(
 			portal.x / $gv.CANVAS_SCALE,
 			portal.y / $gv.CANVAS_SCALE);
@@ -108,18 +153,20 @@ export class World extends box2d.b2World {
 		const width = rect.width / 2 / $gv.CANVAS_SCALE * 0.4;
 		const height = rect.height / 2 / $gv.CANVAS_SCALE * 0.2;
 		
-		shape = new box2d.b2PolygonShape();
+		shape = new b2PolygonShape();
 		
 		if (window.MAP_PORTAL_FULL_SIZE) {
-			shape.SetAsOrientedBox(
+			shape.SetAsBox(
 				rect.width / 2 / $gv.CANVAS_SCALE,
 				rect.height / 2 / $gv.CANVAS_SCALE,
-				new box2d.b2Vec2(-portal.textures[0].x / $gv.CANVAS_SCALE, -portal.textures[0].y / $gv.CANVAS_SCALE),
+				new b2Vec2(-portal.textures[0].x / $gv.CANVAS_SCALE, -portal.textures[0].y / $gv.CANVAS_SCALE),
 				0);
 		}
 		else {
-			shape.SetAsOrientedBox(width, height,
-				new box2d.b2Vec2(0, -height),
+			shape.SetAsBox(
+				width,
+				height,
+				new b2Vec2(0, -height),
 				0);
 		}
 		
@@ -146,23 +193,32 @@ export class World extends box2d.b2World {
 		top /= $gv.CANVAS_SCALE;
 		bottom /= $gv.CANVAS_SCALE;
 		
-		let bdef = new box2d.b2BodyDef();
-		//bdef.type = box2d.b2BodyType.b2_dynamicBody;
-		let bb = this.CreateBody(bdef);
-		let shape = new box2d.b2EdgeShape();
-		
-		shape.SetAsEdge(new box2d.b2Vec2(left, top), new box2d.b2Vec2(right, top));
-		bb.CreateFixture2(shape, 1.0);
-		
-		shape.SetAsEdge(new box2d.b2Vec2(left, bottom), new box2d.b2Vec2(right, bottom));
-		bb.CreateFixture2(shape, 1.0);
-		
-		shape.SetAsEdge(new box2d.b2Vec2(left, top), new box2d.b2Vec2(left, bottom));
-		bb.CreateFixture2(shape, 1.0);
-		
-		shape.SetAsEdge(new box2d.b2Vec2(right, top), new box2d.b2Vec2(right, bottom));
-		bb.CreateFixture2(shape, 1.0);
+		let bdef = new b2BodyDef();
+		//bdef.type = b2BodyType.b2_dynamicBody;
+		let fdef = new b2FixtureDef();
+		let shape = new b2EdgeShape();
 
+		fdef.shape = shape;
+		fdef.filter.loadPreset("foothold");
+
+		let bb = this.CreateBody(bdef);
+		
+		shape.m_vertex1.Set(left, top);
+		shape.m_vertex2.Set(right, top);
+		bb.CreateFixture(shape, 1.0);
+		
+		shape.m_vertex1.Set(left, bottom);
+		shape.m_vertex2.Set(right, bottom);
+		bb.CreateFixture(shape, 1.0);
+		
+		shape.m_vertex1.Set(left, top);
+		shape.m_vertex2.Set(left, bottom);
+		bb.CreateFixture(shape, 1.0);
+
+		shape.m_vertex1.Set(right, top);
+		shape.m_vertex2.Set(right, bottom);
+		bb.CreateFixture(fdef);
+		
 		if (this.player) {
 			this.player.setPosition((right + left) * 0.5, (bottom + top) * 0.5, true);
 		}
@@ -214,7 +270,7 @@ export class World extends box2d.b2World {
 	}
 	
 	/**
-	 * @param {box2d.b2Vec2} p
+	 * @param {b2Vec2} p
 	 */
 	$_mouseDown(p) {
 		if (this.$_mouseJoint != null) {
@@ -222,11 +278,11 @@ export class World extends box2d.b2World {
 		}
 
 		// Make a small box.
-		let aabb = new box2d.b2AABB();
-		let d = new box2d.b2Vec2();
+		let aabb = new b2AABB();
+		let d = new b2Vec2();
 		d.Set(0.001, 0.001);
-		box2d.b2SubVV(p, d, aabb.lowerBound);
-		box2d.b2AddVV(p, d, aabb.upperBound);
+		b2Vec2.b2SubVV(p, d, aabb.lowerBound);
+		b2Vec2.b2AddVV(p, d, aabb.upperBound);
 
 		let that = this;
 		let hit_fixture = null;
@@ -234,7 +290,7 @@ export class World extends box2d.b2World {
 		// Query the world for overlapping shapes.
 		this.QueryAABB(function (fixture) {
 			let body = fixture.GetBody();
-			//if (body.GetType() == box2d.b2BodyType.b2_dynamicBody) {
+			//if (body.GetType() == b2BodyType.b2_dynamicBody) {
 				let inside = fixture.TestPoint(p);
 				if (inside) {
 					hit_fixture = fixture;
@@ -250,7 +306,7 @@ export class World extends box2d.b2World {
 
 		if (hit_fixture) {
 			let body = hit_fixture.GetBody();
-			let md = new box2d.b2MouseJointDef();
+			let md = new b2MouseJointDef();
 			md.bodyA = this.ground.bodies[0];
 			md.bodyB = body;
 			md.target.Copy(p);
@@ -261,7 +317,7 @@ export class World extends box2d.b2World {
 	}
 	
 	/**
-	 * @param {box2d.b2Vec2} p
+	 * @param {b2Vec2} p
 	 */
 	$_mouseUp(p) {
 		if (this.$_mouseJoint) {
@@ -271,7 +327,7 @@ export class World extends box2d.b2World {
 	}
 	
 	/**
-	 * @param {box2d.b2Vec2} p
+	 * @param {b2Vec2} p
 	 */
 	$_mouseMove(p) {
 		if (this.$_mouseJoint) {
@@ -282,7 +338,7 @@ export class World extends box2d.b2World {
 	$_onMouseEvent() {
 		const x = ($gv.m_viewRect.left + $gv.mouse_x) / $gv.CANVAS_SCALE;
 		const y = ($gv.m_viewRect.top + $gv.mouse_y) / $gv.CANVAS_SCALE;
-		const p = new box2d.b2Vec2(x, y);
+		const p = new b2Vec2(x, y);
 		
 		if ($gv.mouse_dl) {
 			this.$_mouseDown(p);
