@@ -1,0 +1,3 @@
+[submodule "src/Box2D"]
+	path = src/Box2D
+	url = https://github.com/flyover/box2d.ts.git
