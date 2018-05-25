@@ -5,7 +5,7 @@ import {
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2PolygonShape, b2EdgeShape,
 	b2Contact, b2Manifold, b2ContactImpulse, b2WorldManifold
-} from "../../Box2D";
+} from "./Physics.js";
 
 import { Vec2, Rectangle } from "../math.js";
 

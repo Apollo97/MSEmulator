@@ -9,7 +9,7 @@ import {
 	b2WheelJointDef, b2RevoluteJointDef,
 	b2Joint,
 	b2Contact
-} from "../../Box2D";
+} from "./Physics.js";
 
 import { Foothold } from "./Foothold.js";
 

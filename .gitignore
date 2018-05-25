@@ -295,9 +295,6 @@ __pycache__/
 
 /test.js
 
-/src/Box2D/*
-!/src/Box2D/index.js
-
 /public/*.bundle.js
 /public/log.html
 

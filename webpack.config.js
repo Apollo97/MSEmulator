@@ -61,6 +61,7 @@ let config = {
       'vue$': 'vue/dist/vue.esm.js',
     }
   },
+  devtool: 'source-map'
 };
 
 if (process.env.NODE_ENV === 'production') {

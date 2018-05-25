@@ -7,7 +7,7 @@ import {
 	b2EdgeShape, b2PolygonShape,
 	b2MouseJointDef,
 	b2ContactListener
-} from "../../Box2D";
+} from "./Physics.js";
 
 import DebugDraw from "./DebugDraw";
 
@@ -138,7 +138,7 @@ export class World extends b2World {
 		let fdef = new b2FixtureDef();
 		let shape;
 
-		fdef.filter.loadPreset("default");
+		fdef.filter.loadPreset("foothold");
 
 		bdef.userData = portal;
 		bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
@@ -198,22 +198,24 @@ export class World extends b2World {
 		let fdef = new b2FixtureDef();
 		let shape = new b2EdgeShape();
 
+		fdef.$type = "MapBorder";
 		fdef.shape = shape;
 		fdef.filter.loadPreset("foothold");
 
 		let bb = this.CreateBody(bdef);
+		bb.$type = "MapBorder";
 		
 		shape.m_vertex1.Set(left, top);
 		shape.m_vertex2.Set(right, top);
-		bb.CreateFixture(shape, 1.0);
+		bb.CreateFixture(fdef);
 		
 		shape.m_vertex1.Set(left, bottom);
 		shape.m_vertex2.Set(right, bottom);
-		bb.CreateFixture(shape, 1.0);
+		bb.CreateFixture(fdef);
 		
 		shape.m_vertex1.Set(left, top);
 		shape.m_vertex2.Set(left, bottom);
-		bb.CreateFixture(shape, 1.0);
+		bb.CreateFixture(fdef);
 
 		shape.m_vertex1.Set(right, top);
 		shape.m_vertex2.Set(right, bottom);
@@ -281,8 +283,8 @@ export class World extends b2World {
 		let aabb = new b2AABB();
 		let d = new b2Vec2();
 		d.Set(0.001, 0.001);
-		b2Vec2.b2SubVV(p, d, aabb.lowerBound);
-		b2Vec2.b2AddVV(p, d, aabb.upperBound);
+		b2Vec2.SubVV(p, d, aabb.lowerBound);
+		b2Vec2.AddVV(p, d, aabb.upperBound);
 
 		let that = this;
 		let hit_fixture = null;

@@ -1,7 +1,7 @@
 ﻿
 import {
 	b2Fixture,
-} from "../../Box2D";
+} from "./Physics.js";
 
 export class Foothold {
 	/**

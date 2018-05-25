@@ -73,14 +73,14 @@ export class Vec2 {
 	 * @param {number} x
 	 * @param {number} y
 	 */
-	plus2(v) {
+	plus2(x, y) {
 		return new Vec2(this.x + x, this.y + y);
 	}
 	/**
 	 * @param {number} x
 	 * @param {number} y
 	 */
-	minus2(v) {
+	minus2(x, y) {
 		return new Vec2(this.x - x, this.y - y);
 	}
 

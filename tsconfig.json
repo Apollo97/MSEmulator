@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "es2015",
+    "strict": true,
+    "strictNullChecks": false,
+    "inlineSourceMap": true,
+    "declaration": true,
+    "outDir": "./src/Box2D/build"
+  },
+  "include": [
+    "./src/Box2D/Box2D/Box2D/**/*"
+  ]
+}

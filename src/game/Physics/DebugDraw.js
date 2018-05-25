@@ -22,7 +22,7 @@ import {
 	b2Color, b2Draw, b2DrawFlags,
 	b2Body, b2Fixture,
 	b2Joint,
-} from "../../Box2D";
+} from "./Physics.js";
 
 /**
  * Test settings. Some can be controlled in the GUI.
@@ -138,7 +138,7 @@ DebugDraw.prototype.PushTransform = function (xf)
 	let ctx = this.m_ctx;
 	ctx.save();
 	ctx.translate(xf.p.x, xf.p.y);
-	ctx.rotate(xf.q.GetAngleRadians());
+	ctx.rotate(xf.q.GetAngle());
 }
 
 /**
