@@ -1,396 +1,304 @@
 ﻿
-import box2d from "box2d-html5";
+const box2d = require("../../Box2D/build/Box2D/Box2D/Box2D.js");
+
+const {
+	b2Vec2,
+	b2Filter, b2Body, b2Fixture,
+	b2Contact, b2Manifold, b2ContactImpulse,
+	b2ContactListener
+} = box2d;
 
 
-export class ContactListener /** @extends box2d.b2ContactListener */ {
-	BeginContact(/** @param {box2d.b2Contact} contact */contact) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa._invokeBeginContact(contact, fa, fb);
-		fb._invokeBeginContact(contact, fb, fa);
-	}
-	EndContact(/** @param b2Contact */contact) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa._invokeEndContact(contact, fa, fb);
-		fb._invokeEndContact(contact, fb, fa);
-	}
-	PreSolve(/*b2Contact */contact, /*b2Manifold */oldManifold) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa._invokePreSolve(contact, oldManifold, fa, fb);
-		fb._invokePreSolve(contact, oldManifold, fb, fa);
-	}
-	PostSolve(/*b2Contact */contact, /*b2ContactImpulse */impulse) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa._invokePostSolve(contact, impulse, fa, fb);
-		fb._invokePostSolve(contact, impulse, fb, fa);
-	}
+window.$box2d = box2d;
+
+let b2Vec2_temp = new b2Vec2();
+
+/** @type {string} */
+b2Body.prototype.$type = null;
+
+b2Body.prototype.Step = function () {
+}
+b2Body.prototype.PostStep = function () {
 }
 
 /**
- * @param {PFixture} fa - self
- * @param {PFixture} fb - other
- * @returns {boolean}
+ * @param {number} x
+ * @param {number} y
  */
-box2d.b2Contact.prototype.isFromSelfContact = function (fa, fb) {
-	let a = fa.GetBody().GetUserData();	// A data
-	let b = fb.GetBody().GetUserData();	// B data
-	
-	if (a && b && a.body && b.body && a.body == b.body) {
-		return true;
-	}
-
-	return false;
+b2Body.prototype.SetLinearVelocity2 = function (x, y) {
+	b2Vec2_temp.x = x;
+	b2Vec2_temp.y = y;
+	this.SetLinearVelocity(b2Vec2_temp);
 }
 
 /**
- * @param {PFixture} fa - self
- * @param {PFixture} fb - other
- * @returns {boolean} - return true if from self and disable this contact
+ * @param {number} x
+ * @param {number} y
  */
-box2d.b2Contact.prototype._ignoreSelfContact = function (fa, fb) {
-	if (this.isFromSelfContact(fa, fb)) {
-		this.SetEnabled(false);
-		return true;
-	}
-	return false;
+b2Body.prototype.ApplyForceToCenter2 = function (x, y) {
+	b2Vec2_temp.x = x;
+	b2Vec2_temp.y = y;
+	this.ApplyForce(b2Vec2_temp, this.GetWorldCenter());
 }
 
-box2d.b2Filter.prototype.maskBits = 0xFFFFFFFF;
-
-export class PFilter extends box2d.b2Filter {
-	constructor() {
-		super(...arguments);
+/**
+ * '原速度'(sourceVel)快速加速到'指定速度'(desiredVel)
+ * @param {b2Vec2} desiredVel
+ * @param {b2Vec2} sourceVel
+ * @param {b2Vec2} point
+ */
+b2Body.prototype.Acceleration = function (desiredVel, sourceVel, point) {
+	if (!point) {
+		point = this.GetWorldCenter();
 	}
 
-	noContact() {
-		this.maskBits = 0;
+	let velChange = b2Vec2.SubVV(desiredVel, sourceVel, new b2Vec2());
+	let m = this.GetMass();
+	let ix = m * velChange.x;
+	let iy = m * velChange.y;
+
+	let impulse = new b2Vec2(ix, iy);
+	this.ApplyLinearImpulse(impulse, point, true);
+}
+
+/**
+ * '原速度'(sourceVelX)快速加速到'指定速度'(desiredVel)
+ * @param {number} desiredVelX
+ * @param {b2Vec2} sourceVel
+ * @param {b2Vec2} point
+ */
+b2Body.prototype.AccelerationX = function (desiredVelX, sourceVel, point) {
+	if (!point) {
+		point = this.GetWorldCenter();
 	}
 
-	reset() {
-		this.groupIndex = 0;
-		this.maskBits = 0xFFFFFFFF;//all
-		this.categoryBits = 1;
+	let velChangeX = desiredVelX - sourceVel.x;
+	let m = this.GetMass();
+	let ix = m * velChangeX;
+
+	let impulse = new b2Vec2(ix, 0);
+	this.ApplyLinearImpulse(impulse, point, true);
+}
+
+/**
+ * '原速度'(sourceVelY)快速加速到'指定速度'(desiredVel)
+ * @param {number} desiredVelY
+ * @param {b2Vec2} sourceVel
+ * @param {b2Vec2} point
+ */
+b2Body.prototype.AccelerationY = function (desiredVelY, sourceVel, point) {
+	if (!point) {
+		point = this.GetWorldCenter();
 	}
 
-	/**
-	 * get defined filter
-	 */
-	static getPreset(name) {
-		if (name) {
-			return new PFilter();
-		}
-		else {
-			return new PFilter();
-		}
+	let velChangeY = desiredVelY - sourceVel.y;
+	let m = this.GetMass();
+	let iy = m * velChangeY;
+
+	let impulse = new b2Vec2(0, iy);
+	this.ApplyLinearImpulse(impulse, point, true);
+}
+
+/**
+ * 等速度運動
+ * @param {b2Vec2} desiredVel
+ * @param {b2Vec2} point
+ */
+b2Body.prototype.ConstantVelocity = function (desiredVel, point) {
+	this.Acceleration(desiredVel, this.GetLinearVelocity(), point || this.GetWorldCenter());
+}
+
+/**
+ * @param {number} desiredVelX
+ * @param {number} desiredVelY
+ * @param {number} pointX
+ * @param {number} pointY
+ */
+b2Body.prototype.ConstantVelocity2 = function (desiredVelX, desiredVelY, pointX, pointY) {
+	const desiredVel = new b2Vec2(desiredVelX, desiredVelY);
+	const point = new b2Vec2(pointX, pointY);
+
+	const sourceVel = this.GetLinearVelocity();
+	const m = this.GetMass();
+
+	let impulse = new b2Vec2();
+
+	let velChange = b2Vec2.SubVV(desiredVel, sourceVel, impulse);
+	impulse.x = m * velChange.x;
+	impulse.y = m * velChange.y;
+
+	this.ApplyLinearImpulse(impulse, point, true);
+}
+
+/**
+ * @param {number} desiredVelX
+ * @param {number} desiredVelY
+ */
+b2Body.prototype.ConstantVelocityWorldCenter2 = function (desiredVelX, desiredVelY) {
+	const desiredVel = new b2Vec2(desiredVelX, desiredVelY);
+
+	const sourceVel = this.GetLinearVelocity();
+	const m = this.GetMass();
+
+	let impulse = new b2Vec2();
+
+	let velChange = b2Vec2.SubVV(desiredVel, sourceVel, impulse);
+	impulse.x = m * velChange.x;
+	impulse.y = m * velChange.y;
+
+	this.ApplyLinearImpulse(impulse, this.GetWorldCenter(), true);
+}
+
+/**
+ * 等速度運動 X
+ * @param{number} desiredVelX
+ * @param{b2Vec2} point
+ */
+b2Body.prototype.ConstantVelocityX = function (desiredVelX, point) {
+	this.AccelerationX(desiredVelX, this.GetLinearVelocity(), point || this.GetWorldCenter());
+}
+
+/**
+ * 等速度運動 Y
+ * @param {number} desiredVelY
+ * @param {b2Vec2} point
+ */
+b2Body.prototype.ConstantVelocityY = function (desiredVelY, point) {
+	this.AccelerationY(desiredVelY, this.GetLinearVelocity(), point || this.GetWorldCenter());
+}
+
+/**
+ * @param {b2Contact} contact
+ * @param {PFixture} fa
+ * @param {PFixture} fb
+ */
+b2Fixture.prototype.beginContact = function (contact, fa, fb) {
+}
+
+/**
+ * @param {b2Contact} contact
+ * @param {PFixture} fa
+ * @param {PFixture} fb
+ */
+b2Fixture.prototype.endContact = function (contact, fa, fb) {
+}
+
+/**
+ * @param {b2Contact} contact
+ * @param {b2Manifold} oldManifold
+ * @param {PFixture} fa
+ * @param {PFixture} fb
+ */
+b2Fixture.prototype.preSolve = function (contact, oldManifold, fa, fb) {
+}
+
+/**
+ * @param {b2Contact} contact
+ * @param {b2ContactImpulse} impulse
+ * @param {PFixture} fa
+ * @param {PFixture} fb
+ */
+b2Fixture.prototype.postSolve = function (contact, impulse, fa, fb) {
+}
+
+/** @returns {string} */
+b2Fixture.prototype.getOwnerID = function () {
+	let host = this.GetUserData();
+	if (host && host.owner) {
+		return host.owner.id;
 	}
 }
-box2d.b2Filter = PFilter;
 
-let b2Vec2_temp = new box2d.b2Vec2()
 
-export class PBody extends box2d.b2Body {
-	constructor() {
-		super(...arguments);
-		/** @type {string} */
-		this._type = null;
-	}
-	
-	get $type() {
-		return this._type;
-	}
-	set $type(value) {
-		this._type = value;
-	}
-	
-	Step() {
-	}
-	PostStep() {
-	}
+//b2Filter.prototype.groupIndex = 0;
+//b2Filter.prototype.maskBits = 0xFFFFFFFF;//all
+//b2Filter.prototype.categoryBits = 1;
 
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	SetLinearVelocity2(x, y) {
-		b2Vec2_temp.x = x;
-		b2Vec2_temp.y = y;
-		this.SetLinearVelocity(b2Vec2_temp);
-	}
-
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	ApplyForceToCenter2(x, y) {
-		b2Vec2_temp.x = x;
-		b2Vec2_temp.y = y;
-		this.ApplyForce(b2Vec2_temp, this.GetWorldCenter());
-	}
-
-	/**
-	 * '原速度'(sourceVel)快速加速到'指定速度'(desiredVel)
-	 * @param {box2d.b2Vec2} desiredVel
-	 * @param {box2d.b2Vec2} sourceVel
-	 * @param {box2d.b2Vec2} point
-	 */
-	Acceleration(desiredVel, sourceVel, point) {
-		if (point) {
-			point = point;
-			point.__proto__ = box2d.b2Vec2.prototype;
+/**
+ * @param {string} categoryName
+ */
+b2Filter.prototype.ignore = function (categoryName) {
+	let preset = b2Filter["s_" + categoryName];
+	if (process.env.NODE_ENV !== 'production') {
+		if (!preset) {
+			let msg = "not found b2Filter preset: " + categoryName;
+			console.error(msg);
+			alert(msg);
+			return;
 		}
-		else {
-			point = this.GetWorldCenter();
-		}
-		
-		let velChange = box2d.b2SubVV(desiredVel, sourceVel, new box2d.b2Vec2());
-		let m = this.GetMass();
-		let ix = m * velChange.x;
-		let iy = m * velChange.y;
-
-		let impulse = new box2d.b2Vec2(ix, iy);
-		this.ApplyLinearImpulse(impulse, point, true);
 	}
-
-	/**
-	 * '原速度'(sourceVelX)快速加速到'指定速度'(desiredVel)
-	 * @param {number} desiredVelX
-	 * @param {box2d.b2Vec2} sourceVel
-	 * @param {box2d.b2Vec2} point
-	 * @description - set point.__proto__ = box2d.b2Vec2.prototype
-	 */
-	AccelerationX(desiredVelX, sourceVel, point) {
-		point = point || this.GetWorldCenter();
-		point.__proto__ = box2d.b2Vec2.prototype;
-
-		let velChangeX = desiredVelX - sourceVel.x;
-		let m = this.GetMass();
-		let ix = m * velChangeX;
-
-		let impulse = new box2d.b2Vec2(ix, 0);
-		this.ApplyLinearImpulse(impulse, point, true);
-	}
-
-	/**
-	 * '原速度'(sourceVelY)快速加速到'指定速度'(desiredVel)
-	 * @param {number} desiredVelY
-	 * @param {box2d.b2Vec2} sourceVel
-	 * @param {box2d.b2Vec2} point
-	 * @description - set point.__proto__ = box2d.b2Vec2.prototype
-	 */
-	AccelerationY(desiredVelY, sourceVel, point) {
-		point = point || this.GetWorldCenter();
-		point.__proto__ = box2d.b2Vec2.prototype;
-
-		let velChangeY = desiredVelY - sourceVel.y;
-		let m = this.GetMass();
-		let iy = m * velChangeY;
-
-		let impulse = new box2d.b2Vec2(0, iy);
-		this.ApplyLinearImpulse(impulse, point, true);
-	}
-
-	/**
-	 * 等速度運動
-	 * @param {box2d.b2Vec2} desiredVel
-	 * @param {box2d.b2Vec2} point
-	 * @description - set point.__proto__ = box2d.b2Vec2.prototype
-	 */
-	ConstantVelocity(desiredVel, point) {
-		this.Acceleration(desiredVel, this.GetLinearVelocity(), point || this.GetWorldCenter());
-	}
-
-	/**
-	 * @param {number} desiredVelX
-	 * @param {number} desiredVelY
-	 * @param {number} pointX
-	 * @param {number} pointY
-	 */
-	ConstantVelocity2(desiredVelX, desiredVelY, pointX, pointY) {
-		const desiredVel = new box2d.b2Vec2(desiredVelX, desiredVelY);
-		const point = new box2d.b2Vec2(pointX, pointY);
-
-		const sourceVel = this.GetLinearVelocity();
-		const m = this.GetMass();
-		
-		let impulse = new box2d.b2Vec2();
-
-		let velChange = box2d.b2SubVV(desiredVel, sourceVel, impulse);
-		impulse.x = m * velChange.x;
-		impulse.y = m * velChange.y;
-		
-		this.ApplyLinearImpulse(impulse, point, true);
-	}
-
-	/**
-	 * @param {number} desiredVelX
-	 * @param {number} desiredVelY
-	 */
-	ConstantVelocityWorldCenter2(desiredVelX, desiredVelY) {
-		const desiredVel = new box2d.b2Vec2(desiredVelX, desiredVelY);
-
-		const sourceVel = this.GetLinearVelocity();
-		const m = this.GetMass();
-		
-		let impulse = new box2d.b2Vec2();
-
-		let velChange = box2d.b2SubVV(desiredVel, sourceVel, impulse);
-		impulse.x = m * velChange.x;
-		impulse.y = m * velChange.y;
-		
-		this.ApplyLinearImpulse(impulse, this.GetWorldCenter(), true);
-	}
-
-	/**
-	 * 等速度運動 X
-	 * @param{number} desiredVelX
-	 * @param{box2d.b2Vec2} point
-	 * @description - set point.__proto__ = box2d.b2Vec2.prototype
-	 */
-	ConstantVelocityX(desiredVelX, point) {
-		this.AccelerationX(desiredVelX, this.GetLinearVelocity(), point || this.GetWorldCenter());
-	}
-
-	/**
-	 * 等速度運動 Y
-	 * @param {number} desiredVelY
-	 * @param {box2d.b2Vec2} point
-	 * @description - set point.__proto__ = box2d.b2Vec2.prototype
-	 */
-	ConstantVelocityY(desiredVelY, point) {
-		this.AccelerationY(desiredVelY, this.GetLinearVelocity(), point || this.GetWorldCenter());
-	}
+	this.maskBits = (this.maskBits & ~preset.categoryBits) >>> 0;
 }
-box2d.b2Body = PBody;
 
-export class PFixture extends box2d.b2Fixture {
-	//constructor() {
-	//	super(...arguments);
-	//}
-	//beginContact(contact, fa, fb) {
-	//}
-	//endContact(contact, fa, fb) {
-	//}
-	//preSolve(contact, oldManifold, fa, fb) {
-	//}
-	//postSolve(contact, impulse, fa, fb) {
-	//}
-	constructor() {
-		super(...arguments);
-
-		/** @type {(function(box2d.b2Contact, PFixture, PFixture):void)[]} */
-		this._beginContact = [];
-
-		/** @type {(function(box2d.b2Contact, PFixture, PFixture):void)[]} */
-		this._endContact = [];
-
-		/** @type {(function(box2d.b2Contact, box2d.b2Manifold, PFixture, PFixture):void)[]} */
-		this._preSolve = [];
-
-		/** @type {(function(box2d.b2Contact, box2d.b2ContactImpulse, PFixture, PFixture))[]>} */
-		this._postSolve = [];
-	}
-
-	///**
-	// * @returns {number}
-	// */
-	//getOwnerBodyID() {
-	//	let host = this.GetUserData();
-	//	if (host && 'owner' in host) {
-	//		return host.owner.body.id;
-	//	}
-	//}
-
-	/**
-	 * @param {box2d.b2Contact} contact
-	 */
-	_invokeBeginContact(contact, fa, fb) {
-		for (let i of this._beginContact) {
-			i.call(this.m_userData, contact, fa, fb);
+/**
+ * @param {string} categoryName
+ */
+b2Filter.prototype.addCategory = function (categoryName) {
+	let preset = b2Filter["s_" + categoryName];
+	if (process.env.NODE_ENV !== 'production') {
+		if (!preset) {
+			let msg = "not found b2Filter preset: " + categoryName;
+			console.error(msg);
+			alert(msg);
+			return;
 		}
 	}
-	/**
-	 * @param {box2d.b2Contact} contact
-	 */
-	_invokeEndContact(contact, fa, fb) {
-		for (let i of this._endContact) {
-			i.call(this.m_userData, contact, fa, fb);
-		}
-	}
-	/**
-	 * @param {box2d.b2Contact} contact
-	 * @param {box2d.b2Manifold} oldManifold
-	 */
-	_invokePreSolve(contact, oldManifold, fa, fb) {
-		for (let i of this._preSolve) {
-			i.call(this.m_userData, contact, oldManifold, fa, fb);
-		}
-	}
-	/**
-	 * @param {box2d.b2Contact} contact
-	 * @param {box2d.b2ContactImpulse} impulse
-	 */
-	_invokePostSolve(contact, impulse, fa, fb) {
-		for (let i of this._postSolve) {
-			i.call(this.m_userData, contact, impulse, fa, fb);
-		}
-	}
-
-	/** @type {function(box2d.b2Contact, PFixture, PFixture):void} */
-	get beginContact() {
-		return this._invokeBeginContact;
-	}
-	set beginContact(event) {
-		if (typeof event == 'function')
-			this._beginContact.push(event);
-		else debugger
-	}
-
-	/** @type {function(box2d.b2Contact, PFixture, PFixture):void} */
-	get endContact() {
-		return this._invokeEndContact;
-	}
-	set endContact(event) {
-		if (typeof event == 'function')
-			this._endContact.push(event);
-		else debugger
-	}
-
-	/** @type {function(box2d.b2Contact, box2d.b2Manifold, PFixture, PFixture):void} */
-	get preSolve() {
-		return this._invokePreSolve;
-	}
-	set preSolve(event) {
-		if (typeof event == 'function')
-			this._preSolve.push(event);
-		else debugger
-	}
-
-	/** @type {function(box2d.b2Contact, box2d.b2ContactImpulse, PFixture, PFixture):void} */
-	get postSolve() {
-		return this._invokePostSolve;
-	}
-	set postSolve(event) {
-		if (typeof event == 'function')
-			this._postSolve.push(event);
-		else debugger
-	}
+	this.categoryBits = this.categoryBits | preset.categoryBits;
 }
-box2d.b2Fixture = PFixture;
 
-export class PMouseJoint extends box2d.b2MouseJoint {
-	constructor() {
-		super(...arguments);
+/**
+ * @param {string} categoryName
+ */
+b2Filter.prototype.loadPreset = function (categoryName) {
+	let preset = b2Filter["s_" + categoryName];
+	if (process.env.NODE_ENV !== 'production') {
+		if (!preset) {
+			let msg = "not found b2Filter preset: " + categoryName;
+			console.error(msg);
+			alert(msg);
+			return;
+		}
 	}
-
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	SetTarget2(x, y) {
-		0 == this.m_bodyB.IsAwake() && this.m_bodyB.SetAwake(!0), this.m_targetA.x = x, this.m_targetA.y = y
-	}
+	this.groupIndex = preset.groupIndex;
+	this.maskBits = preset.maskBits;
+	this.categoryBits = preset.categoryBits;
 }
-box2d.b2MouseJoint = PMouseJoint;
+
+/**
+ * @param {string} categoryName
+ */
+b2Filter.registerCategory = function (categoryName) {
+	if (process.env.NODE_ENV !== 'production') {
+		if (b2Filter["s_" + categoryName]) {
+			let msg = "exist b2Filter preset: " + categoryName;
+			console.error(msg);
+			alert(msg);
+			return;
+		}
+		if (b2Filter._next_category > 0x80000000) {
+			let msg = "no empty b2Filter preset";
+			console.error(msg);
+			alert(msg);
+			return;
+		}
+	}
+	let preset = b2Filter["s_" + categoryName] = new b2Filter();
+
+	preset.groupIndex = 0;
+	preset.categoryBits = b2Filter._next_category;
+	preset.maskBits = 0xFFFFFFFF;//all
+
+	b2Filter._next_category = b2Filter._next_category << 1;
+
+	return preset;
+}
+b2Filter._next_category = 1;
+
+let s_default = b2Filter.registerCategory("default");
+
+let s_foothold = b2Filter.registerCategory("foothold");
+s_foothold.ignore("foothold");
+
+
+
+module.exports = box2d;

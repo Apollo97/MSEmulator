@@ -1,5 +1,11 @@
 ﻿
-import box2d from "box2d-html5";
+import {
+	b2_linearSlop,
+	b2Vec2,
+	b2BodyType, b2BodyDef, b2FixtureDef,
+	b2PolygonShape, b2EdgeShape,
+	b2Contact, b2Manifold, b2ContactImpulse, b2WorldManifold
+} from "./Physics.js";
 
 import { Vec2, Rectangle } from "../math.js";
 
@@ -13,7 +19,7 @@ window.USE_GHOST_VERTEX = false;
 
 export class Ground {
 	constructor() {
-		/** @type {box2d.b2Body[]} */
+		/** @type {b2Body[]} */
 		this.bodies = null;
 
 		/** @type {Foothold[]} */
@@ -100,18 +106,20 @@ export class Ground {
 		}
 
 		{
-			let bdef = new box2d.b2BodyDef();
-			let fdef = new box2d.b2FixtureDef();
+			let bdef = new b2BodyDef();
+			let fdef = new b2FixtureDef();
 			let shape;
 
+			fdef.filter.loadPreset("foothold");
+
 			if (window.CREATE_SOLID_FOOTHOLD) {
-				shape = new box2d.b2PolygonShape();
+				shape = new b2PolygonShape();
 			}
 			else {
-				shape = new box2d.b2EdgeShape();
+				shape = new b2EdgeShape();
 			}
 
-			bdef.type = box2d.b2BodyType.b2_kinematicBody;//b2_staticBody//b2_kinematicBody//box2d.b2_dynamicBody
+			bdef.type = b2BodyType.b2_kinematicBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
 			bdef.linearDamping = 1;
 			bdef.gravityScale = 0;
 			bdef.userData = this;
@@ -161,21 +169,21 @@ export class Ground {
 
 				if (window.CREATE_SOLID_FOOTHOLD) {
 					const hheight = 1.5 / $gv.CANVAS_SCALE;
-					shape.SetAsOrientedBox(hlen, hheight, new box2d.b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
+					shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
 				}
 				else {
-					shape.SetAsEdge(new box2d.b2Vec2(-hlen, 0), new box2d.b2Vec2(hlen, 0));
+					shape.m_vertex1.Set(-hlen, 0)
+					shape.m_vertex2.Set(hlen, 0);
+
 					if (window.USE_GHOST_VERTEX) {
 						if (fh.prev != null) {
 							const prev = this.footholds[fh.prev];
-							let v0 = new box2d.b2Vec2(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
-							shape.m_vertex0.Copy(v0);
+							shape.m_vertex0.Set(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
 							shape.m_hasVertex0 = true;
 						}
 						if (fh.next != null) {
 							const next = this.footholds[fh.next];
-							let v3 = new box2d.b2Vec2(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
-							shape.m_vertex3.Copy(v3);
+							shape.m_vertex3.Set(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
 							shape.m_hasVertex3 = true;
 						}
 					}
@@ -257,16 +265,16 @@ export class Ground {
 		}
 
 		let numPoints = contact.GetManifold().pointCount;
-		let worldManifold = new box2d.b2WorldManifold();
+		let worldManifold = new b2WorldManifold();
 		contact.GetWorldManifold(worldManifold);
 
 		for (let i = 0; i < numPoints; ++i) {
 			const pp = player.getPosition();
 			const mp = worldManifold.points[i];
-			const relpos = new box2d.b2Vec2(pp.x - mp.x, pp.y - mp.y);
+			const relpos = new b2Vec2(pp.x - mp.x, pp.y - mp.y);
 
 			//fixed-rotation
-			//let relpos = player.body.GetLocalPoint(worldManifold.points[i], new box2d.b2Vec2(0, 0));
+			//let relpos = player.body.GetLocalPoint(worldManifold.points[i], new b2Vec2(0, 0));
 			if (relpos.y < 0) {
 				contact.SetEnabled(false);
 				return;
@@ -315,7 +323,7 @@ export class Ground {
 					(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
 				) {
 					numPoints = contact.GetManifold().pointCount;
-					worldManifold = new box2d.b2WorldManifold();
+					worldManifold = new b2WorldManifold();
 					contact.GetWorldManifold(worldManifold);
 
 					for (let i = 0; i < numPoints; ++i) {
@@ -349,30 +357,30 @@ export class Ground {
 
 		if (numPoints == null) {
 			numPoints = contact.GetManifold().pointCount;
-			worldManifold = new box2d.b2WorldManifold();
+			worldManifold = new b2WorldManifold();
 			contact.GetWorldManifold(worldManifold);
 		}
 
 		//check if contact points are moving into platform
 		for (let i = 0; i < numPoints; ++i) {
 			const cpoint = worldManifold.points[i];
-			const pointVelPlatform = platformBody.GetLinearVelocityFromWorldPoint(cpoint, new box2d.b2Vec2());
-			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new box2d.b2Vec2());
-			const point = new box2d.b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
-			const relativeVel = platformBody.GetLocalVector(point, new box2d.b2Vec2());
+			const pointVelPlatform = platformBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
+			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
+			const point = new b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
+			const relativeVel = platformBody.GetLocalVector(point, new b2Vec2());
 
 			{
 				let ppw = player.foot_walk.GetPosition();
 				//if (ppw.y > cpoint.y) {//TODO: ??
 				//	continue;
 				//}
-				let dist = box2d.b2SubVV(ppw, cpoint, new box2d.b2Vec2()).GetLength();
+				let dist = b2Vec2.SubVV(ppw, cpoint, new b2Vec2()).Length();
 
 				player._$footCFDist = dist;
 				player._$footCFSub = Math.abs(dist - player.chara_profile.foot_width);
 
 				if (player.$foothold && player.$foothold != fh) {
-					if (player._$footCFSub > (box2d.b2_linearSlop * 2)) {
+					if (player._$footCFSub > (b2_linearSlop * 2)) {
 						player.leave_$fh = fh;
 						continue;
 					}
@@ -393,8 +401,8 @@ export class Ground {
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
 				//borderline case, moving only slightly out of platform
-				const relativePoint = platformBody.GetLocalPoint(cpoint, new box2d.b2Vec2());
-				const platformFaceY = box2d.b2_linearSlop;
+				const relativePoint = platformBody.GetLocalPoint(cpoint, new b2Vec2());
+				const platformFaceY = b2_linearSlop;
 				if (relativePoint.y <= platformFaceY) {
 					if (playerBody.$type == "pl_ft_walk") {
 						//player._foothold = fh;
@@ -415,7 +423,7 @@ export class Ground {
 		//no points are moving into platform, contact should not be solid
 		contact.SetEnabled(false);
 
-		/** @param {box2d.b2Vec2} cpoint */
+		/** @param {b2Vec2} cpoint */
 		function normal_contact(cpoint) {
 			let ccc = $fh && (
 				(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||

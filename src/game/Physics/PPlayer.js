@@ -1,7 +1,16 @@
 ﻿
-import box2d from "box2d-html5";
+import {
+	PFilterHelper,
+	b2_linearSlop,
+	b2Vec2,
+	b2BodyType, b2BodyDef, b2FixtureDef,
+	b2Body, b2Fixture,
+	b2PolygonShape, b2CircleShape,
+	b2WheelJointDef, b2RevoluteJointDef,
+	b2Joint,
+	b2Contact
+} from "./Physics.js";
 
-import { PBody, PFixture, PMouseJoint } from "./Physics.js"
 import { Foothold } from "./Foothold.js";
 
 import { CharacterMoveElem } from "../../Client/PMovePath.js"
@@ -64,7 +73,7 @@ export class PPlayerState {
 
 /**
  * @param {number} jump_height
- * @param {box2d.b2Vec2} gravity
+ * @param {b2Vec2} gravity
  */
 function _CalcJumpImpulse(jump_height, gravity) {
 	let impulse = Math.sqrt(jump_height * 2.0 * Math.abs(gravity.y));
@@ -72,7 +81,8 @@ function _CalcJumpImpulse(jump_height, gravity) {
 	return impulse;
 }
 
-export class PEntityBase {
+
+class PCharacterBase {
 	constructor() {
 		/** @type {boolean} */
 		this.disable = false;
@@ -81,13 +91,13 @@ export class PEntityBase {
 		
 		this.setMovementSpeed(100);
 
-		/** @type {PBody} */
+		/** @type {b2Body} */
 		this.body = null;
 
-		/** @type {PBody} */
+		/** @type {b2Body} */
 		this.foot_walk = null;
 
-		/** @type {box2d.b2Joint} */
+		/** @type {b2Joint} */
 		this.walker = null;
 
 		/** @type {Foothold} - in World::Setp */
@@ -103,7 +113,7 @@ export class PEntityBase {
 		this.prev_$fh = null;
 
 		/** @type {{ x:number, y:number }} in World::Setp */
-		this._foot_at = new box2d.b2Vec2();
+		this._foot_at = new b2Vec2();
 
 		/**
 		 * no contact leave_$fh
@@ -142,7 +152,7 @@ export class PEntityBase {
 				this.foot_walk.SetPositionXY(x, fy);
 
 			if (clearForce) {
-				const speed = new box2d.b2Vec2(0, 0);
+				const speed = new b2Vec2(0, 0);
 				this.body.ConstantVelocity(speed);
 				if (this.foot_center)
 					this.foot_center.ConstantVelocity(speed);
@@ -160,7 +170,7 @@ export class PEntityBase {
 	 */
 	getPosition() {
 		const pos = this.foot_walk.GetPosition();
-		return new box2d.b2Vec2(pos.x, pos.y + this.chara_profile.foot_width);
+		return new b2Vec2(pos.x, pos.y + this.chara_profile.foot_width);
 	}
 
 	/**
@@ -272,10 +282,10 @@ export class PEntityBase {
 
 			if (!this.state.jump) {
 				let vx = velocity.x;
-				if (vx > 50 * box2d.b2_linearSlop) {
+				if (vx > 50 * b2_linearSlop) {
 					this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);
 				}
-				else if (vx < -50 * box2d.b2_linearSlop) {
+				else if (vx < -50 * b2_linearSlop) {
 					this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);
 				}
 				else {
@@ -292,7 +302,7 @@ export class PEntityBase {
 		const jumpKey = keys.jump;
 		if (!this.state.jump && !this.isDrop() && jumpKey) {
 			const mass = this._getMass();
-			const force = new box2d.b2Vec2(0, -mass * this.jump_force);
+			const force = new b2Vec2(0, -mass * this.jump_force);
 			this.body.ApplyForceToCenter(force);
 		}
 	}
@@ -375,12 +385,14 @@ export class PEntityBase {
 	 * @returns {void}
 	 */
 	_create(world) {
-		let first_pos = new box2d.b2Vec2(1 / $gv.CANVAS_SCALE, -2 / $gv.CANVAS_SCALE);
-		let bdef = new box2d.b2BodyDef();
-		let fdef = new box2d.b2FixtureDef();
-		let shape = new box2d.b2PolygonShape();
+		let first_pos = new b2Vec2(1 / $gv.CANVAS_SCALE, -2 / $gv.CANVAS_SCALE);
+		let bdef = new b2BodyDef();
+		let fdef = new b2FixtureDef();
+		let shape = new b2PolygonShape();
 
-		bdef.type = (box2d.b2BodyType.b2_dynamicBody);//box2d.b2_dynamicBody//b2_staticBody//b2_kinematicBody
+		fdef.filter.loadPreset("default");
+
+		bdef.type = (b2BodyType.b2_dynamicBody);//b2_dynamicBody//b2_staticBody//b2_kinematicBody
 		bdef.bullet = true;//get real contact point
 		bdef.position.Set(first_pos.x, first_pos.y);
 		bdef.userData = this;
@@ -400,8 +412,10 @@ export class PEntityBase {
 
 		//head
 		{
-			shape.SetAsOrientedBox(this.chara_profile.width * 0.5, this.chara_profile.height * 0.75 * 0.5,
-				new box2d.b2Vec2(0, 0),
+			shape.SetAsBox(
+				this.chara_profile.width * 0.5,
+				this.chara_profile.height * 0.75 * 0.5,
+				new b2Vec2(0, 0),
 				0);
 
 			fdef.density = this.chara_profile.density;
@@ -412,15 +426,15 @@ export class PEntityBase {
 			this.fixture = this.body.CreateFixture(fdef);
 			this.fixture.$type = "player";
 		}
-		fdef.filter.reset();
+		fdef.filter.loadPreset("default");
 
 		//create walker
 		{
-			//bdef.type = (box2d.b2BodyType.b2_dynamicBody);//box2d.b2_dynamicBody//b2_staticBody//b2_kinematicBody
+			//bdef.type = (b2BodyType.b2_dynamicBody);//b2_dynamicBody//b2_staticBody//b2_kinematicBody
 			bdef.position.Set(first_pos.x, jmp_body_pos_y);
 			this.foot_walk = world.CreateBody(bdef);
 
-			let circle = new box2d.b2CircleShape();
+			let circle = new b2CircleShape();
 			circle.m_p.Set(0, 0);
 			circle.m_radius = this.chara_profile.foot_width;
 			fdef.shape = circle;
@@ -440,28 +454,28 @@ export class PEntityBase {
 			let jd;
 
 			if (PLAYER_USE_WHEEL_WALKER) {
-				jd = new box2d.b2WheelJointDef();//b2WheelJointDef//b2RevoluteJointDef
+				jd = new b2WheelJointDef();//b2WheelJointDef//b2RevoluteJointDef
 			}
 			else {
-				jd = new box2d.b2RevoluteJointDef();//b2WheelJointDef//b2RevoluteJointDef
+				jd = new b2RevoluteJointDef();//b2WheelJointDef//b2RevoluteJointDef
 			}
 
-			if (jd instanceof box2d.b2RevoluteJointDef) {
-				jd.Initialize(this.body, this.foot_walk, new box2d.b2Vec2(first_pos.x, jmp_body_pos_y));
+			if (jd instanceof b2RevoluteJointDef) {
+				jd.Initialize(this.body, this.foot_walk, new b2Vec2(first_pos.x, jmp_body_pos_y));
 			}
-			if (jd instanceof box2d.b2WheelJointDef) {
-				jd.Initialize(this.body, this.foot_walk, new box2d.b2Vec2(first_pos.x, jmp_body_pos_y), new box2d.b2Vec2(0, -1));
+			if (jd instanceof b2WheelJointDef) {
+				jd.Initialize(this.body, this.foot_walk, new b2Vec2(first_pos.x, jmp_body_pos_y), new b2Vec2(0, -1));
 			}
 			jd.enableMotor = true;
 			jd.maxMotorTorque = MOVEMENT_POWER;
 			//jd.motorSpeed = 40;
-			if (jd instanceof box2d.b2RevoluteJointDef) {
+			if (jd instanceof b2RevoluteJointDef) {
 				jd.enableLimit = false;
 				jd.lowerAngle = 0 * DEGTORAD;
 				jd.upperAngle = -0 * DEGTORAD;
 				jd.referenceAngle = 0;
 			}
-			if (jd instanceof box2d.b2WheelJointDef) {
+			if (jd instanceof b2WheelJointDef) {
 				jd.frequencyHz = 10;//springs
 				jd.dampingRatio = 1;//springs
 			}
@@ -497,6 +511,36 @@ export class PEntityBase {
 			this.foot_walk = null;
 		}
 	}
+
+	/**
+	 * @param {b2Fixture} fa - self
+	 * @param {b2Fixture} fb - other
+	 * @returns {boolean}
+	 */
+	_isFromSelfContact(fa, fb) {
+		let a = fa.GetBody().GetUserData();	// A data
+		let b = fb.GetBody().GetUserData();	// B data
+
+		if (a && b && a.body && b.body && a.body == b.body) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Fixture} fa - self
+	 * @param {b2Fixture} fb - other
+	 * @returns {boolean} - return true if from self and disable this contact
+	 */
+	_ignoreSelfContact(contact, fa, fb) {
+		if (this._isFromSelfContact(fa, fb)) {
+			contact.SetEnabled(false);
+			return true;
+		}
+		return false;
+	}
 	
 	_set_foot_listener(foot_fixture) {
 		foot_fixture.beginContact = this.__beginContact_walker;
@@ -505,7 +549,7 @@ export class PEntityBase {
 	}
 	
 	__beginContact_walker(contact, fa, fb) {
-		if (contact._ignoreSelfContact(fa, fb)) {
+		if (this._ignoreSelfContact(contact, fa, fb)) {
 			return;
 		}
 		let target = fb.GetUserData();
@@ -518,7 +562,7 @@ export class PEntityBase {
 		}
 	}
 	__endContact_walker(contact, fa, fb) {
-		if (contact._ignoreSelfContact(fa, fb)) {
+		if (this._ignoreSelfContact(contact, fa, fb)) {
 			return;
 		}
 		let target = fb.GetUserData();
@@ -531,7 +575,7 @@ export class PEntityBase {
 		}
 	}
 	__preSolve_walker(contact, oldManifold, fa, fb) {
-		if (contact._ignoreSelfContact(fa, fb)) {
+		if (this._ignoreSelfContact(contact, fa, fb)) {
 			return;
 		}
 		if (fa.$type == "pl_ft_walk" && fb.$type == "pl_ft_walk") {
@@ -662,7 +706,7 @@ export class PEntityBase {
 	}
 }
 
-export class PCharacterBase extends PEntityBase {
+class PCharacter extends PCharacterBase {
 	constructor() {
 		super(...arguments);
 	}
@@ -671,7 +715,7 @@ export class PCharacterBase extends PEntityBase {
 	 * @param {World} world
 	 */
 	_create_anchor(world) {
-		let md = new box2d.b2MouseJointDef();
+		let md = new b2MouseJointDef();
 		md.bodyA = world.ground.bodies[0];
 		md.bodyB = this.body;
 		md.target.Copy(this.getPosition());
@@ -752,7 +796,7 @@ export class PCharacterBase extends PEntityBase {
 	}
 }
 
-export class PPlayer extends PCharacterBase {
+export class PPlayer extends PCharacter {
 	constructor() {
 		super(...arguments);
 	}
@@ -799,8 +843,8 @@ export class PPlayer extends PCharacterBase {
 			const px = $gv.m_viewRect.left + $gv.mouse_x - center.x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y - center.y;
 
-			this.body.SetLinearVelocity(new box2d.b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
-			this.foot_walk.SetLinearVelocity(new box2d.b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
+			this.body.SetLinearVelocity(new b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
+			this.foot_walk.SetLinearVelocity(new b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
 		}
 		else if ($gv.mouse_dm && $gv.mouse_dm % 12 == 1) {
 			const px = $gv.m_viewRect.left + $gv.mouse_x;
@@ -810,11 +854,11 @@ export class PPlayer extends PCharacterBase {
 	}
 }
 
-export class PRemoteCharacter extends PCharacterBase {
+export class PRemoteCharacter extends PCharacter {
 	constructor() {
 		super(...arguments);
 
-		/** @type {PMouseJoint} */
+		/** @type {b2MouseJoint} */
 		this._anchor = null;
 	}
 
@@ -831,6 +875,7 @@ export class PRemoteCharacter extends PCharacterBase {
 	 * @param {CharacterMoveElem} moveElem
 	 */
 	moveTo(moveElem) {
-		this._anchor.SetTarget2(moveElem.x, moveElem.y);
+		this._anchor.m_targetA.x = moveElem.x;
+		this._anchor.m_targetA.y = moveElem.y;
 	}
 }

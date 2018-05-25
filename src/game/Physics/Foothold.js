@@ -1,4 +1,8 @@
 ﻿
+import {
+	b2Fixture,
+} from "./Physics.js";
+
 export class Foothold {
 	/**
 	 * @param {object} _raw
@@ -26,7 +30,7 @@ export class Foothold {
 		
 		this.chain = null;
 
-		/** @type {box2d.b2Fixture} */
+		/** @type {b2Fixture} */
 		this.fixture = null;
 
 		this.$showDebugInfo = false;
