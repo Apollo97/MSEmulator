@@ -406,12 +406,14 @@ export class IGraph {
 		let height;
 		
 		/** @type {Promise} if loaded will delete */
-		this.$promise = null;
+		this.$promise = undefined;
 		
 		/** @type {WebGLBuffer} */
-		this._vbo = null;
+		this._vbo = undefined;
 
+		/** @type {number} - origin.x */
 		this.x = 0;
+		/** @type {number} - origin.y */
 		this.y = 0;
 
 		if (info) {
@@ -483,6 +485,8 @@ export class IGraph {
 	_dispose() {
 		//only check is loaded
 		if (this._isLoaded()) {
+			//this._engine.deleteGraph(this);
+
 			if (this._gl) {
 				alert("gl.deleteTexture(this.texture)");
 				this._gl.deleteTexture(this.texture);
@@ -508,21 +512,18 @@ export class IGraph {
 	 */
 	get _engine() {
 		throw new Error("Not Implement");
-		return new Engine();
 	}
 	/**
 	 * @returns {WebGLRenderingContext}
 	 */
 	get _gl() {
 		throw new Error("Not Implement");
-		return new WebGLRenderingContext();
 	}
 	/**
 	 * @returns {CanvasRenderingContext2D}
 	 */
 	get _ctx() {
 		throw new Error("Not Implement");
-		return new CanvasRenderingContext2D();
 	}
 
 	//get width() { return this.matrix[0]; }
@@ -537,10 +538,12 @@ export class IGraph {
 	//get y() { return this.matrix[13]; }
 	//set y(val) { this.matrix[13] = val; }
 
+	/** ?? */
 	get z() { return 0; }
 	//get z() { return this.matrix[14]; }
 	//set z(val) { this.matrix[14] = val; }
 
+	/** ?? */
 	set src(url) {
 		debugger;//this.src is broken;
 		

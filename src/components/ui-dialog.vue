@@ -324,7 +324,7 @@
 	}
 
 	.ui-dialog > .header {
-		cursor: default;
+		/*cursor: default;*/
 		padding: 0.25em 0.5em;
 		user-select: none;
 		background: #e9e9e9;
@@ -343,16 +343,16 @@
 	}
 	.ui-dialog > .header .header-buttons > * {
 		padding: 0;
-    border: none;
-    background: transparent;
+		border: none;
+		background: transparent;
 	}
 	.ui-dialog > .header .header-buttons > .header-button {
 	}
 	.ui-dialog > .header .header-buttons > .header-button:hover {
-    background: lightgray;
+		background: lightgray;
 	}
 	.ui-dialog > .header .header-buttons > .header-button:active {
-    background: lightblue;
+		background: lightblue;
 	}
 
 	.ui-dialog > .content {

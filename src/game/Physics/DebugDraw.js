@@ -88,6 +88,11 @@ Settings.prototype.drawCOMs = true;
  * @type {boolean}
  */
 Settings.prototype.drawControllers = true;
+/**
+ * @export
+ * @type {boolean}
+ */
+Settings.prototype.drawParticle = true;
 
 
 class DebugDraw extends b2Draw {
@@ -112,6 +117,7 @@ class DebugDraw extends b2Draw {
 		if (settings.drawAABBs) { flags |= b2DrawFlags.e_aabbBit; }
 		if (settings.drawCOMs) { flags |= b2DrawFlags.e_centerOfMassBit; }
 		if (settings.drawControllers) { flags |= b2DrawFlags.e_controllerBit; }
+		if (settings.drawParticle) { flags |= b2DrawFlags.e_particleBit; }
 		this.SetFlags(flags);
 	}
 }
@@ -246,6 +252,39 @@ DebugDraw.prototype.DrawSolidCircle = function (center, radius, axis, color)
 	ctx.strokeStyle = color.MakeStyleString(1);
 	ctx.stroke();
 };
+
+/**
+ * @export
+ * @return {void}
+ * @param {b2Vec2} centers
+ * @param {number} radius
+ * @param {b2Color} colors
+ * @param {number} count
+ */
+DebugDraw.prototype.DrawParticles = function (centers, radius, colors, count) {
+	const ctx = this.m_ctx;
+	if (ctx) {
+		if (colors !== null) {
+			for (let i = 0; i < count; ++i) {
+				let center = centers[i];
+				/** @type {b2Color} */let color = colors[i];
+				ctx.fillStyle = color.MakeStyleString(0.5);
+				ctx.fillRect(center.x - radius, center.y - radius, 2 * radius, 2 * radius);
+				///ctx.beginPath(); ctx.arc(center.x, center.y, radius, 0, box2d.b2_pi * 2, true); ctx.fill();
+			}
+		}
+		else {
+			ctx.fillStyle = "rgba(255,255,255,0.5)";
+			ctx.beginPath();
+			for (let i = 0; i < count; ++i) {
+				let center = centers[i];
+				ctx.rect(center.x - radius, center.y - radius, 2 * radius, 2 * radius);
+				///ctx.beginPath(); ctx.arc(center.x, center.y, radius, 0, box2d.b2_pi * 2, true); ctx.fill();
+			}
+			ctx.fill();
+		}
+	}
+}
 
 /**
  * @export

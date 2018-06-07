@@ -17,10 +17,24 @@
 		</transition>
 
 		<transition name="fade" style="position: absolute;">
-			<ui-window-equip v-show="isShowUWEquipSlot" :chara="chara"></ui-window-equip>
+			<ui-window-equip v-show="isShowUIEquipWnd"
+							 :chara="chara"
+							 @hoverItem="showItemTip(...arguments);"
+							 @mouseleaveItem="hideItemTip(...arguments);"
+							 >
+			</ui-window-equip>
+		</transition>
+		
+		<transition name="fade" style="position: absolute;">
+			<ui-window-item v-show="isShowUIItemWnd"
+							:chara="chara"
+							@hoverItem="showItemTip(...arguments);"
+							@mouseleaveItem="hideItemTip(...arguments);"
+							>
+			</ui-window-item>
 		</transition>
 
-		<div @contextmenu.prevent class="gui" style="position: absolute; width: 0; height: 0;">
+		<div @contextmenu.prevent class="gui" style="z-index: 100; position: absolute; width: 0; height: 0;">
 			<ui-tool-tip :isShow="isShowEquipTip"
 							:equip="equip"
 							:chara="chara"
@@ -36,6 +50,7 @@
 	
 	import StatusBar from "./ui/StatusBar.vue";
 	import UIWindowEquip from "./ui/UIWindow/Equip.vue";
+	import UIWindowItem from "./ui/UIWindow/Item.vue";
 
 	import ItemTip from "./ui/UIToolTip/ItemTip.vue";
 	import Frame2 from "./ui/UIToolTip/Frame2.vue";
@@ -158,7 +173,8 @@
 			return {
 				equip: null,
 				isShowEquipTip: true,
-				isShowUWEquipSlot: false,
+				isShowUIEquipWnd: false,
+				isShowUIItemWnd: false,
 				m_is_always_show_tip: false,
 
 				ItemTip_state: {
@@ -187,7 +203,7 @@
 		methods: {
 			showItemTip: function (_ref) {
 				if (_ref) {
-					let { event, id, category, equip } = _ref;
+					let { event, /*id, category,*/ equip } = _ref;
 					//let is_equip = id == null || ItemCategoryInfo.isEquip(id);
 
 					//this.isShowEquipTip = is_equip;
@@ -231,8 +247,13 @@
 				}
 			},
 			_onkeydown: function (event) {
-				if (event.key == "e") {
-					this.isShowUWEquipSlot = !this.isShowUWEquipSlot;
+				switch (event.key) {
+					case "e":
+						this.isShowUIEquipWnd = !this.isShowUIEquipWnd;
+						break;
+					case "i":
+						this.isShowUIItemWnd = !this.isShowUIItemWnd;
+						break;
 				}
 			}
 		},
@@ -283,6 +304,7 @@
 			"frame-2": Frame2,
 			"status-bar": StatusBar,
 			"ui-window-equip": UIWindowEquip,
+			"ui-window-item": UIWindowItem,
 		}
 	};
 </script>

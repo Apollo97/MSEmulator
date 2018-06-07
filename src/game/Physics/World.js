@@ -4,9 +4,10 @@ import {
 	b2World,
 	b2Body,
 	b2BodyType, b2BodyDef, b2FixtureDef,
-	b2EdgeShape, b2PolygonShape,
+	b2EdgeShape, b2PolygonShape, b2CircleShape,
 	b2MouseJointDef,
-	b2ContactListener
+	b2ContactListener,
+	b2ParticleSystemDef, b2ParticleSystem, b2ParticleFlag, b2ParticleGroupDef
 } from "./Physics.js";
 
 import DebugDraw from "./DebugDraw";
@@ -16,13 +17,17 @@ import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
 import { PMob } from "./PMob.js";
 
 import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
-import { setTimeout } from "timers";
+
+import { IRenderer } from "../IRenderer.js";
 
 
 window.$gravityAcc = 2000;
 
 window.$positionIterations = 3;
 window.$velocityIterations = 8;
+window.$particleIterations = 1;
+
+window.$particleRadius = 10;//unit is pixel
 
 export const GRAVITY = new b2Vec2(0, window.$gravityAcc / $gv.CANVAS_SCALE);
 
@@ -87,6 +92,31 @@ export class World extends b2World {
 		this.stop = false;
 		
 		this.$_mouseJoint = null;
+
+		const particleType = b2ParticleFlag.b2_elasticParticle;//b2_waterParticle;
+		const particleSystemDef = new b2ParticleSystemDef();
+
+		/** @type {b2ParticleSystem} */
+		this.m_particleSystem = this.CreateParticleSystem(particleSystemDef);
+
+		this.m_particleSystem.SetGravityScale(0);
+		this.m_particleSystem.SetRadius(10 / $gv.CANVAS_SCALE);
+		this.m_particleSystem.SetDamping(0.2);
+		{
+			const shape = new b2CircleShape();
+			shape.m_p.Set(0, 2);
+			shape.m_radius = 3;
+			const pd = new b2ParticleGroupDef();
+			pd.flags = particleType;
+			pd.shape = shape;
+			const group = this.m_particleSystem.CreateParticleGroup(pd);
+			if (pd.flags & b2ParticleFlag.b2_colorMixingParticle) {
+				this.ColorParticleGroup(group, 0);
+			}
+		}
+		window.m_particleSystem = this.m_particleSystem;
+
+		this.$vbo_ps = null;
 	}
 
 	/**
@@ -369,7 +399,7 @@ export class World extends b2World {
 			body.Step();
 		}
 
-		super.Step(1 / $gv.MAX_FPS, window.$velocityIterations, window.$positionIterations);
+		super.Step(1 / $gv.MAX_FPS, window.$velocityIterations, window.$positionIterations, window.$particleIterations);
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
 			body.PostStep();
 		}
@@ -408,6 +438,127 @@ export class World extends b2World {
 
 			ctx.restore();
 		}
+
+		if ($gv.m_display_particleSystem) {
+			if (renderer.gl) {
+				/** @type {WebGLRenderingContext} */
+				const gl = this.gl;
+
+				if (!this.$vbo_ps) {
+					let vbo = gl.createBuffer();
+
+					gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+					const count = this.m_particleSystem.GetParticleCount();
+					const buf = this.m_particleSystem.GetPositionBuffer();
+
+					let vertices = new Float32Array(count * 2);
+
+					for (let i = 0; i < count; i += 2) {
+						vertices[i + 0] = buf[i].x;
+						vertices[i + 1] = buf[i].y;
+					}
+
+					gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+					this.$vbo_ps = vbo;
+				}
+				else {
+					const count = this.m_particleSystem.GetParticleCount();
+					const buf = this.m_particleSystem.GetPositionBuffer();
+
+					let vertices = new Float32Array(count * 2);
+
+					for (let i = 0; i < count; i += 2) {
+						vertices[i + 0] = buf[i].x;
+						vertices[i + 1] = buf[i].y;
+					}
+
+					gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+				}
+
+				for (let group = this.m_particleSystem.m_groupList; group; group = group.m_next) {
+					let particleCount = group.GetParticleCount();
+					let instanceOffset = group.GetBufferIndex();
+					gl.drawArrays(gl.POINTS, instanceOffset, particleCount);
+				}
+			}
+			else if (ctx) {
+				if ($gv.func) {
+					$gv.func.call(this, ctx, renderer);
+					//$gv.func = function (ctx) {
+					//	ctx = ctx || $engine.ctx;
+					//	const vertices = this.m_particleSystem.m_positionBuffer.data;
+					//	const colorBuffer = this.m_particleSystem.m_colorBuffer.data;
+					//	const weightBuffer = this.m_particleSystem.m_weightBuffer;
+					//
+					//	let minWeight = Math.min.apply(this, weightBuffer.slice(0, 128));
+					//	let maxWeight = Math.max.apply(this, weightBuffer.slice(0, 128)) - minWeight;
+					//
+					//	if (vertices.length > 2) {
+					//		let length = vertices.length / 2;
+					//
+					//		ctx.fillStyle = "#0747";
+					//
+					//		for (let i = 0; i < length - 2; i += 1) {
+					//			ctx.beginPath();
+					//			ctx.moveTo(vertices[i + 0].x * $gv.CANVAS_SCALE, vertices[i + 0].y * $gv.CANVAS_SCALE);
+					//			ctx.lineTo(vertices[i + 1].x * $gv.CANVAS_SCALE, vertices[i + 1].y * $gv.CANVAS_SCALE);
+					//			ctx.lineTo(vertices[i + 2].x * $gv.CANVAS_SCALE, vertices[i + 2].y * $gv.CANVAS_SCALE);
+					//			ctx.fillStyle = `hsla(87deg,${(weightBuffer[i] / maxWeight * 100).toFixed(0)}%,${(weightBuffer[i] / maxWeight * 50).toFixed(0)}%,${(weightBuffer[i] / maxWeight / 2).toFixed(2)})`
+					//			//ctx.fillStyle = colorBuffer[i].MakeStyleString();
+					//			ctx.fill();
+					//		}
+					//	}
+					//}
+				}
+				else {
+					const vertices = this.m_particleSystem.m_positionBuffer.data;
+					const colorBuffer = this.m_particleSystem.m_colorBuffer.data;
+					const weightBuffer = this.m_particleSystem.m_weightBuffer.data;
+
+					renderer.pushMatrix();
+
+					const r = window.$particleRadius;
+					const r2 = r * 2;
+
+					if (!this.$particle_grd) {
+						let grd = ctx.createRadialGradient(r, r, 0, r, r, r2);
+						grd.addColorStop(0, "#0744");
+						grd.addColorStop(1, "#07440");
+						this.$particle_grd = grd;
+					}
+
+					for (let group = this.m_particleSystem.m_groupList; group; group = group.m_next) {
+						for (let i = group.m_firstIndex; i < group.m_lastIndex; ++i) {
+							let x1 = vertices[i].x * $gv.CANVAS_SCALE - r;
+							let y1 = vertices[i].y * $gv.CANVAS_SCALE - r;
+
+							renderer.setTransform(1, 0, 0, 1, $gv.m_viewRect.left + x1, $gv.m_viewRect.top + y1);
+
+							ctx.beginPath();
+
+							//texture
+
+							//ctx.arc(0, 0, r2, 0, 2 * Math.PI);
+							//ctx.fillStyle = this.$particle_grd;
+							//ctx.fill();
+
+							ctx.fillStyle = this.$particle_grd;
+							ctx.fillRect(r, r, r2 * 2, r2 * 2);
+
+							//center
+							//ctx.fillStyle = "red";
+							//ctx.fillRect(0, 0, 1, 1);
+
+							//border
+							//ctx.strokeRect(-r, -r, r2, r2);
+						}
+					}
+					renderer.popMatrix();
+				}
+			}
+		}
 		
 		if ($gv.m_display_foothold) {
 			ctx.save();
@@ -422,4 +573,14 @@ export class World extends b2World {
 		}
 	}
 }
+
+
+/**
+ * https://github.com/google/LiquidFunPaint/blob/develop/src/com/google/fpl/liquidfunpaint/ParticleRenderer.java#L43
+ * Renderer to draw particle water, objects, and wall. It draws particles as
+ * fluid (or objects) by following three steps:
+ * 1) Draws particles to a texture
+ * 2) Blurs it out
+ * 3) Applies threshold.
+ */
 

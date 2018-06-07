@@ -57,11 +57,15 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\components\CorePosition.js" />
     <Compile Include="src\game\Animation.js" />
     <Compile Include="src\game\Canvas2DRenderer.js" />
+    <Compile Include="src\game\Cursor.js" />
     <Compile Include="src\game\demo.js" />
     <Compile Include="src\game\Engine.js" />
     <Compile Include="src\game\GameState.js" />
     <Compile Include="src\game\init.js" />
     <Compile Include="src\game\IRenderer.js" />
+    <Compile Include="src\game\Item.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\game\main.js" />
     <Compile Include="src\game\Map.js" />
     <Compile Include="src\game\math.js" />
@@ -218,9 +222,13 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="src\main-ui.vue" />
     <Content Include="src\ui\BasicComponent.vue" />
     <Content Include="src\ui\StatusBar.vue" />
+    <Content Include="src\ui\UISlotItem.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\ui\UIToolTip\Frame2.vue" />
     <Content Include="src\ui\UIToolTip\ItemTip.vue" />
     <Content Include="src\ui\UIWindow\Equip.vue" />
+    <Content Include="src\ui\UIWindow\Item.vue" />
     <Content Include="src\ui\UIWindow\WindowBase.vue" />
     <Content Include="typings.json" />
     <Content Include="wz.cs" />

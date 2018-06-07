@@ -51,6 +51,7 @@ class GlobalVar {
 			this.m_display_portal = true;
 
 			this.m_display_player = true;
+			this.m_display_other_player = true;
 			this.m_display_life = true;
 			this.m_display_npc = true;//??
 			this.m_display_mob = true;//??

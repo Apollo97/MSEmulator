@@ -665,7 +665,16 @@ internal class DataExtracter
 
 	static int parse_img_id(string id_string)
 	{
-		return Int32.Parse(id_string.Replace(".img", ""));
+		int outputId;
+		string inputId = id_string.Replace(".img", "");
+		var result = Int32.TryParse(inputId, out outputId);
+		if (result) {
+			return outputId;
+		}
+		else {
+			System.Console.WriteLine("ID = ??: " + id_string);
+		}
+		return 0;
 	}
 
 	int parse_id(string id_string)

@@ -1,17 +1,16 @@
 ﻿
+import { CharacterRenderConfig, ItemCategoryInfo, ResourceManager } from '../../../public/resource.js';
 import { AddInitTask } from "../../init.js";
-
-import { ItemCategoryInfo, ResourceManager, CharacterRenderConfig } from '../../../public/resource.js';
-
-import { Vec2, Rectangle } from '../math.js';
-import { IGraph, IRenderer, ImageFilter } from '../IRenderer.js';
-import { engine, Graph } from '../Engine.js';
-
-import { SpriteBase, Sprite } from '../Sprite.js';
 import { Animation } from "../Animation";
-
+import { engine } from '../Engine.js';
+import { IRenderer, ImageFilter } from '../IRenderer.js';
+import { Sprite, SpriteBase } from '../Sprite.js';
+import { Rectangle, Vec2 } from '../math.js';
 import { ActionAnimation } from './CharacterActionAnimation.js';
-import { SkillAnimation } from '../Skill.js';
+
+
+
+
 
 
 let zMap = {};
@@ -2141,7 +2140,12 @@ class CharacterChangeLog {
 
 export class CharacterAnimationBase {
 	constructor() {
-		this._$dirty = 0;
+		this._$dirty = 0;//force update vue
+
+		/** @type {string} - 未完成 */
+		this.job = null;
+		/** @type {string} - 未完成 */
+		this.subJob = null;
 
 		/** @type {ActionAnimation} */
 		this.actani = new ActionAnimation();
@@ -2912,10 +2916,13 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	 * @param {string} category - category of cash-weapon
 	 */
 	async use(id, category) {
+		if (!category) {
+			category = ItemCategoryInfo.getJobWeaponCategory(this.job);
+		}
 		const item_type = id[0];
 		switch (item_type) {
 			case "0"://equip
-				if (id.startsWith("0170")) {
+				if (ItemCategoryInfo.isCashWeapon(id)) {
 					//this.$$changeLog.weaponType = ss[1];/??
 					this.$$changeLog.weapon = id;
 				}
@@ -2927,7 +2934,6 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				this.__load_task.push(task);
 				await task;
 				this._calcBoundBox();
-				return task;
 		}
 	}
 
@@ -2937,10 +2943,12 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	unuse(id) {
 		debugger;
 		if (id[0] == "0") {//equip
-			if (this.slots._unuse(id)) {
+			let result = this.slots._unuse(id);
+			if (result) {
 				this.$$changeLog.unuseEquip.push(id);
 				this._calcBoundBox();
 			}
+			return result;
 		}
 	}
 

@@ -3,6 +3,7 @@ import { } from './init.js';
 import { Vec2, Rectangle } from './math.js';
 import { IGraph, IRenderer } from './IRenderer.js';
 import { engine, Graph } from './Engine.js';
+import { Animation } from './Animation.js';
 
 import { GameStateManager } from './GameState.js';
 import { SceneMap } from './Map.js';
@@ -10,6 +11,8 @@ import { SceneMap } from './Map.js';
 
 import { EffectManager } from "./Skill.js";
 import { } from "./MobSkill/238.FairyDust.js";
+
+import { Cursor, CursorAnimationData } from "./Cursor.js";
 
 import { Client } from "../Client/Client.js";
 
@@ -34,6 +37,30 @@ window.addEventListener("popstate", function (e) {
 	GameStateManager.PopState(e.state);
 });
 
+
+///////////////////////////////////////////////////////////////////////////////
+//
+///////////////////////////////////////////////////////////////////////////////
+
+function createCursor_clickable() {
+	let data = new CursorAnimationData();
+
+	let task1 = data.addFrameFromUrl("/UI/Basic.img/Cursor/0/0").then(function (i) {
+		data.frames[i].delay = 200;
+	});
+
+	let task2 = data.addFrameFromUrl("/UI/Basic.img/Cursor/12/0").then(function (i) {
+		data.frames[i].delay = 200;
+	});
+
+	return Promise.all([task1, task2]).then(function () {
+		data.duration = 400;
+
+		Cursor.createToCSS(data, ".ui-clickable", "pointer");
+	});
+}
+
+createCursor_clickable();
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -409,35 +436,35 @@ export class Game {
 				scene_map.beginRender(engine);
 				{					
 					scene_map.renderBackground(engine);
-					if (0 && window.m_display_life && scene_map._raw.info.mirror_Bottom) {
-						engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
-						engine.ctx.translate(Math.trunc(-$gv.m_viewRect.x), Math.trunc(-$gv.m_viewRect.y));
-						engine.ctx.scale(1, -1);
-						for (let i = 0; i < scene_map.layeredObject.length; ++i) {
-							scene_map.renderLife(engine, i);
-						}
-					}
+					//if ($gv.m_display_life && scene_map._raw.info.mirror_Bottom) {
+					//	engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
+					//	engine.ctx.translate(Math.trunc(-$gv.m_viewRect.x), Math.trunc(-$gv.m_viewRect.y));
+					//	engine.ctx.scale(1, -1);
+					//	for (let i = 0; i < scene_map.layeredObject.length; ++i) {
+					//		scene_map.renderLife(engine, i);
+					//	}
+					//}
 					for (let i = 0; i < scene_map.layeredObject.length; ++i) {
 						scene_map.renderLayeredObject(engine, i);
 						scene_map.renderLayeredTile(engine, i);
 						
 						scene_map.applyCamera(engine);
 						{
-							for (let chara_index = 0; chara_index < charaList.length; ++chara_index) {
-								if (charaList[chara_index] == chara) {
-									continue;
-								}
-								else if (charaList[chara_index].$layer == i) {
-									charaList[chara_index].render(engine);
+							if ($gv.m_display_other_player) {
+								for (let chara_index = 0; chara_index < charaList.length; ++chara_index) {
+									if (charaList[chara_index] == chara) {
+										continue;
+									}
+									else if (charaList[chara_index].$layer == i) {
+										charaList[chara_index].render(engine);
+									}
 								}
 							}
 
-							if (window.m_display_life) {
-								scene_map.renderLife(engine, i);
-							}
+							scene_map.renderLife(engine, i);
 
-							if (chara && chara.renderer) {
-								if (chara.$layer == i) {
+							if ($gv.m_display_player && chara.$layer == i) {
+								if (chara && chara.renderer) {
 									chara.render(engine);
 								}
 							}
@@ -472,18 +499,14 @@ export class Game {
 				{
 					scene_map.applyCamera(engine);
 					{
-						if (window.m_display_portal) {
-							scene_map.renderPortal(engine);
-						}
+						scene_map.renderPortal(engine);
 					}
 					
 					scene_map.renderFrontground(engine);
 				}
 				scene_map.endRender(engine);
-
-				if (window.m_display_particle_system) {
-					scene_map.renderParticle(engine);
-				}
+				
+				scene_map.renderParticle(engine);
 
 				scene_map.applyCamera(engine);
 				{

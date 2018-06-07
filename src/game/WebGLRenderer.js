@@ -93,6 +93,396 @@ Drawing2D.prototype.drawImage = function (image, a, b, c, d, e, f, g, h) {
 	// throw new Error();
 }
 
+
+class ITexture extends IGraph {
+	constructor() {
+		super();
+	}
+
+	isLoaded() { return true; }
+	_isLoaded() { return true; }
+	/** @delete */
+	_isLoaded_or_doload() { throw new TypeError(); }
+	/** @delete */
+	__isLoading_or_doload() { throw new TypeError(); }
+	/** @delete */
+	__loadTexture() { throw new TypeError(); }
+}
+
+/**
+ * like IGraph
+ * @extends ITexture
+ */
+class Surface {
+	constructor() {
+		/** @type {WebGLFramebuffer} */
+		this.fbo = null;
+
+		/** @type {WebGLTexture} */
+		this.texture = null;
+	}
+
+	isLoaded() { return true; }
+	_isLoaded() { return true; }
+	/** @delete */
+	_isLoaded_or_doload() { throw new TypeError(); }
+	/** @delete */
+	__isLoading_or_doload() { throw new TypeError(); }
+	/** @delete */
+	__loadTexture() { throw new TypeError(); }
+
+	/**
+	 * @param {WebGLRenderingContext} gl
+	 * @param {number} [width=gl.canvas.width]
+	 * @param {number} [height==gl.canvas.height]
+	 */
+	create(gl, width, height) {
+		if (!gl) {
+			throw new TypeError("gl");
+		}
+
+		if (width == null) {
+			width = gl.canvas.width;
+		}
+		if (height == null) {
+			height = gl.canvas.height;
+		}
+
+		Object.defineProperties(this, {
+			width: {
+				enumerable: true,
+				value: width,
+			},
+			height: {
+				enumerable: true,
+				value: height,
+			}
+		});
+
+		this.fbo = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
+		this.texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);//NEAREST
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);//LINEAR
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		//gl.generateMipmap(gl.TEXTURE_2D);
+
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+		let renderbuffer = gl.createRenderbuffer();
+		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
+		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		const vertices = _createRectVertices(width, height);
+		this._vbo = createVBO(gl, vertices);
+	}
+
+	//_beginDrawToBuffer() {
+	//	const gl = this.gl;
+	//	gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+	//}
+	//_endDrawToBuffer() {
+	//	const gl = this.gl;
+	//	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	//}
+}
+/** @type {number} */Surface.prototype.x = 0;
+/** @type {number} */Surface.prototype.y = 0;
+/** @type {Float32Array} - ?? sprite */
+Surface.prototype._matrix = null;
+
+
+class Shader {
+	constructor() {
+		/** @type {WebGLShader} */
+		this.vs = null;
+
+		/** @type {WebGLShader} */
+		this.fs = null;
+
+		/** @type {WebGLProgram} */
+		this.program = null;
+
+		/** @type {nubmer} */
+		this.vertexPositionAttribute = null;
+		/** @type {nubmer} */
+		this.textureCoordAttribute = null;
+
+		/** @type {WebGLUniformLocation} */
+		this.matrix_projection_location = null;
+		/** @type {WebGLUniformLocation} */
+		this.matrix_modelView_location = null;
+		/** @type {WebGLUniformLocation} */
+		this.color_location = null;
+		/** @type {WebGLUniformLocation} */
+		this.uniform_sampler = null;
+		///** @type {WebGLUniformLocation} */
+		//this.uniform_resolution = null;
+	}
+
+	/**
+	 * @param {WebGLRenderingContext} gl
+	 * @param {string} vsElemId
+	 * @param {string} fsElemId
+	 */
+	create(gl, vsElemId, fsElemId) {
+		this.vs = _createShader(gl, gl.VERTEX_SHADER, vsElemId);
+		this.fs = _createShader(gl, gl.FRAGMENT_SHADER, fsElemId);
+		
+		this.program = createShaderProgram(gl, this.vs, this.fs);
+
+		this.applyDefaultParamLocation(gl);
+	}
+
+	/**
+	 * @param {WebGLRenderingContext} gl
+	 */
+	applyDefaultParamLocation(gl) {
+		const program = this.program;
+
+		gl.useProgram(program);
+
+		this.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition");
+		gl.enableVertexAttribArray(this.vertexPositionAttribute);
+
+		this.textureCoordAttribute = gl.getAttribLocation(program, "aTextureCoord");
+		gl.enableVertexAttribArray(this.textureCoordAttribute);
+
+		this.matrix_projection_location = gl.getUniformLocation(program, "uPMatrix");
+		this.matrix_modelView_location = gl.getUniformLocation(program, "uMVMatrix");
+
+		this.color_location = gl.getUniformLocation(program, "uColor");
+		this.uniform_sampler = gl.getUniformLocation(program, "uSampler");
+		//this.uniform_resolution = gl.getUniformLocation(program, "uResolution");
+		
+
+		/** @type {nubmer} */
+		program.vertexPositionAttribute = this.vertexPositionAttribute;
+		/** @type {nubmer} */
+		program.textureCoordAttribute = this.textureCoordAttribute;
+
+		/** @type {WebGLUniformLocation} */
+		program.matrix_projection_location = this.matrix_projection_location;
+		/** @type {WebGLUniformLocation} */
+		program.matrix_modelView_location = this.matrix_modelView_location;
+		/** @type {WebGLUniformLocation} */
+		program.color_location = this.color_location;
+		/** @type {WebGLUniformLocation} */
+		program.uniform_sampler = this.uniform_sampler;
+		///** @type {WebGLUniformLocation} */
+		//program.uniform_resolution = this.uniform_resolution;
+	}
+}
+
+
+class GaussianBlurRenderer {
+	constructor() {
+		this.surface = [new Surface(), new Surface()];
+
+		this.shader = new Shader();
+	}
+
+	/**
+	 * @param {WebGLRenderer} renderer
+	 */
+	create(renderer) {
+		const gl = renderer.gl;
+		for (let surface of this.surface) {
+			surface.create(gl);
+		}
+		this.shader.create(gl, "gaussian_blur_vs", "gaussian_blur_fs");
+	}
+
+	/**
+	 * @param {WebGLRenderer} renderer
+	 * @param {IGraph} src
+	 * @param {number} amount
+	 */
+	applyBlur(renderer, src, amount) {
+		const gl = renderer.gl;
+		const grInfo = this.surface[0];
+
+		let horizontal = 1, first_iteration = true;
+
+		amount = Math.trunc(amount / 2) * 2;
+
+		renderer.useShader(this.shader.program);
+		let uHorizontal = gl.getUniformLocation(this.shader.program, "uHorizontal");
+		let uTextureSize = gl.getUniformLocation(this.shader.program, "uTextureSize");
+		gl.uniform2f(uTextureSize, grInfo.width, grInfo.height);
+		if (0) {
+		}
+		else {
+			//gl.uniform2fv(renderer._shader.uniform_resolution, renderer._resolution);
+			gl.uniform4fv(renderer._shader.color_location, renderer._color);
+
+			gl.uniformMatrix4fv(renderer._shader.matrix_projection_location, false, renderer._projectionMatrix);
+			gl.uniformMatrix4fv(renderer._shader.matrix_modelView_location, false, renderer._modelViewMatrix);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, grInfo._vbo/*renderer._cubeVerticesBuffer*/);
+			gl.vertexAttribPointer(renderer._shader.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, renderer._cubeTextureCoordBuffer);
+			gl.vertexAttribPointer(renderer._shader.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+			//renderer._bindDepthTexture(1);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderer._cubeVerticesIndexBuffer);
+		}
+	
+		{
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.surface[0].fbo);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.surface[1].fbo);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		}
+
+		for (let i = 0; i < amount; ++i) {
+			/** @type {IGraph} */
+			const graph = first_iteration ? src : this.surface[horizontal ? 0 : 1];
+			const _dst = this.surface[horizontal];
+
+			gl.bindFramebuffer(gl.FRAMEBUFFER, _dst.fbo);
+			
+			gl.uniform1i(uHorizontal, horizontal);
+
+			renderer._bindTexture(graph.texture, 0);
+			if (0) {
+				renderer.__drawRect(grInfo._vbo);
+			}
+			else {
+				gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);//TRIANGLE_STRIP
+			}
+
+			horizontal = horizontal ? 0:1;
+			if (first_iteration) {
+				first_iteration = false;
+			}
+		}
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		//output this.surface[1]
+	}
+
+	/**
+	 * @param {WebGLRenderer} renderer
+	 */
+	draw(renderer) {
+		renderer.drawGraph(this.surface[1]);
+	}
+}
+
+class BloomRenderer {
+	constructor() {
+		this.brr = new GaussianBlurRenderer();
+		this.brightColorShader = new Shader();
+		this.bloomShader = new Shader();
+
+		this.surfacebrightColor = new Surface();
+	}
+
+	/**
+	 * @param {WebGLRenderer} renderer
+	 * @param {IGraph} src
+	 * @param {Surface} dst
+	 * @param {number} amount
+	 * @param {number} exposure
+	 * @param {number} gamma
+	 */
+	applyBloom(renderer, src, dst, amount, exposure = 1.0, gamma = 2.2) {
+		const gl = renderer.gl;
+		const grInfo = this.brr.surface[0];
+
+		{//get bright color
+			renderer.useShader(this.brightColorShader.program);
+
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.surfacebrightColor.fbo);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+			gl.uniformMatrix4fv(renderer._shader.matrix_projection_location, false, renderer._projectionMatrix);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, grInfo._vbo);
+			gl.vertexAttribPointer(renderer._shader.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, renderer._cubeTextureCoordBuffer);
+			gl.vertexAttribPointer(renderer._shader.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderer._cubeVerticesIndexBuffer);
+
+			renderer._bindTexture(src.texture, 0);
+
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+		}
+
+		//blur bright color
+		this.brr.applyBlur(renderer, this.surfacebrightColor, amount);
+
+		{//apply bloom
+			renderer.useShader(this.bloomShader.program);
+
+			if (dst) {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fbo);
+			}
+			else {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			}
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+			gl.uniformMatrix4fv(renderer._shader.matrix_projection_location, false, renderer._projectionMatrix);
+			gl.uniform1f(this.uExposure, exposure);
+			gl.uniform1f(this.uGamma, gamma);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, grInfo._vbo);
+			gl.vertexAttribPointer(renderer._shader.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, renderer._cubeTextureCoordBuffer);
+			gl.vertexAttribPointer(renderer._shader.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderer._cubeVerticesIndexBuffer);
+
+			renderer._bindTexture(src.texture, 0);
+			{
+				gl.activeTexture(gl.TEXTURE1);
+				gl.bindTexture(gl.TEXTURE_2D, this.brr.surface[1].texture);
+				gl.uniform1i(this.uBloomBlur, 1);
+			}
+
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+		}
+	}
+
+	/**
+	 * @param {WebGLRenderer} renderer
+	 */
+	create(renderer) {
+		this.brr.create(renderer);
+
+		this.surfacebrightColor.create(renderer.gl);
+
+		this.brightColorShader.create(renderer.gl, "bloom_vs", "brightColor_fs");
+		this.bloomShader.create(renderer.gl, "bloom_vs", "bloom_fs");
+		
+		this.uBloomBlur = renderer.gl.getUniformLocation(this.bloomShader.program, "uBloomBlur");
+		this.uExposure = renderer.gl.getUniformLocation(this.bloomShader.program, "uExposure");
+		this.uGamma = renderer.gl.getUniformLocation(this.bloomShader.program, "uGamma");
+	}
+}
+
+
 /**
  * @implements {IRenderer}
  */
@@ -118,7 +508,7 @@ export class WebGLRenderer extends IRenderer {
 
 		//this._cubeVerticesBuffer = null;
 		//this._cubeVerticesColorBuffer = null;
-		this._cubeVerticesTextureCoordBuffer = null;
+		this._cubeTextureCoordBuffer = null;
 		this._cubeVerticesIndexBuffer = null;
 
 		/** @type {WebGLProgram} */
@@ -190,6 +580,10 @@ export class WebGLRenderer extends IRenderer {
 			this._matrix = this.matrix;
 		}
 		this._graph_rect._url = "/1x1.png";
+
+		this.bloomRenderer = new BloomRenderer();
+
+		this.bloomRenderer.create(this);
 	}
 	/**
 	 * @param {"shader"|"fxaa"} target
@@ -390,62 +784,27 @@ export class WebGLRenderer extends IRenderer {
 
 	_initBuffers() {
 		//this._cubeVerticesBuffer = this._createVertexBuffer();
-		this._cubeVerticesTextureCoordBuffer = this._createTextureCoordBuffers();
+		this._cubeTextureCoordBuffer = this._createTextureCoordBuffers();
 		this._cubeVerticesIndexBuffer = this._createIndicesBuffers();
 	}
+
+	/**
+	 * @param {number} width
+	 * @param {number} height
+	 */
 	_createVertexBuffer(width, height) {
 		const gl = this.gl;
 
-		// Create a buffer for the cube's vertices.
+		let rectVertices = _createRectVertices(width, height);
 
-		let cubeVerticesBuffer = gl.createBuffer();
-
-		// Select the cubeVerticesBuffer as the one to apply vertex
-		// operations to from here out.
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, cubeVerticesBuffer);
-
-		// Now create an array of vertices for the cube.
-
-		//let vertices = [
-		//	0, 0, 0,
-		//	0, 1, 0,
-		//	1, 0, 0,
-		//	1, 1, 0,
-		//];
-		let vertices = [
-			0, 0, 0,
-			0, height, 0,
-			width, 0, 0,
-			width, height, 0,
-		];
-
-		// Now pass the list of vertices into WebGL to build the shape. We
-		// do this by creating a Float32Array from the JavaScript array,
-		// then use it to fill the current vertex buffer.
-
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-		return cubeVerticesBuffer;
+		return createVBO(gl, rectVertices);
 	}
 	_createTextureCoordBuffers() {
 		const gl = this.gl;
 
-		// Map the texture onto the cube's faces.
+		let qectTextCoord = _createRectTextCoord(1, 1);
 
-		let cubeVerticesTextureCoordBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, cubeVerticesTextureCoordBuffer);
-
-		let textureCoordinates = [
-			0, 0,
-			0, 1,
-			1, 0,
-			1, 1,
-		];
-
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
-
-		return cubeVerticesTextureCoordBuffer;
+		return createVBO(gl, qectTextCoord);
 	}
 	_createIndicesBuffers() {
 		const gl = this.gl;
@@ -685,7 +1044,7 @@ export class WebGLRenderer extends IRenderer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, vbo/*this._cubeVerticesBuffer*/);
 		gl.vertexAttribPointer(this._shader.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 
-		gl.bindBuffer(gl.ARRAY_BUFFER, this._cubeVerticesTextureCoordBuffer);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._cubeTextureCoordBuffer);
 		gl.vertexAttribPointer(this._shader.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
 		//this._bindDepthTexture(1);
@@ -823,11 +1182,25 @@ export class Engine extends WebGLRenderer {
 
 	endScene() {
 		if (this.fxaaProgram.enable) {
+			this.gl.flush();
+
 			this._endDrawToBuffer();
 
 			this.clearDrawScreen();
 
-			this._drawBackframe();
+			//if (this.blurRenderer && $gv.$blurAmount) {
+			//	this.blurRenderer.applyBlur(this, { texture: this.rttTexture }, $gv.$blurAmount);
+			//
+			//	if (this._graph_rect.isLoaded()) {
+			//		this.blurRenderer.draw(this);
+			//	}
+			//}
+			if ($gv.$blurAmount) {
+				this.bloomRenderer.applyBloom(this, { texture: this.rttTexture }, null, $gv.$blurAmount || 10, $gv.$exposure, $gv.$gamma);
+			}
+			else {
+				this._drawBackframe();
+			}
 		}
 
 		this.gl.flush();
@@ -841,7 +1214,7 @@ export class Engine extends WebGLRenderer {
 		//gl.clearColor(0.5, 0.5, 0.7, 1.0);
 		//gl.clearColor(1.0, 1.0, 1.0, 1.0);
 		//gl.clearColor(0.0, 0.0, 0.0, 1.0);
-		gl.clearColor(0, 0, 0, 0);
+		gl.clearColor(0, 0, 0, 0);//make transparent window
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
@@ -1077,49 +1450,118 @@ export class Engine extends WebGLRenderer {
 	}
 }
 
-function _getDefaultVertexShaderSource() {
-	return `
-#ifdef GL_ES
-	precision mediump float;//highp
-#endif
-attribute vec3 aVertexPosition;
-attribute vec2 aTextureCoord;
 
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {WebGLShader} vs
+ * @param {WebGLShader} fs
+ */
+function createShaderProgram(gl, vs, fs) {
+	// Create the shader program
+	let program = gl.createProgram();
 
-varying vec2 vTextureCoord;
+	gl.attachShader(program, vs);
+	gl.attachShader(program, fs);
+	gl.linkProgram(program);
 
-void main(void) {
-	vec4 pos = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-	gl_Position = pos;
-	vTextureCoord = aTextureCoord;
+	// If creating the shader program failed, alert
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		let err = "Unable to initialize the shader program: \n" + gl.getProgramInfoLog(program);
+		alert(err);
+		throw new Error(err);
+	}
+
+	return program;
 }
-`;
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {number} target
+ * @param {string} elemId
+ */
+function _createShader(gl, target, elemId) {
+	try {
+		let source = document.getElementById(elemId).innerText;
+
+		return _createShaderFromText(gl, target, source, elemId);
+	}
+	catch (ex) {
+		console.log(elemId);
+	}
+}
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {number} target
+ * @param {string} source
+ * @param {string} id
+ */
+function _createShaderFromText(gl, target, source, id) {
+	let shader;
+
+	shader = gl.createShader(target);
+
+	// Send the source to the shader object
+	gl.shaderSource(shader, source);
+
+	// Compile the shader program
+	gl.compileShader(shader);
+
+	// See if it compiled successfully
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+		let err = "An error occurred compiling the shaders (" + id + "): \n" + gl.getShaderInfoLog(shader);
+		alert(err);
+		gl.deleteShader(shader);
+		throw new Error(err);
+	}
+
+	return shader;
+}
+
+/**
+ * @param {number} width
+ * @param {number} height
+ */
+function _createRectVertices(width, height) {
+	return new Float32Array([
+		0, 0, 0,
+		0, height, 0,
+		width, 0, 0,
+		width, height, 0,
+	]);
+}
+
+/**
+ * @param {number} width
+ * @param {number} height
+ */
+function _createRectTextCoord(width, height) {
+	return new Float32Array([
+		0, 0,
+		0, height,
+		width, 0,
+		width, height,
+	]);
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {Float32Array} vertices
+ */
+function createVBO(gl, vertices) {
+	let vbo = gl.createBuffer();
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+	return vbo;
+}
+
+function _getDefaultVertexShaderSource() {
+	return document.getElementById("default_vs").innerText;
 }
 function _getDefaultFragmentShaderSource() {
-	return `
-#ifdef GL_ES
-	precision mediump float;
-#endif
-
-//uniform vec2 uResolution;
-uniform sampler2D uSampler;
-uniform vec4 uColor;
-
-varying vec2 vTextureCoord;
-
-void main(void) {
-	vec4 col = texture2D(uSampler, vTextureCoord) * uColor;
-
-	if (col.a > 0.001) {
-		gl_FragColor = col;
-	}
-	else {
-		discard;
-	}
-}
-`;
+	return document.getElementById("default_fs").innerText;
 }
 
 function _getFXAAVertexShaderSource() {
@@ -1312,18 +1754,21 @@ void main()
 {
 	vec2 uv = vec2(posPos.x, 1.0 - posPos.y);
 	vec4 col = texture2D(uSampler, uv);
+	//vec4 col = Gaussian55(uv);
 
 	if (col.a > 0.001) {
-		if (length(col.rgb) < 0.9) {
-			vec3 g3 = Gaussian33(uv).rgb;
-			vec3 g5 = Gaussian55(uv).rgb;
-			gl_FragColor = vec4(col.rgb + (g3 * g5), col.a);//vec4(0.0, 0.0, 0.0, 1.0);//
-		}
-		else {
-			//vec3 g3 = Gaussian33(uv).rgb;
-			//gl_FragColor = vec4(col * 0.7 + g3 * 0.3, col.a);
-			gl_FragColor = vec4(col.rgb, col.a);
-		}
+		gl_FragColor = col;
+
+		//if (length(col.rgb) < 0.9) {
+		//	vec3 g3 = Gaussian33(uv).rgb;
+		//	vec3 g5 = Gaussian55(uv).rgb;
+		//	gl_FragColor = vec4(col.rgb + (g3 * g5), col.a);//vec4(0.0, 0.0, 0.0, 1.0);//
+		//}
+		//else {
+		//	//vec3 g3 = Gaussian33(uv).rgb;
+		//	//gl_FragColor = vec4(col * 0.7 + g3 * 0.3, col.a);
+		//	gl_FragColor = vec4(col.rgb, col.a);
+		//}
 
 		////if (uFXAA) {
 		//	vec4 pp = vec4(uv.x, uv.y, posPos.z, posPos.w);

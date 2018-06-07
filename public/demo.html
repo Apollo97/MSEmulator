@@ -29,6 +29,187 @@
 		<script src="/spine/render-webgl.js"></script>
 		<script src="/spine/SpineBinary.js"></script>
 		<script src="/spine/SSAnim.js"></script>
+		
+		<script id="default_vs" type="x-shader/x-vertex">
+			precision mediump float;
+
+			attribute vec3 aVertexPosition;
+			attribute vec2 aTextureCoord;
+
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+
+			varying vec2 vTextureCoord;
+
+			void main(void) {
+				vec4 pos = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+				gl_Position = pos;
+				vTextureCoord = aTextureCoord;
+			}
+		</script>
+		<script id="default_fs" type="x-shader/x-fragment">
+			precision mediump float;
+
+			//uniform vec2 uResolution;
+			uniform sampler2D uSampler;
+			uniform vec4 uColor;
+
+			varying vec2 vTextureCoord;
+
+			void main(void) {
+				vec4 col = texture2D(uSampler, vTextureCoord) * uColor;
+
+				if (col.a > 0.001) {
+					gl_FragColor = col;
+				}
+				else {
+					discard;
+				}
+			}
+		</script>
+
+		<script id="gaussian_blur_vs" type="x-shader/x-vertex">
+			precision mediump float;
+
+			attribute vec3 aVertexPosition;
+			attribute vec2 aTextureCoord;
+
+			varying vec2 vTextureCoord;
+
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+
+			void main(void)
+			{
+				vec4 pos = uPMatrix * vec4(aVertexPosition, 1.0);// * uMVMatrix
+				gl_Position = pos;
+				vTextureCoord = aTextureCoord;
+			}
+		</script>
+		<script id="gaussian_blur_fs" type="x-shader/x-fragment">
+			precision mediump float;
+
+			//uniform vec2 uResolution;
+			uniform sampler2D uSampler;
+			uniform vec4 uColor;
+
+			uniform bool uHorizontal;
+			uniform vec2 uTextureSize;
+
+			varying vec2 vTextureCoord;
+
+			void main()
+			{
+				vec2 tex_offset = 1.0 / uTextureSize;
+				vec4 color = texture2D(uSampler, vTextureCoord);
+				vec3 result = color.rgb * 0.227027;
+
+				if(uHorizontal)
+				{
+					result += texture2D(uSampler, vTextureCoord + vec2(tex_offset.x * 0.4, 0.0)).rgb * 0.016216;
+					result += texture2D(uSampler, vTextureCoord + vec2(tex_offset.x * 0.3, 0.0)).rgb * 0.054054;
+					result += texture2D(uSampler, vTextureCoord + vec2(tex_offset.x * 0.2, 0.0)).rgb * 0.1216216;
+					result += texture2D(uSampler, vTextureCoord + vec2(tex_offset.x * 0.1, 0.0)).rgb * 0.1945946;
+
+					result += texture2D(uSampler, vTextureCoord - vec2(tex_offset.x * 0.1, 0.0)).rgb * 0.1945946;
+					result += texture2D(uSampler, vTextureCoord - vec2(tex_offset.x * 0.2, 0.0)).rgb * 0.1216216;
+					result += texture2D(uSampler, vTextureCoord - vec2(tex_offset.x * 0.3, 0.0)).rgb * 0.054054;
+					result += texture2D(uSampler, vTextureCoord - vec2(tex_offset.x * 0.4, 0.0)).rgb * 0.016216;
+				}
+				else
+				{
+					result += texture2D(uSampler, vTextureCoord + vec2(0.0, tex_offset.y * 0.4)).rgb * 0.016216;
+					result += texture2D(uSampler, vTextureCoord + vec2(0.0, tex_offset.y * 0.3)).rgb * 0.054054;
+					result += texture2D(uSampler, vTextureCoord + vec2(0.0, tex_offset.y * 0.2)).rgb * 0.1216216;
+					result += texture2D(uSampler, vTextureCoord + vec2(0.0, tex_offset.y * 0.1)).rgb * 0.1945946;
+
+					result += texture2D(uSampler, vTextureCoord - vec2(0.0, tex_offset.y * 0.1)).rgb * 0.1945946;
+					result += texture2D(uSampler, vTextureCoord - vec2(0.0, tex_offset.y * 0.2)).rgb * 0.1216216;
+					result += texture2D(uSampler, vTextureCoord - vec2(0.0, tex_offset.y * 0.3)).rgb * 0.054054;
+					result += texture2D(uSampler, vTextureCoord - vec2(0.0, tex_offset.y * 0.4)).rgb * 0.016216;
+				}
+				gl_FragColor = vec4(result, color.a);
+			}
+		</script>
+		
+		<script id="bloom_vs" type="x-shader/x-vertex">
+			precision mediump float;
+
+			attribute vec3 aVertexPosition;
+			attribute vec2 aTextureCoord;
+
+			uniform mat4 uPMatrix;
+
+			varying vec2 vTextureCoord;
+
+			void main(void) {
+				vec4 pos = uPMatrix * vec4(aVertexPosition, 1.0);
+				gl_Position = pos;
+				vTextureCoord = aTextureCoord;
+			}
+		</script>
+		<script id="bloom_fs" type="x-shader/x-fragment">
+			precision mediump float;
+
+			uniform sampler2D uSampler;
+			uniform sampler2D uBloomBlur;
+
+			varying vec2 vTextureCoord;
+
+			uniform float uExposure;
+			uniform float uGamma;
+
+			void main() {
+			vec2 uv = vec2(vTextureCoord.x, 1.0 - vTextureCoord.y);
+
+			vec4 col1 = texture2D(uSampler, uv);
+			vec4 col2 = texture2D(uBloomBlur, vTextureCoord);
+
+			gl_FragColor = col1 * uExposure + col2 * uGamma;
+
+			//vec4 result = vec4(1.0) - exp(-col2 * uExposure);
+			//
+			//gl_FragColor = col1 + pow(result, vec4(1.0 / uGamma));
+
+			//vec3 hdrColor = texture2D(uSampler, uv).rgb;
+			//vec3 bloomColor = texture2D(uBloomBlur, vTextureCoord).rgb;
+			//
+			//hdrColor += bloomColor; // additive blending
+			//
+			//// tone mapping
+			//vec3 result = vec3(1.0) - exp(-hdrColor * uExposure);
+			//
+			//// also gamma correct while we're at it
+			//result = pow(result, vec3(1.0 / uGamma));
+			//gl_FragColor = vec4(result, 1.0);
+			}
+		</script>
+		<script id="brightColor_fs" type="x-shader/x-fragment">
+			precision mediump float;
+			
+			uniform sampler2D uSampler;
+
+			varying vec2 vTextureCoord;
+
+			void main() {
+				vec2 uv = vec2(vTextureCoord.x, 1.0 - vTextureCoord.y);
+				vec4 color = texture2D(uSampler, uv);
+				
+				gl_FragColor = pow(color, vec4(8.0));
+
+				//float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+
+				//gl_FragColor = vec4(color.rgb * brightness, color.a);
+
+				//if (length(color.rgb) > 0.99) {
+				//if (brightness >= 0.99) {
+				//	gl_FragColor = color;
+				//}
+				//else {
+				//	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+				//}
+			}
+		</script>
 	</head>
 	<body>
 		<canvas id="glcanvas" class="Scene" width="800" height="600"></canvas>

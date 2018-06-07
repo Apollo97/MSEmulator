@@ -44,5 +44,10 @@
 	.footer {
 		padding: 0;
 		border: 0;
+		height: 0;
+	}
+	.comp {
+		user-select: none;
+		-webkit-user-drag: none;
 	}
 </style>

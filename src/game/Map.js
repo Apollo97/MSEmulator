@@ -615,6 +615,7 @@ class MapObject extends MapObjectBase {
 class MapParticle extends MapObjectBase {
 	constructor(_raw) {
 		super(_raw);
+		/** @type {ParticleGroup[]} */
 		this.groups = [];
 	}
 	
@@ -622,8 +623,19 @@ class MapParticle extends MapObjectBase {
 		let pg = new ParticleGroup();
 		
 		await pg.load(particle_name);
+
+		let keys = Object.keys(this._raw)
+			.map(i => {
+				let n = parseInt(i, 10);
+				if (Number.isSafeInteger(n)) {
+					return n;
+				}
+				console.warn("MapParticle." + particle_name + ".id: " + i);
+				return null;
+			})
+			.filter(i => i != null);
 			
-		for (let i = 0; i in this._raw; ++i) {
+		for (let i of keys) {
 			this.groups[i] = pg.clone();
 			this.groups[i].x = this._raw[i].x;
 			this.groups[i].y = this._raw[i].y;
@@ -649,7 +661,11 @@ class MapParticle extends MapObjectBase {
 			}
 		}
 	}
-	
+
+	/**
+	 * @param {{particle:{[name:string]:{}}}} mapRawData
+	 * @param {SceneMap} sceneMap
+	 */
 	static construct(mapRawData, sceneMap) {
 		let tasks = [];
 		let particleList = [];
@@ -1265,7 +1281,7 @@ export class MapLifeEntity {
 	}
 	/**
 	 * @param {LifeSpawnPoint} lifeSpawnPoint
-	 * @param {MapController} mapController
+	 * @param {World} mapController
 	 * @param {number} lifeId - life index
 	 */
 	static Create(lifeSpawnPoint, mapController, lifeId) {
@@ -1316,7 +1332,7 @@ export class MapLifeEntity {
 
 	/**
 	 * @param {string} id -  npc or mob id
-	 * @param {MapController} mapController - no use
+	 * @param {World} mapController - no use
 	 */
 	async load(id, mapController) {//rename to create
 		if (this.renderer) {
@@ -1363,8 +1379,8 @@ class MapMob extends MapLifeEntity {
 		this.skills = {};
 	}
 	/**
-	 * @param {string} mob id
-	 * @param {MapController} mapController
+	 * @param {string} id mobId
+	 * @param {World} mapController
 	 */
 	async load(id, mapController) {//rename to create
 		await super.load(id);
@@ -1523,7 +1539,7 @@ let MapLifeEntityCapacityRate = 1;
 
 class MapLifeManager {
 	/**
-	 * @param {box2d} MapController
+	 * @param {World} mapController
 	 */
 	constructor(mapController) {
 		/** @type {object} */
@@ -1535,19 +1551,31 @@ class MapLifeManager {
 		/** @type {MapMob[]} */
 		this.entities = [];
 
-		/** @type {box2d} */
+		/** @type {World} */
 		this.mapController = mapController;
 	}
 
 	/**
-	 * @returns {Promise}
+	 * @async
+	 * @param {{life:{[spawnId:number]:{}}}} mapRawData
+	 * @returns {Promise<undefined[]>}
 	 */
 	load(mapRawData) {
 		let tasks = [];
 		this._raw = mapRawData.life;
 
-		for (let i = 0; i in this._raw; ++i) {
-			const spawnId = i;
+		let keys = Object.keys(this._raw)
+			.map(i => {
+				let n = parseInt(i, 10);
+				if (Number.isSafeInteger(n)) {
+					return n;
+				}
+				console.warn("MapLife.spawnId: " + i);
+				return null;
+			})
+			.filter(i => i != null);
+
+		for (let spawnId of keys) {
 			let d = new LifeSpawnPoint(this._raw[spawnId], spawnId);
 			tasks.push(MapLifeEntity.loadLifeDesc(d));
 			this.spawnPoints.push(d);
@@ -1753,7 +1781,7 @@ export class SceneMap {
 
 	/**
 	 * load map from loaded data
-	 * @param {{[String]:any}} raw
+	 * @param {{back:{[backId:string]:any}}} raw
 	 */
 	async _constructBack(raw) {
 		if (!("back" in raw)) {
@@ -1819,12 +1847,12 @@ export class SceneMap {
 	}
 	/**
 	 * load map from loaded data
-	 * @param {{[String]:any}} raw
+	 * @param {{[layer:number]:{objs:{},tiles:{},info:{}}}} mapRawData
 	 */
-	async _constructLayeredObject(raw) {
+	async _constructLayeredObject(mapRawData) {
 		let loading_task_map = new Map();
 
-		for (let i = 0, layer = raw[i]; !objIsEmpty(layer); i++ , layer = raw[i]) {//layer[1...8]
+		for (let i = 0, layer = mapRawData[i]; !objIsEmpty(layer); i++ , layer = mapRawData[i]) {//layer[1...8]
 			let objs = this.__constructLayeredObject_obj(i, layer, loading_task_map);
 			let tiles = this.__constructLayeredObject_tile(i, layer, loading_task_map);
 
@@ -2058,7 +2086,7 @@ export class SceneMap {
 	}
 	/**
 	 * load map from loaded data
-	 * @param {{[String]:any}} raw
+	 * @param {{[prop:string]:{}}} raw
 	 */
 	_load(raw) {
 		const map_id = this.map_id;
@@ -2177,21 +2205,21 @@ export class SceneMap {
 
 	/**
 	 * load map from loaded data
-	 * @param {{[String]:any}} raw
+	 * @param {{info:{bgm:string}}} mapRawData
 	 */
-	getBgmUrl(raw) {
-		let bgmPath = raw.info.bgm;
-		let s = bgmPath.split("/");
-		s[0] += ".img";
-		return s.shift() + "/" + s.join("");
+	_getBgmUrl(mapRawData) {
+		let bgmPath = mapRawData.info.bgm;
+		let i = bgmPath.indexOf("/"), path = bgmPath.slice(0, i) + ".img" + bgmPath.slice(i);
+		//let m = bgmPath.match(/([^\/]+)(\/.*)/), path = [m[1] + ".img", m[2]].join("/");
+		return path;
 	}
 
 	/**
 	 * load map from loaded data
-	 * @param {{[String]:any}} raw
+	 * @param {{info:{bgm:string}}} mapRawData
 	 */
-	_loadBgm(raw) {
-		this._bgm_url = this.getBgmUrl(raw);
+	_loadBgm(mapRawData) {
+		this._bgm_url = this._getBgmUrl(mapRawData);
 		document.getElementById("bgm").innerHTML = `<source src="sound/Sound/${this._bgm_url}" type="audio/mpeg">`;
 	}
 
@@ -2304,19 +2332,18 @@ export class SceneMap {
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 		
-		this.lifeMgr.draw(center, viewRect, true, renderer, whereLayer);
+		this.lifeMgr.draw(center, viewRect, $gv.m_display_life, renderer, whereLayer);
 	}
 	
 	/**
 	 * @param {IRenderer} renderer
 	 */
 	renderPortal(renderer) {
-		const display_portal = true;
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 
 		this.portalMgr.update(this.stamp);
-		this.portalMgr.draw(center, viewRect, display_portal, renderer);
+		this.portalMgr.draw(center, viewRect, $gv.m_display_portal, renderer);
 	}
 
 	/**
@@ -2388,7 +2415,7 @@ export class SceneMap {
 		for (let i = 0; i < this.particleList.length; ++i) {
 			let particle = this.particleList[i];
 			particle.update(this.stamp);
-			particle.draw(center, viewRect, true, renderer);
+			particle.draw(center, viewRect, $gv.m_display_particle_system, renderer);
 		}
 	}
 }

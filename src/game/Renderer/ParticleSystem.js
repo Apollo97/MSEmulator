@@ -1,6 +1,6 @@
 
 import { ColorRGB, ImageDataHelper } from "../IRenderer.js";
-import { Vec2 } from "../math.js";
+import { Vec2, Rectangle } from "../math.js";
 import { Sprite } from "../Sprite.js";
 
 
@@ -178,7 +178,17 @@ export class Particle {
 	}
 }
 
-export class ParticleGroup {
+class _ParticleGroupData {
+	constructor() {
+		this.GRAVITY = new Vec2();
+		this.life = 0;
+		this.lifeVar = 0;
+		this.duration = 0;
+		this.totalParticle = 0;
+	}
+}
+
+export class ParticleGroup extends _ParticleGroupData {
 	constructor() {
 		this.x = 0;
 		this.y = 0;
@@ -222,20 +232,21 @@ export class ParticleGroup {
 	
 	async load(particle_name) {
 		this.particleName = particle_name;
-		
+
+		/** @type ParticleGroupData */
 		let data = JSON.parse(await $get.data(this._particle_path));
 		
 		Object.assign(this, data);
 
-		this.GRAVITY = {};
-		Object.assign(this.GRAVITY, data.GRAVITY);
+		this.GRAVITY.x = data.GRAVITY.x;
+		this.GRAVITY.y = data.GRAVITY.y;
 
 		this.life = data.life * 1000;
 		this.lifeVar = data.lifeVar * 1000;
 		this.duration = data.duration * 1000;
 
-		//this.totalParticle = 2;
-		this.delay = (this.life + this.lifeVar / 2) / this.totalParticle;
+		//this.totalParticle = 2;//debug
+		this.delay = this.life / this.totalParticle;
 
 		if (_experimental_particle) {
 			const that = this;

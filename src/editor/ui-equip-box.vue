@@ -24,10 +24,18 @@
 
 			<div>
 				<div v-once style="display: inline-flex; width: 100%;">
-					<select v-model="selected_category" ref="select_category" style="flex: 1;">
+					<select v-model="selected_category" style="flex: 1;">
 						<option v-for="cat in categoryList" :value="cat.value">{{cat.key}}</option>
 					</select>
-					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" :title="'name\nItemID\n<attr>:/<regexp>/\n$style:/21158/\n$foreign:/true/'" placeholder="Search.." style="flex: 1;" />
+					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" />
+					<datalist id="search_param">
+						<option value="name" disable>item Name</option>
+						<option value="nItemID" disable>item ID</option>
+						<option value="<attr>:/<regexp>/" disable></option>
+						<option value="$style:/21158/">face, hair</option>
+						<option value="$foreign:/true/">external resource</option>
+						<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
+					</datalist>
 					<div style="position: relative; display: inline-block;">
 						<button v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" style="padding: 0;">
 							<span class="ui-icon ui-icon-gear"></span>
@@ -312,7 +320,7 @@
 				equip_list: [],			// view list (final result)
 				search_equip_result: [],// only search result
 
-				selected_category: null,
+				selected_category: "0000",
 				filters: [],
 				face_color: 0,
 				hair_color: 0,
@@ -328,7 +336,8 @@
 				displayMode: true,
 			};
 		},
-		computed: {// can't computing outside template ??
+		computed: {
+			DATA_TAG_VERSION: () => window.DATA_TAG + window.DATA_VERSION,
 			categoryList: () => ItemCategoryInfo._categoryList,
 			filter_buttons: () => filter_buttons,
 			face_color_buttons: () => face_color_buttons,
@@ -724,7 +733,7 @@
 			clickItem: function (e, num) {
 				if (this.selected_category == "0170") {
 					let item = this.__get_item(num);
-					console.groupCollapsed("無法直接使用點裝武器");
+					console.groupCollapsed("沒有設定職業，無法使用點裝武器");
 					console.log("click cash weapon: [%s] %s %o", item.id, item.name, item);
 					console.groupEnd();
 				}
@@ -761,6 +770,20 @@
 					equip: item,
 				});
 			},
+			selected_category_onchange: function (value) {
+				if (value == "0002") {
+					this.face_color = Number(window.chara.renderer.faceColor);
+				}
+				else if (value == "0003" || value == "0004") {
+					this.hair_color = Number(window.chara.renderer.hairColor);
+					if (window.chara.renderer.slots.hairColor2 && window.chara.renderer.slots.hairMix2) {
+						this.hair_color2 = Number(window.chara.renderer.slots.hairColor2);
+						this.hair_mix2 = Math.trunc(Number(window.chara.renderer.slots.hairMix2) * 100);
+					}
+				}
+
+				this.search_equip(this.search_text);
+			},
 		},
 		watch: {
 			search_text: function (val, oldVal) {
@@ -774,19 +797,8 @@
 					await this.loadList();
 				}
 			},
-			selected_category: async function (value) {
-				if (value == "0002") {
-					this.face_color = Number(window.chara.renderer.faceColor);
-				}
-				else if (value == "0003" || value == "0004") {
-					this.hair_color = Number(window.chara.renderer.hairColor);
-					if (window.chara.renderer.slots.hairColor2 && window.chara.renderer.slots.hairMix2) {
-						this.hair_color2 = Number(window.chara.renderer.slots.hairColor2);
-						this.hair_mix2 = Math.trunc(Number(window.chara.renderer.slots.hairMix2) * 100);
-					}
-				}
-
-				this.search_equip(this.search_text);
+			selected_category: function (value) {
+				this.selected_category_onchange(value);
 			},
 			filters: async function () {
 				//console.log(JSON.stringify(this.filters));
@@ -822,9 +834,8 @@
 			},
 		},
 		mounted: function () {
-			this.selected_category = "0000";//body
-
-			this.$refs.select_category.value = "0000";//body
+			this.selected_category = "0000";
+			this.selected_category_onchange(this.selected_category);
 		},
 		directives: {
 			focus: {

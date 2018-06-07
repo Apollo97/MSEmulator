@@ -1,10 +1,13 @@
 ﻿
+import { ItemCategoryInfo } from '../../public/resource.js';
+
 import { IRenderer } from './IRenderer.js';
 
 import { SceneObject } from "./SceneObject.js";
 import { CharacterRenderer, ChatBalloon } from "./Renderer/CharacterRenderer.js";
 import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 
+import { $createItem, ItemEquip, ItemSlot, ItemBase } from "./Item.js";
 import { SkillAnimation } from "./Skill.js";
 
 import { CharacterMoveElem } from "../Client/PMovePath.js";
@@ -25,6 +28,8 @@ class TimeElapsed {
 		return elapsed;
 	}
 }
+
+window.$addItem_repeatEquip = false;
 
 window.$Character_ChatBalloon_DisplayDuration = 5000;
 window.$Character_ChatBalloon_Style = 0;
@@ -416,6 +421,78 @@ export class SceneCharacter extends BaseSceneCharacter {
 
 		/** @type {string} */
 		this.id = null;
+
+		/** @type {ItemSlot[][]} - item inventory */
+		this.items = new Array(5);
+		for (let i = 0; i < 5; ++i) {
+			this.items[i] = new Array(128);
+			for (let j = 0; j < 128; ++j) {
+				this.items[i][j] = new ItemSlot(j, null, null, 0);
+			}
+		}
+
+		this.addItem("01005177", 1);
+		this.addItem("01053322", 1);
+		this.addItem("01073284", 1);
+	}
+
+	/**
+	 * @param {string} itemId
+	 * @param {number} amount
+	 */
+	addItem(itemId, amount) {
+		/** @type {Partial<ItemEquip>} */
+		let props = {//test attr
+			incDEXr: Math.trunc(Math.random() * 3),
+			timeLimited: Date(),
+		};
+
+		$createItem(itemId, props).then(item => {
+			this._addItem(item, amount);
+		});
+	}
+
+	/**
+	 * @param {T extends ItemBase ? T : never} itemData
+	 * @param {number} amount
+	 */
+	_addItem(itemData, amount) {
+		let SN = 123;
+		let itemId = itemData.id;
+		let slotType;
+		switch (itemId[0]) {
+			case '0':
+				slotType = 0;
+				break;
+			default:
+				console.info(`~give ${this.id}: ${itemId} * ${amount}`);
+				return false;
+		}
+		for (let i = 0; i < this.items[slotType].length; ++i) {
+			if (this.items[slotType][i].isEmpty()) {
+				if (window.$addItem_repeatEquip) {
+					this.items[slotType][i].assign(i, SN, itemData, slotType ? amount : 1);
+					console.info(`give ${this.id}: ${itemId} * ${amount}`);
+					return true;
+				}
+				else {
+					if (slotType == 0) {
+						this.items[slotType][i].assign(i, SN, itemData, 1);
+						amount--;
+						if (amount == 0) {
+							console.info(`repeat give ${this.id}: ${itemId}`);
+							return true;
+						}
+					}
+					else {
+						this.items[slotType][i].assign(i, SN, itemData, amount);
+						console.info(`give ${this.id}: ${itemId} * ${amount}`);
+						return true;
+					}
+				}
+			}
+		}
+		return false;//item inventory was full
 	}
 
 	_player_control() {
@@ -523,6 +600,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 	 * @param {number} to
 	 */
 	moveItemToSlot(from, to) {
+		//TODO: ("./ui/UISlotItem.vue").methods.drop
 		debugger;
 	}
 
@@ -536,10 +614,43 @@ export class SceneCharacter extends BaseSceneCharacter {
 	/**
 	 * @param {number} itemId
 	 */
+	findItem(itemId) {
+		for (let i = 0; i < this.items.length; ++i) {
+			for (let j = 0; j < this.items[i].length; ++j) {
+				let itemSlot = this.items[i][j];
+
+				if (itemSlot && itemSlot.data && (itemSlot.data.id == itemId)) {
+					return {
+						typeName: ItemCategoryInfo.typeName[i],
+						itemSlot: itemSlot,
+					};
+				}
+			}
+		}
+		return {
+			typeName: null,
+			itemSlot: null,
+		};
+	}
+
+	/**
+	 * @param {number} itemId
+	 */
 	useItem(itemId) {
-		window.$io.emit("useItem", {
-			itemId: itemId
-		});
+		if (window.$io) {
+			window.$io.emit("useItem", {
+				itemId: itemId
+			});
+		}
+		else {
+			let existItem = this.findItem(itemId).itemSlot;
+
+			if (!existItem) {
+				this.addItem(itemId, 1);
+			}
+
+			this.renderer.use(itemId);
+		}
 	}
 
 	/**

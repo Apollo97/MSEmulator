@@ -27,17 +27,30 @@
 				<p>
 					<div>
 						<label>
-							Map <input @keydown.enter="$gv.scene_map.load($event.target.value.padLeft(9, '0'))" />
+							Map <input @keydown.enter="$gv.scene_map.load($event.target.value.padStart(9, '0'))" />
 						</label>
 					</div>
 					<div>
-						<label><input type="checkbox" v-model="$gv.m_is_rendering_map" />Map</label>
-						<label><input type="checkbox" v-model="$gv.m_display_back" />map back</label>
-						<label><input type="checkbox" v-model="$gv.m_display_front" />map front</label>
-						<label><input type="checkbox" v-model="$gv.m_display_mapobj" />map object</label>
-						<label><input type="checkbox" v-model="$gv.m_display_maptile" />map tile</label>
-						<label><input type="checkbox" v-model="$gv.m_display_particle_system" />particle system</label>
-						<label><input type="checkbox" v-model="$gv.m_display_skeletal_anim" />spine</label>
+						<fieldset>
+							<legend>map</legend>
+							<label><input type="checkbox" v-model="$gv.m_is_rendering_map" />Map</label>
+							<label><input type="checkbox" v-model="$gv.m_display_back" />back</label>
+							<label><input type="checkbox" v-model="$gv.m_display_front" />front</label>
+							<label><input type="checkbox" v-model="$gv.m_display_mapobj" />object</label>
+							<label><input type="checkbox" v-model="$gv.m_display_maptile" />tile</label>
+							<label><input type="checkbox" v-model="$gv.m_display_portal" />portal</label>
+						</fieldset>
+						<fieldset>
+							<legend>map</legend>
+							<label><input type="checkbox" v-model="$gv.m_display_particle_system" />particle system</label>
+							<label><input type="checkbox" v-model="$gv.m_display_skeletal_anim" />skeletal animation</label>
+						</fieldset>
+						<fieldset>
+							<legend>life</legend>
+							<label><input type="checkbox" v-model="$gv.m_display_life" />life</label>
+							<label><input type="checkbox" v-model="$gv.m_display_player" />player</label>
+							<label><input type="checkbox" v-model="$gv.m_display_other_player" />other player</label>
+						</fieldset>
 					</div>
 				</p>
 			</details>
@@ -608,10 +621,10 @@
 							return;
 						}
 					}
-					if (!this.chara.renderer.unuse(id)) {
+					else if (!this.chara.renderer.unuse(id)) {
 						this.$store.commit("increaseProgressMax", { amount: 2 });
 						try {
-							this.chara.renderer.use(id, category, equip);
+							this.chara.useItem(id, category, equip);
 						}
 						catch (ex) {
 							this.$store.commit("increaseProgressMax", { amount: -2 });

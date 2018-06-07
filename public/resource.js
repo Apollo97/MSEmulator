@@ -1,8 +1,5 @@
 ﻿
-if (!module || !module.exports) {
-	var module = {};
-	module.exports = {};
-}
+
 
 window.character_emotion_list = ["blink", "hit", "smile", "troubled", "cry", "angry", "bewildered", "stunned",
 	"vomit", "oops", "cheers", "chu", "wink", "pain", "glitter", "despair", "love", "shine", "blaze", "hum",
@@ -14,69 +11,142 @@ window.character_action_list = ["walk1", "walk2", "stand1", "stand2", "alert", "
 	"rope"/*, "dead", "ghostwalk", "ghoststand", "ghostjump", "ghostproneStab", "ghostladder", "ghostrope", "ghostfly",
 		"ghostsit"*/];
 
-class ItemCategoryInfo {
+export class ItemCategoryInfo {
 	/**
 	 * @param {string} path
 	 * @param {boolean} isOnFace
 	 * @param {string} slot - property name
 	 * @param {string} categoryName
 	 */
-	constructor(imgDir, listPath, slot, categoryName) {
+	constructor(imgDir, listPath, slot, categoryName, type = "Equip") {
+		/** data path */
 		this.path = imgDir;
-		this.listPath = listPath;
+
+		/** equip window */
 		this.slot = slot;
+
+		/** item list file name */
+		this.listPath = listPath;
+
+		/** display category name */
 		this.categoryName = categoryName;
+
+		/** renderer */
 		this.fragmentType = null;
+
+		/** @type {string} */
+		this.dataDir = null;
+		/** @type {string} */
+		this.iconPath = null;
+		/** @type {string} */
+		this.iconRawPath = null;
+		{
+			let dataDir, iconPath, iconRawPath;
+
+			switch (slot) {
+				case "head":
+					iconPath = "stand1/0/head";
+					iconRawPath = "stand1/0/head";
+				case "body":
+					iconPath = "stand1/0/body";
+					iconRawPath = "stand1/0/body";
+				case "hair":
+					iconPath = "stand1/0/hair";
+					iconRawPath = "stand1/0/hair";
+				case "face":
+					iconPath = "blink/0/face";
+					iconRawPath = "blink/0/face";
+				default://typeId: 0|1|2|3|4
+					iconPath = "info/icon";
+					iconRawPath = "info/iconRaw";
+			}
+
+			if (type == "Equip") {
+				dataDir = `/Character/${imgDir + (imgDir ? "/" : "")}`;
+			}
+			else {
+				//TODO: get item data dir
+				console.error("未完成");
+			}
+
+			Object.defineProperties(this, {
+				'dataDir': {
+					value: dataDir,
+				},
+				'iconPath': {
+					value: iconPath,
+				},
+				'iconRawPath': {
+					value: iconRawPath,
+				},
+			});
+		}
 	}
 
 	/**
-	 * @param {string} id - 4+ digit string
-	 * @returns {string}
+	 * @param {string} id
+	 * @returns {string|null}
+	 */
+	static getDataPath(id) {
+		/** @type {ItemCategoryInfo} */
+		const info = ItemCategoryInfo.get(id);
+		if (!info) {
+			return null;
+		}
+
+		if (id[0] == '0') {
+			return info.dataDir + id + ".img/";
+		}
+		else {
+			//TODO: get item data path
+			throw new Error("未完成");
+		}
+	}
+
+	/**
+	 * @param {string} id
+	 * @returns {string|null}
 	 */
 	static getIconRawUrl(id) {
 		/** @type {ItemCategoryInfo} */
 		let info = ItemCategoryInfo.get(id);
-		if (info) {
-			let type = info.slot;
-			let path = ["/Character", info.path, id + ".img"].join("/");
-			switch (type) {
-				case "head":
-					return "/images" + path + "/stand1/0/head";
-				case "body":
-					return "/images" + path + "/stand1/0/body";
-				case "hair":
-					return "/images" + path + "/stand1/0/hair";
-				case "face":
-					return "/images" + path + "/blink/0/face";
-				default:
-					return "/images" + path + "/info/iconRaw";
-			}
+		if (!info) {
+			return null;
+		}
+		if (id[0] == '0') {
+			return "/images" + info.dataDir + id + ".img/" + info.iconRawPath;
 		}
 	}
 
 	/**
-	 * @param {string} id - 4+ digit string
-	 * @returns {string}
+	 * @param {string} id
+	 * @returns {string|null}
 	 */
 	static getIconUrl(id) {
 		/** @type {ItemCategoryInfo} */
 		let info = ItemCategoryInfo.get(id);
-		if (info) {
-			let type = info.slot;
-			let path = ["/Character", info.path, id + ".img"].join("/");
-			switch (type) {
-				case "head":
-					return "/images" + path + "/stand1/0/head";
-				case "body":
-					return "/images" + path + "/stand1/0/body";
-				case "hair":
-					return "/images" + path + "/stand1/0/hair";
-				case "face":
-					return "/images" + path + "/blink/0/face";
-				default:
-					return "/images" + path + "/info/icon";
-			}
+		if (!info) {
+			return null;
 		}
+		if (id[0] == '0') {
+			return "/images" + info.dataDir + id + ".img/" + info.iconPath;
+		}
+	}
+
+	/**
+	 * load name and desc
+	 * @param {string} id
+	 * @returns {{name:string,desc:string}}
+	 */
+	static async loadString(id) {
+		/** @type {ItemCategoryInfo} */
+		let info = ItemCategoryInfo.get(id);
+		if (!info) {
+			return null;
+		}
+		let url = `/String/Eqp.img/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
+		let data = JSON.parse(await $get.data(url));
+		return data;
 	}
 
 	/**
@@ -87,47 +157,114 @@ class ItemCategoryInfo {
 		let info;
 
 		if (id == null || id == "") {
-			return null;
+			debugger;
+			throw new TypeError();
 		}
 
 		if (id.length == 4) {
-			return ItemCategoryInfo._info[id];
+			info = ItemCategoryInfo._info[id];
+			if (info) {
+				return info;
+			}
 		}
-		//
-		info = ItemCategoryInfo._info[id.slice(0, 4)];
-		if (info) {
-			return info;
+		else {
+			info = ItemCategoryInfo._info[id.slice(0, 4)];
+			if (info) {
+				return info;
+			}
+			else {
+				if (id.length == 6) {
+					info = ItemCategoryInfo._info[id];
+				}
+				else {
+					info = ItemCategoryInfo._info[id.slice(0, 6)];
+				}
+				if (info) {
+					return info;
+				}
+			}
 		}
+		console.warn("unknow item type, itemId: " + id);
+		return null;
+	}
 
-		if (id.length == 6) {
-			return ItemCategoryInfo._info[id];
-		}
-		//
-		info = ItemCategoryInfo._info[id.slice(0, 6)];
-		if (info) {
-			return info;
-		}
+	static getTypeId() {
+		return Math.trunc(_id / 1000000);
+	}
+
+	static getCategory() {
+		return Math.trunc(_id / 10000);// % 100;// 0105 // 01 + 05 // type + category
 	}
 
 	/**
-	 * @param {string} id - 4+ digit string
+	 * @param {string} id - char[4]: type; char[4+]: itemId
 	 * @returns {boolean}
 	 */
 	static isEquip(id) {
-		let cate;
-
 		if (id == null || id == "") {
 			return null;
 		}
+		let _id = Number(id);
 
-		cate = Number(id.length == 4 ? id : id.slice(0, 4));
+		//let cate = Number(id.length == 4 ? id : id.slice(0, 4));
+		//return (cate >= "0100" && cate < "0180");
 
-		return (cate >= "0100" && cate < "0180");
+		let cate = Math.trunc(_id / 10000);
+		if (cate > 180 && cate < 2000) {
+			console.warn("?? equip: " + id);
+			debugger;
+		}
+
+		let type = Math.trunc(_id / 1000000);
+
+		return type == 1;
+	}
+
+	/**
+	 * 1~4 digit number
+	 * @param {string} itemId
+	 */
+	static getSubCategory(itemId) {
+		return Math.trunc(itemId / 10000);
+	}
+
+	/**
+	 * @param {string} itemId
+	 */
+	static isCashWeapon(itemId) {
+		return Math.trunc(itemId / 10000) == 170;
+	}
+
+	/**
+	 * @param {string} job
+	 * @returns {string}
+	 */
+	static getJobWeaponCategory(job) {
+		//TODO: getJobWeaponCategory
+		console.warn("getJobWeaponCategory: 未完成");
 	}
 }
-if (!module.exports.ItemCategoryInfo) {
-	module.exports.ItemCategoryInfo = ItemCategoryInfo;
-}
+ItemCategoryInfo.type = {
+	Equip: "Equip",
+	Consume: "Consume",
+	Etc: "Etc",
+	Install: "Install",
+	Cash: "Cash"
+};
+ItemCategoryInfo.typeName = {
+	0: "Equip",
+	1: "Consume",
+	2: "Etc",
+	3: "Install",
+	4: "Cash"
+};
+ItemCategoryInfo.typeId = {
+	Equip: 0,
+	Consume: 1,
+	Etc: 2,
+	Install: 3,
+	Cash: 4,
+};
 ItemCategoryInfo._info = {
 	'0000': new ItemCategoryInfo("",			"body",				"body",			""),
 	'0001': new ItemCategoryInfo("",			"head",				"head",			""),
@@ -209,7 +346,7 @@ ItemCategoryInfo._categoryList = (function (info_map) {
 })(ItemCategoryInfo._info);
 
 
-class ResourceManager {
+export class ResourceManager {
 	static isEquipExist(id, cateInfo) {
 		const dp = cateInfo.listPath;
 		const es = ResourceManager.equip_map[dp];
@@ -250,30 +387,6 @@ class ResourceManager {
 	}
 }
 ResourceManager.failed_urls = [];
-ResourceManager.item_file_map = {
-	'0': "Character",
-}
-ResourceManager.equip_path_map = {
-	'0000': "",//body
-	'0001': "",//head
-	'0002': "Face",
-	'0003': "Hair",
-	'0004': "Hair",
-	'0100': "Cap",
-	'0101': "Accessory",//accessory-face
-	'0102': "Accessory",//accessory-eyes
-	'0103': "Accessory",//accessory-ear
-	'0104': "Coat",
-	'0105': "Longcoat",
-	'0106': "Pants",
-	'0107': "Shoes",
-	'0108': "Glove",
-	'0109': "Shield",
-	'0110': "Cape",
-}
-if (!module.exports.ResourceManager) {
-	module.exports.ResourceManager = ResourceManager;
-}
 
 /**
  * @param {string} url
@@ -299,7 +412,7 @@ $get.data = function (url) {
 window.$get = $get;
 
 
-class ItemAttrNormalize {
+export class ItemAttrNormalize {
 	static head(item) {
 		item.gender = 2;
 	}
@@ -352,9 +465,6 @@ class ItemAttrNormalize {
 		item.gender = g == 0 ? 0 : (g == 1 ? 1 : 2);
 	}
 }
-if (!module.exports.ItemAttrNormalize) {
-	module.exports.ItemAttrNormalize = ItemAttrNormalize;
-}
 
 const regexp_getHairStyleID = /(\d{4,7})\d$/;
 const regexp_getFaceStyleID = /(\d{2,5})\d(\d{2})$/;
@@ -362,7 +472,7 @@ const regexp_getFaceStyleID = /(\d{2,5})\d(\d{2})$/;
 const regexp_getHairColor = /\d{4,7}(\d)$/;
 const regexp_getFaceColor = /\d{2,5}(\d)\d{2}$/;
 
-class CharacterRenderConfig {
+export class CharacterRenderConfig {
 	/**
 	 * @param {string} style id
 	 * @returns {string[]}
@@ -452,9 +562,6 @@ class CharacterRenderConfig {
 			}
 		}
 	}
-}
-if (!module.exports.CharacterRenderConfig) {
-	module.exports.CharacterRenderConfig = CharacterRenderConfig;
 }
 
 var _external_data = {
@@ -698,10 +805,3 @@ window.load_extern_item_data = async function (id) {
 
 	return raw;
 }
-
-export {
-	ItemCategoryInfo,
-	ResourceManager,
-	ItemAttrNormalize,
-	CharacterRenderConfig,
-};

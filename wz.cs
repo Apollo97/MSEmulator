@@ -211,38 +211,56 @@ internal class DataSource
 			int i2 = link.IndexOf("/");
 			string archiveName = link.Substring(0, i2);
 			string[] names = { archiveName, archiveName + "2", archiveName + "001" };
+			string aName = "";
 
 			i2 += 1;
 
-			foreach (var aName in names)
+			for (int nameIndex = 0; nameIndex <  names.Length; ++nameIndex)
 			{
-				if (!link.EndsWith(".img/"))
+				try
 				{
-					outProp = DataSource._get_property(DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""], link.Substring(index + 5).Split('/'), 0);
-					outPack = null;
-					return;
-					//return MInspect.packages[link.Substring(0, index - i2 + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
-				}
-				else
-				{
-					try
+					aName = names[nameIndex];
+
+					if (!link.EndsWith(".img/"))
 					{
-						outProp = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""];
+						outProp = DataSource._get_property(DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""], link.Substring(index + 5).Split('/'), 0);
 						outPack = null;
-						return;
+						if (outProp != null)
+						{
+							return;
+						}
+						//return MInspect.packages[link.Substring(0, index - i2 + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
 					}
-					catch (Exception)//no found property
+					else
 					{
 						try
 						{
-							outProp = null;
-							outPack = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')];
-							return;
+							outProp = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')].root[""];
+							outPack = null;
+							if (outProp != null)
+							{
+								return;
+							}
 						}
-						catch (Exception)
+						catch (Exception)//no found property
 						{
+							try
+							{
+								outProp = null;
+								outPack = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')];
+								if (outPack != null)
+								{
+									return;
+								}
+							}
+							catch (Exception)
+							{
+							}
 						}
 					}
+				}
+				catch (Exception)
+				{// find next archive
 				}
 			}
 		}
@@ -252,6 +270,7 @@ internal class DataSource
 			outPack = DataSource.packages[link.Split('/')];
 			return;
 		}
+
 		outPack = null;
 		outProp = null;
 	}

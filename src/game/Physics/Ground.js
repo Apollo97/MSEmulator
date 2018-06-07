@@ -4,6 +4,7 @@ import {
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2PolygonShape, b2EdgeShape,
+	b2Body,
 	b2Contact, b2Manifold, b2ContactImpulse, b2WorldManifold
 } from "./Physics.js";
 
@@ -460,11 +461,11 @@ export class Ground {
 				}
 			}
 			{
-				//player._$fallEdge = null;//HACK: ??
+				//player._$fallEdge = null;//??
 
-				if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
-					playerBody.ApplyForceToCenter(GRAVITY);
-				}
+				//if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
+				//	playerBody.ApplyForceToCenter(GRAVITY);
+				//}
 			}
 		}
 	}

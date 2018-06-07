@@ -79,7 +79,7 @@
 								<!--淺在-Level-->
 								<texture style="position: absolute; left: 2px; top: 4px;" :src="`/images/UI/UIToolTip.img/Item/ItemIcon/${equip.potential_level}`"></texture>
 							</div>
-							<texture class="UIToolTip equip-icon" v-if="'icon' in equip" :scale="[2,2]" :src="equip.icon['']"></texture>
+							<img v-if="'icon' in equip" :src="equip.icon['']" @load="onload_icon($event)" class="UIToolTip equip-icon"></img>
 							<texture style="position: absolute; left: 8px; top: 10px;" src="/images/UI/UIToolTip.img/Item/ItemIcon/cover"></texture>
 						</div>
 						<div style="float: left; position: relative; top: 1px; width: 160px; height: 100%;">
@@ -145,19 +145,89 @@
 					<!--begin-text-seg-->
 					<div class="UIToolTip attribute">
 						<div v-if='isEquip(equip.id)'>
-							<div class="c1">裝備分類&ensp;:&ensp;{{getEquipCategoryName()}}</div>
+							<div class="c1"><span>裝備分類 : {{getEquipCategoryName()}}</span></div>
 						</div>
 
-						<div class="c2" v-if="shouldShowAttr('incSTR')">力量&ensp;:&ensp;{{adjAttr(equip.incSTR)}}</div>
-						<div class="c3" v-if="shouldShowAttr('incDEX')">敏捷&ensp;:&ensp;{{adjAttr(equip.incDEX)}}</div>
-						<div class="c2" v-if="shouldShowAttr('incINT')">智力&ensp;:&ensp;{{adjAttr(equip.incINT)}}</div>
-						<div class="c3" v-if="shouldShowAttr('incLUK')">幸運&ensp;:&ensp;{{adjAttr(equip.incLUK)}}</div>
-						<div class="c1" v-if="shouldShowAttr('incMHP')">MaxHP&ensp;:&ensp;{{adjAttr(equip.incMHP)}}</div>
-						<div class="c2" v-if="shouldShowAttr('incMMP')">MaxMP&ensp;:&ensp;{{adjAttr(equip.incMMP)}}</div>
-						<div class="c3" v-if="shouldShowAttr('incPAD')">攻擊力&ensp;:&ensp;{{adjAttr(equip.incPAD)}}</div>
-						<div class="c1" v-if="shouldShowAttr('incPDD')">物理防禦力&ensp;:&ensp;{{adjAttr(equip.incPDD)}}</div>
-						<div class="c2" v-if="shouldShowAttr('imdR')">無視怪物防禦力{{equip.imdR}}%</div>
-						<div class="c3" v-if="shouldShowAttr('tuc')">可使用捲軸次數&ensp;:&ensp;{{equip.tuc}}</div>
+						<div class="c2" v-if="shouldShowAttr('incSTR')">	  	<span>力量 :	  	   {{adjAttr(equip.incSTR)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incSTRr')">	  	<span>力量 :		   {{adjAttr(equip.incSTRr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incDEX')">	  	<span>敏捷 :		   {{adjAttr(equip.incDEX)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incDEXr')">	    <span>敏捷 :		   {{adjAttr(equip.incDEXr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incINT')">	  	<span>智力 :		   {{adjAttr(equip.incINT)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incINTr')">	  	<span>智力 :		   {{adjAttr(equip.incINTr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incLUK')">	  	<span>幸運 :		   {{adjAttr(equip.incLUK)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incLUKr')">	  	<span>幸運 :		   {{adjAttr(equip.incLUKr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incAllStat')">	<span>所有属性 :	   {{adjAttr(equip.incAllStat)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMHP')">	  	<span>MaxHP :	  	   {{adjAttr(equip.incMHP)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMHPr')">	  	<span>MaxHP :		   {{adjAttr(equip.incMHPr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMMP')">	  	<span>MaxMP :	  	   {{adjAttr(equip.incMMP)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMMPr')">	  	<span>MaxMP :		   {{adjAttr(equip.incMMPr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMDF')">	  	<span>MaxDF :		   {{adjAttr(equip.incMDF)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPAD')">	  	<span>攻擊力 :		   {{adjAttr(equip.incPAD)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPADr')">	  	<span>攻擊力 :		   {{adjAttr(equip.incPADr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMAD')">	  	<span>魔法力 :		   {{adjAttr(equip.incMAD)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMADr')">	  	<span>魔法力 :		   {{adjAttr(equip.incMADr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPDD')">	  	<span>物理防禦力 :     {{adjAttr(equip.incPDD)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPDDr')">	  	<span>物理防禦力 :     {{adjAttr(equip.incPDDr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMDD')">	  	<span>魔法防禦力 :     {{adjAttr(equip.incMDD)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incMDDr')">	  	<span>魔法防禦力 :     {{adjAttr(equip.incMDDr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incACC')">	  	<span>命中值 :		   {{adjAttr(equip.incACC)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incACCr')"> 		<span>命中值 :		   {{adjAttr(equip.incACCr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incEVA')">	  	<span>回避值 :		   {{adjAttr(equip.incEVA)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incEVAr')">	  	<span>回避值 :		   {{adjAttr(equip.incEVAr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incSpeed')">  	<span>移动速度 :		   {{adjAttr(equip.incSpeed)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incJump')">		<span>跳跃力 :		   {{adjAttr(equip.incJump)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incCraft')">		<span>手技 :		   {{adjAttr(equip.incCraft)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('damR')">		    <span>总伤害 :  		   {{adjAttr(equip.damR)}}</span></div>
+						<div class="c3" v-if="shouldShowAttr('incDAMr')">		<span>总伤害 :	  	   {{adjAttr(equip.incDAMr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incCr')">			<span>爆击率 :		   {{adjAttr(equip.incCr)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPVPDamage')">	<span>大乱斗时追加攻击力{{adjAttr(equip.incPVPDamage)}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incPQEXPr')">		<span>组队任务经验值增加{{equip.incPQEXPr}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incBDR')">		<span>攻击BOSS怪物时，伤害+{{equip.incBDR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('bdR')">			<span>攻击BOSS怪物时，伤害+{{equip.bdR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incIMDR')">		<span>無視怪物防禦力{{equip.incIMDR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('imdR')">			<span>無視怪物防禦力{{equip.imdR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('limitBreak')">	<span>伤害上限突破至{{equip.limitBreak}}。</span></div>
+						<div class="c3" v-if="shouldShowAttr('reduceReq')">		<span>装备等级降低 : -{{equip.reduceReq}}。</span></div>
+						<div class="c3" v-if="shouldShowAttr('knockback')">		<span>直接攻击时{{equip.knockback}}的比率发生后退现象。</span></div>
+						<div class="c1" v-if="shouldShowAttr('tuc')">			<span>可使用捲軸次數 : {{equip.tuc}}</span></div>
+
+						<!--
+						case GearPropType.only: return value == 0 ? null : "固有道具";
+						case GearPropType.tradeBlock: return value == 0 ? null : "不可交换";
+						case GearPropType.equipTradeBlock: return value == 0 ? null : "装备后无法交换";
+						case GearPropType.accountSharable: return value == 0 ? null : "世界内只有我的角色之间可以移动";
+						case GearPropType.onlyEquip: return value == 0 ? null : "固有装备物品";
+						case GearPropType.notExtend: return value == 0 ? null : "无法延长有效时间。";
+						case GearPropType.tradeAvailable:
+							switch (value)
+							{
+								case 1: return " #c使用宿命剪刀，可以使物品交易1次。#";
+								case 2: return " #c使用白金宿命剪刀，可以使物品交易1次。#";
+								default: return null;
+							}
+						case GearPropType.accountShareTag:
+							switch (value)
+							{
+								case 1: return " #c使用物品共享牌，可以在同一账号内的角色间移动1次。#";
+								default: return null;
+							}
+						case GearPropType.noPotential: return value == 0 ? null : "无法设置潜能。";
+						case GearPropType.fixedPotential: return value == 0 ? null : "无法重设潜能";
+						case GearPropType.superiorEqp: return value == 0 ? null : "道具强化成功时，可以获得更高的效果。";
+						case GearPropType.nActivatedSocket: return value == 0 ? null : "#c可以镶嵌星岩#";
+						case GearPropType.jokerToSetItem: return value == 0 ? null : " #c当前装备3个以上的所有套装道具中包含的幸运物品！#";
+						case GearPropType.abilityTimeLimited: return value == 0 ? null : "限期能力值";
+						case GearPropType.blockGoldHammer: return value == 0 ? null : "无法使用黄金锤";
+
+						case GearPropType.incMHP_incMMP: return "最大HP/最大MP：" + sign + value;
+						case GearPropType.incMHPr_incMMPr: return "最大HP/最大MP：" + sign + value + "%";
+						case GearPropType.incPAD_incMAD: return "攻击力/魔力：" + sign + value;
+						case GearPropType.incPDD_incMDD: return "物理/魔法防御力：" + sign + value;
+						case GearPropType.incACC_incEVA: return "命中值/回避值：" + sign + value;
+
+						case GearPropType.incARC: return "ARC : " + sign + value;
+					-->
+
 					</div>
 					<!--end-text-seg-->
 					<!--padding_end-->
@@ -452,7 +522,7 @@
 		}
 		digitCharArray() {
 			const required = this.equip[`req${this.attrName}`] | 0;
-			let s = Number(required).toFixed(0).padLeft(3, "0");
+			let s = Number(required).toFixed(0).padStart(3, "0");
 			return s;
 		}
 		data() {
@@ -545,7 +615,12 @@
 			},
 			isEquip(id) {
 				return ItemCategoryInfo.isEquip(id);
-			}
+			},
+			onload_icon(event) {
+				const img = event.target;
+				img.style.width = (img.naturalWidth * 2) + "px";
+				img.style.height = (img.naturalHeight * 2) + "px";
+			},
 		},
 		updated: function () {
 			this._update_frame();
