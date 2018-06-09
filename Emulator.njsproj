@@ -93,6 +93,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\WebGLRenderer.js" />
     <Compile Include="src\index.js" />
     <Compile Include="src\init.js" />
+    <Compile Include="src\ui\Basic\VScrollbar.vue">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\util.js" />
     <Compile Include="webpack.config.js" />
     <Compile Include="wvs.js" />
@@ -251,6 +254,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Folder Include="src\Client\" />
     <Folder Include="src\Common\" />
     <Folder Include="src\ui\" />
+    <Folder Include="src\ui\Basic\" />
     <Folder Include="src\ui\UIToolTip\" />
     <Folder Include="src\ui\UIWindow\" />
     <Folder Include="typings\" />

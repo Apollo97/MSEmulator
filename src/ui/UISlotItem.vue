@@ -107,8 +107,8 @@
 				return {
 					//border: "1px solid #F89",//debug
 					position: "absolute",
-					left: SLOT_START_POS_X + (SLOT_BORDER_WIDTH + SLOT_SIZE_WIDTH) * x + "px",
-					top: SLOT_START_POS_Y + (SLOT_BORDER_HEIGHT + SLOT_SIZE_HEIGHT) * y + "px",
+					left: (SLOT_BORDER_WIDTH + SLOT_SIZE_WIDTH) * x + "px",
+					top: (SLOT_BORDER_HEIGHT + SLOT_SIZE_HEIGHT) * y + "px",
 					width: SLOT_SIZE_WIDTH + "px",
 					height: SLOT_SIZE_HEIGHT + "px",
 				};

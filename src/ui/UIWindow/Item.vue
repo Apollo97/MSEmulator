@@ -34,32 +34,37 @@
 				</div>
 				<!--end tabs-->
 
-				<!--begin itemSlot-->
-				<div>
-					<template v-for="i in 24">
-						<div :style="getSlotStyle(i-1)" @dragover="allowDrop($event, i-1)" @drop="drop($event, i-1)">
-							<span class="wnd-item-slot-num">{{(i-1)}}</span>
+				<div class="slots-viewport" :style="pageStyle">
+					<!-- viewport: 4 * 24 -->
+					<div ref="slots_panel" class="slots-container">
+						<!--begin itemSlot-->
+						<div>
+							<template v-for="i in 128">
+								<div :style="getSlotStyle(i-1)" @dragover="allowDrop($event, i-1)" @drop="drop($event, i-1)">
+									<span class="wnd-item-slot-num">{{(i-1)}}</span>
+								</div>
+							</template>
 						</div>
-					</template>
-				</div>
-				<!--end itemSlot-->
+						<!--end itemSlot-->
 
-				<!--begin itemList-->
-				<div v-if="chara && chara.items">
-					<template v-for="iSlot in chara.items[sType].filter(a=>!!a)">
-						<template v-if="iSlot.data">
-							<ui-slot-item :slots="slots"
-										  :itemSlot="iSlot"
-										  @pickItem="onPickItem"
-										  @useItem="onUseItem"
-										  @hoverItem="onHoverItem"
-										  @mouseleaveItem="onMouseleaveItem"
-										  >
-							</ui-slot-item>
-						</template>
-					</template>
+						<!--begin itemList-->
+						<div v-if="chara && chara.items" :style="slotsPanelStyle">
+							<template v-for="iSlot in chara.items[sType].filter(a=>!!a)">
+								<template v-if="iSlot.data">
+									<ui-slot-item :slots="slots"
+												  :itemSlot="iSlot"
+												  @pickItem="onPickItem"
+												  @useItem="onUseItem"
+												  @hoverItem="onHoverItem"
+												  @mouseleaveItem="onMouseleaveItem">
+									</ui-slot-item>
+								</template>
+							</template>
+						</div>
+						<!--end itemList-->
+					</div>
+					<ui-v-scrollbar :target="$refs.slots_panel" :step="scrollStep"></ui-v-scrollbar>
 				</div>
-				<!--end itemList-->
 			</div>
 		</template>
 	</window-base>
@@ -67,10 +72,13 @@
 
 <script>
 	import { ItemCategoryInfo } from "../../../public/resource.js";
+	import { ItemBase, ItemSlot } from "../../game/Item.js";
 	import WindowBase from "./WindowBase.vue";
 	import UISlotItem from "../UISlotItem.vue";
-	import { ItemBase, ItemSlot } from "../../game/Item.js";
+	import UIVScrollbar from "../Basic/VScrollbar.vue";
 
+
+	const VSCROLLBAR_WIDTH = 11;
 
 	const SLOT_START_POS_X = 10;
 	const SLOT_START_POS_Y = 50;
@@ -80,6 +88,11 @@
 
 	const SLOT_BORDER_WIDTH = 4;
 	const SLOT_BORDER_HEIGHT = 4;
+
+	const PAGE_WIDTH = SLOT_SIZE_WIDTH * 4 + SLOT_BORDER_WIDTH * 3;
+	const PAGE_HEIGHT = SLOT_SIZE_HEIGHT * 6 + SLOT_BORDER_HEIGHT * 5;
+
+	const SLOTS_PANEL_HEIGHT = SLOT_SIZE_HEIGHT * 32 + SLOT_BORDER_HEIGHT * 31;
 
 	export default {
 		name: "item-slot",
@@ -99,8 +112,19 @@
 					width: 0,
 					height: 0,
 				},
+				pageStyle: {
+					position: "absolute",
+					left: SLOT_START_POS_X + "px",
+					top: SLOT_START_POS_Y + "px",
+					width: (PAGE_WIDTH + VSCROLLBAR_WIDTH + 2) + "px",
+					height: PAGE_HEIGHT + "px",
+				},
+				slotsPanelStyle: {
+					width: PAGE_WIDTH + "px",
+					height: SLOTS_PANEL_HEIGHT + "px",
+				},
+				scrollStep: SLOT_SIZE_HEIGHT + SLOT_BORDER_HEIGHT,
 				enabled: true,
-				//items: [new Array(128), new Array(128), new Array(128), new Array(128), new Array(128)],
 			};
 		},
 		computed: {
@@ -171,6 +195,7 @@
 		components: {
 			"window-base": WindowBase,
 			"ui-slot-item": UISlotItem,
+			"ui-v-scrollbar": UIVScrollbar,
 		}
 	}
 </script>
@@ -178,5 +203,21 @@
 <style scoped>
 	.wnd-item-slot-num {
 		color: gray;
+	}
+
+	.slots-viewport {
+		position: absolute;
+		left: 0;
+		top: 0;
+		overflow: hidden;
+	}
+
+	.slots-container {
+		width: 100%;
+		height: 100%;
+		overflow-y: scroll;
+		box-sizing: content-box;
+		padding-right: 11px;
+		position: absolute;
 	}
 </style>

@@ -250,7 +250,7 @@ export class ItemSlot {
 
 	isEmpty() {
 		if (process.env.NODE_ENV !== 'production') {
-			if (!this.data || !this.amount) {
+			if ((!this.data && this.amount) || (this.data && !this.amount)) {
 				debugger;
 			}
 		}
