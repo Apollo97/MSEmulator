@@ -47,15 +47,19 @@ export class ItemCategoryInfo {
 				case "head":
 					iconPath = "stand1/0/head";
 					iconRawPath = "stand1/0/head";
+					break;
 				case "body":
 					iconPath = "stand1/0/body";
 					iconRawPath = "stand1/0/body";
+					break;
 				case "hair":
 					iconPath = "stand1/0/hair";
 					iconRawPath = "stand1/0/hair";
+					break;
 				case "face":
 					iconPath = "blink/0/face";
 					iconRawPath = "blink/0/face";
+					break;
 				default://typeId: 0|1|2|3|4
 					iconPath = "info/icon";
 					iconRawPath = "info/iconRaw";
@@ -194,6 +198,15 @@ export class ItemCategoryInfo {
 
 	static getCategory() {
 		return Math.trunc(_id / 10000);// % 100;// 0105 // 01 + 05 // type + category
+	}
+
+	/**
+	 * @param {string} id - char[4]: type; char[4+]: itemId
+	 * @returns {boolean}
+	 */
+	static isItem(id) {
+		let type = Math.trunc(id / 1000000);//id.startsWidth("00");
+		return type != 0;
 	}
 
 	/**

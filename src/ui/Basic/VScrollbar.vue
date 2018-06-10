@@ -3,7 +3,7 @@
 		<div ref="tElem" class="vscr-container">
 			content
 		</div>
-		<scroll-bar :target="'tElem'"></scroll-bar>
+		<scroll-bar :target="$ref.tElem"></scroll-bar>
 	</div>
 </usage>
 
@@ -65,32 +65,53 @@
 			},
 			_calcThumbY: function (top) {
 				let y = top - (thumb_height / 2);
+				
+				if (this.step) {
+					const tElem = this.target;
+					let oh = tElem.offsetHeight;
+					let h = this.maxHeight;
+					let d = Math.trunc(tElem.scrollHeight / h) * h;
+					let top = y / oh * d;
+
+					top = Math.trunc(top / this.step) * this.step;
+
+					y = top / d * oh;
+				}
 
 				this.thumbY = y;
 				this._scrollTo(y);
 			},
 			_onmousemove: function (event) {//drag
 				if (event.buttons == 1) {
-					let y = this._getMousePosY(event)
+					let y = this._getMousePosY(event);
+
 					this._calcThumbY(y);
 				}
 			},
 			_onmousewheel: function (event) {
-				let roll = Math.sign(event.deltaY) * this.step;
-				this.thumbY += roll;
+				let roll;
+				if (this.step) {
+					event.preventDefault();
+					roll = Math.sign(event.deltaY) * this.step;
+				}
+				else {
+					roll = event.deltaY;
+				}
+				//this.thumbY += roll;//this.thumbY += ??
 				this._scroll(roll);
+				this._onscroll();
 			},
 			_scroll: function (addY) {
 				const tElem = this.target;
 				y = tElem.scrollTop + addY;
 				tElem.scrollTo(0, y);
 			},
-			_scrollTo: function (y) {
+			_scrollTo: function (thumbY) {
 				const tElem = this.target;
 				let oh = tElem.offsetHeight;
 				let h = this.maxHeight;
 				let d = Math.trunc(tElem.scrollHeight / h) * h;
-				tElem.scrollTo(0, y / oh * d);
+				tElem.scrollTo(0, thumbY / oh * d);
 			},
 			_onscroll: function (event) {
 				const tElem = this.target;
@@ -98,16 +119,28 @@
 				let h = this.maxHeight;
 				let d = Math.trunc(tElem.scrollHeight / h) * h;
 				let top = tElem.scrollTop;
-				let t = (top) / (d) * (oh);
+				let t = top / d * oh;
 				this.thumbY = t;
+			},
+			_bindScrollEvent: function () {
+				const tElem = this.target;
+				if (tElem) {
+					if (this._onscroll_target) {
+						tElem.removeEventListener("scroll", this._onscroll_target);
+					}
+					if (this.step) {
+						this._onscroll_target = this._onmousewheel.bind(this);
+						tElem.addEventListener("mousewheel", this._onscroll_target);
+					}
+					else {
+						this._onscroll_target = this._onscroll.bind(this);
+						tElem.addEventListener("scroll", this._onscroll_target);
+					}
+				}
 			},
 		},
 		mounted: function () {
-			const tElem = this.target;
-			if (tElem) {
-				this._onscroll_target = this._onscroll.bind(this);
-				tElem.addEventListener("scroll", this._onscroll_target);
-			}
+			this._bindScrollEvent();
 		},
 		beforeDestroy: function () {
 			const tElem = this.target;
@@ -115,12 +148,7 @@
 		},
 		watch: {
 			target: function (newVal) {
-				const tElem = this.target;
-				if (this._onscroll_target) {
-					tElem.removeEventListener("scroll", this._onscroll_target);
-				}
-				this._onscroll_target = this._onscroll.bind(this);
-				tElem.addEventListener("scroll", this._onscroll_target);
+				this._bindScrollEvent();
 			},
 		},
 		//componeents: {

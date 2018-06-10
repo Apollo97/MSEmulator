@@ -82,11 +82,24 @@ export class ItemBase {
 		this._raw.info.name = "<loading>";
 		this._raw.info.desc = "<loading>";
 		this._raw.info.__v = window.DATA_TAG + window.DATA_VERSION;
-		
+
+		let isItem = ItemCategoryInfo.isItem(itemId);
+
+		if (!isItem) {
+			this._raw.info.icon = {};
+			this._raw.info.iconRaw = {};
+		}
+
 		this._raw.info.icon[""] = ItemCategoryInfo.getIconUrl(itemId);
 		this._raw.info.iconRaw[""] = ItemCategoryInfo.getIconRawUrl(itemId);
 
-		this._load();
+		if (isItem) {
+			this._load();
+		}
+		else {
+			this._raw.info.name = itemId;
+			this._raw.info.desc = "<not item>";
+		}
 	}
 
 	/**
