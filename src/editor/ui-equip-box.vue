@@ -31,7 +31,7 @@
 					<datalist id="search_param">
 						<option value="劍">item Name</option>
 						<option value="01302000">item ID</option>
-						<option value="<attr>:/<regexp>/"><attr>:/<regexp>/></option>
+						<option value="<attr>:/<regexp>/"></option>
 						<option value="$style:/21158/">face, hair</option>
 						<option value="$foreign:/true/">external resource</option>
 						<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
