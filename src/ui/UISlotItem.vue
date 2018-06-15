@@ -4,10 +4,12 @@
 		 @dragstart="drag($event, itemSlot)"
 		 @dragover="allowDrop($event, itemSlot.slot)"
 		 @drop="drop($event, itemSlot.slot)"
-		 @mousedown="onPickItem($event, itemSlot)"
-		 @dblclick="onUseItem($event, itemSlot)"
+		 @mousedown.left="onPickItem($event, itemSlot)"
+		 @mousedown.right="$emit('showMenu', $event, itemSlot)"
+		 @dblclick.left="onUseItem($event, itemSlot)"
 		 @mousemove="onHoverItem($event, itemSlot.data._raw.info)"
 		 @mouseleave="onMouseleaveItem($event, itemSlot.data._raw.info)"
+		 @contextmenu.prevent=""
 		 >
 		<img :src="getItemIconUrl(itemSlot)" :style="getItemIconStyle(itemSlot)" />
 		<span class="wnd-item-sn">{{itemSlot.SN}}</span>
@@ -39,15 +41,15 @@
 			},
 		},
 		methods: {
-			drag(ev, itemSlot) {
+			drag: function (ev, itemSlot) {
 				ev.dataTransfer.setData("text/x-item", JSON.stringify(itemSlot));
 			},
-			allowDrop(ev, slot) {
+			allowDrop: function (ev, slot) {
 				if ([...ev.dataTransfer.types].includes("text/x-item")) {
 					ev.preventDefault();//allow drop
 				}
 			},
-			drop(ev, toSlot) {
+			drop: function (ev, toSlot) {
 				ev.preventDefault();//allow drop
 
 				let _itemSlot = ItemSlot.parse(ev.dataTransfer.getData("text/x-item"));
@@ -70,21 +72,21 @@
 					}
 				}
 			},
-			onPickItem(event, itemSlot) {
+			onPickItem: function (event, itemSlot) {
 				this.onMouseleaveItem(event, itemSlot.data._raw.info);
 				this.$emit('pickItem', {
 					event: event,
 					itemSlot: itemSlot,
 				});
 			},
-			onUseItem(event, itemSlot) {
+			onUseItem: function (event, itemSlot) {
 				this.onMouseleaveItem(event, itemSlot.data._raw.info);
 				this.$emit('useItem', {
 					event: event,
 					itemSlot: itemSlot,
 				});
 			},
-			onHoverItem(event, equipInfo) {
+			onHoverItem: function (event, equipInfo) {
 				if (event.buttons) {
 					this.onMouseleaveItem(event, equipInfo);
 				}
@@ -95,7 +97,7 @@
 					});
 				}
 			},
-			onMouseleaveItem(event, equipInfo) {
+			onMouseleaveItem: function (event, equipInfo) {
 				this.$emit('mouseleaveItem', {
 					event: event,
 					equip: equipInfo,

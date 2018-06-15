@@ -30,24 +30,23 @@
 	.ui-dialog {
 		border: 0;
 		border-radius: 11px;
-		background: #f0f0ef;
+		background: transparent;
 	}
 	.header {
 		padding: 0;
 		border: 0;
 		border-radius: 11px;
+		background: transparent;
 	}
 	.content {
 		padding: 0;
 		border: 0;
+		background: transparent;
 	}
 	.footer {
 		padding: 0;
 		border: 0;
 		height: 0;
-	}
-	.comp {
-		user-select: none;
-		-webkit-user-drag: none;
+		background: transparent;
 	}
 </style>

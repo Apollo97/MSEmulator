@@ -494,6 +494,36 @@ export class SceneCharacter extends BaseSceneCharacter {
 		}
 		return false;//item inventory was full
 	}
+	
+	/**
+	 * @param {number} type - item type
+	 * @param {number} slot
+	 */
+	async removeItem(type, slot) {
+		if (window.$io) {
+			throw new Error("未完成");
+
+			let result = await window.$io.emit("removeItem", {
+				type: type,
+				slot: slot,
+			});
+			if (result) {
+				this._removeItem(type, slot);
+			}
+			return result;
+		}
+		else {
+			return this._removeItem(type, slot);
+		}
+	}
+
+	/**
+	 * @param {number} type - item type
+	 * @param {number} slot
+	 */
+	_removeItem(type, slot) {
+		this.items[type][slot]._clear();
+	}
 
 	_player_control() {
 		if (!this.$physics.state.jump && this.$$jump_state) {

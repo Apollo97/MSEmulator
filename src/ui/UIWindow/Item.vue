@@ -20,7 +20,6 @@
 					</div>
 				</template>
 				<!--end back-->
-
 				<!--begin tabs-->
 				<div>
 					<template v-if="typeList.indexOf(sType)>=0">
@@ -46,17 +45,17 @@
 							</template>
 						</div>
 						<!--end itemSlot-->
-
 						<!--begin itemList-->
 						<div v-if="chara && chara.items" :style="slotsPanelStyle">
-							<template v-for="iSlot in chara.items[sType].filter(a=>!!a)">
-								<template v-if="iSlot.data">
-									<ui-slot-item :slots="slots"
-												  :itemSlot="iSlot"
+							<template v-for="itemSlot in chara.items[sType].filter(a=>!!a)">
+								<template v-if="itemSlot.data">
+									<ui-slot-item :itemSlot="itemSlot"
+												  :slots="slots"
 												  @pickItem="onPickItem"
 												  @useItem="onUseItem"
 												  @hoverItem="onHoverItem"
-												  @mouseleaveItem="onMouseleaveItem">
+												  @mouseleaveItem="onMouseleaveItem"
+												  @showMenu="showMenu">
 									</ui-slot-item>
 								</template>
 							</template>
@@ -65,6 +64,16 @@
 					</div>
 					<ui-v-scrollbar :target="$refs.slots_panel" :step="scrollStep"></ui-v-scrollbar>
 				</div>
+			</div>
+		</template>
+		<template slot="footer" v-if="is_show_menu">
+			<div @mouseout.self="closeMenu($event)"
+				 @contextmenu.prevent=""
+				 :style="menu_style" class="slot-menu"
+				 >
+				<img src="/images/UI/CashShop.img/CSLockerNew/Normal/backgrnd" />
+				<button class="Bt BtRebate" disabled></button>
+				<button class="Bt BtDelete" @click="removeItem"></button>
 			</div>
 		</template>
 	</window-base>
@@ -124,7 +133,13 @@
 					height: SLOTS_PANEL_HEIGHT + "px",
 				},
 				scrollStep: SLOT_SIZE_HEIGHT + SLOT_BORDER_HEIGHT,
-				enabled: true,
+				is_show_menu: false,
+				menu_style: {
+					position: "fixed",
+					left: "0px",
+					top: "0px",
+				},
+				current_slotItem: null,
 			};
 		},
 		computed: {
@@ -145,16 +160,46 @@
 					this.wndStyle["height"] = this.raw.FullBackgrnd.__h + "px";
 				}
 			},
-			allowDrop(ev, slot) {
+			/**
+			 * @param {MouseEvent} event
+			 * @param {ItemSlot} itemSlot
+			 */
+			showMenu: function (event, itemSlot) {
+				this.current_slotItem = itemSlot;
+
+				this.menu_style.left = event.clientX + "px";
+				this.menu_style.top = (event.clientY - 18) + "px";
+
+				this.is_show_menu = true;
+
+				let handler = this.closeMenu.bind(this);
+
+				window.addEventListener("click", handler, {
+					once: true,
+					passive: true,
+					capture: true
+				});
+			},
+			closeMenu: function (event) {
+				this.is_show_menu = false;
+				//this.current_slotItem = null;
+			},
+			removeItem: function () {
+				this.chara.removeItem(this.sType, this.current_slotItem.slot);
+			},
+			allowDrop: function (ev, slot) {
 				return UISlotItem.methods.allowDrop.call(this, ev, slot);
 			},
-			drop(ev, toSlot) {
+			drop: function (ev, toSlot) {
 				return UISlotItem.methods.drop.call(this, ev, toSlot);
 			},
-			getSlotStyle: /** @param {number} itemIndex */function (itemIndex) {
+			/**
+			 * @param {number} itemIndex
+			 */
+			getSlotStyle: function (itemIndex) {
 				return UISlotItem.methods.getSlotStyle.call(this, itemIndex);
 			},
-			onPickItem() {
+			onPickItem: function () {
 				//TODO: mouse pickItem
 				return this.$emit('pickItem', ...arguments);
 			},
@@ -162,7 +207,7 @@
 			 * 未完成
 			 * @param {{ event: MouseEvent, itemSlot: ItemSlot }} _ref
 			 */
-			onUseItem(_ref) {
+			onUseItem: function (_ref) {
 				let event = _ref.event;
 				let itemSlot = _ref.itemSlot;
 
@@ -182,10 +227,10 @@
 					return this.$emit('useItem', { event, itemSlot });
 				}
 			},
-			onHoverItem() {
+			onHoverItem: function () {
 				return this.$emit('hoverItem', ...arguments);
 			},
-			onMouseleaveItem() {
+			onMouseleaveItem: function () {
 				return this.$emit('mouseleaveItem', ...arguments);
 			},
 		},
@@ -220,4 +265,56 @@
 		padding-right: 11px;
 		position: absolute;
 	}
+
+	.slot-menu {
+		width: 80px;
+		height: 48px;
+	}
+
+	.Bt {
+		outline: none;
+		border: none;
+	}
+
+	.BtRebate {
+		position: absolute;
+		left: 11px;
+		top: 8px;
+		width: 61px;
+		height: 16px;
+		background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/normal/0);
+	}
+
+		.BtRebate:hover {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/mouseOver/0);
+		}
+
+		.BtRebate:active {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/pressed/0);
+		}
+
+		.BtRebate:disabled {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/disabled/0);
+		}
+
+	.BtDelete {
+		position: absolute;
+		left: 11px;
+		top: 24px;
+		width: 61px;
+		height: 16px;
+		background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/normal/0);
+	}
+
+		.BtDelete:hover {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/mouseOver/0);
+		}
+
+		.BtDelete:active {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/pressed/0);
+		}
+
+		.BtDelete:disabled {
+			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/disabled/0);
+		}
 </style>

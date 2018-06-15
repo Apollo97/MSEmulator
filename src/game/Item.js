@@ -225,14 +225,7 @@ export class ItemSlot {
 		 * @private
 		 * @type {ItemEquip | ItemConsume | ItemEtc | ItemInstall | ItemCash} - item props
 		 */
-		this.data = null;
-
-		Object.defineProperties(this, {
-			data: {
-				writable: true,
-				value: itemData,
-			}
-		});
+		this.data = itemData;
 	}
 	
 	/**
@@ -247,18 +240,12 @@ export class ItemSlot {
 		this.slot = itemSlot;
 		this.amount = amount;
 
-		/**
-		 * @private
-		 * @type {ItemEquip | ItemConsume | ItemEtc | ItemInstall | ItemCash} - item props
-		 */
 		this.data = itemData;
+	}
 
-		//Object.defineProperties(this, {
-		//	data: {
-		//		writable: true,
-		//		value: itemData,
-		//	}
-		//});
+	_clear() {
+		this.data = null;
+		this.amount = 0;
 	}
 
 	isEmpty() {
