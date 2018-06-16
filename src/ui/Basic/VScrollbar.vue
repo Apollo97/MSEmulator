@@ -32,8 +32,9 @@
 					left: 0,
 					top: "0",
 				},
-				_mouse_y: 0,
+				_mouse_y: 0,//??: _
 				_onscroll_target: null,
+				_track_mouse_listener: null,
 			};
 		},
 		computed: {
@@ -86,7 +87,24 @@
 					let y = this._getMousePosY(event);
 
 					this._calcThumbY(y);
+
+					this._set_tracking_mousemove();
 				}
+			},
+			_set_tracking_mousemove: function () {
+				if (this._track_mouse_listener) {
+					return;
+				}
+				this._track_mouse_listener = (function (event) {
+					if (event.buttons == 1) {
+						this._onmousemove(event);
+					}
+					else {
+						window.removeEventListener("mousemove", this._track_mouse_listener);
+						this._track_mouse_listener = null;
+					}
+				}).bind(this);
+				window.addEventListener("mousemove", this._track_mouse_listener);
 			},
 			_onmousewheel: function (event) {
 				let roll;
@@ -145,6 +163,9 @@
 		beforeDestroy: function () {
 			const tElem = this.target;
 			tElem.removeEventListener("scroll", this._onscroll_target);
+			if (this._track_mouse_listener) {
+				window.removeEventListener("mousemove", this._track_mouse_listener);
+			}
 		},
 		watch: {
 			target: function (newVal) {
