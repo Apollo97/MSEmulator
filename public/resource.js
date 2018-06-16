@@ -13,12 +13,19 @@ window.character_action_list = ["walk1", "walk2", "stand1", "stand2", "alert", "
 
 export class ItemCategoryInfo {
 	/**
+	 * @param {string} id_prefix
 	 * @param {string} path
 	 * @param {boolean} isOnFace
 	 * @param {string} slot - property name
 	 * @param {string} categoryName
 	 */
-	constructor(imgDir, listPath, slot, categoryName, type = "Equip") {
+	constructor(id_prefix, imgDir, listPath, slot, categoryName, type = "Equip") {
+		if (arguments.length !=5) {
+			alert("ItemCategoryInfo: " + [...arguments].join(","));
+			debugger;
+		}
+		this.id_prefix = id_prefix;
+
 		/** data path */
 		this.path = imgDir;
 
@@ -279,65 +286,65 @@ ItemCategoryInfo.typeId = {
 	Cash: 4,
 };
 ItemCategoryInfo._info = {
-	'0000': new ItemCategoryInfo("",			"body",				"body",			""),
-	'0001': new ItemCategoryInfo("",			"head",				"head",			""),
+	'0000': new ItemCategoryInfo("0000", "",			"body",				"body",			"<body>"),
+	'0001': new ItemCategoryInfo("0001", "",			"head",				"head",			"<head>"),
 
-	'0002': new ItemCategoryInfo("Face",		"Face",				"face",			"臉型"),
-	'0003': new ItemCategoryInfo("Hair",		"Hair",				"hair",			"髮型"),
-	'0004': new ItemCategoryInfo("Hair",		"Hair",				"hair",			"髮型"),
+	'0002': new ItemCategoryInfo("0002", "Face",		"Face",				"face",			"臉型"),
+	'0003': new ItemCategoryInfo("0003", "Hair",		"Hair",				"hair",			"髮型"),
+	'0004': new ItemCategoryInfo("0004", "Hair",		"Hair",				"hair",			"髮型"),
 
-	'0100': new ItemCategoryInfo("Cap",			"Cap",				"cap",			"帽子"),
-	'0101': new ItemCategoryInfo("Accessory",	"accessoryFace",	"accessoryFace", "臉飾"),
-	'0102': new ItemCategoryInfo("Accessory",	"accessoryEyes",	"accessoryEyes", "眼飾"),
-	'0103': new ItemCategoryInfo("Accessory",	"accessoryEars",	"accessoryEars", "耳環"),
-	'0104': new ItemCategoryInfo("Coat",		"Coat",				"coat",			"上衣"),
-	'0105': new ItemCategoryInfo("Longcoat",	"Longcoat",			"longcoat",		"套服"),
-	'0106': new ItemCategoryInfo("Pants",		"Pants",			"pants",		"褲子"),
-	'0107': new ItemCategoryInfo("Shoes",		"Shoes",			"shoes",		"鞋子"),
-	'0108': new ItemCategoryInfo("Glove",		"Glove",			"glove",		"手套"),
-	'0109': new ItemCategoryInfo("Shield",		"Shield",			"shield",		"盾牌"),
-	'0110': new ItemCategoryInfo("Cape",		"Cape",				"cape",			"披風"),
+	'0100': new ItemCategoryInfo("0100", "Cap",			"Cap",				"cap",			"帽子"),
+	'0101': new ItemCategoryInfo("0101", "Accessory",	"accessoryFace",	"accessoryFace", "臉飾"),
+	'0102': new ItemCategoryInfo("0102", "Accessory",	"accessoryEyes",	"accessoryEyes", "眼飾"),
+	'0103': new ItemCategoryInfo("0103", "Accessory",	"accessoryEars",	"accessoryEars", "耳環"),
+	'0104': new ItemCategoryInfo("0104", "Coat",		"Coat",				"coat",			"上衣"),
+	'0105': new ItemCategoryInfo("0105", "Longcoat",	"Longcoat",			"longcoat",		"套服"),
+	'0106': new ItemCategoryInfo("0106", "Pants",		"Pants",			"pants",		"褲子"),
+	'0107': new ItemCategoryInfo("0107", "Shoes",		"Shoes",			"shoes",		"鞋子"),
+	'0108': new ItemCategoryInfo("0108", "Glove",		"Glove",			"glove",		"手套"),
+	'0109': new ItemCategoryInfo("0109", "Shield",		"Shield",			"shield",		"盾牌"),
+	'0110': new ItemCategoryInfo("0110", "Cape",		"Cape",				"cape",			"披風"),
 
-	"0121": new ItemCategoryInfo("Weapon", "閃亮克魯", "weapon", "閃亮克魯"),
-	"0122": new ItemCategoryInfo("Weapon", "靈魂射手", "weapon", "靈魂射手"),
-	"0123": new ItemCategoryInfo("Weapon", "魔劍", "weapon", "魔劍"),
-	"0124": new ItemCategoryInfo("Weapon", "能量劍", "weapon", "能量劍"),
-	"0125": new ItemCategoryInfo("Weapon", "幻獸棒", "weapon", "幻獸棒"),
-	"0126": new ItemCategoryInfo("Weapon", "ESP限制器", "weapon", "ESP限制器"),
-	"0127": new ItemCategoryInfo("Weapon", "鎖鏈", "weapon", "鎖鏈"),
-	"0128": new ItemCategoryInfo("Weapon", "魔力護腕", "weapon", "魔力護腕"),
+	"0121": new ItemCategoryInfo("0121", "Weapon", "閃亮克魯", "weapon", "閃亮克魯"),
+	"0122": new ItemCategoryInfo("0122", "Weapon", "靈魂射手", "weapon", "靈魂射手"),
+	"0123": new ItemCategoryInfo("0123", "Weapon", "魔劍", "weapon", "魔劍"),
+	"0124": new ItemCategoryInfo("0124", "Weapon", "能量劍", "weapon", "能量劍"),
+	"0125": new ItemCategoryInfo("0125", "Weapon", "幻獸棒", "weapon", "幻獸棒"),
+	"0126": new ItemCategoryInfo("0126", "Weapon", "ESP限制器", "weapon", "ESP限制器"),
+	"0127": new ItemCategoryInfo("0127", "Weapon", "鎖鏈", "weapon", "鎖鏈"),
+	"0128": new ItemCategoryInfo("0128", "Weapon", "魔力護腕", "weapon", "魔力護腕"),
 
-	"0130": new ItemCategoryInfo("Weapon", "單手劍", "weapon", "單手劍"),
-	"0131": new ItemCategoryInfo("Weapon", "單手斧", "weapon", "單手斧"),
-	"0132": new ItemCategoryInfo("Weapon", "單手錘", "weapon", "單手錘"),
-	"0133": new ItemCategoryInfo("Weapon", "短劍", "weapon", "短劍"),
-	"0134": new ItemCategoryInfo("Weapon", "雙刀", "weapon", "雙刀"),
-	"013526": new ItemCategoryInfo("Weapon", "靈魂之環", "weapon", "靈魂之環"),
-	"013530": new ItemCategoryInfo("Weapon", "控制器", "weapon", "控制器"),
-	"0136": new ItemCategoryInfo("Weapon", "手杖", "weapon", "手杖"),
-	"0137": new ItemCategoryInfo("Weapon", "短杖", "weapon", "短杖"),
-	"0138": new ItemCategoryInfo("Weapon", "長杖", "weapon", "長杖"),
+	"0130": new ItemCategoryInfo("0130", "Weapon", "單手劍", "weapon", "單手劍"),
+	"0131": new ItemCategoryInfo("0131", "Weapon", "單手斧", "weapon", "單手斧"),
+	"0132": new ItemCategoryInfo("0132", "Weapon", "單手錘", "weapon", "單手錘"),
+	"0133": new ItemCategoryInfo("0133", "Weapon", "短劍", "weapon", "短劍"),
+	"0134": new ItemCategoryInfo("0134", "Weapon", "雙刀", "weapon", "雙刀"),
+	"013526": new ItemCategoryInfo("013526", "Weapon", "靈魂之環", "weapon", "靈魂之環"),
+	"013530": new ItemCategoryInfo("013530", "Weapon", "控制器", "weapon", "控制器"),
+	"0136": new ItemCategoryInfo("0136", "Weapon", "手杖", "weapon", "手杖"),
+	"0137": new ItemCategoryInfo("0137", "Weapon", "短杖", "weapon", "短杖"),
+	"0138": new ItemCategoryInfo("0138", "Weapon", "長杖", "weapon", "長杖"),
 	
-	"0140": new ItemCategoryInfo("Weapon", "雙手劍", "weapon", "雙手劍"),
-	"0141": new ItemCategoryInfo("Weapon", "雙手斧", "weapon", "雙手斧"),
-	"0142": new ItemCategoryInfo("Weapon", "雙手棍", "weapon", "雙手棍"),
-	"0143": new ItemCategoryInfo("Weapon", "槍", "weapon", "槍"),
-	"0144": new ItemCategoryInfo("Weapon", "矛", "weapon", "矛"),
-	"0145": new ItemCategoryInfo("Weapon", "弓", "weapon", "弓"),
-	"0146": new ItemCategoryInfo("Weapon", "弩", "weapon", "弩"),
-	"0147": new ItemCategoryInfo("Weapon", "拳套", "weapon", "拳套"),
-	"0148": new ItemCategoryInfo("Weapon", "指虎", "weapon", "指虎"),
-	"0149": new ItemCategoryInfo("Weapon", "火槍", "weapon", "火槍"),
-	"0150": new ItemCategoryInfo("Weapon", "鏟", "weapon", "鏟"),
-	"0151": new ItemCategoryInfo("Weapon", "鎬", "weapon", "鎬"),
-	"0152": new ItemCategoryInfo("Weapon", "雙弩槍", "weapon", "雙弩槍"),
-	"0153": new ItemCategoryInfo("Weapon", "加農砲", "weapon", "加農砲"),
-	"0154": new ItemCategoryInfo("Weapon", "太刀", "weapon", "太刀"),
-	"0155": new ItemCategoryInfo("Weapon", "扇子", "weapon", "扇子"),
-	"0156": new ItemCategoryInfo("Weapon", "琉", "weapon", "琉"),
-	"0157": new ItemCategoryInfo("Weapon", "璃", "weapon", "璃"),
-	"0158": new ItemCategoryInfo("Weapon", "重拳槍", "weapon", "重拳槍"),
-	"0170": new ItemCategoryInfo("Weapon", "0170", "weapon", "點裝武器"),
+	"0140": new ItemCategoryInfo("0140", "Weapon", "雙手劍", "weapon", "雙手劍"),
+	"0141": new ItemCategoryInfo("0141", "Weapon", "雙手斧", "weapon", "雙手斧"),
+	"0142": new ItemCategoryInfo("0142", "Weapon", "雙手棍", "weapon", "雙手棍"),
+	"0143": new ItemCategoryInfo("0143", "Weapon", "槍", "weapon", "槍"),
+	"0144": new ItemCategoryInfo("0144", "Weapon", "矛", "weapon", "矛"),
+	"0145": new ItemCategoryInfo("0145", "Weapon", "弓", "weapon", "弓"),
+	"0146": new ItemCategoryInfo("0146", "Weapon", "弩", "weapon", "弩"),
+	"0147": new ItemCategoryInfo("0147", "Weapon", "拳套", "weapon", "拳套"),
+	"0148": new ItemCategoryInfo("0148", "Weapon", "指虎", "weapon", "指虎"),
+	"0149": new ItemCategoryInfo("0149", "Weapon", "火槍", "weapon", "火槍"),
+	"0150": new ItemCategoryInfo("0150", "Weapon", "鏟", "weapon", "鏟"),
+	"0151": new ItemCategoryInfo("0151", "Weapon", "鎬", "weapon", "鎬"),
+	"0152": new ItemCategoryInfo("0152", "Weapon", "雙弩槍", "weapon", "雙弩槍"),
+	"0153": new ItemCategoryInfo("0153", "Weapon", "加農砲", "weapon", "加農砲"),
+	"0154": new ItemCategoryInfo("0154", "Weapon", "太刀", "weapon", "太刀"),
+	"0155": new ItemCategoryInfo("0155", "Weapon", "扇子", "weapon", "扇子"),
+	"0156": new ItemCategoryInfo("0156", "Weapon", "琉", "weapon", "琉"),
+	"0157": new ItemCategoryInfo("0157", "Weapon", "璃", "weapon", "璃"),
+	"0158": new ItemCategoryInfo("0158", "Weapon", "重拳槍", "weapon", "重拳槍"),
+	"0170": new ItemCategoryInfo("0170", "Weapon", "0170", "weapon", "點裝武器"),
 };
 ItemCategoryInfo._categoryList = (function (info_map) {
 	let list = [];

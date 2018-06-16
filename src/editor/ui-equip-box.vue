@@ -25,14 +25,23 @@
 			<div>
 				<div v-once style="display: inline-flex; width: 100%;">
 					<select v-model="selected_category" style="flex: 1;">
-						<option v-for="cat in categoryList" :value="cat.value">{{cat.key}}</option>
+						<template v-for="(og,key) in categoryGroupList">
+							<template v-if="og.length>1">
+								<optgroup :label="key">
+									<option v-for="cat in og" :value="cat.id_prefix">{{cat.categoryName}}</option>
+								</optgroup>
+							</template>
+							<template v-else>
+								<option :value="og[0].id_prefix">{{og[0].categoryName}}</option>
+							</template>
+						</template>
 					</select>
 					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" />
 					<datalist id="search_param">
 						<option value="劍">item Name</option>
 						<option value="01302000">item ID</option>
 						<option value="<attr>:/<regexp>/"></option>
-						<option value="$style:/21158/">face, hair</option>
+						<option value="$style:/21158/">face | hair</option>
 						<option value="$foreign:/true/">external resource</option>
 						<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
 					</datalist>
@@ -338,7 +347,26 @@
 		},
 		computed: {
 			DATA_TAG_VERSION: () => window.DATA_TAG + window.DATA_VERSION,
-			categoryList: () => ItemCategoryInfo._categoryList,
+			categoryGroupList: function () {
+				const cl = Object.values(ItemCategoryInfo._info);//ItemCategoryInfo._categoryList;
+				let ss = {};
+				let ks = {};
+
+				cl.forEach(cat => {
+					let _g = cat.slot.match(/^[0-9a-z]+/);
+					let group = _g ? _g[0].toLocaleLowerCase() : cat.slot;
+					if (!ss[group]) {
+						ss[group] = [];
+					}
+					let key = cat.categoryName || cat.listPath;
+					if (!ks[key]) {
+						ss[group].push(cat);
+						ks[key] = 1;
+					}
+				});
+
+				return ss;
+			},
 			filter_buttons: () => filter_buttons,
 			face_color_buttons: () => face_color_buttons,
 			hair_color_buttons: () => hair_color_buttons,
