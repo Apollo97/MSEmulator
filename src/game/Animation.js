@@ -14,7 +14,9 @@ class IAnimation {
 
 		this.frame = 0;
 		this.time = 0;
-		this.delta = 0;//total time
+
+		/** elapsed time */
+		this.delta = 0;
 
 		/** @type {Sprite[]} */
 		this.textures = [];
@@ -24,6 +26,10 @@ class IAnimation {
 		
 		/** @type {boolean} */
 		this.is_end = false;
+	}
+
+	getTotalTime() {
+		return this.textures.reduce((pv, cv) => pv + cv.delay, 0);
 	}
 	
 	clone() {
@@ -42,7 +48,14 @@ class IAnimation {
 	update(stamp) {
 		throw new Error("Not implement");
 	}
-	
+
+	/** reset frame */
+	_resetFrame() {
+		this.frame = 0;
+		this.time = 0;
+	}
+
+	/** restart */
 	reset() {
 		this.frame = 0;
 		this.time = 0;
@@ -98,7 +111,7 @@ export class AnimationBase extends IAnimation {
 	_update(stamp) {
 		const fc = this.textures.length;
 
-		if (fc > 1) {
+		if (fc > 0) {//??
 			this.time = this.time + stamp;
 
 			if (this.time > this.texture.delay) {
@@ -117,7 +130,7 @@ export class AnimationBase extends IAnimation {
 	update(stamp) {
 		const fc = this.textures.length;
 
-		if (fc > 1) {
+		if (fc > 0) {//??
 			this.time = this.time + stamp;
 
 			if (this.time > this.texture.delay) {
@@ -127,6 +140,9 @@ export class AnimationBase extends IAnimation {
 						this.reset();//make loop
 					}
 					else {
+						//防止錯誤
+						this.frame = fc - 1;//this._resetFrame();
+
 						this.is_end = true;
 						return;
 					}

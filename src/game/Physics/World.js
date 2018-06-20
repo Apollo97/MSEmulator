@@ -92,13 +92,15 @@ export class World extends b2World {
 		this.stop = false;
 		
 		this.$_mouseJoint = null;
+	}
 
+	$test_b2ParticleSystem() {
 		const particleType = b2ParticleFlag.b2_elasticParticle;//b2_waterParticle;
 		const particleSystemDef = new b2ParticleSystemDef();
-
+		
 		/** @type {b2ParticleSystem} */
 		this.m_particleSystem = this.CreateParticleSystem(particleSystemDef);
-
+		
 		this.m_particleSystem.SetGravityScale(0);
 		this.m_particleSystem.SetRadius(10 / $gv.CANVAS_SCALE);
 		this.m_particleSystem.SetDamping(0.2);
@@ -115,7 +117,7 @@ export class World extends b2World {
 			}
 		}
 		window.m_particleSystem = this.m_particleSystem;
-
+		
 		this.$vbo_ps = null;
 	}
 

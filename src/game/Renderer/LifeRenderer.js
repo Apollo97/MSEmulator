@@ -13,7 +13,7 @@ export class LifeRenderer /*extends SceneObject*/ {
 		/** @type {string} */
 		this.id = null;
 
-		/** @type {Object.<string, Animation>} */
+		/** @type {{[action:string]:Animation}} */
 		this.actions = {};
 
 		/** @type {string} */
@@ -42,9 +42,11 @@ export class LifeRenderer /*extends SceneObject*/ {
 		return this._action;
 	}
 	set action(act) {
-		this._action = act;
-		if (this.actions[act]) {
-			this.actions[act].reset();
+		if (this._action != act) {
+			this._action = act;
+			if (this.actions[act]) {
+				this.actions[act].reset();
+			}
 		}
 	}
 

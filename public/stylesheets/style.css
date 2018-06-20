@@ -22,10 +22,10 @@ body {
     display: block;
     cursor: url(/images/UI/Basic.img/Cursor/0/0) 0 3, default;
 }
-button, button:hover {
+button, button:hover, input, input:hover, label, label:hover {
     cursor: url(/images/UI/Basic.img/Cursor/0/0) 0 3, default;
 }
-body:active, button:active {
+body:active, button:active, input, input:active, label, label:active {
     cursor: url(/images/UI/Basic.img/Cursor/12/0) 4 1, default;
 }
 .layer {

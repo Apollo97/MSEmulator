@@ -14,6 +14,7 @@ import { ParticleGroup } from "./Renderer/ParticleSystem.js";
 
 import { World } from "./Physics/World.js";
 import { Ground } from "./Physics/Ground.js";
+import { PMob } from "./Physics/PMob.js";
 
 
 window.enable_skeletal_anim = true;
@@ -1331,10 +1332,11 @@ export class MapLifeEntity {
 	}
 
 	/**
+	 * create entity, load data
 	 * @param {string} id -  npc or mob id
 	 * @param {World} mapController - no use
 	 */
-	async load(id, mapController) {//rename to create
+	async load(id, mapController) {//??: rename to create
 		if (this.renderer) {
 			await this.renderer.load(id);
 		}
@@ -1360,7 +1362,7 @@ export class MapLifeEntity {
 	 */
 	draw(renderer) {MobRenderer
 		renderer.globalAlpha = Math.max(0, Math.min(this.opacity, 1));
-		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front <= -1);
+		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front < 0);
 	}
 }
 class MapMob extends MapLifeEntity {
@@ -1382,8 +1384,11 @@ class MapMob extends MapLifeEntity {
 	 * @param {string} id mobId
 	 * @param {World} mapController
 	 */
-	async load(id, mapController) {//rename to create
+	async load(id, mapController) {//??: rename to create
 		await super.load(id);
+
+		this.$physics = mapController.createMob(this);
+		this.$physics._loadAction(this.renderer.actions);
 		
 		await this._load_skill_by_mob_id(id);
 
@@ -1402,8 +1407,33 @@ class MapMob extends MapLifeEntity {
 		catch (ex) {
 			//not thing
 		}
+	}
 
-		this.$physics = mapController.createMob(this);
+	/**
+	 * @param {PPlayerState} pState
+	 */
+	_applyState(pState) {
+		//move stand jump hit1 die1
+
+		if (pState.jump) {
+			this.renderer.action = "jump";
+		}
+		else if (pState.walk) {
+			this.renderer.action = "move";
+		}
+		else {
+			this.renderer.action = "stand";
+		}
+	}
+
+	/**
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		if (this.$physics) {
+			this._applyState(this.$physics.state);
+		}
+		this.renderer.update(stamp);
 	}
 	
 	/* skill need map to action */

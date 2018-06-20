@@ -6,14 +6,16 @@ import {
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
 	b2PolygonShape, b2CircleShape,
-	b2WheelJointDef, b2RevoluteJointDef,
-	b2Joint,
+	b2WheelJointDef, b2RevoluteJointDef, b2MouseJointDef,
+	b2Joint, b2MouseJoint,
 	b2Contact
 } from "./Physics.js";
 
 import { Foothold } from "./Foothold.js";
 
-import { CharacterMoveElem } from "../../Client/PMovePath.js"
+import { World } from "./World.js";
+
+import { CharacterMoveElem } from "../../Client/PMovePath.js";
 
 
 const DEGTORAD = Math.PI / 180;
@@ -233,6 +235,8 @@ class PCharacterBase {
 	 */
 	control(keys) {
 		if (this.portal && keys.up) {
+			//TODO: enter portal key: keys.enterPortal
+			debugger;
 			let portal = this.portal;
 			if (this._usePortal(portal)) {
 				this.portal = null;//使用完畢
@@ -724,6 +728,8 @@ class PCharacter extends PCharacterBase {
 	}
 
 	/**
+	 * no anchor
+	 * experimental
 	 * @param {CharacterMoveElem} moveElem
 	 */
 	moveTo(moveElem) {
@@ -868,14 +874,25 @@ export class PRemoteCharacter extends PCharacter {
 	 */
 	_create(world) {
 		super._create(world);
-		this._anchor = this._create_anchor(world);
+
+		if (window.$io) {
+			this._anchor = this._create_anchor(world);
+		}
+		else {
+			this.moveTo = super.moveTo;
+		}
 	}
 
 	/**
 	 * @param {CharacterMoveElem} moveElem
 	 */
 	moveTo(moveElem) {
-		this._anchor.m_targetA.x = moveElem.x;
-		this._anchor.m_targetA.y = moveElem.y;
+		//if (this._anchor) {
+			this._anchor.m_targetA.x = moveElem.x;
+			this._anchor.m_targetA.y = moveElem.y;
+		//}
+		//else {
+		//	super.moveTo(moveElem);
+		//}
 	}
 }

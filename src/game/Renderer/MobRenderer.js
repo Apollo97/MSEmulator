@@ -67,6 +67,7 @@ export class MobRenderer extends LifeRenderer {
 	 * @param {!string} id
 	 */
 	async load(id) {
+		debugger
 		let result = await super.load.apply(this, arguments);
 		return result;
 	}
@@ -92,7 +93,7 @@ export class MobRenderer extends LifeRenderer {
 	}
 	
 	static get _animations() {
-		return ['"stand"', '"fly"', "`hit${$index}`", "`die${$index}`", "`skill${$index}`"/*, "`attack${$index}`"*/];
+		return ['"stand"', '"fly"', '"move"', '"jump"', "`hit${$index}`", "`die${$index}`", "`skill${$index}`"/*, "`attack${$index}`"*/];
 	}
 	
 	static _get_desc_base_path() {
