@@ -65,8 +65,13 @@ class IAnimation {
 	get texture() {
 		throw new Error("Not implement");
 	}
-	
+
+	/**
+	 * remove at nextStep
+	 */
 	destroy() {
+		this.is_loop = false;//防止重複
+		this.is_end = true;
 	}
 }
 

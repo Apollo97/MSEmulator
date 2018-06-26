@@ -474,6 +474,12 @@ export class PMob extends PRemoteCharacter {
 			this.action.update(this);
 		}
 	}
+
+	stop() {
+		const empty = {};
+		this.ikey = empty;
+		super.control(empty);
+	}
 	
 	Step() {		
 		super.Step();
@@ -516,8 +522,8 @@ export class PMob extends PRemoteCharacter {
 			}
 		}
 	}
-	PostStep() {
-		super.PostStep();
+	AfterStep() {
+		super.AfterStep();
 		
 		const pos = this.getPosition();
 		const x = pos.x * $gv.CANVAS_SCALE;

@@ -463,8 +463,8 @@ export class Game {
 
 							scene_map.renderLife(engine, i);
 
-							if ($gv.m_display_player && chara.$layer == i) {
-								if (chara && chara.renderer) {
+							if ($gv.m_display_player && chara) {
+								if (chara.$layer == i && chara.renderer) {
 									chara.render(engine);
 								}
 							}

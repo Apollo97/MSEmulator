@@ -7,8 +7,8 @@ import {
 	b2Body, b2Fixture,
 	b2PolygonShape, b2CircleShape,
 	b2WheelJointDef, b2RevoluteJointDef, b2MouseJointDef,
-	b2Joint, b2MouseJoint,
-	b2Contact
+	b2Joint, b2RevoluteJoint, b2MouseJoint,
+	b2Contact,
 } from "./Physics.js";
 
 import { Foothold } from "./Foothold.js";
@@ -16,6 +16,7 @@ import { Foothold } from "./Foothold.js";
 import { World } from "./World.js";
 
 import { CharacterMoveElem } from "../../Client/PMovePath.js";
+import { SceneObject } from "../SceneObject.js";
 
 
 const DEGTORAD = Math.PI / 180;
@@ -66,10 +67,19 @@ export class PPlayerState {
 
 		this._fly = false;//not jump 
 		
-		this.brake = true;
+		this.brake = true;//??
 		
 		/** @type {-1|1} */
 		this.front = 1;
+
+		/** @type {boolean} */
+		this.outOfControl = false;
+
+		/** @type {number} - knockback time，unit is millisecond */
+		this.knockback = 0;
+
+		/** @type {number} - 無敵時間，unit is millisecond */
+		this.invincible = 0;
 	}
 }
 
@@ -99,7 +109,7 @@ class PCharacterBase {
 		/** @type {b2Body} */
 		this.foot_walk = null;
 
-		/** @type {b2Joint} */
+		/** @type {b2Joint|b2RevoluteJoint} */
 		this.walker = null;
 
 		/** @type {Foothold} - in World::Setp */
@@ -208,6 +218,7 @@ class PCharacterBase {
 			}
 			else {
 				mapController.doAfterStep(function () {
+					mapRenderer.unload();
 					mapRenderer.load(map_id);
 				});
 				return true;
@@ -234,6 +245,14 @@ class PCharacterBase {
 	 * @param {{[x:string]:number}} keys
 	 */
 	control(keys) {
+		if (this.state.outOfControl) {
+			this.walker.EnableMotor(false);
+			return;
+		}
+		else {
+			this.walker.EnableMotor(true);
+		}
+
 		if (this.portal && keys.up) {
 			//TODO: enter portal key: keys.enterPortal
 			debugger;
@@ -487,7 +506,7 @@ class PCharacterBase {
 		}
 		
 		this.body.Step = this.Step.bind(this);
-		this.body.PostStep = this.PostStep.bind(this);
+		this.body.AfterStep = this.AfterStep.bind(this);
 		
 		this.setMovementSpeed(0);
 		this.setjumpForce(0);
@@ -671,12 +690,28 @@ class PCharacterBase {
 		this.state._drop = false;
 		this._foothold = null;
 		this._foot_at = null;
+
+		if (this.state.knockback > 0) {
+			this.state.knockback -= stamp;
+
+			if (this.state.knockback > 0) {
+				this.state.outOfControl = true;
+				this.walker.EnableMotor(false);
+			}
+			else {
+				this.state.outOfControl = false;
+				this.walker.EnableMotor(true);
+			}
+		}
+		if (this.state.invincible > 0) {
+			this.state.invincible -= stamp;
+		}
 	}
 
 	/**
 	 * after world::step
 	 */
-	PostStep() {
+	AfterStep() {
 		//this._endContactFoothold();
 
 		if (this.$foothold) {
@@ -713,6 +748,39 @@ class PCharacterBase {
 class PCharacter extends PCharacterBase {
 	constructor() {
 		super(...arguments);
+
+		/** @type {SceneCharacter} */
+		this.chara = null;
+	}
+
+	/**
+	 * need set this.state.outOfControl = true
+	 * @param {number} moveX - unit is pixel
+	 * @param {number} moveY - unit is pixel
+	 */
+	forceMove(moveX, moveY) {
+		//TODO: calc move
+		const mass = this._getMass();
+		const move = new b2Vec2(moveX * mass, moveY * mass);
+		this.body.ApplyLinearImpulseToCenter(move);
+	}
+
+	/**
+	 * @param {number} moveX - unit is pixel
+	 * @param {number} moveY - unit is pixel
+	 * @param {number} [kbTime=1000] - knockback time, unit is millisecond
+	 */
+	knockback(moveX, moveY, kbTime = 1000) {
+		const front = this.state.front;
+		let fx, fy;
+		
+		fx = -moveX * front;
+		//fy = this.state.jump ? moveY : -moveY;
+		fy = -moveY;
+
+		this.forceMove(fx, fy);
+		this.state.knockback = kbTime;
+		this.state.outOfControl = true;
 	}
 
 	/**
@@ -857,6 +925,14 @@ export class PPlayer extends PCharacter {
 			const py = $gv.m_viewRect.top + $gv.mouse_y;
 			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);
 		}
+	}
+
+	get renderer() {
+		debugger
+		return this._$renderer;
+	}
+	set renderer(value) {
+		this._$renderer = value;
 	}
 }
 

@@ -19,6 +19,7 @@ import { PMob } from "./PMob.js";
 import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
 
 import { IRenderer } from "../IRenderer.js";
+import { debug } from "util";
 
 
 window.$gravityAcc = 2000;
@@ -78,11 +79,11 @@ export class World extends b2World {
 
 		this.SetContactListener(new ContactListener());
 
-		if (!window.io) {
-			this.player = null;
-			this._player_rebirth();
-			this.player.setPosition(0, 0, true);
-		}
+		//if (!window.io) {
+		//	this.player = null;
+		//	this._player_rebirth();
+		//	this.player.setPosition(0, 0, true);
+		//}
 
 		this.ground = new Ground();
 		
@@ -92,6 +93,26 @@ export class World extends b2World {
 		this.stop = false;
 		
 		this.$_mouseJoint = null;
+
+		/** @type {(function():void)[]} */
+		this._onceAfterStep = [];
+
+		/** @type {b2Body[]} */
+		this._destryBodyList = [];
+
+		this._DestroyBody = this.DestroyBody;
+
+		/**
+		 * @param {b2Body} b
+		 */
+		this.DestroyBody = b => {
+			if (this.m_locked) {
+				this._destryBodyList.push(b);
+			}
+			else {
+				this._DestroyBody(b);
+			}
+		}
 	}
 
 	$test_b2ParticleSystem() {
@@ -129,13 +150,13 @@ export class World extends b2World {
 	}
 	unload() {
 		if (this.IsLocked()) {
-			console.error("world is locked, world can not unload");
 			debugger;
-			return;
-			//not do this there: this.doAfterStep(this.unload.bind(this));
+			console.error("world is locked, world can not unload");
 		}
-		this.ground.unload(this);
-		this.DestroyBody(this.mapBound_body);
+		else {
+			this.ground.unload(this);
+			this.DestroyBody(this.mapBound_body);
+		}
 	}
 	
 	/**
@@ -260,35 +281,46 @@ export class World extends b2World {
 		this.mapBound_body = bb;
 	}
 
-	_player_rebirth() {
-		window.$player = this.player = new PPlayer(window.chara ? window.chara.renderer:null);
-		this.player._create(this);
-		
-		delete this.player.renderer;
-		Object.defineProperty(this.player, "renderer", {
-			get: function () {
-				return window.chara ? window.chara.renderer : null;
-			}
-		});
-	}
+	//_player_rebirth() {
+	//	window.$player = this.player = new PPlayer(window.chara ? window.chara.renderer:null);
+	//	this.player._create(this);
+	//
+	//	delete this.player.renderer;
+	//	Object.defineProperty(this.player, "renderer", {
+	//		get: function () {
+	//			return window.chara ? window.chara.renderer : null;
+	//		}
+	//	});
+	//}
 
 	/**
+	 * @param {SceneObject} sceneObject
 	 * @param {CharacterAnimationBase} renderer
 	 */
-	$createPlayer(renderer) {
+	$createPlayer(sceneObject, renderer) {
+		if (!sceneObject || !renderer) {
+			debugger;
+			alert("$createPlayer(sceneObject, renderer)");
+		}
 		let player = new PPlayer();
 
 		player._create(this);
 
 		//init ?
-		player.renderer = renderer;
+		player.chara = sceneObject;
+		player.renderer = renderer;//??
 
 		return player;
 	}
 	/**
+	 * @param {SceneObject} sceneObject
 	 * @param {CharacterAnimationBase} renderer
 	 */
-	$createRemotePlayer(renderer) {
+	$createRemotePlayer(sceneObject, renderer) {
+		if (!sceneObject || !renderer) {
+			debugger;
+			alert("$createRemotePlayer(sceneObject, renderer)");
+		}
 		let player = new PRemoteCharacter();
 
 		player._create(this);
@@ -300,7 +332,7 @@ export class World extends b2World {
 	}
 	
 	doAfterStep(func) {
-		setTimeout(func);
+		this._onceAfterStep.push(func);
 	}
 	
 	/**
@@ -403,7 +435,15 @@ export class World extends b2World {
 
 		super.Step(1 / $gv.MAX_FPS, window.$velocityIterations, window.$positionIterations, window.$particleIterations);
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
-			body.PostStep();
+			body.AfterStep();
+		}
+		if (this._onceAfterStep) {
+			this._onceAfterStep.forEach(f => f());
+			this._onceAfterStep.length = 0;
+		}
+		if (this._destryBodyList) {
+			this._destryBodyList.forEach(b => this._DestroyBody(b));
+			this._destryBodyList.length = 0;
 		}
 	}
 

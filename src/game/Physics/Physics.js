@@ -18,7 +18,7 @@ b2Body.prototype.$type = null;
 
 b2Body.prototype.Step = function () {
 }
-b2Body.prototype.PostStep = function () {
+b2Body.prototype.AfterStep = function () {
 }
 
 /**
@@ -169,16 +169,16 @@ b2Body.prototype.ConstantVelocityY = function (desiredVelY, point) {
 
 /**
  * @param {b2Contact} contact
- * @param {PFixture} fa
- * @param {PFixture} fb
+ * @param {b2Fixture} fa
+ * @param {b2Fixture} fb
  */
 b2Fixture.prototype.beginContact = function (contact, fa, fb) {
 }
 
 /**
  * @param {b2Contact} contact
- * @param {PFixture} fa
- * @param {PFixture} fb
+ * @param {b2Fixture} fa
+ * @param {b2Fixture} fb
  */
 b2Fixture.prototype.endContact = function (contact, fa, fb) {
 }
@@ -186,8 +186,8 @@ b2Fixture.prototype.endContact = function (contact, fa, fb) {
 /**
  * @param {b2Contact} contact
  * @param {b2Manifold} oldManifold
- * @param {PFixture} fa
- * @param {PFixture} fb
+ * @param {b2Fixture} fa
+ * @param {b2Fixture} fb
  */
 b2Fixture.prototype.preSolve = function (contact, oldManifold, fa, fb) {
 }
@@ -195,8 +195,8 @@ b2Fixture.prototype.preSolve = function (contact, oldManifold, fa, fb) {
 /**
  * @param {b2Contact} contact
  * @param {b2ContactImpulse} impulse
- * @param {PFixture} fa
- * @param {PFixture} fb
+ * @param {b2Fixture} fa
+ * @param {b2Fixture} fb
  */
 b2Fixture.prototype.postSolve = function (contact, impulse, fa, fb) {
 }
@@ -206,6 +206,42 @@ b2Fixture.prototype.getOwnerID = function () {
 	let host = this.GetUserData();
 	if (host && host.owner) {
 		return host.owner.id;
+	}
+}
+
+class FixtureContactListener {
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
+	beginContact (contact, fa, fb) {
+	}
+
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
+	endContact (contact, fa, fb) {
+	}
+
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Manifold} oldManifold
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
+	preSolve (contact, oldManifold, fa, fb) {
+	}
+
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2ContactImpulse} impulse
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
+	postSolve (contact, impulse, fa, fb) {
 	}
 }
 
@@ -301,4 +337,6 @@ s_foothold.ignore("foothold");
 
 
 
-module.exports = box2d;
+module.exports = Object.assign(box2d, {
+	FixtureContactListener
+});

@@ -10,8 +10,8 @@ import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 import { $createItem, ItemEquip, ItemSlot, ItemBase } from "./Item.js";
 import { SkillAnimation } from "./Skill.js";
 
+import { CharacterStat } from "../Common/PlayerData.js";
 import { CharacterMoveElem } from "../Client/PMovePath.js";
-import { PlayerStat } from "../Client/PlayerStat.js";
 import { $Packet_CharacterMove } from "../Common/Packet";
 
 
@@ -162,7 +162,7 @@ export class BaseSceneCharacter extends SceneObject {
 		/** @type {string} */
 		this.id = null;
 
-		this.stat = new PlayerStat();
+		this.stat = new CharacterStat();
 		
 		this.skill = null;//not complete
 
@@ -184,6 +184,23 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 	set name(value) {
 		this.id = value;
+	}
+
+	/**
+	 * @param {BaseSceneCharacter|null} chara - 被 chara 攻擊
+	 * @param {number} damage - 傷害
+	 */
+	damage(chara, damage) {
+		console.log(this.name + " 被 " + chara.name + " 攻擊，減少 " + damage + " HP");
+	}
+
+	/**
+	 * @param {BaseSceneCharacter|null} chara - 被 chara 攻擊
+	 * @param {number} moveX - unit is pixel
+	 * @param {number} moveY - unit is pixel
+	 */
+	knockback(chara, moveX, moveY) {
+		this.$physics.knockback(moveX, moveY, 1000);
 	}
 
 	/**
@@ -284,68 +301,8 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {IRenderer} renderer
 	 */
 	_$drawName(renderer) {
-		const ctx = renderer.ctx;
 		const name = this.id;
-		const crr = this.renderer;
-
-		ctx.font = "12px 微軟正黑體";//新細明體
-		ctx.textBaseline = "middle";
-		ctx.textAlign = "start";
-
-		const r = 2, h = 12;
-		const w = ctx.measureText(name).width + 3;
-		const x = Math.trunc(crr.x/* + crr.tx*/) - w * 0.5;//TODO: crr.tx and crr.ty ??
-		const y = Math.trunc(crr.y/* + crr.ty*/);
-
-		const left = x + r;
-		const _left = x;
-		const top = y;
-		const _top = y + r;
-		const _right = x + w;
-		const right = _right + r;
-		const bottom = y + r + h + r;
-		const _bottom = y + r + h;
-
-		ctx.fillStyle = "rgba(0,0,0,0.7)";
-		ctx.strokeStyle = "rgba(0,0,0,0.7)";
-		ctx.beginPath();
-		{
-			ctx.moveTo(left, top);
-
-			ctx.lineTo(_right, top);
-			ctx.arcTo(right, top, right, _top, r);
-
-			ctx.lineTo(right, _bottom);
-			ctx.arcTo(right, bottom, _right, bottom, r);
-
-			ctx.lineTo(left, bottom);
-			ctx.arcTo(_left, bottom, _left, _bottom, r);
-
-			ctx.lineTo(_left, _top);
-			ctx.arcTo(_left, top, left, top, r);
-		}
-		ctx.fill();
-
-		if (0) {//inner
-			ctx.fillStyle = "yellow";
-			ctx.strokeStyle = "yellow";
-			ctx.beginPath();
-			{
-				ctx.moveTo(left, _top);
-
-				ctx.lineTo(_right, _top);
-
-				ctx.lineTo(_right, _bottom);
-
-				ctx.lineTo(left, _bottom);
-
-				ctx.closePath();
-			}
-			ctx.stroke();
-		}
-		ctx.fillStyle = "white";
-		ctx.strokeStyle = "white";
-		ctx.fillText(name, left, (top + bottom) * 0.5);
+		this.__drawName(renderer, name);
 	}
 	/**
 	 * @param {IRenderer} renderer
@@ -405,6 +362,9 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 }
 
+/**
+ * client player
+ */
 export class SceneCharacter extends BaseSceneCharacter {
 	constructor(...args) {
 		super(...args);
@@ -416,8 +376,6 @@ export class SceneCharacter extends BaseSceneCharacter {
 		this.renderer = new CharacterRenderer();
 
 		this.$layer = 5;
-
-		this.stat = new PlayerStat();
 
 		/** @type {string} */
 		this.id = null;
@@ -526,10 +484,10 @@ export class SceneCharacter extends BaseSceneCharacter {
 	}
 
 	_player_control() {
-		if (!this.$physics.state.jump && this.$$jump_state) {
-			delete this.$$jump_state;
-		}
 		if (this.$physics) {
+			if (!this.$physics.state.jump && this.$$jump_state) {
+				delete this.$$jump_state;
+			}
 			let ikey = {};
 			for (let i in $gv.input_keyDown) {
 				const k = keyboard_map[$gv.m_editor_mode ? 1 : 0][i];
@@ -679,7 +637,14 @@ export class SceneCharacter extends BaseSceneCharacter {
 				this.addItem(itemId, 1);
 			}
 
-			this.renderer.use(itemId);
+			//TODO: implement job
+			if (process.env.NODE_ENV !== 'production') {
+				const category = arguments[1], equipInfo = arguments[2];
+				this.renderer.use(itemId, category, equipInfo);
+			}
+			else {
+				this.renderer.use(itemId);
+			}
 		}
 	}
 
@@ -705,6 +670,9 @@ export class SceneCharacter extends BaseSceneCharacter {
 	}
 }
 
+/**
+ * remote player
+ */
 export class SceneRemoteCharacter extends BaseSceneCharacter {
 	constructor(...args) {
 		super(...args);

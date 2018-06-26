@@ -125,10 +125,11 @@ export class LifeRenderer /*extends SceneObject*/ {
 			
 			ani.update(stamp);
 				
-			if (ani.isEnd()) {
-				this.action = this.getDefaultAction();//default loop action: stand
-				this.actions[this.action].update(stamp);
-			}
+			//TODO: move this code to: MapLifeEntity.prototype._applyState
+			//if (ani.isEnd()) {
+			//	this.action = this.getDefaultAction();//default loop action: stand
+			//	this.actions[this.action].update(stamp);
+			//}
 		}
 	}
 

@@ -226,14 +226,35 @@ export class Client {
 			}
 		});
 		this.chara = chara;
-		this.chara.$physics = this.$scene_map.controller.$createPlayer();
+		this.chara.$physics = this.$scene_map.controller.$createPlayer(chara, chara.renderer);
 
 		this.$scene_map.load(charaData.mapId);
 
-		chara._$data = {
+		chara._$data = chara._$data || {
 			guildId: "",//guildId == guildName
 			partyId: "",//partyId == partyName
 		}
+	}
+	/**
+	 * @param {{id:string,equips_code:string}} charaData
+	 */
+	static async _CreateMyCharacter(charaData) {//??
+		/** @type {SceneCharacter} */
+		let chara = await gApp.store.dispatch('_createChara', {
+			emplace: {
+				id: charaData.id,
+				code: charaData.equips_code,
+			}
+		});
+		chara = chara;
+		chara.$physics = window.scene_map.controller.$createPlayer(chara, chara.renderer);
+
+		chara._$data = chara._$data || {
+			guildId: "",//guildId == guildName
+			partyId: "",//partyId == partyName
+		}
+
+		return chara;
 	}
 	/**
 	 * @param {$RemotePlayerData[]} packet - characters
@@ -255,7 +276,7 @@ export class Client {
 					/** @type {SceneRemoteCharacter} */
 					let chara = arg0;
 					
-					chara.$physics = world.$createRemotePlayer(chara.$$renderer);
+					chara.$physics = world.$createRemotePlayer(chara, chara.$$renderer);
 
 					this.charaMap[chara.id] = chara;
 				}

@@ -5,8 +5,9 @@
 			<thead>
 				<tr>
 					<td colspan="9">
-						<button @click="removeAll" style="float: right;">RemoveAll</button>
-						<button @click="reload" style="float: right;">reload</button>
+						<button @click="removeAll" style="float: right;" title="Issues: not work">Remove all</button>
+						<button @click="reload" style="float: right;" title="Issues: not work ??">reload</button>
+						<button @click="killAll" style="float: right;">Kill all</button>
 					</td>
 				</tr>
 				
@@ -215,6 +216,9 @@
 				this.is_clear = true;
 				this.spawns = [];
 				this.$emit("resize");
+			},
+			killAll: function () {
+				scene_map.lifeMgr.entities.forEach(life => life.die());
 			},
 		},
 		mounted: function () {

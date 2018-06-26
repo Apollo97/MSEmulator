@@ -1,5 +1,5 @@
 ﻿
-class PlayerStatBase {
+class CharacterStat {
 	constructor() {
 		this.hp = 8855;
 		this.mp = 5246;
@@ -14,6 +14,34 @@ class PlayerStatBase {
 		this.int = 4;
 		this._job = 3;
 		this._spec_job = 3;
+
+		/** @type {number} - 最大屬性攻擊 */
+		this.currentMaxBaseDamage = 10000;
+
+		/** @type {number} - 最小屬性攻擊 */
+		this.currentMinBaseDamage = 1000;
+
+		/** @type {number} - 爆擊率 0~100 */
+		this.critRate = 50;
+
+		/** @type {number} - 最大爆擊傷害 0~100 */
+		this.maxCritDamage = 80;
+
+		/** @type {number} - 最小爆擊傷害 0~100 */
+		this.minCritDamage = 40;
+	}
+
+	getHpPercentS() {
+		return (this.hp * 100 / this.mhp).toFixed(0);
+	}
+	getMpPercentS() {
+		return (this.mp * 100 / this.mmp).toFixed(0);
+	}
+	getExpPercentS() {
+		return (this.exp * 100 / this.getNextExp()).toFixed(2);
+	}
+	getNextExp() {
+		return 100;
 	}
 }
 
@@ -29,7 +57,7 @@ class $RemotePlayerData {
 class $PlayerData extends $RemotePlayerData {
 	constructor() {
 		super();
-		/** @type {PlayerStat} */
+		/** @type {CharacterStat} */
 		this.stat = undefined;
 	}
 
@@ -43,6 +71,6 @@ class $PlayerData extends $RemotePlayerData {
 }
 
 module.exports = {
-	PlayerStatBase,
+	CharacterStat,
 	$RemotePlayerData, $PlayerData,
 };

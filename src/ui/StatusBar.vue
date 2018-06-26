@@ -201,7 +201,7 @@
 	//import Vuex from "vuex";
 	import BasicComponent from "./BasicComponent.vue";
 
-	import { PlayerStat } from "../Client/PlayerStat.js";
+	import { CharacterStat } from "../Common/PlayerData.js";
 
 	//Vue.config.productionTip = false;
 
@@ -254,7 +254,7 @@
 						return this.chara.stat;
 					}
 					else {
-						return new PlayerStat();//dummy
+						return new CharacterStat();//dummy
 					}
 				},
 				set: function () {

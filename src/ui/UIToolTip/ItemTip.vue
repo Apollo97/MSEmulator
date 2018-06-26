@@ -291,7 +291,7 @@
 <script>
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../../../public/resource.js';
 
-	import { PlayerStat } from "../../Client/PlayerStat.js";
+	import { CharacterStat } from "../../Common/PlayerData.js";
 
 
 	const _init_data = {
@@ -581,7 +581,7 @@
 						return this.chara.stat;
 					}
 					else {
-						return new PlayerStat();//dummy
+						return new CharacterStat();//dummy
 					}
 				},
 				set: function () {

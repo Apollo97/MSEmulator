@@ -43,10 +43,10 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\Client\Client.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\Client\PlayerStat.js">
+    <Compile Include="src\Client\PMovePath.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\Client\PMovePath.js">
+    <Compile Include="src\Common\AttackInfo.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\Common\Packet\ChatPacket.js" />
@@ -72,6 +72,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\MobSkill\238.FairyDust.js" />
     <Compile Include="src\game\MobSkill\238.FlowerTrap.js" />
     <Compile Include="src\game\MobSkill\MobSkillBase.js" />
+    <Compile Include="src\game\Physics\PBullet.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\game\Physics\DebugDraw.js" />
     <Compile Include="src\game\Physics\Foothold.js" />
     <Compile Include="src\game\Physics\Ground.js" />

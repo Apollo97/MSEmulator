@@ -1346,8 +1346,17 @@ export class MapLifeEntity {
 		}
 	}
 	
-	die(mapController) {
+	_destroy(mapController) {
 		throw new Error("Not implement");
+	}
+
+	/**
+	 * set die animation
+	 * @param {number} type
+	 */
+	die(type) {
+		throw new Error("Not implement");
+		this.isDead = true;
 	}
 
 	/**
@@ -1431,7 +1440,12 @@ class MapMob extends MapLifeEntity {
 	 */
 	update(stamp) {
 		if (this.$physics) {
-			this._applyState(this.$physics.state);
+			if (!this.isDead) {
+				this._applyState(this.$physics.state);
+			}
+			else {
+				this.$physics.stop();
+			}
 		}
 		this.renderer.update(stamp);
 	}
@@ -1539,11 +1553,20 @@ class MapMob extends MapLifeEntity {
 		}
 	}
 	
-	die(mapController) {
+	_destroy(mapController) {
 		let lifeSpawnPoint = this.spawn;
 		lifeSpawnPoint.decreaseLife();
 		mapController.destroyMob(this);
 		this.renderer = null;
+	}
+
+	/**
+	 * set die animation
+	 * @param {number=1} type
+	 */
+	die(type = 1) {
+		this.renderer.action = "die" + type;
+		this.isDead = true;
 	}
 }
 
@@ -1556,12 +1579,21 @@ class MapNpc extends MapLifeEntity {
 		super(lifeSpawnPoint, lifeId);
 		this.renderer = new NpcRenderer();
 	}
-	
-	die(mapController) {
+
+	_destroy(mapController) {
 		let lifeSpawnPoint = this.spawn;
 		lifeSpawnPoint.decreaseLife();
 		mapController.destroyNpc(this);
 		this.renderer = null;
+	}
+
+	/**
+	 * set die animation
+	 * @param {number} type
+	 */
+	die(type) {
+		//TODO: npc die ??
+		this.isDead = true;
 	}
 }
 
@@ -1642,11 +1674,14 @@ class MapLifeManager {
 		for (let i = 0; i < this.entities.length; ++i) {
 			let entity = this.entities[i];
 			if (entity) {
-				entity.update(stamp);
-
-				if (entity.isDead) {
-					this.killMob(entity);
+				if (entity.renderer.action && entity.renderer.action.startsWith("die")) {
+					const act = entity.renderer.actions[entity.renderer.action];
+					if (act && act.isEnd()) {
+						this.destroyLife(entity);
+						continue;
+					}
 				}
+				entity.update(stamp);
 			}
 		}
 	}
@@ -1698,16 +1733,16 @@ class MapLifeManager {
 		this.spawn(lifeSpawnPoint);
 	}
 	
-	killLife(entity) {
+	destroyLife(entity) {
 		if (!(entity instanceof MapLifeEntity)) {
 			alert("MapLifeManager.killLife: can't kill non life");
 			console.error("MapLifeManager.killLife: can't kill non life");
 		}
-		entity.die(this.mapController);
+		entity._destroy(this.mapController);
 		delete this.entities[entity.lifeId];
 	}
-	killAll() {
-		this.entities.forEach(a => this.killLife(a))
+	destroyAll() {
+		this.entities.forEach(a => this.destroyLife(a))
 	}
 
 	/**
@@ -2231,6 +2266,10 @@ export class SceneMap {
 		this.controller.unload();
 		this.lifeMgr.unload();
 		this.portalMgr.unload();
+
+		map_sprite.Back = {};
+		map_sprite.Obj = {};
+		map_sprite.Tile = {};
 	}
 
 	/**

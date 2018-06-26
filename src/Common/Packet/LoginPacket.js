@@ -1,5 +1,5 @@
 ﻿
-import { PlayerStat, $RemotePlayerData, $PlayerData } from "../../Client/PlayerStat";
+import { CharacterStat, $RemotePlayerData, $PlayerData } from "../../Common/PlayerData";
 
 export class $RequestPacket_SelectChara {
 	constructor() {

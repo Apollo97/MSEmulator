@@ -7,6 +7,9 @@ import { ActionAnimation } from './Renderer/CharacterActionAnimation.js';
 import { CharacterAnimationBase } from "./Renderer/CharacterRenderer.js";
 import { PPlayer } from "./Physics/PPlayer.js";
 import { SceneCharacter } from "./SceneCharacter.js";
+import { World } from "./Physics/World.js";
+import { PBullet } from "./Physics/PBullet.js";
+import { Vec2 } from "./math.js";//dev
 
 /**
  * 23001002(藝術跳躍)
@@ -27,10 +30,20 @@ let rapid_attack_info = {
 	rapidAttack: 1
 };
 
+let skill_common = {
+	lt: new Vec2(-200, -113),
+	rb: new Vec2(-10, 0),
+	mpCon: "3 + d(x / 6)",
+	damage: "175 + 8 * x",
+	mobCount: 6,
+	attackCount: 1,
+	maxLevel: 20,
+};
+
 /**
  * @interface {IEffectAnimation}
  */
-class SkillEffectAnimation extends Animation {
+export class SkillEffectAnimation extends Animation {
 	constructor(raw, url) {
 		super(raw, url);
 		this.x = 0;
@@ -39,14 +52,18 @@ class SkillEffectAnimation extends Animation {
 		/** @type {{x: number, y: number, front:-1|1}} */
 		this.targetRenderer = null;
 
+		/** @type {PBullet} */
+		this.$physics = null;
+
 		this.is_loop = false;
 
 		this.opacity = 1;
 	}
 	
 	/**
-	 * @param {string} url
-	 * @param {object} raw
+	 * @param {string|number} type - ??
+	 * @param {string} url - ??
+	 * @param {object} raw - ??
 	 */
 	load(type) {
 		if (!this._raw) {
@@ -56,34 +73,83 @@ class SkillEffectAnimation extends Animation {
 		}
 		else {
 			if (Array.isArray(this._raw[0])) {
+				/** @type {Sprite[]} */
 				this.textures = this._raw[type];
 			}
 			else {
+				/** @type {Sprite[]} */
 				this.textures = this._raw;
 			}
+		}
+	}
+
+	/**
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		if (this.$physics) {
+			this.update_p(stamp);
+		}
+		else if (this.targetRenderer) {
+			this.update_r(stamp);
+		}
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 */
+	render(renderer) {
+		if (this.$physics) {
+			this.render_p(renderer);
+		}
+		else if (this.targetRenderer) {
+			this.render_r(renderer);
 		}
 	}
 	
 	/**
 	 * @param {number} stamp
 	 */
-	update(stamp) {
-		if (this.targetRenderer) {
-			stamp *= this.targetRenderer.speed;
-		}
+	update_p(stamp) {
+		super.update(stamp);
+	}
+
+	/**
+	 * @param {IRenderer} renderer
+	 */
+	render_p(renderer) {
+		const pos = this.$physics.getPosition();
+		const front = this.$physics.front;
+		const x = pos.x * $gv.CANVAS_SCALE;
+		const y = pos.y * $gv.CANVAS_SCALE;
+
+		this.x = x;
+		this.y = y;
+
+		//renderer.pushGlobalAlpha();
+
+		renderer.globalAlpha = this.opacity;
+		this.draw(renderer, x, y, 0, front > 0);
+
+		//renderer.popGlobalAlpha();
+	}
+	
+	/**
+	 * @param {number} stamp
+	 */
+	update_r(stamp) {
+		stamp *= this.targetRenderer.speed;
 		
 		super.update(stamp);
-		
-		if (this.targetRenderer) {
-			this.x = this.targetRenderer.x + this.targetRenderer.tx;//TODO: crr.tx and crr.ty ??
-			this.y = this.targetRenderer.y + this.targetRenderer.ty;
-		}
 	}
 	
 	/**
 	 * @param {IRenderer} renderer
 	 */
-	render(renderer) {
+	render_r(renderer) {
+		this.x = this.targetRenderer.x + this.targetRenderer.tx;//TODO: crr.tx and crr.ty ??
+		this.y = this.targetRenderer.y + this.targetRenderer.ty;
+
 		//renderer.pushGlobalAlpha();
 
 		renderer.globalAlpha = this.opacity;
@@ -142,7 +208,7 @@ export class EffectManager {
 		renderer.popGlobalAlpha();
 	}
 }
-/** @type {AnimationBase[]} */
+/** @type {Animation[]} */
 EffectManager._effects = [];
 
 window.$EffectManager = EffectManager;
@@ -267,12 +333,12 @@ class SkillAnimationBase {
 		return this._owner;
 	}
 	set owner(value) {
-		this._owner = value;
-		if (!this.owner) {
+		if (!value) {
 			return;
 		}
+		this._owner = value;
 
-		this._crr = this.owner.renderer;
+		this._crr = value.renderer;
 		if (!this._crr) {
 			return;
 		}
@@ -468,10 +534,36 @@ class SkillAnimationBase {
 	nextState() {
 	}
 
+	createBullet(effectName) {
+		let eff, bullet;
+
+		//bullet renderer
+		{
+			eff = this._addEffect(effectName);
+
+			eff.is_loop = true;
+		}
+
+		//bullet physics
+		{
+			bullet = new PBullet(this.owner.$physics, this, eff);
+
+			bullet._create();
+
+			bullet.launch(null, this.owner.$physics.state.front * (window.$BULLET_SPEED | 16), 0);
+		}
+
+		//link renderer and physics
+		eff.$physics = bullet;
+
+		return bullet;
+	}
+
 	/**
 	 * @param {string} [effectName="effect"]
+	 * @param {boolean} [isBullet=false]
 	 */
-	_addEffect(effectName = "effect") {
+	_addEffect(effectName = "effect", isBullet) {
 		let action = this.data[effectName].action;
 		if (action) {
 			this._applyAction(action);
@@ -481,8 +573,12 @@ class SkillAnimationBase {
 			const type = this.actType;
 			let effect = new SkillEffectAnimation(this.data[effectName], [this.url, effectName].join("/"));
 
-			effect.targetRenderer = this._crr;
-
+			if (isBullet) {
+				//...??
+			}
+			else {
+				effect.targetRenderer = this._crr;
+			}
 			effect.load(type);
 
 			EffectManager.AddEffect(effect);
@@ -499,7 +595,7 @@ class SkillAnimationBase {
 	 * @param {{x: number, y: number}=} target
 	 * @param {number=} type
 	 */
-	addHitEffect(x, y, target, type) {
+	_addHitEffect(x, y, target, type) {
 		let hit = new SkillHitAnimation();
 		
 		hit.target = target;
@@ -622,6 +718,8 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 			this.current_effect.opacity = 1;
 			this.current_effect.reset();
 			this._actani.reset();
+
+			this.createBullet("ball");
 		}
 	}
 	_keydownend() {
@@ -653,7 +751,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	 * @virtual
 	 */
 	get _effect_names() {
-		return ["prepare", "keydown", "keydownend", "hit"];
+		return ["prepare", "keydown", "keydownend", "hit", "ball"];
 	}
 }
 
@@ -750,30 +848,35 @@ SkillAnimation.__loaded_skill = {};
 window.$SkillAnimation = SkillAnimation;
 
 
-
-class SkillController {
+class _ArrowKey {
 	constructor() {
+		this.left = 0;
+		this.up = 0;
+		this.right = 0;
+		this.down = 0;
+	}
+}
+
+export class SkillController {
+	constructor() {
+	}
+
+	_onKeydown() {
+	}
+
+	_onKeyup() {
+	}
+
+	/**
+	 @param {Partial<_ArrowKey>} key
+	 */
+	_onArrowKeydown(key) {
 	}
 
 	update() {
 	}
 }
 
-
-class SkillsContainer {
-	constructor() {
-	}
-
-	update() {
-	}
+export class SceneSkill extends SceneObject {
 }
 
-
-
-window.$dummy = {
-	x: 0,
-	y: 0,
-	tx: 0,
-	ty: 0,
-	front: 1,
-}

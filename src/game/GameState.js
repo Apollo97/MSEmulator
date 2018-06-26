@@ -2,6 +2,7 @@
 import { SceneMap } from "./Map.js";
 import { SceneCharacter } from "./SceneCharacter.js";
 
+import { Client } from "../Client/Client.js";//debug
 
 import gApp from "../app.js";//debug
 
@@ -80,12 +81,16 @@ export class GameStateManager {
 			}
 		}
 		else {
-			await gApp.store.dispatch('_createChara', {
-				emplace: {
-					id: "chara_1",
-					code: state.chara,
-				}
+			Client._CreateMyCharacter({
+				id: "chara_1",
+				equips_code: state.chara,
 			});
+			//await gApp.store.dispatch('_createChara', {
+			//	emplace: {
+			//		id: "chara_1",
+			//		code: state.chara,
+			//	}
+			//});
 		}
 
 		if (scene_map && scene_map.map_id != state.map_id) {
