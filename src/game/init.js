@@ -107,9 +107,9 @@ class GlobalVar {
 					const lo = SceneObjectMgr.layeredObjects[layer];
 
 					obj.$layer = layer;
-					obj.$uid = lo.length;
+					obj.$objectid = lo.length;
 
-					lo[obj.$uid] = obj;
+					lo[obj.$objectid] = obj;
 
 					lo.length++;
 				}
@@ -119,7 +119,7 @@ class GlobalVar {
 			}
 			SceneObjectMgr.destroy = function (obj) {
 				const layer = obj.$layer;
-				const uid = obj.$uid;
+				const uid = obj.$objectid;
 				const lo = SceneObjectMgr.layeredObjects[layer];
 
 				obj.destroy();

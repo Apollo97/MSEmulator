@@ -1,7 +1,7 @@
 ﻿
 import {
 	PFilterHelper,
-	b2_linearSlop,
+	b2_linearSleepTolerance,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
@@ -70,16 +70,22 @@ export class PPlayerState {
 		this.brake = true;//??
 		
 		/** @type {-1|1} */
-		this.front = 1;
+		this.front = -1;
 
-		/** @type {boolean} */
-		this.outOfControl = false;
+		/** @type {number} - 無敵時間，unit is millisecond */
+		this.invincible = 0;
 
 		/** @type {number} - knockback time，unit is millisecond */
 		this.knockback = 0;
 
-		/** @type {number} - 無敵時間，unit is millisecond */
-		this.invincible = 0;
+		/** @type {boolean} - off walker power */
+		this.outOfControl = false;
+
+		/** @type {boolean} - can not move or jump */
+		this.freeze = false;
+
+		/** @type {boolean} - can not move or jump */
+		this.invokeSkill = false;
 	}
 }
 
@@ -91,6 +97,18 @@ function _CalcJumpImpulse(jump_height, gravity) {
 	let impulse = Math.sqrt(jump_height * 2.0 * Math.abs(gravity.y));
 	//(impulse = m * v) => (F = ∫ Mass * dVel)
 	return impulse;
+}
+
+
+class ControlKeys {
+	constructor() {
+		this.up = 0;
+		this.left = 0;
+		this.down = 0;
+		this.right = 0;
+		this.jump = 0;
+		this.enterPortal = 0;//TODO: key: enterPortal
+	}
 }
 
 
@@ -241,10 +259,19 @@ class PCharacterBase {
 		this.body.SetAwake(true);
 	}
 
+	_actionJump() {
+		const mass = this._getMass();
+		const force = new b2Vec2(0, -mass * this.jump_force);
+		this.body.ApplyForceToCenter(force);
+	}
+
 	/**
-	 * @param {{[x:string]:number}} keys
+	 * @param {Partial<ControlKeys>} keys
 	 */
 	control(keys) {
+		if (!this._isCanMove()) {
+			return;
+		}
 		if (this.state.outOfControl) {
 			this.walker.EnableMotor(false);
 			return;
@@ -304,16 +331,7 @@ class PCharacterBase {
 			this.state.walk = false;
 
 			if (!this.state.jump) {
-				let vx = velocity.x;
-				if (vx > 50 * b2_linearSlop) {
-					this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);
-				}
-				else if (vx < -50 * b2_linearSlop) {
-					this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);
-				}
-				else {
-					this.walker.SetMotorSpeed(0);//stop motor
-				}
+				this.walker.SetMotorSpeed(0);//stop motor
 			}
 			else {
 				this.walker.SetMotorSpeed(0);//stop motor
@@ -322,12 +340,17 @@ class PCharacterBase {
 			//this.walker.EnableMotor(false);//power off
 		}
 
-		const jumpKey = keys.jump;
-		if (!this.state.jump && !this.isDrop() && jumpKey) {
-			const mass = this._getMass();
-			const force = new b2Vec2(0, -mass * this.jump_force);
-			this.body.ApplyForceToCenter(force);
+		if (keys.jump && this._isCanJump()) {//TODO: why 離開地面需要些時間 (keys.jump > 0)
+			this._actionJump();
 		}
+	}
+
+	_isCanJump() {
+		return !this.state.jump && !this.isDrop();
+	}
+
+	_isCanMove() {
+		return !this.state.freeze && !this.state.invokeSkill;
 	}
 
 	/**
@@ -505,8 +528,8 @@ class PCharacterBase {
 			this.walker = world.CreateJoint(jd);
 		}
 		
-		this.body.Step = this.Step.bind(this);
-		this.body.AfterStep = this.AfterStep.bind(this);
+		this.body.addStep(this.Step.bind(this));
+		this.body.addAfterStep(this.AfterStep.bind(this));
 		
 		this.setMovementSpeed(0);
 		this.setjumpForce(0);

@@ -335,6 +335,7 @@
 					}
 				}
 				if (index >= 0) {
+					/** @type {SceneCharacter} */
 					const selected_chara = state.charaList[index];
 					if (selected_chara.$remote) {
 						return;
@@ -342,11 +343,15 @@
 
 					try {
 						if (state.chara) {
-							delete state.chara.$physics;
+							state.chara.enablePhysics = false;
 						}
 						//
-						delete selected_chara.$physics;
-						selected_chara.$physics = scene_map.controller.player;
+						selected_chara.enablePhysics = true;
+						if (selected_chara.$physics) {
+							const x = selected_chara.renderer.x / $gv.CANVAS_SCALE;
+							const y = selected_chara.renderer.y / $gv.CANVAS_SCALE;
+							selected_chara.$physics.setPosition(x, y, true);
+						}
 					}
 					catch(ex) {
 						debugger;
@@ -380,7 +385,7 @@
 				debugger;
 			},
 			_createChara: async function (context, payload) {
-				if (window.$io && payload.remote_chara) {
+				if (window.$io && payload && payload.remote_chara) {
 					//alert("dont use _createChara in online mode");
 					//return;
 					payload.emplace = payload.remote_chara;
@@ -392,11 +397,11 @@
 
 				let chara;
 
-				if (payload.remote_chara) {
-					chara = new SceneRemoteCharacter();
+				if (payload && payload.remote_chara) {
+					chara = new SceneRemoteCharacter(window.scene_map);
 				}
 				else {
-					chara = new SceneCharacter();
+					chara = new SceneCharacter(window.scene_map);
 				}
 				chara.id = id;
 

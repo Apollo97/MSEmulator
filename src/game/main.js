@@ -373,14 +373,14 @@ export class Game {
 				scene_map.update(stamp);//include world.update
 			}
 
-			$gv.SceneObjectMgr.Update(stamp);
-
-			EffectManager.Update(stamp);
-
 			// before world.update ??
 			for (let i = 0; i < charaList.length; ++i) {
 				charaList[i].update(stamp);
 			}
+
+			$gv.SceneObjectMgr.Update(stamp);
+
+			EffectManager.Update(stamp);
 		}
 		{
 			const client = gApp.client;//not offline character
@@ -388,17 +388,10 @@ export class Game {
 			if (client && client.chara) {
 				/** @type {SceneCharacter} */
 				const ch = client.chara;
-
-				//let dt = (this.timer - this._dTimer);
-
-				//if (dt >= (window.$REC_TIME || 60)) {
-				//	this._dTimer = this.timer;
-
+				
 				ch.$emit(window.$io);
-				//}
-				//else if ((dt % (window.$REC_DIV || 1)) == 0) {
+
 				ch.$recMove();
-				//}
 			}
 		}
 	}

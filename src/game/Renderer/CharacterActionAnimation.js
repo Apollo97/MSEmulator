@@ -153,6 +153,9 @@ export class ActionAnimation {
 		else if (!this.loop) {
 			this._is_end = false;
 		}
+		if (this.frames.length <= 1) {
+			this._is_end = true;
+		}
 	}
 
 	isEnd() {
@@ -160,13 +163,7 @@ export class ActionAnimation {
 	}
 
 	getTotalTime() {
-		let tt = 0;
-		for (let i = 0; i < this.frames.length; ++i) {
-			let fdat = this.frames[i];
-
-			tt += fdat.delay;
-		}
-		return tt;
+		return this.frames.reduce((total, frame) => total + frame.delay, 0);
 	}
 
 	/**

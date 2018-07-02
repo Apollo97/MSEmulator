@@ -14,7 +14,7 @@ import {
 import { World } from "./World.js";
 
 import { PPlayer } from "./PPlayer.js";
-import { SkillAnimation, SkillEffectAnimation } from "../Skill.js";
+import { SceneSkill, SkillEffectAnimation } from "../Skill.js";
 
 import { AttackInfo } from "../../Common/AttackInfo.js";
 
@@ -24,14 +24,14 @@ import { BaseSceneCharacter } from "../SceneCharacter.js";//?? SceneCharacter, S
 export class PBullet {
 	/**
 	 * @param {PPlayer} owner
-	 * @param {SkillAnimation} skillRenderer
+	 * @param {SceneSkill} skill
 	 * @param {SkillEffectAnimation} bulletRenderer
 	 */
-	constructor(owner, skillRenderer, bulletRenderer) {
+	constructor(owner, skill, bulletRenderer) {
 		if (process.env.NODE_ENV === 'production') {
-			if (!owner || !skillRenderer || !bulletRenderer) {
+			if (!owner || !skill || !bulletRenderer) {
 				debugger;
-				alert("new PBullet(owner, skillRenderer)");
+				alert("new PBullet(owner, skill)");
 			}
 		}
 
@@ -41,8 +41,8 @@ export class PBullet {
 		/** @type {b2Body} */
 		this.body = null;
 
-		/** @type {SkillAnimation} */
-		this.skillRenderer = skillRenderer;
+		/** @type {SceneSkill} */
+		this.skill = skill;
 
 		/** @type {SkillEffectAnimation} */
 		this.bulletRenderer = bulletRenderer;
@@ -125,16 +125,19 @@ export class PBullet {
 	 */
 	launch(bulletMoveFunc, linearVelocityX, linearVelocityY) {
 		if (bulletMoveFunc) {
+			debugger;
+
 			this.bulletMoveFunc = bulletMoveFunc;
 			//TODO: this.bulletMoveFunc.Step
 			//TODO: this.bulletMoveFunc.AfterStep
 
-			this.body.Step = bulletMoveFunc.Step.bind(bulletMoveFunc, this);
-			this.body.AfterStep = bulletMoveFunc.AfterStep.bind(bulletMoveFunc, this);
+			this.body.addStep(bulletMoveFunc.Step.bind(bulletMoveFunc, this));
+			this.body.addAfterStep(bulletMoveFunc.AfterStep.bind(bulletMoveFunc, this));
 		}
 		else {
 			this.body.m_linearVelocity.Set(linearVelocityX, linearVelocityY);
 
+			//TODO: time to live, range limit
 			if (process.env.NODE_ENV !== 'production') {
 				this.body.AfterStep = () => {
 					this.$tick = (this.$tick >>> 0) + 1;
@@ -178,39 +181,15 @@ function bullet_default_preSolve(contact, oldManifold, fa, fb) {
 
 	/** @type {PBullet} */
 	const that = fa.m_userData;
-	
+
 	/** @type {PPlayer} */
-	let ownerPlayer = that.owner;
-
-	////from self
-	//if (ownerPlayer == targetPlayer) {
-	//	return;
-	//}
-
-	/** @type {BaseSceneCharacter} */
-	const ownerChara = ownerPlayer.chara;//not implement yet
-
-	{
-		/** @type {{skillId: number}} */
-		const skillInfo = that.skillRenderer.data;//not implement yet
-
-		//let attackDamage = ownerPlayer.stst.getAttackDamage();
-
-		targetChara.damage(ownerChara, 123);
-		targetChara.knockback(chara, 16, 16);
-
-		//let atkInfo = new AttackInfo();
-		//atkInfo.skill = skillInfo;
-		//atkInfo.allDamage = targetChara.calcAllDamage();
-
-		//let finalDamageList = CalcDamage.PDamage(ownerChara, atkInfo);//that.calcDamage
-
-		//targetChara.damage(finalDamageList);
-
-		//const damageFont = ownerChara.damageFont;
-
-		//finalDamageList.forEach(dam => Scene.showDamage(dam.mob, damageFont, dam));
+	const ownerPlayer = that.owner;
+	
+	//not from self
+	if (ownerPlayer == targetPlayer) {
+		return;
 	}
+	that.skill.addAttack(targetChara);
 
 	contact.SetEnabled(false);
 
@@ -244,7 +223,7 @@ export class BaseBulletMoveFunc {
 	/**
 	 * @param {PBullet} bullet
 	 */
-	afterStep(bullet) {
+	AfterStep(bullet) {
 	}
 }
 

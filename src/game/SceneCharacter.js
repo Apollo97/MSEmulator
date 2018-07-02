@@ -8,11 +8,31 @@ import { CharacterRenderer, ChatBalloon } from "./Renderer/CharacterRenderer.js"
 import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 
 import { $createItem, ItemEquip, ItemSlot, ItemBase } from "./Item.js";
-import { SkillAnimation } from "./Skill.js";
+import { SceneSkill } from "./Skill.js";
 
 import { CharacterStat } from "../Common/PlayerData.js";
 import { CharacterMoveElem } from "../Client/PMovePath.js";
 import { $Packet_CharacterMove } from "../Common/Packet";
+import { AttackInfo, DamagePair } from "../Common/AttackInfo.js";
+
+import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from '../ui/Basic/KeySlot.js';
+
+import { SceneMap } from './Map.js';
+
+
+// SceneCharacter的更新流程
+//
+// chatCtrl.update (順序無關)
+//
+// <...controller>
+// activeSkills.forEach(skill => skill.update)
+// chara._handleAttack
+// chara._player_control => { inputKey.forEach(key => key ? activeSkills.forEach(skill => skill.control)); ... }
+// chara._applyState
+//
+// <renderer>
+// set chara.renderer.position
+// chara.renderer.update
 
 
 class TimeElapsed {
@@ -109,6 +129,7 @@ class ChatController {
 		this.elapsed = 0;
 	}
 
+	/** @type {" : "} */
 	static get colon() {
 		return " : ";
 	}
@@ -121,30 +142,29 @@ class ChatController {
 }
 
 
-/**
- * @type {{[x:string]:string}[]}
- */
-const keyboard_map = [{
-	ArrowUp: "up",
-	ArrowLeft: "left",
-	ArrowDown: "down",
-	ArrowRight: "right",
-	z: "jump",
-	x: "skill_1",
-	c: "skill_2",
-	v: "skill_3",
-},
-{
-	w: "up",
-	a: "left",
-	s: "down",
-	d: "right",
-	q: "jump",
-	x: "skill_1",
-	c: "skill_2",
-	v: "skill_3",
-	}];
-
+const keyboard_map = [
+	{
+		ArrowUp: new KeySlot("Action", new ActionSlot("up")),
+		ArrowLeft: new KeySlot("Action", new ActionSlot("left")),
+		ArrowDown: new KeySlot("Action", new ActionSlot("down")),
+		ArrowRight: new KeySlot("Action", new ActionSlot("right")),
+		//z: new KeySlot("Action", new ActionSlot("jump")),
+		z: new KeySlot("Skill", new SkillSlot("23001002")),//二段跳取代跳躍鍵
+		x: new KeySlot("Skill", new SkillSlot("1001005")),
+		c: new KeySlot("Skill", new SkillSlot("64120000")),
+		v: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
+	},
+	{//editor mode
+		w: new KeySlot("Action", new ActionSlot("up")),
+		a: new KeySlot("Action", new ActionSlot("left")),
+		s: new KeySlot("Action", new ActionSlot("down")),
+		d: new KeySlot("Action", new ActionSlot("right")),
+		q: new KeySlot("Action", new ActionSlot("jump")),
+		x: new KeySlot("Skill", new SkillSlot("1001005")),
+		c: new KeySlot("Skill", new SkillSlot("64120000")),
+		v: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
+	}
+];
 
 
 export class BaseSceneCharacter extends SceneObject {
@@ -160,11 +180,12 @@ export class BaseSceneCharacter extends SceneObject {
 		this.$layer = 5;
 
 		/** @type {string} */
-		this.id = null;
+		this.name = null;
 
 		this.stat = new CharacterStat();
-		
-		this.skill = null;//not complete
+
+		/** @type {Map<string,SceneSkill>} */
+		this.activeSkills = new Map();
 
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
@@ -178,12 +199,26 @@ export class BaseSceneCharacter extends SceneObject {
 		this.$outPacket.move = null;
 	}
 
-	/** @type {string} */
-	get name() {
-		return this.id;
+	/**
+	 * @alias name
+	 * @type {string}
+	 */
+	get id() {
+		return this.name;
 	}
-	set name(value) {
-		this.id = value;
+	set id(value) {
+		this.name = value;
+	}
+
+	/**
+	 * @alias name
+	 * @type {string}
+	 */
+	get $objectid() {
+		return this.name;
+	}
+	set $objectid(value) {
+		this.name = value;
 	}
 
 	/**
@@ -191,7 +226,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {number} damage - 傷害
 	 */
 	damage(chara, damage) {
-		console.log(this.name + " 被 " + chara.name + " 攻擊，減少 " + damage + " HP");
+		console.log("Player(" + this.$objectid + ") 被 " + chara.$objectid + " 攻擊，減少 " + damage + " HP");
 	}
 
 	/**
@@ -246,21 +281,42 @@ export class BaseSceneCharacter extends SceneObject {
 
 	/**
 	 * @param {string} skillId
+	 * @returns {SceneSkill]
 	 */
-	_invokeSkill(skillId) {
-		let skill = new SkillAnimation();
+	invokeSkill(skillId) {
+		let skill = new SceneSkill();
 		skill.load(skillId, this);
-		this.skill = skill;
+		this.activeSkills.set(skillId, skill);
+		return skill;
 	}
 
 	/**
+	 * after step, before rendering
 	 * @param {number} stamp
 	 */
 	update(stamp) {
 		this.chatCtrl.update(stamp);
 
+		this.activeSkills.forEach(skill => {
+			if (skill) {
+				if (skill.isEnd()) {
+					this.activeSkills.delete(skill.skillId);
+				}
+				else {
+					skill.update(stamp, this);
+				}
+				//TODO: 結算攻擊傷害，skill.attackInfo
+				this._handleAttack();
+			}
+			else {
+				debugger;
+			}
+		});
+
+		this._player_control();
+
 		if ($gv.m_editor_mode) {
-			if (this.renderer.speed > 0 && this.$physics && !this.$physics.disable) {
+			if (this.renderer.speed > 0 && this.$physics && this.enablePhysics) {
 				this._applyState({
 					//front: this.renderer.front,
 				});
@@ -271,7 +327,7 @@ export class BaseSceneCharacter extends SceneObject {
 		}
 
 		if (this.$physics) {
-			if (this.renderer && !this.$physics.disable) {
+			if (this.renderer && this.enablePhysics) {
 				const pos = this.$physics.getPosition();
 				const px = Math.trunc(pos.x * $gv.CANVAS_SCALE + 0.5);
 				const py = Math.trunc(pos.y * $gv.CANVAS_SCALE + 0.5);
@@ -282,17 +338,6 @@ export class BaseSceneCharacter extends SceneObject {
 				this.$layer = this.$physics.getLayer();
 			}
 		}
-		
-		if (this.skill) {
-			if (this.skill.isEnd()) {
-				this.skill = null;
-			}
-			else {
-				this.skill.update(stamp, this);
-			}
-		}
-
-		this._player_control();
 
 		this.renderer.update(stamp);
 	}
@@ -311,6 +356,9 @@ export class BaseSceneCharacter extends SceneObject {
 		this.chatCtrl.draw(renderer, this);//this.chatText || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", 84
 	}
 
+	/**
+	 * @virtual
+	 */
 	_player_control() {
 	}
 
@@ -321,7 +369,8 @@ export class BaseSceneCharacter extends SceneObject {
 	_applyState(player_state) {
 		const charaRenderer = this.renderer;
 
-		if (!this.skill) {
+		// renderer: apply default action
+		if (!this.$physics.state.invokeSkill) {
 			const { front, jump, walk, prone, fly } = player_state;
 
 			if (front != null) {
@@ -360,20 +409,75 @@ export class BaseSceneCharacter extends SceneObject {
 			charaRenderer.actani.loop = true;
 		}
 	}
+
+	/**
+	 * 結算攻擊傷害
+	 */
+	_handleAttack() {
+		if (window.$io) {
+			throw new Error("未完成");
+
+			let attackInfoList = [];
+
+			this.activeSkills.forEach(skill => {
+				attackInfoList.push(skill.attackInfo);
+			});
+
+			window.$io
+				.emit("attack", {
+					//TODO: online mode: packet_attack
+					attack: attackInfoList
+				})
+				.then(result => {
+					if (result) {
+						//TODO: online mode: attack ??
+					}
+				});
+		}
+		else {
+			this.activeSkills.forEach(skill => {
+				const attackInfo = skill.attackInfo;
+
+				for (let i = 0; i < attackInfo.allAttack.length; ++i) {
+					const attack = attackInfo.allAttack[i];
+
+					const targetObject = attack.getTargetObject();
+
+					for (let j = 0; j < attack.allDamage.length; ++j) {
+						let damVar = this.stat.getCurrentMaxBaseDamage() - this.stat.getCurrentMinBaseDamage();
+						let damage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
+
+						if (Math.trunc(Math.random() * 100) < this.stat.critRate) {
+							damage = damage * (1 + this.stat.critDamage / 100);
+						}
+						
+						damage = Math.trunc(damage);
+
+						targetObject.damage(this, damage);
+					}
+					//
+					targetObject.knockback(this, 16, 16);
+				}
+			});
+		}
+	}
 }
 
 /**
  * client player
  */
 export class SceneCharacter extends BaseSceneCharacter {
-	constructor(...args) {
-		super(...args);
-
-		/** @type {PPlayer} */
-		this.$physics = null;//new PPlayer();
+	/**
+	 * @param {SceneMap} scene
+	 */
+	constructor(scene) {
+		super();
 
 		/** @type {CharacterRenderer} */
 		this.renderer = new CharacterRenderer();
+
+		/** @type {PPlayer} */
+		this.$physics = scene.controller.$createPlayer(this, this.renderer);//new PPlayer();
 
 		this.$layer = 5;
 
@@ -392,6 +496,88 @@ export class SceneCharacter extends BaseSceneCharacter {
 		this.addItem("01005177", 1);
 		this.addItem("01053322", 1);
 		this.addItem("01073284", 1);
+
+		this.stat.onJobChange(this._onJobChange.bind(this));
+	}
+
+	_onJobChange() {
+		//TODO: register buf, debuf, autofire skill
+		//TODO: 二段跳取代跳躍鍵
+		const newJob = this.stat.job;
+
+		console.log("Player(" + this.$objectid + ") change job: " + newJob);
+	}
+
+	/**
+	 * 'character physics state' to 'character renderer state'
+	 * @param {PPlayerState} player_state
+	 */
+	_applyState(player_state) {
+		super._applyState(player_state);
+
+		this.$recMove();
+	}
+
+	/**
+	 * @override
+	 */
+	_player_control() {
+		if (!this.$physics) {
+			return;
+		}
+		//if (!this.$physics.state.jump && this.$$jump_state) {
+		//	delete this.$$jump_state;
+		//}
+		const key_map = keyboard_map[$gv.m_editor_mode ? 1 : 0];
+		/** @type {{[key:string]:number}} */
+		let ikey = {};
+
+		let can_use_skill = this.activeSkills.size == 0;//TODO: 以查表法檢查不同技能是否可以同時使用
+
+		for (let keyName in key_map) {
+			/** @type {KeySlot} */
+			const keySlot = key_map[keyName];
+			if (!keySlot) {
+				continue;
+			}
+			const keyDown = $gv.input_keyDown[keyName];
+			const keyUp = $gv.input_keyUp[keyName];
+
+			switch (keySlot.type) {
+				case "Command"://open or close UI, ...
+					break;
+				case "Action":
+					if (keyDown) {
+						/** @type {ActionSlot} */
+						const ck = keySlot.data;
+						ikey[ck.action] = keyDown;
+					}
+					break;
+				case "Skill":
+					{
+						/** @type {SkillSlot} */
+						const sk = keySlot.data;
+						const skill_id = sk.skill_id;
+						let skill = this.activeSkills.get(skill_id);
+						if (keyDown && can_use_skill) {
+							skill = this.invokeSkill(sk.skill_id);
+						}
+						if ((keyDown || keyUp) && skill) {
+							skill.control(ikey, keyDown, keyUp);
+						}
+					}
+					break;
+				case "Item":
+					if (keyDown) {
+						/** @type {ItemSlot} */
+						const itemSlot = keySlot.data;
+						this.useItem(itemSlot.data.id);
+					}
+					break;
+			}
+		};
+
+		this.$physics.control(ikey);//apply action control
 	}
 
 	/**
@@ -399,15 +585,20 @@ export class SceneCharacter extends BaseSceneCharacter {
 	 * @param {number} amount
 	 */
 	addItem(itemId, amount) {
-		/** @type {Partial<ItemEquip>} */
-		let props = {//test attr
-			incDEXr: Math.trunc(Math.random() * 3),
-			timeLimited: Date(),
-		};
+		if (window.$io) {//TODO: online mode: addItem
+			throw new Error("未完成");
+		}
+		else {
+			/** @type {Partial<ItemEquip>} */
+			let props = {//test attr
+				incDEXr: Math.trunc(Math.random() * 3),
+				timeLimited: Date(),
+			};
 
-		$createItem(itemId, props).then(item => {
-			this._addItem(item, amount);
-		});
+			$createItem(itemId, props).then(item => {
+				this._addItem(item, amount);
+			});
+		}
 	}
 
 	/**
@@ -458,7 +649,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 	 * @param {number} slot
 	 */
 	async removeItem(type, slot) {
-		if (window.$io) {
+		if (window.$io) {//TODO: online mode: removeItem
 			throw new Error("未完成");
 
 			let result = await window.$io.emit("removeItem", {
@@ -483,112 +674,12 @@ export class SceneCharacter extends BaseSceneCharacter {
 		this.items[type][slot]._clear();
 	}
 
-	_player_control() {
-		if (this.$physics) {
-			if (!this.$physics.state.jump && this.$$jump_state) {
-				delete this.$$jump_state;
-			}
-			let ikey = {};
-			for (let i in $gv.input_keyDown) {
-				const k = keyboard_map[$gv.m_editor_mode ? 1 : 0][i];
-				if (k) {
-					ikey[k] = $gv.input_keyDown[i];
-				}
-			}
-			if (this.skill == null) {
-				if (ikey.skill_1) {
-					this.invokeSkill("1001005");
-				}
-				else if (ikey.skill_2) {
-					this.invokeSkill("64120000");
-				}
-				else if (ikey.skill_3) {
-					this.invokeSkill("23121000");//152001001
-				}
-			}
-			if (this.$physics.state.jump &&
-			    ikey.jump && (!this.$ikey || !this.$ikey.jump) &&
-			    !this.$$jump_state
-			) {
-				this.invokeSkill("23001002");
-				this.$$jump_state = true;
-			}
-			if (this.skill) {
-				if (!ikey.skill_3 && this.skill.skillId == "23121000") {
-					this.skill.nextState();
-				}
-				else {
-					ikey.up = 0;
-					ikey.left = 0;
-					ikey.down = 0;
-					ikey.right = 0;
-					ikey.jump = 0;
-				}
-			}
-			this.$ikey = ikey;
-			this.$physics.control(ikey);//basic control
-		}
-	}
-
-	/**
-	 * @param {string} skillId
-	 * @returns {Promise<boolean>}
-	 */
-	async invokeSkill(skillId) {
-		if (window.$io) {
-			let result = await window.$io.emit("skill", {
-				skillId: skillId,
-			});
-			if (result) {
-				this._invokeSkill(skillId);
-			}
-			return result;
-		}
-		else {
-			this._invokeSkill(skillId);
-			return true;
-		}
-	}
-
-	/**
-	 * 'character physics state' to 'character renderer state'
-	 * @param {PPlayerState} player_state
-	 */
-	_applyState(player_state) {
-		super._applyState(player_state);
-
-		this.$recMove();
-	}
-
-	
-	$emit(socket) {
-		if (this.$outPacket.move) {
-			socket.emit("charaMove", this.$outPacket.move);
-			this.$outPacket.move = null;
-		}
-		else {
-			let charaMove = new $Packet_CharacterMove();
-
-			charaMove.capture(this);
-
-			socket.emit("charaMove", charaMove);
-		}
-
-		this.$outPacket.move = null;
-	}
-	
-	$recMove() {
-		let move = this.$outPacket.move || new $Packet_CharacterMove();
-		move.capture(this);
-		this.$outPacket.move = move;
-	}
-
 	/**
 	 * @param {number} from
 	 * @param {number} to
 	 */
 	moveItemToSlot(from, to) {
-		//TODO: ("./ui/UISlotItem.vue").methods.drop
+		//TODO: ("./ui/Basic/UISlotItem.vue").methods.drop
 		debugger;
 	}
 
@@ -631,19 +722,38 @@ export class SceneCharacter extends BaseSceneCharacter {
 			});
 		}
 		else {
+			const args = arguments;
 			let existItem = this.findItem(itemId).itemSlot;
 
-			if (!existItem) {
-				this.addItem(itemId, 1);
-			}
-
-			//TODO: implement job
-			if (process.env.NODE_ENV !== 'production') {
-				const category = arguments[1], equipInfo = arguments[2];
-				this.renderer.use(itemId, category, equipInfo);
+			if (existItem) {
+				if (!$gv.m_editor_mode) {
+					console.log(`消耗道具：${itemId}。未完成`);
+					this._consume(itemId, 1);
+				}
+				else {
+					console.log(`使用道具：${itemId}。`);
+				}
+				update_renderer.call(this);
 			}
 			else {
-				this.renderer.use(itemId);
+				if ($gv.m_editor_mode) {
+					this.addItem(itemId, 1);
+					update_renderer.call(this);
+				}
+				else {
+					console.log("無法使用不存在的道具。");
+				}
+			}
+
+			function update_renderer() {
+				//TODO: implement job
+				if (process.env.NODE_ENV !== 'production') {
+					const category = args[1], equipInfo = args[2];
+					this.renderer.use(itemId, category, equipInfo);
+				}
+				else {
+					this.renderer.use(itemId);
+				}
 			}
 		}
 	}
@@ -668,69 +778,90 @@ export class SceneCharacter extends BaseSceneCharacter {
 			return true;
 		}
 	}
+	
+	$emit(socket) {
+		if (this.$outPacket.move) {
+			socket.emit("charaMove", this.$outPacket.move);
+			this.$outPacket.move = null;
+		}
+		else {
+			let charaMove = new $Packet_CharacterMove();
+
+			charaMove.capture(this);
+
+			socket.emit("charaMove", charaMove);
+		}
+
+		this.$outPacket.move = null;
+	}
+	
+	$recMove() {
+		let move = this.$outPacket.move || new $Packet_CharacterMove();
+		move.capture(this);
+		this.$outPacket.move = move;
+	}
 }
 
 /**
  * remote player
  */
 export class SceneRemoteCharacter extends BaseSceneCharacter {
-	constructor(...args) {
-		super(...args);
+	/**
+	 * @param {SceneMap} scene
+	 */
+	constructor(scene) {
+		super();
 
-		/** @type {PPlayer} */
-		this.$$physics = null;
+		if (process.env.NODE_ENV !== 'production') {
+			delete this.$physics;
+			Object.defineProperty(this, "$physics", {
+				enumerable: true,
+				configurable: false,
+				get: function () {
+					return this.$$physics;
+				},
+				set: function (value) {
+					if (value == null) {
+						console.error("can not set SceneRemoteCharacter.$physics = null;");
+						alert("can not set SceneRemoteCharacter.$physics = null;");
+					}
+					this.$$physics = value;
+				},
+			});
+
+			delete this.renderer;
+			Object.defineProperty(this, "renderer", {
+				enumerable: true,
+				configurable: false,
+				get: function () {
+					return this.$$renderer;
+				},
+				set: function (value) {
+					if (value == null) {
+						console.error("can not set SceneRemoteCharacter.renderer = null;");
+						alert("can not set SceneRemoteCharacter.renderer = null;");
+					}
+					this.$$renderer = value;
+				},
+			});
+		}
 
 		/** @type {CharacterRenderer} */
-		this.$$renderer = new CharacterRenderer();
+		this.renderer = new CharacterRenderer();
 
-		delete this.$physics;
-		Object.defineProperty(this, "$physics", {
-			enumerable: true,
-			configurable: false,
-			get: function () {
-				return this.$$physics;
-			},
-			set: function (value) {
-				if (value == null) {
-					console.error("can not set SceneRemoteCharacter.$physics = null;");
-					alert("can not set SceneRemoteCharacter.$physics = null;");
-				}
-				this.$$physics = value;
-			},
-		});
-
-		delete this.renderer;
-		Object.defineProperty(this, "renderer", {
-			enumerable: true,
-			configurable: false,
-			get: function () {
-				return this.$$renderer;
-			},
-			set: function (value) {
-				if (value == null) {
-					console.error("can not set SceneRemoteCharacter.renderer = null;");
-					alert("can not set SceneRemoteCharacter.renderer = null;");
-				}
-				this.$$renderer = value;
-			},
-		});
+		/** @type {PPlayer} */
+		this.$physics = scene.controller.$createPlayer(this, this.renderer);
 	}
 
 	get $remote() {
 		return true;
 	}
 
+	/**
+	 * @override
+	 */
 	_player_control() {
 		this._remote_control();
-	}
-
-	/**
-	 * @param {string} skillId
-	 * @returns {Promise<boolean>}
-	 */
-	async invokeSkill(skillId) {
-		this._invokeSkill(skillId);
-		return true;
 	}
 }
 

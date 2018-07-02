@@ -3,6 +3,8 @@ import { ItemCategoryInfo } from "../../public/resource.js";
 
 import { Sprite } from "./Sprite";
 
+import { KeySlotData } from "../ui/Basic/KeySlotData.js";
+
 
 /** @type {$ItemRawData} */
 let _loadedItem = {};
@@ -208,7 +210,7 @@ export async function $createItem(itemId, ...props) {
 }
 
 
-export class ItemSlot {
+export class ItemSlot extends KeySlotData {
 	/**
 	 * @template T
 	 * @param {number} itemSlot
@@ -217,6 +219,8 @@ export class ItemSlot {
 	 * @param {number} amount
 	 */
 	constructor(itemSlot, itemSN, itemData, amount) {
+		super();
+
 		this.SN = itemSN;
 		this.slot = itemSlot;
 		this.amount = amount;

@@ -1,6 +1,91 @@
 ﻿
 //import BigInt from "big-integer";//bitwise operation
 
+import { SkillAnimation } from "../game/Skill.js";
+import { SceneObject } from "../game/SceneObject.js";
+
+
+export class AttackInfo {
+	constructor() {
+		/** @type {AttackPair[]} - { objectid, attack }[each monster] */
+		this.allAttack = [];
+
+		/** @type {SkillAnimation} */
+		this.skill = null;
+	}
+	///**
+	// * @param {number} objectid
+	// * @returns {AttackPair}
+	// */
+	//addAttack(objectid) {
+	//	let attack = new AttackPair();
+	//	attack.objectid = objectid;
+	//	this.allAttack.push(attack);
+	//}
+}
+
+const symbol_targetObject = Symbol("targetObject");
+
+export class AttackPair {
+	constructor() {
+		/** @type {SceneObject} */
+		this[symbol_targetObject] = null;
+
+		///** @type {number} */
+		//this.objectid = null;
+
+		/** @type {DamagePair[]} - { realDamage, critical }[attackCount] */
+		this.allDamage = [];
+	}
+
+	/**
+	 * @returns {SceneObject}
+	 */
+	getTargetObject() {
+		return this[symbol_targetObject];
+	}
+
+	/**
+	 * @param {SceneObject} targetObject
+	 */
+	setTargetObject(targetObject) {
+		this[symbol_targetObject] = targetObject;
+	}
+
+	/**
+	 * targetObject # $objectid
+	 * @returns {number}
+	 */
+	get objectid() {
+		/** @type {SceneObject} */
+		let obj = this[symbol_targetObject];
+		return obj.$objectid;
+	}
+	/**
+	 * set targetObject by objectid
+	 * @param {number} objectid
+	 */
+	set objectid(objectid) {
+		if (Number.isSafeInteger(objectid)) {
+			/** @type {SceneObject} */
+			let obj = scene_map.lifeMgr.entities[objectid];
+
+			this.setTargetObject(obj);
+		}
+		else {
+			//TODO: targetObject is player's character
+		}
+	}
+
+	/**
+	 * @param {number} realDamage
+	 * @param {boolean} critical
+	 * @returns {DamagePair}
+	 */
+	addDamage(realDamage, critical) {
+		this.allDamage.push(new DamagePair(realDamage, critical));
+	}
+}
 
 export class DamagePair {
 	/**
@@ -15,63 +100,22 @@ export class DamagePair {
 		this.critical = critical;
 	}
 
-	_normalize() {
-		this.realDamage = this.realDamage | 0;
-		this.critical = !!this.critical;
-
-		if (!Number.isSafeInteger(this.realDamage)) {
-			this.realDamage = 0;
-		}
-	}
-
 	_validating() {
 		return Number.isSafeInteger(this.realDamage);
 	}
 
 	/** @param {IRenderer} */
-	draw(renderer) {
+	_draw(renderer) {
 		/** @type {CanvasRenderingContext2D} */
 		const ctx = renderer.ctx;
 		if (Number.isSafeInteger(this.realDamage)) {
 			//draw
 		}
-		else {//invalid damage
+		else {// debug, invalid damage
 			ctx.filter = "gray-scale(1)";
 			//draw
 			ctx.filter = "none";
 		}
-	}
-}
-
-export class AttackInfo {
-	constructor() {
-		/** @type {AttackPair[]} - each monster */
-		this.allDamage = [];
-
-		/** @type {skill} */
-		this.skill = null;
-	}
-}
-
-export class AttackPair {
-	/**
-	 * @param {number} realDamage
-	 * @param {boolean} critical
-	 */
-	constructor(objectid, attack) {
-		/** @type {number} */
-		this.objectid = objectid;
-
-		/** @type {DamagePair[]} */
-		this.attack = attack || [];
-	}
-
-	/**
-	 * @param {number} realDamage
-	 * @param {boolean} critical
-	 */
-	emplaceDamage(realDamage, critical) {
-		this.attack.push(new DamagePair(realDamage, critical));
 	}
 }
 

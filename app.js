@@ -47,6 +47,22 @@ function main(firstInit) {
 	if (!process_argv["--static"] && !process_argv["-s"]) {
 		app = DataServer(app);
 	}
+	else {
+		app.get('/version', function (req, res, next) {
+			let js = [
+				`window.DATA_VERSION=${"1"};`,
+				`window.DATA_TAG="${"server"}";`,
+				`window.DATA_LAST_MODIFIED="${(new Date(0)).toUTCString()}";`,
+			].join("\n");
+
+			res.writeHead(200, {
+				"Content-Type": "application/x-javascript; charset=utf-8",
+				"Access-Control-Allow-Origin": "*",
+			});
+
+			res.end(js);
+		});
+	}
 
 	startServer(app, port);
 

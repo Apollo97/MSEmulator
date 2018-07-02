@@ -15,6 +15,7 @@ import { ParticleGroup } from "./Renderer/ParticleSystem.js";
 import { World } from "./Physics/World.js";
 import { Ground } from "./Physics/Ground.js";
 import { PMob } from "./Physics/PMob.js";
+import { SceneObject } from "./SceneObject.js";
 
 
 window.enable_skeletal_anim = true;
@@ -1214,12 +1215,13 @@ export class LifeSpawnPoint {
 /**
  * Mob / NPC controller
  */
-export class MapLifeEntity {
+export class MapLifeEntity extends SceneObject {
 	/**
 	 * @param {LifeSpawnPoint} lifeSpawnPoint
 	 * @param {number} lifeId - life index
 	 */
 	constructor(lifeSpawnPoint, lifeId) {
+		super();
 		let a = {
 			type: "m",
 			id: 8643000,
@@ -1238,7 +1240,7 @@ export class MapLifeEntity {
 		this.renderer = null;
 
 		/** @type {boolean} */
-		this.isDead = false;
+		this.is_dead = false;
 
 		/** @type {LifeSpawnPoint} */
 		this.spawn = lifeSpawnPoint;
@@ -1356,7 +1358,7 @@ export class MapLifeEntity {
 	 */
 	die(type) {
 		throw new Error("Not implement");
-		this.isDead = true;
+		this.is_dead = true;
 	}
 
 	/**
@@ -1388,6 +1390,9 @@ class MapMob extends MapLifeEntity {
 		
 		/** @type {{[x:string]: object}} - {[level]: skill} */
 		this.skills = {};
+
+		//TODO: load mob info
+		this.hp = 100000;
 	}
 	/**
 	 * @param {string} id mobId
@@ -1419,6 +1424,33 @@ class MapMob extends MapLifeEntity {
 	}
 
 	/**
+	 * @virtual
+	 * @param {SceneObject|null} chara - 被 chara 攻擊
+	 * @param {number} damage - 傷害
+	 */
+	damage(chara, damage) {
+		if (!this.is_dead) {
+			this.hp -= damage;
+
+			console.log(`Mob(${this.$objectid}) 被 ${chara.$objectid} 攻擊，減少 ${damage} HP，剩下 ${this.hp}`);
+			
+			if (this.hp <= 0) {
+				this.die();
+			}
+		}
+	}
+
+	/**
+	 * @virtual
+	 * if (chara == null) ??
+	 * @param {SceneObject|null} chara - 被 chara 攻擊
+	 * @param {number} moveX - unit is pixel
+	 * @param {number} moveY - unit is pixel
+	 */
+	knockback(chara, moveX, moveY) {
+	}
+
+	/**
 	 * @param {PPlayerState} pState
 	 */
 	_applyState(pState) {
@@ -1440,7 +1472,7 @@ class MapMob extends MapLifeEntity {
 	 */
 	update(stamp) {
 		if (this.$physics) {
-			if (!this.isDead) {
+			if (!this.is_dead) {
 				this._applyState(this.$physics.state);
 			}
 			else {
@@ -1566,7 +1598,7 @@ class MapMob extends MapLifeEntity {
 	 */
 	die(type = 1) {
 		this.renderer.action = "die" + type;
-		this.isDead = true;
+		this.is_dead = true;
 	}
 }
 
@@ -1593,7 +1625,7 @@ class MapNpc extends MapLifeEntity {
 	 */
 	die(type) {
 		//TODO: npc die ??
-		this.isDead = true;
+		this.is_dead = true;
 	}
 }
 

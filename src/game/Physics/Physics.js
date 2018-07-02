@@ -17,8 +17,34 @@ let b2Vec2_temp = new b2Vec2();
 b2Body.prototype.$type = null;
 
 b2Body.prototype.Step = function () {
+	if (this._on_step) {
+		for (let fn of this._on_step) {
+			fn();
+		}
+	}
 }
 b2Body.prototype.AfterStep = function () {
+	if (this._on_after_step) {
+		for (let fn of this._on_after_step) {
+			fn();
+		}
+	}
+}
+
+/**
+ * @param {function():void} func
+ */
+b2Body.prototype.addStep = function (func) {
+	this._on_step = this._on_step || [];
+	this._on_step.push(func);
+}
+
+/**
+ * @param {function():void} func
+ */
+b2Body.prototype.addAfterStep = function (func) {
+	this._on_after_step = this._on_after_step || [];
+	this._on_after_step.push(func);
 }
 
 /**

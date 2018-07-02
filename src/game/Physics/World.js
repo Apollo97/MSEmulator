@@ -310,6 +310,8 @@ export class World extends b2World {
 		player.chara = sceneObject;
 		player.renderer = renderer;//??
 
+		this.player = player;
+
 		return player;
 	}
 	/**
@@ -330,7 +332,11 @@ export class World extends b2World {
 
 		return player;
 	}
-	
+
+	/**
+	 * do once AfterStep
+	 * @param {function():void} func
+	 */
 	doAfterStep(func) {
 		this._onceAfterStep.push(func);
 	}
@@ -430,12 +436,12 @@ export class World extends b2World {
 		this.$_onMouseEvent();
 		
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
-			body.Step();
+			body.Step(stamp);
 		}
 
 		super.Step(1 / $gv.MAX_FPS, window.$velocityIterations, window.$positionIterations, window.$particleIterations);
 		for (let body = this.GetBodyList(); body; body = body.m_next) {
-			body.AfterStep();
+			body.AfterStep(stamp);
 		}
 		if (this._onceAfterStep) {
 			this._onceAfterStep.forEach(f => f());
@@ -453,6 +459,8 @@ export class World extends b2World {
 	render(renderer) {
 		/** @type {CanvasRenderingContext2D} */
 		const ctx = renderer.ctx;
+
+		const player = window.chara ? window.chara.$physics : this.player;
 
 		if ($gv.m_display_physics_debug) {
 			const settings = this.m_debugDraw.m_settings;
@@ -472,8 +480,8 @@ export class World extends b2World {
 
 			this.DrawDebugData();
 
-			if (this.player && this.player.body) {
-				const pos = this.player.getPosition();
+			if (player && player.body) {
+				const pos = player.getPosition();
 				ctx.fillStyle = "red";
 				ctx.fillRect(pos.x, pos.y, 1, 1);
 			}
@@ -605,11 +613,11 @@ export class World extends b2World {
 		if ($gv.m_display_foothold) {
 			ctx.save();
 			this.ground.$drawDebugInfo(renderer);
-			if (this.player && this.player._foothold) {
-				this.player._foothold.$drawDebugInfo2(renderer, "#FF0");
+			if (player && player._foothold) {
+				player._foothold.$drawDebugInfo2(renderer, "#FF0");
 			}
-			if (this.player && this.player.$foothold) {
-				this.player.$foothold.$drawDebugInfo2(renderer, "#F00");
+			if (player && player.$foothold) {
+				player.$foothold.$drawDebugInfo2(renderer, "#F00");
 			}
 			ctx.restore();
 		}

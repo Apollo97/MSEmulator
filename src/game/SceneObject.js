@@ -7,7 +7,8 @@ import { PPlayer } from './Physics/PPlayer';
  */
 export class SceneObject {
 	constructor() {
-		this.$uid = null;	// ?? null if not in scene
+		/** @type {string|number} */
+		this.$objectid = null;	// playerName or objectID; ?? null if not in scene
 
 		/** @type {number} - layer id */
 		this.$layer = null;	//maybe override
@@ -27,14 +28,19 @@ export class SceneObject {
 	
 	set enablePhysics(value) {
 		if (this.$physics) {
-			this.$physics.disable = !value;
+			this.$physics.enable = value;
+			this.$physics.state.freeze = !value;
 		}
 	}
 	get enablePhysics() {
 		if (this.$physics) {
-			return !this.$physics.disable;
+			return this.$physics.enable;
 		}
 		return false;
+	}
+
+	_applyState() {
+		throw new Error("Not implement");
 	}
 
 	/**
@@ -51,15 +57,25 @@ export class SceneObject {
 		this.renderer.render(renderer);
 	}
 
-	_applyState() {
-		throw new Error("Not implement");
+	/**
+	 * @virtual
+	 * @param {SceneObject|null} chara - 被 chara 攻擊
+	 * @param {number} damage - 傷害
+	 */
+	damage(chara, damage) {
+		console.log(this.$objectid + " 被 " + chara.$objectid + " 攻擊，減少 " + damage + " HP");
 	}
 
-	EnablePhysics(value) {
-		debugger
-		this.$physics.disable = value;
+	/**
+	 * @virtual
+	 * if (chara == null) ??
+	 * @param {SceneObject|null} chara - 被 chara 攻擊
+	 * @param {number} moveX - unit is pixel
+	 * @param {number} moveY - unit is pixel
+	 */
+	knockback(chara, moveX, moveY) {
 	}
-
+	
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {string} name

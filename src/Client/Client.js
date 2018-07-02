@@ -217,6 +217,9 @@ export class Client {
 			alert("selectChara: chara not exist");
 		}
 	}
+	/**
+	 * online mode
+	 */
 	async _CreateMyCharacter(charaData) {
 		/** @type {SceneCharacter} */
 		let chara = await gApp.store.dispatch('_createChara', {
@@ -226,7 +229,6 @@ export class Client {
 			}
 		});
 		this.chara = chara;
-		this.chara.$physics = this.$scene_map.controller.$createPlayer(chara, chara.renderer);
 
 		this.$scene_map.load(charaData.mapId);
 
@@ -236,6 +238,7 @@ export class Client {
 		}
 	}
 	/**
+	 * offline mode
 	 * @param {{id:string,equips_code:string}} charaData
 	 */
 	static async _CreateMyCharacter(charaData) {//??
@@ -247,7 +250,6 @@ export class Client {
 			}
 		});
 		chara = chara;
-		chara.$physics = window.scene_map.controller.$createPlayer(chara, chara.renderer);
 
 		chara._$data = chara._$data || {
 			guildId: "",//guildId == guildName

@@ -9,7 +9,28 @@ import { PPlayer } from "./Physics/PPlayer.js";
 import { SceneCharacter } from "./SceneCharacter.js";
 import { World } from "./Physics/World.js";
 import { PBullet } from "./Physics/PBullet.js";
+import { AttackInfo, AttackPair } from "../Common/AttackInfo.js";
+
 import { Vec2 } from "./math.js";//dev
+
+
+// skill timeline
+//
+// 以 ActionAnimation 控制流程
+// skill 必須要有 ActionAnimation 才能正確運作(開始、結束)
+//
+// # normal skill
+// -delay1        | delay2
+// _init          | update
+// defaultAction  | wait current_action end
+//                | SkillEffect
+//
+// # rapid skill
+// delay1      | delay2         | delay3
+// _init       | control/update | update
+// prepare     | loop           | end
+// SkillEffect | SkillEffect    | SkillEffect
+
 
 /**
  * 23001002(藝術跳躍)
@@ -30,19 +51,118 @@ let rapid_attack_info = {
 	rapidAttack: 1
 };
 
-let skill_common = {
-	lt: new Vec2(-200, -113),
-	rb: new Vec2(-10, 0),
-	mpCon: "3 + d(x / 6)",
-	damage: "175 + 8 * x",
-	mobCount: 6,
-	attackCount: 1,
-	maxLevel: 20,
-};
 
-/**
- * @interface {IEffectAnimation}
- */
+class _SkillInfo {
+	constructor() {
+		this.type = 40;
+
+		/** @type {boolean} */
+		this.casterMove = 1;
+
+		/** @type {boolean} */
+		this.avaliableInJumpingState = 1;
+
+
+		/** @type {boolean} */
+		this.areaAttack = 1;
+
+		this.knockbackLimit = 80;
+
+		/** @type {boolean} */
+		this.rapidAttack = 1;
+	}
+}
+class _SkillCommonData {
+	constructor() {
+		/** @type {Vec2} */
+		this.lt = null;//new Vec2(-200, -113)
+
+		/** @type {Vec2} */
+		this.rb = null;//new Vec2(-10, 0)
+
+		/** @type {string} - code */
+		this.mpCon = "3 + d(x / 6)";
+
+		/** @type {string} - code */
+		this.damage = "175 + 8 * x";
+
+		/** @type {number} */
+		this.mobCount = 6;
+
+		/** @type {number} */
+		this.attackCount = 1;
+
+		/** @type {number} */
+		this.maxLevel = 20;
+	}
+}
+class _SkillData {
+	constructor() {
+		/** @type {{ [actType: number]: string }} */
+		this.action = {
+			"0": "dualVulcanLoop"
+		};
+
+		/** @type {_SkillCommonData} */
+		this.common = null;
+
+		/** @type {_SkillInfo} */
+		this.info = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.effect = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.prepare = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydown = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydown0 = null;
+
+		/** @type {SkillEffectAnimation} - ? type */
+		this.keydownend = null;
+
+		/** @type {{[skill_id:string]:{[type:number]:number}}} */
+		this.finalAttack = {
+			"23100006": {
+				"0": 52
+			}
+		};
+
+		/** @type {number} */
+		this.masterLevel = 10;
+
+		/** @type {number} */
+		this.combatOrders = 1;
+
+		/** @type {number} */
+		this.weapon = 52;
+
+		/** @type {number} */
+		this.subWeapon = 35;
+
+		/** @type {number} */
+		this.psd = 1;
+
+		/** @type {number} - ?? */
+		this.psdSkill = {
+			23111002: {}
+		};
+
+		/** @type {{[skill_id:string]:number}} */
+		this.req = {
+			"23111000": 20
+		};
+
+		/** @type {number} */
+		this.canJobRidingUse = 1;
+	}
+}
+
+
+
 export class SkillEffectAnimation extends Animation {
 	constructor(raw, url) {
 		super(raw, url);
@@ -81,6 +201,12 @@ export class SkillEffectAnimation extends Animation {
 				this.textures = this._raw;
 			}
 		}
+	}
+
+	destroy() {
+		super.destroy();
+
+		this.$physics = null;
 	}
 
 	/**
@@ -165,6 +291,8 @@ class SkillHitAnimation extends SkillEffectAnimation {
 	}
 }
 
+
+
 /**
  * TODO: SceneObject 取代 EffectManager
  */
@@ -185,7 +313,9 @@ export class EffectManager {
 		const effects = EffectManager._effects;
 		
 		EffectManager._effects = effects.filter(function (eff) {
-			eff.update(stamp);
+			if (!eff.isEnd()) {
+				eff.update(stamp);
+			}
 			if (eff.isEnd()) {
 				eff.destroy();
 				return false;
@@ -214,65 +344,19 @@ EffectManager._effects = [];
 window.$EffectManager = EffectManager;
 
 
-class _SkillInfo {
-	constructor() {
-		this.type = 40;
-
-		/** @type {boolean} */
-		this.casterMove = 1;
-
-		/** @type {boolean} */
-		this.avaliableInJumpingState = 1;
-
-
-		/** @type {boolean} */
-		this.areaAttack = 1;
-
-		this.knockbackLimit = 80;
-		
-		/** @type {boolean} */
-		this.rapidAttack = 1;
-	}
-}
-class _SkillData {
-	constructor() {
-		/** @type {{ [actType: number]: string }} */
-		this.action = null;
-
-		/** @type {_SkillInfo} */
-		this.info = null;
-
-		/** @type {SkillEffectAnimation} - ? type */
-		this.effect = null;
-
-		/** @type {SkillEffectAnimation} - ? type */
-		this.prepare = null;
-
-		/** @type {SkillEffectAnimation} - ? type */
-		this.keydown = null;
-
-		/** @type {SkillEffectAnimation} - ? type */
-		this.keydown0 = null;
-
-		/** @type {SkillEffectAnimation} - ? type */
-		this.keydownend = null;
-	}
-}
-
 
 /**
  * 
  */
 class SkillAnimationBase {
-	/**
-	 * @param {object} raw
-	 * @param {string} url
-	 */
-	constructor(raw, url) {
+	///**
+	// * @param {object} raw
+	// * @param {string} url
+	// */
+	constructor(/*raw, url*/) {
 		//this._raw = raw;
 
 		/**
-		 * cooked raw
 		 * @type {_SkillData}
 		 */
 		this.data = null;
@@ -308,7 +392,7 @@ class SkillAnimationBase {
 		this.type = 0;
 		
 		/** @type {boolean} */
-		this.is_end = false;
+		this._$is_end = false;
 		
 		/** @type {boolean} */
 		this.is_launch = false;
@@ -325,7 +409,17 @@ class SkillAnimationBase {
 	 * @virtual
 	 */
 	_init() {
-		// nothing
+		this._applyDefaultAction();
+	}
+
+	get is_end() {
+		return this._$is_end;
+	}
+	set is_end(value) {
+		this._$is_end = value;
+		if (value) {
+			this.owner.$physics.state.invokeSkill = false;
+		}
 	}
 
 	/** @type {SceneObject} */
@@ -371,6 +465,8 @@ class SkillAnimationBase {
 			const actions = this.data.action;
 			this._actani.reload(action);//action ? 0, 1
 			this._actani.loop = false;
+
+			this.owner.$physics.state.invokeSkill = true;
 		}
 	}
 
@@ -406,8 +502,6 @@ class SkillAnimationBase {
 		{
 			this._loadTexture(raw);
 
-			this._applyDefaultAction();
-
 			this._init();
 		}
 	}
@@ -428,8 +522,6 @@ class SkillAnimationBase {
 
 		this.__proto__ = this._decide_type().prototype;
 		{
-			this._applyDefaultAction();
-
 			this._init();
 		}
 	}
@@ -486,8 +578,20 @@ class SkillAnimationBase {
 		this._actani.reset();
 		this.is_launch = false;
 	}
+
+	/**
+	 * onKeydown + onKeyup
+	 * TODO: 可控制方向的技能
+	 * @virtual
+	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
+	 */
+	control(inputKey, keyDown, keyUp) {
+	}
 	
 	/**
+	 * TODO: 自動攻擊、被動技能、debuf
 	 * @virtual
 	 * @param {number} stamp
 	 */
@@ -531,7 +635,28 @@ class SkillAnimationBase {
 		return this.is_end;
 	}
 
-	nextState() {
+	/**
+	 * @param {SceneObject} targetObject
+	 */
+	addAttack(targetObject) {
+		/** @type {SceneCharacter} */
+		const owner = this._owner;
+
+		let attack = new AttackPair();
+
+		//attack.objectid = targetObject.$objectid;
+		attack.setTargetObject(targetObject);
+
+		attack.allDamage.length = this.data.common.attackCount;
+
+		////apply damage
+		//for (let i = 0; i < attack.allDamage.length; ++i) {
+		//	targetObject.damage(owner, 123);
+		//}
+		////
+		//targetObject.knockback(chara, 16, 16);
+
+		this.attackInfo.allAttack.push(attack);
 	}
 
 	createBullet(effectName) {
@@ -550,13 +675,21 @@ class SkillAnimationBase {
 
 			bullet._create();
 
-			bullet.launch(null, this.owner.$physics.state.front * (window.$BULLET_SPEED | 16), 0);
+			bullet.launch(null, this.owner.$physics.state.front * (window.$BULLET_SPEED | 32), 0);
 		}
 
 		//link renderer and physics
 		eff.$physics = bullet;
 
 		return bullet;
+	}
+
+	/**
+	 * @param {boolean} [isBullet=false]
+	 */
+	_addDefaultEffect(isBullet) {
+		this._applyDefaultAction();
+		this._addEffect("effect", isBullet);
 	}
 
 	/**
@@ -651,7 +784,7 @@ class _SkillAnimation_Default extends SkillAnimationBase {
 	 * @override
 	 */
 	_init() {
-		// nothing
+		this._applyDefaultAction();
 	}
 
 	/**
@@ -666,68 +799,76 @@ class _SkillAnimation_Default extends SkillAnimationBase {
 class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	constructor() {
 		throw new TypeError("constructor");
-
-		/**
-		 * @type {SkillEffectAnimation}
-		 */
-		this.current_effect = null;
 	}
 
 	/**
 	 * @override
 	 */
 	_init() {
+		this._applyDefaultAction();
+
 		this.state = "prepare";
 		this._state_func = this._prepare;
 		this.current_effect = this._addEffect(this.state);
 
+		/** animation */
 		this.time = 0;
+
+		/** fire bullet */
+		this.tick = 0;
+
 		this.fadeTotalTime = this._actani.getTotalTime();
-	}
-	
-	nextState() {
-		switch (this.state) {
-			case "prepare":
-				this.current_effect.opacity = 0;//prepare
-
-				this.state = "keydown";
-				this._state_func = this._keydown;
-				this.current_effect = this._addEffect(this.state);
-				break;
-			case "keydown":
-				this.current_effect.opacity = 0;//keydown
-
-				this.state = "keydownend";
-				this._state_func = this._keydownend;
-				this.current_effect = this._addEffect(this.state);
-				this.fadeTotalTime = this._actani.getTotalTime();
-				break;
-		}
-		this.time = 0;//reset
 	}
 
 	_prepare() {
 		this.current_effect.opacity = this.time / this.fadeTotalTime;
 
 		if (this._actani.isEnd()) {
-			this.nextState();
+			this.current_effect.opacity = 0;//prepare
+			this.current_effect.destroy();
+
+			this.state = "keydown";
+			this._state_func = this._keydown;
+			this.current_effect = this._addEffect(this.state);
+			this.time = 0;//reset
 		}
 	}
 	_keydown() {
 		if (this._actani.isEnd()) {
-			this.current_effect.opacity = 1;
 			this.current_effect.reset();
+			this.current_effect.opacity = 1;
 			this._actani.reset();
-
-			this.createBullet("ball");
+			this.time = 0;//reset
 		}
 	}
 	_keydownend() {
 		this.current_effect.opacity = 1 - (this.time / this.fadeTotalTime);
 
 		if (this._actani.isEnd()) {
+			this.current_effect.opacity = 0;//keydownend
+			this.current_effect.destroy();
+
 			this.is_launch = true;
 			this.is_end = true;
+		}
+	}
+
+	/**
+	 * @override
+	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
+	 */
+	control(inputKey, keyDown, keyUp) {
+		if (keyUp) {
+			this.current_effect.opacity = 0;//keydown
+			this.current_effect.destroy();
+
+			this.state = "keydownend";
+			this._state_func = this._keydownend;
+			this.current_effect = this._addEffect(this.state);
+			this.fadeTotalTime = this._actani.getTotalTime();
+			this.time = 0;//reset
 		}
 	}
 
@@ -744,7 +885,13 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 
 		this.time += stamp;
 
+		++this.tick;
+
 		this._state_func();
+
+		if (this.tick % (window.$FIRE_BULLET_T | 3) == (window.$FIRE_BULLET_T2 | 2) && this.state != "keydownend") {
+			this.createBullet("ball");
+		}
 	}
 
 	/**
@@ -764,7 +911,49 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @override
 	 */
 	_init() {
-		// nothing
+		this.jump_count = 0;//is_launch = this.jump_count > 0
+		this.jump_max_count = 2;
+	}
+
+	jump2() {
+		const crr = this._crr;
+		const body = this._owner_player.$physics.body;
+
+		body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+
+		this._addDefaultEffect();
+	}
+
+	/**
+	 * @override
+	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
+	 */
+	control(inputKey, keyDown, keyUp) {
+		if (!this._owner) {
+			debugger;
+			return;
+		}
+		const $physics = this._owner.$physics;
+
+		if (keyUp && $physics.state.jump) {
+			++this.jump_count;
+		}
+
+		if (this.jump_count == 0) {
+			if (keyDown && $physics._isCanJump()) {//TODO: why 離開地面需要些時間 (keyDown > 0)
+				$physics._actionJump();
+			}
+		}
+		else if ($physics.state.jump) {
+			if (keyDown == 1 && this.jump_count < this.jump_max_count) {
+				this.jump2();
+			}
+		}
+		else {//??
+			this.is_end = true;
+		}
 	}
 
 	/**
@@ -772,19 +961,13 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		if (this._owner) {
-			if (!this.is_launch) {
-				const crr = this._crr;
-				const body = this._owner_player.$physics.body;
+		const $physics = this._owner.$physics;
 
-				//set cv(24, 8) => move front 196
-				//set cv(20, 8) => move front 162
-				//set cv(16, 8) => move front 102
-				body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+		if ($physics.$foothold) {//!$physics._isCanJump()
+			if (this._actani.isEnd()) {
+				this.is_end = true;
 			}
 		}
-
-		this._default_update(stamp);
 	}
 }
 
@@ -796,6 +979,7 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	 * @override
 	 */
 	_init() {
+		this._applyDefaultAction();
 		// ...
 	}
 
@@ -807,7 +991,14 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	}
 }
 
-export class SkillAnimation extends SkillAnimationBase {
+export class SceneSkill extends SkillAnimationBase {
+	constructor() {
+		super();
+
+		/** @type {AttackInfo} */
+		this.attackInfo = new AttackInfo();
+	}
+
 	/**
 	 * @param {string} skillId
 	 * @param {SceneObject} owner
@@ -824,7 +1015,7 @@ export class SkillAnimation extends SkillAnimationBase {
 		}
 		//skillId = 1120017;//1001005;// jobId + 4-digit
 		
-		let loaded_skill = SkillAnimation.__loaded_skill[skillId];
+		let loaded_skill = SceneSkill.__loaded_skill[skillId];
 		if (loaded_skill && loaded_skill.data) {
 			this._assign(loaded_skill);
 		}
@@ -833,7 +1024,7 @@ export class SkillAnimation extends SkillAnimationBase {
 
 			this.$promise = promise;
 
-			SkillAnimation.__loaded_skill[skillId] = this;
+			SceneSkill.__loaded_skill[skillId] = this;
 
 			promise.then(() => {
 				delete this.$promise;
@@ -843,10 +1034,9 @@ export class SkillAnimation extends SkillAnimationBase {
 		}
 	}
 }
-SkillAnimation.__loaded_skill = {};
+SceneSkill.__loaded_skill = {};
 
-window.$SkillAnimation = SkillAnimation;
-
+window.$SceneSkill = SceneSkill;
 
 class _ArrowKey {
 	constructor() {
@@ -856,27 +1046,3 @@ class _ArrowKey {
 		this.down = 0;
 	}
 }
-
-export class SkillController {
-	constructor() {
-	}
-
-	_onKeydown() {
-	}
-
-	_onKeyup() {
-	}
-
-	/**
-	 @param {Partial<_ArrowKey>} key
-	 */
-	_onArrowKeydown(key) {
-	}
-
-	update() {
-	}
-}
-
-export class SceneSkill extends SceneObject {
-}
-

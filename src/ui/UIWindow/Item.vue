@@ -83,7 +83,7 @@
 	import { ItemCategoryInfo } from "../../../public/resource.js";
 	import { ItemBase, ItemSlot } from "../../game/Item.js";
 	import WindowBase from "./WindowBase.vue";
-	import UISlotItem from "../UISlotItem.vue";
+	import UISlotItem from "../Basic/UISlotItem.vue";
 	import UIVScrollbar from "../Basic/VScrollbar.vue";
 
 

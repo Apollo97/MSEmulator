@@ -2802,9 +2802,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		super();
 
 		/** @type {number} - position x */
-		this.x = (engine._canvas.width || 800) / 2;
+		this.x = 0;
 		/** @type {number} - position y */
-		this.y = (engine._canvas.height || 600) / 2;
+		this.y = 0;
 
 		/** @type {number} - where layer */
 		this.z = 5;

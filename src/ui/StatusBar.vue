@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
-		<div style="position: relative; width: 1366px; height: 768px; line-height: 0; overflow: hidden;">
+		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
 			<dir-root p="UI/StatusBar3.img">
 				<!-- begin bottomUI -->
 				<dir p="mainBar">
@@ -148,7 +148,7 @@
 							<template v-if="ui.chat.size!='min'">
 								<tr v-for="ch in ui.chat.history" style="height: 1.2em; color: white; font-family: monospace;">
 									<td style="padding-left: 4px; padding-bottom: 0.2em;">
-										<div style="position: absolute;">{{ch}}</div>
+										<div style="position: absolute;">{{ch.text}}</div>
 									</td>
 								</tr>
 								<tr v-for="i in ui.chat.maxHistory - ui.chat.history.length" style="height: 1.2em; color: white; font-family: monospace;">
@@ -168,7 +168,7 @@
 												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText(ui.chat.inputText.slice(0, 70))" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
 											</div>
 											<div v-else :data-src="path" :style="{ width:`${width}px`, color: 'white' }">
-												<div v-if="ui.chat.history.length" style="position: absolute;">{{ui.chat.history[ui.chat.history.length-1]}}</div>
+												<div v-if="ui.chat.history.length" style="position: absolute;">{{ui.chat.history[ui.chat.history.length-1].text}}</div>
 											</div>
 										</template>
 									</dir-frame>
@@ -202,10 +202,19 @@
 	import BasicComponent from "./BasicComponent.vue";
 
 	import { CharacterStat } from "../Common/PlayerData.js";
+	//import { SceneCharacter } from "../game/SceneCharacter";
 
 	//Vue.config.productionTip = false;
 
 	//Vue.use(Vuex);
+
+	class PlayerTalk {
+		constructor(type, style, text) {
+			this.type = type;
+			this.style = style;
+			this.text = text;
+		}
+	}
 
 	export default {
 		props: [
@@ -233,7 +242,8 @@
 								y: 768
 							}
 						},
-					}
+					},
+					_$window_resize: null,
 				},
 				ui: {
 					quickSlotFold: true,
@@ -241,7 +251,11 @@
 						inputText: "",
 						size: "min",
 						maxHistory: 10,
+
+						/** @type {PlayerTalk[]} */
 						history: [],
+
+						/** @type {string[]} */
 						inputHistory: [],
 					},
 				}
@@ -264,46 +278,62 @@
 		},
 		methods: {
 			trigger_editor_mode: function () {
-				m_editor_mode = !m_editor_mode;
+				$gv.m_editor_mode = !$gv.m_editor_mode;
 
-				app.vue.editor_mode = m_editor_mode;
+				app.vue.editor_mode = $gv.m_editor_mode;
 			},
 			enterChatText: async function (inputText) {
-				let result = await this.chara.say(inputText);
+				/** @type {SceneCharacter} */
+				const chara = this.chara;
+
+				let result = await chara.say(inputText);
 				if (result) {
-					this.pushChatHistory(this.chara.id + ' : ' + inputText);
+					this.pushChatHistory(0, chara.chatCtrl.style, chara.id + ' : ' + inputText);
 	
 					this.ui.chat.inputText = '';
 				}
 			},
-			pushChatHistory(type, style, text) {
-				this.ui.chat.history.push(text);
+			pushChatHistory: function (type, style, text) {
+				this.ui.chat.history.push(new PlayerTalk(type, style, text));
 
 				if (this.ui.chat.history.length > this.ui.chat.maxHistory) {
 					this.ui.chat.history.shift();
 				}
-			}
+			},
+			_window_onresize: function (event) {
+				//const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				//resolution from this.system.optionMenu.resolution
+				//expBar = EXPBar[system.resolution.x]
+
+				//this.system.resolution.x = width;
+				this.system.resolution.y = height;
+			},
 		},
 		mounted: function () {
 			window.$statusBar = this;
+			this.system._$window_resize = this._window_onresize.bind(this);
+			window.addEventListener("resize", this.system._$window_resize);
+		},
+		beforeDestroy: function () {
+			window.removeEventListener("resize", this.system._$window_resize);
 		},
 		updated: async function () {
-			let vm = this;
-			
-			vm.$nextTick(async function () {
+			this.$nextTick(async() => {
 				await this.$store.dispatch("waitAllLoaded");
-
-				if (vm.$refs.status) {
-					//$(vm.$refs.status.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
-					$(vm.$refs.status.$el).position({ my: "center bottom", at: "center top+33", of: $(vm.$refs.expBar.$el) });
+				
+				if (this.$refs.status) {
+					//$(this.$refs.status.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
+					$(this.$refs.status.$el).position({ my: "center bottom", at: "center top+33", of: $(this.$refs.expBar.$el) });
 				}
 
-				if (vm.$refs.menu) {
-					//$(vm.$refs.menu.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
-					$(vm.$refs.menu.$el).position({ my: "left bottom", at: "center+110 top+33", of: $(vm.$refs.expBar.$el) })
+				if (this.$refs.menu) {
+					//$(this.$refs.menu.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
+					$(this.$refs.menu.$el).position({ my: "left bottom", at: "center+110 top+33", of: $(this.$refs.expBar.$el) })
 				}
 
-				//$(vm.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
+				//$(this.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
 			});
 		},
 		mixins: [BasicComponent],
