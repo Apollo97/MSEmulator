@@ -1282,6 +1282,21 @@ export class MapLifeEntity extends SceneObject {
 		///** @type {number} */
 		//this.rx1 = lifeSpawnPoint.rx1;
 	}
+
+	//AfterStep
+	//get x() {
+	//	return this._x;
+	//}
+	//set x(x) {
+	//	this._x = x;
+	//}
+	//get y() {
+	//	return this._y;
+	//}
+	//set y(y) {
+	//	this._y = y;
+	//}
+
 	/**
 	 * @param {LifeSpawnPoint} lifeSpawnPoint
 	 * @param {World} mapController
@@ -1424,8 +1439,8 @@ class MapMob extends MapLifeEntity {
 	}
 
 	/**
-	 * @virtual
-	 * @param {SceneObject|null} chara - 被 chara 攻擊
+	 * @override
+	 * @param {SceneObject} chara - 被 chara 攻擊
 	 * @param {number} damage - 傷害
 	 */
 	damage(chara, damage) {

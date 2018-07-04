@@ -12,6 +12,8 @@ import { SceneMap } from './Map.js';
 import { EffectManager } from "./Skill.js";
 import { } from "./MobSkill/238.FairyDust.js";
 
+import { damageNumberLayer } from "./Renderer/DamageNumber.js";
+
 import { Cursor, CursorAnimationData } from "./Cursor.js";
 
 import { Client } from "../Client/Client.js";
@@ -394,6 +396,8 @@ export class Game {
 				ch.$recMove();
 			}
 		}
+
+		damageNumberLayer.update(stamp);
 	}
 	
 	_renderScene() {
@@ -480,6 +484,9 @@ export class Game {
 					charaList[i].render(engine);
 				}
 			}
+
+			damageNumberLayer.render(engine);
+
 			for (let i = 0; i < charaList.length; ++i) {
 				charaList[i]._$drawName(engine);
 			}

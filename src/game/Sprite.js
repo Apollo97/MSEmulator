@@ -112,6 +112,14 @@ export class SpriteBase extends Graph {
 
 export class Sprite extends SpriteBase {
 	/**
+	 * sprite = new Sprite(rawData);//不會載入image
+	 * sprite._url = img_url;//不會載入image
+	 *
+	 * 會觸發載入image的method
+	 * draw(), isLoaded(), get width(), get height()
+	 * 
+	 * 手動載入image: __loadTexture()
+	 * 
 	 * @param {!any} raw
 	 * @param {string=} url
 	 */

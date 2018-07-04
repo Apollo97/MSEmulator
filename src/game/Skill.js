@@ -331,7 +331,7 @@ export class EffectManager {
 		renderer.pushGlobalAlpha();
 
 		const effects = EffectManager._effects;
-		for (let  i = 0; i < effects.length; ++i) {
+		for (let i = 0; i < effects.length; ++i) {
 			effects[i].render(renderer);
 		}
 

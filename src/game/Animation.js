@@ -26,6 +26,10 @@ class IAnimation {
 		
 		/** @type {boolean} */
 		this.is_end = false;
+
+		if (!this._url) {
+			debugger;
+		}
 	}
 
 	getTotalTime() {
@@ -91,6 +95,9 @@ export class AnimationBase extends IAnimation {
 	 * @returns {Promise<Sprite>}
 	 */
 	async load() {
+		//if (!this._raw) {
+		//	this._raw = JSON.parse(await $get.data(this._url));
+		//}
 
 		for (let i = 0; i in this._raw; ++i) {
 			let url = this._url + "/" + i;
@@ -107,6 +114,10 @@ export class AnimationBase extends IAnimation {
 				this.textures[0].__loadTexture();
 			}
 		}
+	}
+	
+	isEnd() {
+		return this.is_end;
 	}
 
 	/**
@@ -158,9 +169,15 @@ export class AnimationBase extends IAnimation {
 		
 		this.delta += stamp;
 	}
-	
-	isEnd() {
-		return this.is_end;
+
+	/**
+	 * @param {IRenderer} renderer - GraphLayerRenderer
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	draw(renderer, x, y, angle, flip) {
+		let texture = this.texture;
+		renderer.drawRotaGraph(texture, x, y, angle, flip);
 	}
 	
 	get texture() {
@@ -176,16 +193,6 @@ export class Animation extends AnimationBase {
 		super(raw, url);
 
 		this.draw = this._draw_and_preload;
-	}
-
-	/**
-	 * @param {IRenderer} renderer - GraphLayerRenderer
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	draw(renderer, x, y, angle, flip) {
-		let texture = this.texture;
-		renderer.drawRotaGraph(texture, x, y, angle, flip);
 	}
 
 	/**

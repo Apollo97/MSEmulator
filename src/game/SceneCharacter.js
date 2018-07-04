@@ -18,6 +18,7 @@ import { AttackInfo, DamagePair } from "../Common/AttackInfo.js";
 import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from '../ui/Basic/KeySlot.js';
 
 import { SceneMap } from './Map.js';
+import { damageNumberLayer } from './Renderer/DamageNumber.js';
 
 
 // SceneCharacter的更新流程
@@ -445,15 +446,21 @@ export class BaseSceneCharacter extends SceneObject {
 
 					for (let j = 0; j < attack.allDamage.length; ++j) {
 						let damVar = this.stat.getCurrentMaxBaseDamage() - this.stat.getCurrentMinBaseDamage();
-						let damage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
+						let realDamage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
+						let damage = attack.allDamage[j] = new DamagePair();
 
 						if (Math.trunc(Math.random() * 100) < this.stat.critRate) {
-							damage = damage * (1 + this.stat.critDamage / 100);
+							realDamage = realDamage * (1 + this.stat.critDamage / 100);
+							damage.critical = true;
 						}
 						
-						damage = Math.trunc(damage);
+						realDamage = Math.trunc(realDamage);
+						damage.realDamage = realDamage;
 
-						targetObject.damage(this, damage);
+						targetObject.damage(this, realDamage);
+
+						//TODO: ?? target position
+						damageNumberLayer.addDamagePair("NoRed", damage, targetObject.x, targetObject.y - 100);
 					}
 					//
 					targetObject.knockback(this, 16, 16);
