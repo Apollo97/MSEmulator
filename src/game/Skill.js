@@ -942,8 +942,8 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 		}
 
 		if (this.jump_count == 0) {
-			if (keyDown && $physics._isCanJump()) {//TODO: why 離開地面需要些時間 (keyDown > 0)
-				$physics._actionJump();
+			if (keyDown && $physics._isCanJump()) {
+				$physics.actionJump();
 			}
 		}
 		else if ($physics.state.jump) {
@@ -963,7 +963,12 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	update(stamp) {
 		const $physics = this._owner.$physics;
 
-		if ($physics.$foothold) {//!$physics._isCanJump()
+		if (this.jump_count > 1) {
+			if ($physics.$foothold || this._actani.isEnd()) {
+				this.is_end = true;
+			}
+		}
+		else if ($physics.$foothold) {//!$physics._isCanJump()
 			if (this._actani.isEnd()) {
 				this.is_end = true;
 			}

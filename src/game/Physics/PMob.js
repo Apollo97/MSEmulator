@@ -426,7 +426,7 @@ export class PMob extends PRemoteCharacter {
 	}
 	
 	isCanMove() {
-		return !(this._info.ignoreMoveImpact || this.movement_omega == 0 || this._info.noFlip);
+		return !(this._info.ignoreMoveImpact || this._walker_omega == 0 || this._info.noFlip);
 	}
 	
 	/** @override */

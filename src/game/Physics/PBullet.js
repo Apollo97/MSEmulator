@@ -140,8 +140,8 @@ export class PBullet {
 			//TODO: time to live, range limit
 			if (process.env.NODE_ENV !== 'production') {
 				this.body.AfterStep = () => {
-					this.$tick = (this.$tick >>> 0) + 1;
-					if (this.$tick > 600) {
+					this.$tick = (this.$tick | 0) + 1;
+					if (this.$tick > (window.$FIRE_BULLET_TIME_TO_LIVE || 60)) {
 						this.bulletRenderer.destroy();
 						this.destroy();
 					}

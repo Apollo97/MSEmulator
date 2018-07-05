@@ -16,17 +16,17 @@ let b2Vec2_temp = new b2Vec2();
 /** @type {string} */
 b2Body.prototype.$type = null;
 
-b2Body.prototype.Step = function () {
+b2Body.prototype.Step = function (stamp) {
 	if (this._on_step) {
 		for (let fn of this._on_step) {
-			fn();
+			fn(stamp);
 		}
 	}
 }
-b2Body.prototype.AfterStep = function () {
+b2Body.prototype.AfterStep = function (stamp) {
 	if (this._on_after_step) {
 		for (let fn of this._on_after_step) {
-			fn();
+			fn(stamp);
 		}
 	}
 }

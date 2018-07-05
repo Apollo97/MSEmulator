@@ -77,16 +77,15 @@ class MapTexture extends Sprite {
 	}
 
 	/**
+	 * @param {IRenderer} renderer
 	 * @param {boolean} f - flip
 	 * @param {number} px - position.x:int
 	 * @param {number} py - position.y:int
 	 * @param {number} time - movement_animation:float
 	 * @param {number} delta - graph_animation:float
-	 * @param {boolean} display
 	 * @param {maple_scene_label} border
-	 * @param {IRenderer} renderer
 	 */
-	draw(f, px, py, time, delta, display, renderer) {
+	draw(renderer, f, px, py, time, delta) {
 		let ratio = time / this.delay;
 		let alpha = (0 <= this.a0 || 0 <= this.a1 ? ((0 > this.a0 ? 0 : this.a0) * (1.0 - ratio) + (0 > this.a1 ? 0 : this.a1) * ratio) : 255.0);
 		let angle = 0;
@@ -96,33 +95,31 @@ class MapTexture extends Sprite {
 			case 2: py = py + this.moveh * Math.sin(0 == this.movep ? (delta / 1000.0) : (delta * 2.0 * Math.PI / this.movep)); break;
 			case 3: if (0 != this.mover) angle = delta / this.mover; break;
 		}
+		
+		let ctx = renderer.ctx;
+		function axis(x, y, w, h, c1, c2) {
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x + w, y);
+			stroke(c1, c2);
 
-		if (display) {
-			let ctx = renderer.ctx;
-			function axis(x, y, w, h, c1, c2) {
-				ctx.beginPath();
-				ctx.moveTo(x, y);
-				ctx.lineTo(x + w, y);
-				stroke(c1, c2);
+			ctx.beginPath();
+			ctx.moveTo(x, y);
+			ctx.lineTo(x, y + h);
+			stroke(c2, c1);
+		}
+		function stroke(c1, c2) {
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = c1;
+			ctx.stroke();
+		}
 
-				ctx.beginPath();
-				ctx.moveTo(x, y);
-				ctx.lineTo(x, y + h);
-				stroke(c2, c1);
-			}
-			function stroke(c1, c2) {
-				ctx.lineWidth = 3;
-				ctx.strokeStyle = c1;
-				ctx.stroke();
-			}
+		renderer.loadIdentity();
+		renderer.translate(Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
+		{
+			renderer.globalAlpha = Math.max(0, Math.min(alpha / 255, 1));
 
-			renderer.loadIdentity();
-			renderer.translate(Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
-			{
-				renderer.globalAlpha = Math.max(0, Math.min(alpha / 255, 1));
-
-				renderer._drawRotaGraph(this, px, py, angle, f);
-			}
+			renderer._drawRotaGraph(this, px, py, angle, f);
 		}
 	}
 }
@@ -401,31 +398,28 @@ class MapObjectBase {
 	}
 
 	/**
-	 * @virtaul
+	 * @virtual
+	 * @param {IRenderer} renderer
 	 * @param {number} index_of_texture
 	 * @param {number} mx - move x
 	 * @param {number} my - move x
-	 * @param {Rectangle} canva
-	 * @param {boolean} display
-	 * @param {IRenderer} renderer
+	 * @param {Rectangle} viewRect
 	 */
-	__draw_texture(index_of_texture, mx, my, canva, display, renderer) {
+	__draw_texture(renderer, index_of_texture, mx, my, viewRect) {
 		if (process.env.NODE_ENV !== 'production') {
 			if ((--this.__max_repeat_count) <= 0) {
 				return;
 			}
 		}
 		
-		display = display && this.display != false;
-		
-		if (this.typeb != 0 || (!this.aabb || this.aabb.collide(canva))) {
-			this.textures[index_of_texture].draw(this.f, this.x + mx, this.y + my, this.time, this.delta, display, renderer);//MapleSceneTexture#draw
+		if (this.typeb != 0 || (!this.aabb || this.aabb.collide(viewRect))) {
+			this.textures[index_of_texture].draw(renderer, this.f, this.x + mx, this.y + my, this.time, this.delta);//MapleSceneTexture#draw
 		}
 		
-		if ($gv.m_display_selected_object && $gv.m_editor_mode && display && this.aabb && this.$display_aabb) {
+		if ($gv.m_display_selected_object && $gv.m_editor_mode && this.aabb && this.$display_aabb) {
 			const ctx = renderer.ctx;
-			const x = Math.trunc((-canva.left + 0.5) + this.aabb.left);
-			const y = Math.trunc((-canva.top + 0.5) + this.aabb.top);
+			const x = Math.trunc((-viewRect.left + 0.5) + this.aabb.left);
+			const y = Math.trunc((-viewRect.top + 0.5) + this.aabb.top);
 			
 			renderer.loadIdentity();
 
@@ -456,36 +450,31 @@ class MapObjectBase {
 	
 	/**
 	 * @protected
+	 * @param {IRenderer} renderer
 	 * @param {int} mx
 	 * @param {int} my
-	 * @param {Rectangle} canva
-	 * @param {boolean} display
-	 * @param {IRenderer} renderer
+	 * @param {Rectangle} viewRect
 	 */
-	__draw(mx, my, canva, display, renderer) {
-		this.__draw_texture(this.frame, mx, my, canva, display, renderer);//MapleSceneTexture#draw
+	__draw(renderer, mx, my, viewRect) {
+		this.__draw_texture(renderer, this.frame, mx, my, viewRect);//MapleSceneTexture#draw
 	}
 
 	/**
+	 * @param {IRenderer} renderer
 	 * @param {boolean} horizontal
 	 * @param {boolean} vertical
-	 * @param {number} mx : int
-	 * @param {number} my : int
-	 * @param {Rectangle} canva
-	 * @param {boolean} display
-	 * @param {IRenderer} renderer
+	 * @param {number} mx - int
+	 * @param {number} my - int
+	 * @param {Rectangle} viewRect
 	 */
-	_draw(horizontal, vertical, mx, my, canva, display, renderer) {
+	_draw(renderer, horizontal, vertical, mx, my, viewRect) {
 		let texture = this.textures[this.frame];
 		if (texture == null || !texture.isLoaded()) {
 			return;
 		}
 
-		// canva rectangle
-		let left = canva.left;
-		let top = canva.top;
-		let right = canva.right;
-		let bottom = canva.bottom;
+		// viewRect - canvas rectangle
+		let { left, top, right, bottom } = viewRect;
 		// image position
 		let ix = this.x - (this.f ? -texture.x + texture.width : texture.x);
 		let iy = this.y - texture.y;
@@ -506,36 +495,35 @@ class MapObjectBase {
 			if (vertical)
 				for (let yy = y1; yy < y2; yy = yy + th)
 					for (let xx = x1; xx < x2; xx = xx + tw)
-						this.__draw(xx - ix, yy - iy, canva, display, renderer);
+						this.__draw(renderer, xx - ix, yy - iy, viewRect);
 			else
 				for (let xx = x1; xx < x2; xx = xx + tw)
-					this.__draw(xx - ix, my, canva, display, renderer);
+					this.__draw(renderer, xx - ix, my, viewRect);
 		else if (vertical)
 			for (let yy = y1; yy < y2; yy = yy + th)
-				this.__draw(mx, yy - iy, canva, display, renderer);
+				this.__draw(renderer, mx, yy - iy, viewRect);
 		else
-			this.__draw(mx, my, canva, display, renderer);
+			this.__draw(renderer, mx, my, viewRect);
 	}
 
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect
 	 */
-	draw(center, canva, display, renderer) {
+	draw(renderer, center, viewRect) {
 		let mrx = (this.rx + 100) * center.x / 100;
 		let mry = (this.ry + 100) * center.y / 100;
 
 		switch (this.typeb) {
-			case 0: this._draw(false, false, mrx, mry, canva, display, renderer); break;
-			case 1: this._draw(true, false, mrx, mry, canva, display, renderer); break;
-			case 2: this._draw(false, true, mrx, mry, canva, display, renderer); break;
-			case 3: this._draw(true, true, mrx, mry, canva, display, renderer); break;
-			case 4: this._draw(true, false, Math.trunc(this.delta / 200 * this.rx), mry, canva, display, renderer); break;
-			case 5: this._draw(false, true, mrx, Math.trunc(this.delta / 200 * this.ry), canva, display, renderer); break;
-			case 6: this._draw(true, true, Math.trunc(this.delta / 200 * this.rx), mry, canva, display, renderer); break;
-			case 7: this._draw(true, true, mrx, Math.trunc(this.delta / 200 * this.ry), canva, display, renderer); break;
+			case 0: this._draw(renderer, false, false, mrx, mry, viewRect); break;
+			case 1: this._draw(renderer, true, false, mrx, mry, viewRect); break;
+			case 2: this._draw(renderer, false, true, mrx, mry, viewRect); break;
+			case 3: this._draw(renderer, true, true, mrx, mry, viewRect); break;
+			case 4: this._draw(renderer, true, false, Math.trunc(this.delta / 200 * this.rx), mry, viewRect); break;
+			case 5: this._draw(renderer, false, true, mrx, Math.trunc(this.delta / 200 * this.ry), viewRect); break;
+			case 6: this._draw(renderer, true, true, Math.trunc(this.delta / 200 * this.rx), mry, viewRect); break;
+			case 7: this._draw(renderer, true, true, mrx, Math.trunc(this.delta / 200 * this.ry), viewRect); break;
 		}
 	}
 	
@@ -652,15 +640,18 @@ class MapParticle extends MapObjectBase {
 			pg.update(stamp);
 		}
 	}
-	
-	draw(center, canva, display, renderer) {
-		if (this.display != false) {
-			for (let i = 0; i < this.groups.length; ++i) {
-				const pg = this.groups[i];
-				let mx = (this.rx + 100) * center.x / 100;
-				let my = (this.ry + 100) * center.y / 100;
-				pg.render(renderer, canva, mx, my);
-			}
+
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect
+	 */
+	draw(renderer, center, viewRect) {
+		for (let i = 0; i < this.groups.length; ++i) {
+			const pg = this.groups[i];
+			let mx = (this.rx + 100) * center.x / 100;
+			let my = (this.ry + 100) * center.y / 100;
+			pg.render(renderer, viewRect, mx, my);
 		}
 	}
 
@@ -744,24 +735,21 @@ class MapObjectSkeletalAnim extends MapObject {
 		}
 	}
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect - ?? no use
 	 */
-	draw(center, canva, display, renderer) {
-		if ($gv.m_display_skeletal_anim && display) {
+	draw(renderer, center, viewRect) {
+		if ($gv.m_display_skeletal_anim) {
 			const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
 			const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
 			
 			renderer.ctx.setTransform(1, 0, 0, -1, x, y);
 					
-			if (this.display != false) {
-				if (this.ssanim) {
-					this.ssanim.render();
-				}
+			if (this.ssanim) {
+				this.ssanim.render();
 			}
-			if (display && this.display_aabb) {
+			if (this.display_aabb) {
 				const ctx = renderer.ctx;
 			
 				renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
@@ -866,14 +854,19 @@ class MapPortal extends MapObject {
 	}
 	
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect
 	 */
-	draw(center, canva, display, renderer) {
+	draw(renderer, center, viewRect) {
 		if (this.enable) {
-			super.draw(center, canva, display, renderer);
+			super.draw(renderer, center, viewRect);
+		}
+		else {//?? debug
+			renderer.pushGlobalAlpha();
+			renderer.globalAlpha = 0.5;
+			super.draw(renderer, center, viewRect);
+			renderer.popGlobalAlpha();
 		}
 	}
 	
@@ -989,15 +982,14 @@ class MapPortalManager {
 		}
 	}
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect
 	 */
-	draw(center, canva, display, renderer) {
+	draw(renderer, center, viewRect) {
 		for (let i = 0; i < this.portals.length; ++i) {
 			let portal = this.portals[i];
-			portal.draw(center, canva, display, renderer);
+			portal.draw(renderer, center, viewRect);
 		}
 	}
 }
@@ -1145,13 +1137,12 @@ class MapBackSkeletalAnim extends MapBackBase {
 		}
 	}
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect - ?? no use
 	 */
-	draw(center, canva, display, renderer) {
-		if ($gv.m_display_skeletal_anim && display && this.display != false) {
+	draw(renderer, center, viewRect) {
+		if ($gv.m_display_skeletal_anim) {
 			if (this.ssanim) {
 				const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
 				const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
@@ -1386,7 +1377,7 @@ export class MapLifeEntity extends SceneObject {
 	/**
 	 * @param {IRenderer} renderer
 	 */
-	draw(renderer) {MobRenderer
+	draw(renderer) {
 		renderer.globalAlpha = Math.max(0, Math.min(this.opacity, 1));
 		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front < 0);
 	}
@@ -1495,6 +1486,16 @@ class MapMob extends MapLifeEntity {
 			}
 		}
 		this.renderer.update(stamp);
+	}
+
+	/**
+	 * @override
+	 * @param {IRenderer} renderer
+	 */
+	draw(renderer) {
+		if ($gv.m_display_mob) {
+			super.draw(renderer);
+		}
 	}
 	
 	/* skill need map to action */
@@ -1625,6 +1626,16 @@ class MapNpc extends MapLifeEntity {
 	constructor(lifeSpawnPoint, lifeId) {
 		super(lifeSpawnPoint, lifeId);
 		this.renderer = new NpcRenderer();
+	}
+
+	/**
+	 * @override
+	 * @param {IRenderer} renderer
+	 */
+	draw(renderer) {
+		if ($gv.m_display_npc) {
+			super.draw(renderer);
+		}
 	}
 
 	_destroy(mapController) {
@@ -1793,13 +1804,12 @@ class MapLifeManager {
 	}
 
 	/**
-	 * @param {Vec2} center
-	 * @param {Rectangle} canva
-	 * @param {bool} display
 	 * @param {IRenderer} renderer
+	 * @param {Vec2} center
+	 * @param {Rectangle} viewRect
 	 * @param {number} whereLayer - where layer index
 	 */
-	draw(center, viewRect, display, renderer, whereLayer) {
+	draw(renderer, center, viewRect, whereLayer) {
 		for (let i = 0; i < this.entities.length; ++i) {
 			let entity = this.entities[i];
 			if (entity && ((entity.z != null && entity.z == whereLayer) || whereLayer == null)) {
@@ -2445,34 +2455,43 @@ export class SceneMap {
 	 * @param {number} whereLayer - where layer index
 	 */
 	renderLife(renderer, whereLayer) {
+		if (!$gv.m_display_life) {
+			return;
+		}
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 		
-		this.lifeMgr.draw(center, viewRect, $gv.m_display_life, renderer, whereLayer);
+		this.lifeMgr.draw(renderer, center, viewRect, whereLayer);
 	}
 	
 	/**
 	 * @param {IRenderer} renderer
 	 */
 	renderPortal(renderer) {
+		if (!$gv.m_display_portal) {
+			return;
+		}
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 
 		this.portalMgr.update(this.stamp);
-		this.portalMgr.draw(center, viewRect, $gv.m_display_portal, renderer);
+		this.portalMgr.draw(renderer, center, viewRect);
 	}
 
 	/**
 	 * @param {IRenderer} renderer
 	 */
 	renderFrontground(renderer) {
+		if (!$gv.m_display_front) {
+			return;
+		}
 		const center = $gv.m_viewRect.center;
 		const viewRect = $gv.m_viewRect;
 		
 		for (let i = 0; i < this.frontground.length; ++i) {
 			let back = this.frontground[i];
 			back.update(this.stamp);
-			back.draw(center, viewRect, $gv.m_display_front, renderer);
+			back.draw(renderer, center, viewRect);
 		}
 	}
 
@@ -2480,6 +2499,9 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderLayeredObject(renderer, layerIndex) {
+		if (!$gv.m_display_mapobj) {
+			return;
+		}
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 		
@@ -2487,7 +2509,7 @@ export class SceneMap {
 		for (let j = 0; j < objs.length; ++j) {
 			let obj = objs[j];
 			obj.update(this.stamp);
-			obj.draw(center, viewRect, $gv.m_display_mapobj, renderer);
+			obj.draw(renderer, center, viewRect);
 		}
 	}
 	
@@ -2495,6 +2517,9 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderLayeredTile(renderer, layerIndex) {
+		if (!$gv.m_display_maptile) {
+			return;
+		}
 		const center = Vec2.empty;
 		const viewRect = $gv.m_viewRect;
 		
@@ -2502,7 +2527,7 @@ export class SceneMap {
 		for (let j = 0; j < tiles.length; ++j) {
 			let tile = tiles[j];
 			tile.update(this.stamp);
-			tile.draw(center, viewRect, $gv.m_display_maptile, renderer);
+			tile.draw(renderer, center, viewRect);
 		}
 	}
 
@@ -2510,13 +2535,16 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderBackground(renderer) {
+		if (!$gv.m_display_back) {
+			return;
+		}
 		const center = $gv.m_viewRect.center;
 		const viewRect = $gv.m_viewRect;
 		
 		for (let i = 0; i < this.background.length; ++i) {
 			let back = this.background[i];
 			back.update(this.stamp);
-			back.draw(center, viewRect, $gv.m_display_back, renderer);
+			back.draw(renderer, center, viewRect);
 		}
 	}
 	
@@ -2524,6 +2552,9 @@ export class SceneMap {
 	 * @param {IRenderer} renderer
 	 */
 	renderParticle(renderer) {
+		if (!$gv.m_display_particle_system) {
+			return;
+		}
 		//const center = Vec2.empty;
 		const center = $gv.m_viewRect.center;
 		const viewRect = $gv.m_viewRect;
@@ -2531,7 +2562,7 @@ export class SceneMap {
 		for (let i = 0; i < this.particleList.length; ++i) {
 			let particle = this.particleList[i];
 			particle.update(this.stamp);
-			particle.draw(center, viewRect, $gv.m_display_particle_system, renderer);
+			particle.draw(renderer, center, viewRect);
 		}
 	}
 }

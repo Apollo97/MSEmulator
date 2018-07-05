@@ -18,6 +18,8 @@ import { World } from "./World.js";
 import { CharacterMoveElem } from "../../Client/PMovePath.js";
 import { SceneObject } from "../SceneObject.js";
 
+import { SceneMap } from "../Map.js";
+
 
 const DEGTORAD = Math.PI / 180;
 
@@ -46,16 +48,22 @@ const chara_profile = {
 
 	window.PLAYER_USE_WHEEL_WALKER = false;
 
-	window.MIN_FRICTION = 0.05;
-	window.MAX_FRICTION = 2;
+	window.FOOT_FRICTION = 1;
+
 	window.MOVEMENT_POWER = 140000;
 	window.MOVEMENT_STOP_POWER = 140000;
+
+	window.PORTAL_COOLDOWN = 1000;
 })();
 
 
 export class PPlayerState {
 	constructor() {
 		this.jump = true;
+
+		/** @type {boolean} - ApplyForce(jump_force) until leave foothold */
+		this._begin_jump = false;
+
 		///** @type {0|1|2} noJump(0), Jumping(1), Falling(2) */
 		//this.jumpState = true;
 		this._drop = true;
@@ -86,6 +94,9 @@ export class PPlayerState {
 
 		/** @type {boolean} - can not move or jump */
 		this.invokeSkill = false;
+
+		/** @type {number} - use portal cooldown time，unit is millisecond */
+		this.portal_cooldown = 0;
 	}
 }
 
@@ -204,34 +215,47 @@ class PCharacterBase {
 	}
 
 	/**
+	 * from.tn(hp00_1) == to.pn(hp00_1) && from.pn(hp00) == to.tn(hp00)
+	 * @param {MapPortal} portal
 	 * @returns {boolean} true if enter portal
 	 */
 	_usePortal(portal) {
-		if (!portal.enable) {
+		if (!portal.enable || this.state.portal_cooldown > 0) {
 			return false;
 		}
-		const mapController = this.body.GetWorld();
+		/** @type {SceneMap} */
 		const mapRenderer = portal.mapRenderer;
+
+		const mapController = mapRenderer.controller;
 		
 		const map_id = portal.getMap();
 		
-		if (portal.exeScript) {
+		if (portal.exeScript) {//TODO: portal script
 			portal.exeScript(this);
 		}
 		else if (map_id) {
 			if (map_id == mapRenderer.map_id) {
-				const reg = portal.tn.match(/(^[a-z_]+)(\d+$)/) || portal.tn.match(/(^[a-z]+)\d._(\d+$)/);//pn?tn?
+				const reg = portal.tn.match(/(^[a-z_]+)(\d+$)/) || portal.tn.match(/(^[a-z]+)\d+_\d+$/);//pn?tn?
 				const cmd = reg[1];
-				
-				if (cmd == "pt_go" || cmd == "hp") {
+
+				if (cmd == "hp") {
+					let fromTn = portal.tn;
+					let toPortal = mapRenderer.portalMgr.portals.find(function (toPortal) {
+						return fromTn == toPortal.pn;
+					});
+					this._gotoPortal(toPortal);
+				}
+				else if (cmd == "pt_go") {
+					debugger;//??
+
 					const tpid = parseInt(reg[2], 10);
 					const tp = mapRenderer.portalMgr.portals[tpid];
-					
-					const x = tp.x / $gv.CANVAS_SCALE;
-					const y = tp.y / $gv.CANVAS_SCALE;
-					this.setPosition(x, y, true);
-					
-					return true;
+
+					this._gotoPortal(tp);
+				}
+				else {
+					console.log(`portal.pn: ${portal.pn}, portal.tn: ${portal.tn}, %o`, portal);
+					return false;
 				}
 			}
 			else {
@@ -239,17 +263,33 @@ class PCharacterBase {
 					mapRenderer.unload();
 					mapRenderer.load(map_id);
 				});
-				return true;
 			}
 		}
-		return false;
-	}
-	actionGoPortal() {
-		if (this.portal) {
+		else {
+			console.log("portal: $o", portal);
+			return false;
 		}
+		this.state.portal_cooldown = PORTAL_COOLDOWN;//防止重複
+		return true;
 	}
-	//actionJump() {
-	//}
+	/**
+	 * @param {MapPortal} portal
+	 */
+	_gotoPortal(portal) {
+		/** @type {SceneMap} */
+		const mapRenderer = portal.mapRenderer;
+		const mapController = mapRenderer.controller;
+
+		//not in world.Step
+		mapController.doAfterStep(() => {
+			const x = portal.x / $gv.CANVAS_SCALE;
+			const y = (portal.y - 3) / $gv.CANVAS_SCALE;//adj portal pos
+			this.setPosition(x, y, true);
+		});
+	}
+	actionJump() {
+		this.state._begin_jump = true;
+	}
 	//actionWalk(front) {
 	//}
 	actionDropdown() {
@@ -258,13 +298,7 @@ class PCharacterBase {
 		this.state.dropDown = true;
 		this.body.SetAwake(true);
 	}
-
-	_actionJump() {
-		const mass = this._getMass();
-		const force = new b2Vec2(0, -mass * this.jump_force);
-		this.body.ApplyForceToCenter(force);
-	}
-
+	
 	/**
 	 * @param {Partial<ControlKeys>} keys
 	 */
@@ -290,7 +324,7 @@ class PCharacterBase {
 			}
 		}
 		
-		const wheel_sp = this.movement_omega;
+		const wheel_sp = this._walker_omega;
 		const velocity = this.body.GetLinearVelocity();//foot_walk
 
 		if (!this.state.jump && !this.state.dropDown) {
@@ -340,8 +374,8 @@ class PCharacterBase {
 			//this.walker.EnableMotor(false);//power off
 		}
 
-		if (keys.jump && this._isCanJump()) {//TODO: why 離開地面需要些時間 (keys.jump > 0)
-			this._actionJump();
+		if (keys.jump && this._isCanJump()) {
+			this.actionJump();
 		}
 	}
 
@@ -351,19 +385,6 @@ class PCharacterBase {
 
 	_isCanMove() {
 		return !this.state.freeze && !this.state.invokeSkill;
-	}
-
-	/**
-	 * @param {number} speed - speed = pixel / second
-	 */
-	setMovementSpeedPixel(speed) {
-		let v = speed / $gv.CANVAS_SCALE;
-		if (v > 0) {
-			this.movement_omega = v;
-		}
-		else {
-			this.movement_omega = 0;
-		}
 	}
 
 	/**
@@ -379,17 +400,26 @@ class PCharacterBase {
 		
 		let scale = (100 + increment_percent) / 100;
 		if (scale > 0) {
-			this.movement_omega = MOVEMENT_VELOCITY * scale;
+			this._setWalkerOmegaFromVelocity(MOVEMENT_VELOCITY * scale);
 		}
 		else {
-			this.movement_omega = 0;
+			this._setWalkerOmegaFromVelocity(0);
 		}
 	}
-	set movement_omega(movement_velocity) {
-		this._walker_omega = movement_velocity / (Math.PI * this.chara_profile.width) * Math.PI;
+	/**
+	 * @param {number} speed - speed = pixel / second
+	 */
+	setMovementSpeedPixel(speed) {
+		let v = speed / $gv.CANVAS_SCALE;
+		if (v > 0) {
+			this._walker_omega = v;
+		}
+		else {
+			this._walker_omega = 0;
+		}
 	}
-	get movement_omega() {
-		return this._walker_omega;
+	_setWalkerOmegaFromVelocity(movement_velocity) {
+		this._walker_omega = movement_velocity / (Math.PI * this.chara_profile.width) * Math.PI;
 	}
 
 	/**
@@ -465,7 +495,7 @@ class PCharacterBase {
 				0);
 
 			fdef.density = this.chara_profile.density;
-			fdef.friction = MAX_FRICTION;
+			fdef.friction = FOOT_FRICTION;
 			fdef.restitution = 0;
 			fdef.shape = (shape);
 			//
@@ -486,7 +516,7 @@ class PCharacterBase {
 			fdef.shape = circle;
 			fdef.density = this.chara_profile.density;
 			//fdef.filter = world.getFilterDefine("pl_ft_walk");
-			fdef.MAX_FRICTION = 1;//walk
+			fdef.friction = FOOT_FRICTION;//walk
 			fdef.restitution = 0;
 			let fixture = this.foot_walk.CreateFixture(fdef);
 			fixture.$type = "pl_ft_walk";
@@ -710,6 +740,11 @@ class PCharacterBase {
 	 * @param {number} stamp
 	 */
 	Step(stamp) {
+		if (this.state._begin_jump) {
+			const mass = this._getMass();
+			const force = new b2Vec2(0, -mass * this.jump_force);
+			this.body.ApplyForceToCenter(force);
+		}
 		this.state._drop = false;
 		this._foothold = null;
 		this._foot_at = null;
@@ -722,12 +757,26 @@ class PCharacterBase {
 				this.walker.EnableMotor(false);
 			}
 			else {
+				this.state.knockback = 0;
 				this.state.outOfControl = false;
 				this.walker.EnableMotor(true);
 			}
 		}
 		if (this.state.invincible > 0) {
 			this.state.invincible -= stamp;
+			if (this.state.invincible > 0) {
+			}
+			else {
+				this.state.invincible = 0;
+			}
+		}
+		if (this.state.portal_cooldown) {
+			this.state.portal_cooldown -= stamp;
+			if (this.state.portal_cooldown > 0) {
+			}
+			else {
+				this.state.portal_cooldown = 0;
+			}
 		}
 	}
 
@@ -746,6 +795,7 @@ class PCharacterBase {
 		}
 		else {
 			this.state.jump = true;
+			this.state._begin_jump = false;
 			if (!this._foothold) {
 			}
 			else {
