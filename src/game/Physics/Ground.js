@@ -14,6 +14,7 @@ import { World, GRAVITY } from "./World.js";
 import { Foothold } from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
+import { b2Fixture } from "../../Box2D/build/Box2D/Box2D/Box2D.js";
 
 window.CREATE_SOLID_FOOTHOLD = false;
 window.USE_GHOST_VERTEX = false;
@@ -41,7 +42,7 @@ export class Ground {
 	 * @param {object} data
 	 * @param {World} world
 	 */
-	async load(map_raw_data, world) {
+	load(map_raw_data, world) {
 		if (!("foothold" in map_raw_data)) {
 			return;
 		}
@@ -282,9 +283,14 @@ export class Ground {
 			}
 		}
 	}
-	
+
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
 	beginContact_bodyBase_oneway(contact, fa, fb) {
-		if (fb.$type == "pl_fcenter" || fb.$type == "player") {
+		if (fb.$type == "player") {
 			debugger;
 		}
 		let numPoints, worldManifold;
@@ -303,8 +309,13 @@ export class Ground {
 		if (!player || !player.body || player.body.$type != "player") {
 			return;
 		}
+		if (player.state.ladder) {
+			contact.SetEnabled(false);
+			return;
+		}
 		
 		if (!contact.IsTouching()) {
+			debugger;
 			console.log("J: " + player.state.jump);
 		}
 
@@ -499,6 +510,12 @@ export class Ground {
 			player.leave_$fh = null;
 		}
 	}
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Manifold} oldManifold
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 */
 	preSolveGround_bodyBase_oneway(contact, oldManifold, fa, fb) {
 		let that = fa.GetBody().GetUserData();
 		that.beginContact_bodyBase_oneway(contact, fa, fb);

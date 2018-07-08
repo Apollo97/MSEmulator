@@ -116,6 +116,8 @@ class DamageNumberRenderer {
 			this._$promise = this._load(style);
 
 			await this._$promise;
+
+			delete this._$promise;
 		}
 
 		return this;

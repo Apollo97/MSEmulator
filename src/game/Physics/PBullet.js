@@ -172,6 +172,9 @@ function bullet_default_preSolve(contact, oldManifold, fa, fb) {
 	if (!targetPlayer) {
 		return;
 	}
+	if (!(targetPlayer instanceof PPlayer)) {//TODO: use filter
+		return;
+	}
 
 	/** @type {BaseSceneCharacter} */
 	const targetChara = targetPlayer.chara;//not implement yet

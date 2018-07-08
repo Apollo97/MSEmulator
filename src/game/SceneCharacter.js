@@ -369,16 +369,29 @@ export class BaseSceneCharacter extends SceneObject {
 	 */
 	_applyState(player_state) {
 		const charaRenderer = this.renderer;
+		const pState = this.$physics.state;
 
 		// renderer: apply default action
-		if (!this.$physics.state.invokeSkill) {
-			const { front, jump, walk, prone, fly } = player_state;
+		if (!pState.invokeSkill) {
+			const { front, jump, walk, prone, fly, ladder } = player_state;
 
 			if (front != null) {
 				charaRenderer.front = front;
 			}
 
-			if (jump) {
+			if (ladder) {
+				charaRenderer.action = "ladder";
+
+				//TODO: action="ladder": need better solution
+				if (pState.ladder_move_dir) {
+					pState._$anim_spd = charaRenderer.speed;
+					charaRenderer.speed = 1;
+				}
+				else {
+					charaRenderer.speed = 0;
+				}
+			}
+			else if (jump) {
 				charaRenderer.action = "jump";
 			}
 			else if (walk) {
@@ -394,6 +407,7 @@ export class BaseSceneCharacter extends SceneObject {
 				charaRenderer.action = "stand1";
 			}
 
+			//TODO: keyboard: emotion key
 			for (let i = 0; i <= 9; ++i) {
 				if ($gv.input_keyDown[i]) {
 					let a = [
@@ -545,6 +559,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 			/** @type {KeySlot} */
 			const keySlot = key_map[keyName];
 			if (!keySlot) {
+				debugger;
 				continue;
 			}
 			const keyDown = $gv.input_keyDown[keyName];
@@ -560,20 +575,6 @@ export class SceneCharacter extends BaseSceneCharacter {
 						ikey[ck.action] = keyDown;
 					}
 					break;
-				case "Skill":
-					{
-						/** @type {SkillSlot} */
-						const sk = keySlot.data;
-						const skill_id = sk.skill_id;
-						let skill = this.activeSkills.get(skill_id);
-						if (keyDown && can_use_skill) {
-							skill = this.invokeSkill(sk.skill_id);
-						}
-						if ((keyDown || keyUp) && skill) {
-							skill.control(ikey, keyDown, keyUp);
-						}
-					}
-					break;
 				case "Item":
 					if (keyDown) {
 						/** @type {ItemSlot} */
@@ -581,6 +582,29 @@ export class SceneCharacter extends BaseSceneCharacter {
 						this.useItem(itemSlot.data.id);
 					}
 					break;
+			}
+		};
+		for (let keyName in key_map) {
+			/** @type {KeySlot} */
+			const keySlot = key_map[keyName];
+			if (!keySlot) {
+				debugger;
+				continue;
+			}
+			const keyDown = $gv.input_keyDown[keyName];
+			const keyUp = $gv.input_keyUp[keyName];
+
+			if (keySlot.type == "Skill") {
+				/** @type {SkillSlot} */
+				const sk = keySlot.data;
+				const skill_id = sk.skill_id;
+				let skill = this.activeSkills.get(skill_id);
+				if (keyDown && can_use_skill) {
+					skill = this.invokeSkill(sk.skill_id);
+				}
+				if ((keyDown || keyUp) && skill) {
+					skill.control(ikey, keyDown, keyUp)
+				}
 			}
 		};
 

@@ -1,13 +1,12 @@
 ﻿
 import {
 	PFilterHelper,
-	b2_linearSleepTolerance,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
 	b2PolygonShape, b2CircleShape,
-	b2WheelJointDef, b2RevoluteJointDef, b2MouseJointDef,
-	b2Joint, b2RevoluteJoint, b2MouseJoint,
+	b2WheelJointDef, b2RevoluteJointDef, b2PrismaticJointDef, b2MouseJointDef,
+	b2Joint, b2RevoluteJoint, b2PrismaticJoint, b2MouseJoint,
 	b2Contact,
 } from "./Physics.js";
 
@@ -19,6 +18,7 @@ import { CharacterMoveElem } from "../../Client/PMovePath.js";
 import { SceneObject } from "../SceneObject.js";
 
 import { SceneMap } from "../Map.js";
+import { LadderRope } from "./LadderRope.js";
 
 
 const DEGTORAD = Math.PI / 180;
@@ -30,9 +30,11 @@ const chara_profile = {
 	width: 25 / $gv.CANVAS_SCALE,
 	height: 48 / $gv.CANVAS_SCALE,
 	density: 1,
+	/** radius */
 	get foot_width() {
 		return (chara_profile.width * 0.5);
 	},
+	/** radius */
 	get foot_j_width() {
 		return (chara_profile.width * 0.4);
 	},
@@ -44,7 +46,9 @@ const chara_profile = {
 	const walkSpeed = 125;//px/s
 	
 	window.JUMP_FORCE = jumpSpeed;
+
 	window.MOVEMENT_VELOCITY = walkSpeed / $gv.CANVAS_SCALE;
+	window.$LADDER_SPEED = walkSpeed / $gv.CANVAS_SCALE;
 
 	window.PLAYER_USE_WHEEL_WALKER = false;
 
@@ -79,6 +83,12 @@ export class PPlayerState {
 		
 		/** @type {-1|1} */
 		this.front = -1;
+
+		/** @type {boolean} - is use ladder */
+		this.ladder = false;
+
+		/** @type {-1|0|1} - up: -1, down: 1, stop: 0 */
+		this.ladder_move_dir = false;
 
 		/** @type {number} - 無敵時間，unit is millisecond */
 		this.invincible = 0;
@@ -165,6 +175,9 @@ class PCharacterBase {
 		/** @type {MapPortal} */
 		this.portal = null;
 
+		/** @type {LadderRope} */
+		this.ladder = null;
+
 		/** @type {number} */
 		this._walker_omega = 1;
 
@@ -186,17 +199,12 @@ class PCharacterBase {
 		this.body.SetPositionXY(x, by);
 
 		try {
-			if (this.foot_center)
-				this.foot_center.SetPositionXY(x, fy);
-
 			if (this.foot_walk)
 				this.foot_walk.SetPositionXY(x, fy);
 
 			if (clearForce) {
 				const speed = new b2Vec2(0, 0);
 				this.body.ConstantVelocity(speed);
-				if (this.foot_center)
-					this.foot_center.ConstantVelocity(speed);
 				if (this.foot_walk)
 					this.foot_walk.ConstantVelocity(speed);
 			}
@@ -287,6 +295,111 @@ class PCharacterBase {
 			this.setPosition(x, y, true);
 		});
 	}
+
+	/**
+	 * set ladder, not use
+	 * @param {LadderRope} ladder
+	 */
+	setLadder(ladder) {
+		if (ladder) {
+			this.ladder = ladder;
+		}
+		else {
+			debugger;
+		}
+	}
+	/**
+	 * @param {boolean} flag - true: use, false: no use
+	 */
+	useLadder(flag) {
+		/** @type {World} */
+		let world = this.body.m_world;
+
+		if (flag) {
+			if (!this.$ladder_pj) {
+				this.state.ladder = true;
+				this.state.jump = false;
+
+				this.body.SetAwake(true);
+				this.body.SetLinearVelocity2(0, 0);
+				this.body.m_type = b2BodyType.b2_kinematicBody;
+				//
+				this.foot_walk.SetAwake(true);
+				this.foot_walk.SetLinearVelocity2(0, 0);
+				this.foot_walk.m_type = b2BodyType.b2_kinematicBody;
+
+				this.walker.SetMotorSpeed(0);
+
+				world.doAfterStep(() => {
+					let ladder = this.ladder;
+					if (!ladder) {
+						return;
+					}
+
+					let height = ladder.calcHeight() / $gv.CANVAS_SCALE;
+
+					//let ground = world.ground.bodies[0];
+					let ladderBody = this.ladder.body;
+
+					this.setPosition(ladderBody.GetPosition().x, this.getPosition().y);
+
+					let pjd = new b2PrismaticJointDef();
+					//pjd.Initialize(ladderBody, this.body, anchor, new b2Vec2(0, 1));
+					{
+						pjd.bodyA = ladderBody;
+						pjd.bodyB = this.body;
+						//pjd.localAnchorA.Set(0, 0);
+						//pjd.localAnchorB.Set(0, 0);
+						pjd.localAxisA.Set(0, 1);
+						//pjd.referenceAngle = 0;
+					}
+					pjd.lowerTranslation = -this.chara_profile.foot_width * 2 - 1;
+					pjd.upperTranslation = height + this.chara_profile.foot_width;
+					pjd.enableLimit = true;
+
+					/** @type {b2PrismaticJoint} */
+					let pj = world.CreateJoint(pjd);
+
+					this.$ladder_pj = pj;
+				});
+			}
+			else {
+				debugger;
+			}
+		}
+		else {
+			if (this.ladder) {
+				this.ladder = null;
+
+				if (this.state.ladder) {
+					this.state.ladder = false;
+
+					this.body.SetAwake(true);
+					this.body.SetLinearVelocity2(0, 0);
+					this.body.m_type = b2BodyType.b2_dynamicBody;
+					//
+					this.foot_walk.SetAwake(true);
+					this.foot_walk.SetLinearVelocity2(0, 0);
+					this.foot_walk.m_type = b2BodyType.b2_dynamicBody;
+
+					//TODO: action="ladder": need better solution
+					if (this.chara && this.chara.renderer) {
+						this.chara.renderer.speed = this.state._$anim_spd;
+						delete this.state._$anim_spd;
+					}
+				}
+			}
+			if (this.$ladder_pj) {
+				world.doAfterStep(() => {
+					if (this.$ladder_pj) {
+						world.DestroyJoint(this.$ladder_pj);
+						delete this.$ladder_pj;
+					}
+				});
+			}
+		}
+	}
+
 	actionJump() {
 		this.state._begin_jump = true;
 	}
@@ -306,76 +419,127 @@ class PCharacterBase {
 		if (!this._isCanMove()) {
 			return;
 		}
-		if (this.state.outOfControl) {
-			this.walker.EnableMotor(false);
-			return;
+
+		if (this.state.ladder) {
+			const speed = (window.$LADDER_SPEED || 1);
+
+			if (keys.up && !keys.down) {
+				this.state.ladder_move_dir = 1;
+
+				this.body.SetLinearVelocity2(0, -speed);
+				//
+				this.foot_walk.SetLinearVelocity2(0, -speed);
+			}
+			else if (keys.down) {
+				this.state.ladder_move_dir = -1;
+
+				this.body.SetLinearVelocity2(0, speed);
+				//
+				this.foot_walk.SetLinearVelocity2(0, speed);
+			}
+			else {
+				this.state.ladder_move_dir = 0;
+			}
+			if (keys.jump) {
+				const world = this.body.m_world;
+				const mass = this._getMass();
+				let f = new b2Vec2(0, -world.m_gravity.y * mass);
+
+				if (keys.left) {
+					this.useLadder(false);
+					world.doAfterStep(() => {
+						this.body.ApplyForceToCenter(f, true);
+						this.body.ApplyLinearImpulseToCenter2(-speed * mass, 0);
+					});
+				}
+				else if (keys.right) {
+					this.useLadder(false);
+					world.doAfterStep(() => {
+						this.body.ApplyForceToCenter(f, true);
+						this.body.ApplyLinearImpulseToCenter2(speed * mass, 0);
+					});
+				}
+			}
 		}
 		else {
-			this.walker.EnableMotor(true);
-		}
-
-		if (this.portal && keys.up) {
-			//TODO: enter portal key: keys.enterPortal
-			debugger;
-			let portal = this.portal;
-			if (this._usePortal(portal)) {
-				this.portal = null;//使用完畢
+			if (this.state.outOfControl) {
+				this.walker.EnableMotor(false);
 				return;
 			}
-		}
-		
-		const wheel_sp = this._walker_omega;
-		const velocity = this.body.GetLinearVelocity();//foot_walk
+			else {
+				this.walker.EnableMotor(true);
+			}
 
-		if (!this.state.jump && !this.state.dropDown) {
-			//dropDown
-			if (keys.down && keys.jump) {
-				this.actionDropdown();
+			if (this.portal && keys.up) {
+				//TODO: enter portal key: keys.enterPortal
+				debugger;
+				let portal = this.portal;
+				if (this._usePortal(portal)) {
+					this.portal = null;//使用完畢
+					return;
+				}
+			}
+			if (this.ladder && (
+				(keys.down && this.$foothold) ||
+				(keys.up && !this.$foothold))
+			) {
+				this.useLadder(true);
 				return;
 			}
 
-			//趴下
-			if (keys.down) {
-				this.state.prone = true;
-				return;
+			const wheel_sp = this._walker_omega;
+			const velocity = this.body.GetLinearVelocity();//foot_walk
+
+			if (!this.state.jump && !this.state.dropDown) {
+				//dropDown
+				if (keys.down && keys.jump) {
+					this.actionDropdown();
+					return;
+				}
+
+				//趴下
+				if (keys.down) {
+					this.state.prone = true;
+					return;
+				}
+				else {
+					this.state.prone = false;
+				}
 			}
 			else {
 				this.state.prone = false;
 			}
-		}
-		else {
-			this.state.prone = false;
-		}
-		
-		if (keys.left) {
-			this.state.walk = true;
-			this.state.front = -1;
-			this.walker.SetMotorSpeed(-wheel_sp);
-			this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
-			//this.walker.EnableMotor(true);//power on
-		}
-		else if (keys.right) {
-			this.state.walk = true;
-			this.state.front = 1;
-			this.walker.SetMotorSpeed(wheel_sp);
-			this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
-			//this.walker.EnableMotor(true);//power on
-		}
-		else {
-			this.state.walk = false;
 
-			if (!this.state.jump) {
-				this.walker.SetMotorSpeed(0);//stop motor
+			if (keys.left) {
+				this.state.walk = true;
+				this.state.front = -1;
+				this.walker.SetMotorSpeed(-wheel_sp);
+				this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
+				//this.walker.EnableMotor(true);//power on
+			}
+			else if (keys.right) {
+				this.state.walk = true;
+				this.state.front = 1;
+				this.walker.SetMotorSpeed(wheel_sp);
+				this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
+				//this.walker.EnableMotor(true);//power on
 			}
 			else {
-				this.walker.SetMotorSpeed(0);//stop motor
-			}
-			this.walker.SetMaxMotorTorque(MOVEMENT_STOP_POWER);
-			//this.walker.EnableMotor(false);//power off
-		}
+				this.state.walk = false;
 
-		if (keys.jump && this._isCanJump()) {
-			this.actionJump();
+				if (!this.state.jump) {
+					this.walker.SetMotorSpeed(0);//stop motor
+				}
+				else {
+					this.walker.SetMotorSpeed(0);//stop motor
+				}
+				this.walker.SetMaxMotorTorque(MOVEMENT_STOP_POWER);
+				//this.walker.EnableMotor(false);//power off
+			}
+
+			if (keys.jump && this._isCanJump()) {
+				this.actionJump();
+			}
 		}
 	}
 
@@ -578,10 +742,6 @@ class PCharacterBase {
 		else {
 			console.log("this already dead");
 		}
-		if (this.foot_center) {
-			world.DestroyBody(this.foot_center);
-			this.foot_center = null;
-		}
 		if (this.foot_walk) {
 			world.DestroyBody(this.foot_walk);
 			this.foot_walk = null;
@@ -740,42 +900,50 @@ class PCharacterBase {
 	 * @param {number} stamp
 	 */
 	Step(stamp) {
-		if (this.state._begin_jump) {
-			const mass = this._getMass();
-			const force = new b2Vec2(0, -mass * this.jump_force);
-			this.body.ApplyForceToCenter(force);
-		}
+		// prepare contact
 		this.state._drop = false;
 		this._foothold = null;
 		this._foot_at = null;
 
-		if (this.state.knockback > 0) {
-			this.state.knockback -= stamp;
+		// apply state
+		if (this.state.ladder) {
+			this.state.jump = false;
+		}
+		else {
+			if (this.state._begin_jump) {
+				const mass = this._getMass();
+				const force = new b2Vec2(0, -mass * this.jump_force);
+				this.body.ApplyForceToCenter(force);
+			}
 
 			if (this.state.knockback > 0) {
-				this.state.outOfControl = true;
-				this.walker.EnableMotor(false);
+				this.state.knockback -= stamp;
+
+				if (this.state.knockback > 0) {
+					this.state.outOfControl = true;
+					this.walker.EnableMotor(false);
+				}
+				else {
+					this.state.knockback = 0;
+					this.state.outOfControl = false;
+					this.walker.EnableMotor(true);
+				}
 			}
-			else {
-				this.state.knockback = 0;
-				this.state.outOfControl = false;
-				this.walker.EnableMotor(true);
-			}
-		}
-		if (this.state.invincible > 0) {
-			this.state.invincible -= stamp;
 			if (this.state.invincible > 0) {
+				this.state.invincible -= stamp;
+				if (this.state.invincible > 0) {
+				}
+				else {
+					this.state.invincible = 0;
+				}
 			}
-			else {
-				this.state.invincible = 0;
-			}
-		}
-		if (this.state.portal_cooldown) {
-			this.state.portal_cooldown -= stamp;
-			if (this.state.portal_cooldown > 0) {
-			}
-			else {
-				this.state.portal_cooldown = 0;
+			if (this.state.portal_cooldown) {
+				this.state.portal_cooldown -= stamp;
+				if (this.state.portal_cooldown > 0) {
+				}
+				else {
+					this.state.portal_cooldown = 0;
+				}
 			}
 		}
 	}
@@ -785,27 +953,33 @@ class PCharacterBase {
 	 */
 	AfterStep() {
 		//this._endContactFoothold();
-
-		if (this.$foothold) {
-			this.state.jump = false;
-			if (this.$foothold == this._foothold) {
-				//console.log("stable cantact");
-				//debugger;
-			}
+		if (this.state.ladder) {
+			this.body.SetLinearVelocity2(0, 0);
+			//
+			this.foot_walk.SetLinearVelocity2(0, 0);
 		}
 		else {
-			this.state.jump = true;
-			this.state._begin_jump = false;
-			if (!this._foothold) {
+			if (this.$foothold) {
+				this.state.jump = false;
+				if (this.$foothold == this._foothold) {
+					//console.log("stable cantact");
+					//debugger;
+				}
 			}
 			else {
-				//console.log("no stable cantact");
-				//debugger;
+				this.state.jump = true;
+				this.state._begin_jump = false;
+				if (!this._foothold) {
+				}
+				else {
+					//console.log("no stable cantact");
+					//debugger;
+				}
 			}
-		}
-		if (!this.state.dropDown) {
-			if (this._foothold) {
-				this.$foothold = this._foothold;
+			if (!this.state.dropDown) {
+				if (this._foothold) {
+					this.$foothold = this._foothold;
+				}
 			}
 		}
 	}

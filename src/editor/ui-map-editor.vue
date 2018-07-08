@@ -3,9 +3,13 @@
 	<div>
 		<template v-for="(obj, index) in objs">
 			<div>
-				<div class="info sticky">
+				<div class="info sticky" style="border-bottom: 1px solid black;">
 					<span>[{{index}}]</span>
-					<span @contextmenu.prevent="copyToClipboard($event,obj._url)" @click="scrollIntoView($event,obj)" class="text">{{obj._url}}</span>
+					<span @contextmenu.prevent="copyToClipboard($event,obj._url)"
+						  @click="scrollIntoView($event,obj)"
+						  :style="obj.display_aabb?{background:obj.aabb_color}:{}"
+						  class="text"
+						  >{{obj._url}}</span>
 				</div>
 				<div class="view">
 					<div v-if="displayMode!=2" class="info">

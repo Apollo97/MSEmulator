@@ -586,6 +586,7 @@ class SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
+	 * @returns {boolean} - is player control proxy
 	 */
 	control(inputKey, keyDown, keyUp) {
 	}
@@ -858,6 +859,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
+	 * @returns {boolean} - is player control proxy
 	 */
 	control(inputKey, keyDown, keyUp) {
 		if (keyUp) {
@@ -929,6 +931,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
+	 * @returns {boolean} - is player control proxy
 	 */
 	control(inputKey, keyDown, keyUp) {
 		if (!this._owner) {
@@ -942,9 +945,10 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 		}
 
 		if (this.jump_count == 0) {
-			if (keyDown && $physics._isCanJump()) {
-				$physics.actionJump();
-			}
+			//proxy
+			inputKey.jump = keyDown;
+			$physics.control(inputKey);
+			return true;
 		}
 		else if ($physics.state.jump) {
 			if (keyDown == 1 && this.jump_count < this.jump_max_count) {

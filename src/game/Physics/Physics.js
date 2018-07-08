@@ -54,7 +54,7 @@ b2Body.prototype.addAfterStep = function (func) {
 b2Body.prototype.SetLinearVelocity2 = function (x, y) {
 	b2Vec2_temp.x = x;
 	b2Vec2_temp.y = y;
-	this.SetLinearVelocity(b2Vec2_temp);
+	this.SetLinearVelocity(b2Vec2_temp, true);
 }
 
 /**
@@ -64,7 +64,17 @@ b2Body.prototype.SetLinearVelocity2 = function (x, y) {
 b2Body.prototype.ApplyForceToCenter2 = function (x, y) {
 	b2Vec2_temp.x = x;
 	b2Vec2_temp.y = y;
-	this.ApplyForce(b2Vec2_temp, this.GetWorldCenter());
+	this.ApplyForceToCenter(b2Vec2_temp, true);
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ */
+b2Body.prototype.ApplyLinearImpulseToCenter2 = function (x, y) {
+	b2Vec2_temp.x = x;
+	b2Vec2_temp.y = y;
+	this.ApplyLinearImpulseToCenter(b2Vec2_temp, true);
 }
 
 /**
@@ -78,12 +88,12 @@ b2Body.prototype.Acceleration = function (desiredVel, sourceVel, point) {
 		point = this.GetWorldCenter();
 	}
 
-	let velChange = b2Vec2.SubVV(desiredVel, sourceVel, new b2Vec2());
+	let velChange = b2Vec2.SubVV(desiredVel, sourceVel, b2Vec2_temp);
 	let m = this.GetMass();
 	let ix = m * velChange.x;
 	let iy = m * velChange.y;
 
-	let impulse = new b2Vec2(ix, iy);
+	let impulse = b2Vec2_temp.Set(ix, iy);
 	this.ApplyLinearImpulse(impulse, point, true);
 }
 
@@ -102,7 +112,7 @@ b2Body.prototype.AccelerationX = function (desiredVelX, sourceVel, point) {
 	let m = this.GetMass();
 	let ix = m * velChangeX;
 
-	let impulse = new b2Vec2(ix, 0);
+	let impulse = b2Vec2_temp.Set(ix, 0);
 	this.ApplyLinearImpulse(impulse, point, true);
 }
 
@@ -121,7 +131,7 @@ b2Body.prototype.AccelerationY = function (desiredVelY, sourceVel, point) {
 	let m = this.GetMass();
 	let iy = m * velChangeY;
 
-	let impulse = new b2Vec2(0, iy);
+	let impulse = b2Vec2_temp.Set(0, iy);
 	this.ApplyLinearImpulse(impulse, point, true);
 }
 
@@ -172,7 +182,7 @@ b2Body.prototype.ConstantVelocityWorldCenter2 = function (desiredVelX, desiredVe
 	impulse.x = m * velChange.x;
 	impulse.y = m * velChange.y;
 
-	this.ApplyLinearImpulse(impulse, this.GetWorldCenter(), true);
+	this.ApplyLinearImpulseToCenter(impulse, true);
 }
 
 /**

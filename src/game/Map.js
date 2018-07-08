@@ -171,8 +171,8 @@ class MapObjectBase {
 		this._load_tile_info();
 
 		this.aabb = null;
-		this.$display_aabb = false;
-		this.$aabb_color = null;
+		this.display_aabb = false;
+		this.aabb_color = null;
 		
 		if (process.env.NODE_ENV !== 'production') {
 			this.__max_repeat_count = 1;
@@ -334,24 +334,24 @@ class MapObjectBase {
 		const mcy = $gv.m_viewRect.top + $gv.mouse_y;
 		if (this.typeb == 0 && this.aabb.collide4f2(mcx, mcy, 1, 1))
 		{
-			this.$display_aabb = true;
+			this.display_aabb = true;
 			if ($gv.mouse_dl == 1 && (window.m_selected_object != this || window.m_selected_object == null)) {
 				this.$select();
 			}
 			else if (window.m_hover_object == null) {
 				window.m_hover_object = this;
-				this.$aabb_color = "rgba(0,255,0,0.25)";
+				this.aabb_color = "rgba(0,255,0,0.25)";
 			}
 			else {
-				this.$aabb_color = "rgba(0,0,255,0.25)";
+				this.aabb_color = "rgba(0,0,255,0.25)";
 			}
 		}
 		else {
 			this.$unselect();
 		}
 		if (window.m_selected_object == this) {
-			this.$display_aabb = true;
-			this.$aabb_color = "rgba(255,0,0,0.5)";
+			this.display_aabb = true;
+			this.aabb_color = "rgba(255,0,0,0.5)";
 		}
 	}
 	$select() {
@@ -363,7 +363,7 @@ class MapObjectBase {
 		$gv.mouse_dl = 0;
 	}
 	$unselect() {
-		this.$display_aabb = false;
+		this.display_aabb = false;
 	}
 	$isRepeatX() {
 		return this.typeb == 1 || this.typeb == 4;
@@ -416,7 +416,7 @@ class MapObjectBase {
 			this.textures[index_of_texture].draw(renderer, this.f, this.x + mx, this.y + my, this.time, this.delta);//MapleSceneTexture#draw
 		}
 		
-		if ($gv.m_display_selected_object && $gv.m_editor_mode && this.aabb && this.$display_aabb) {
+		if ($gv.m_display_selected_object && $gv.m_editor_mode && this.aabb && this.display_aabb) {
 			const ctx = renderer.ctx;
 			const x = Math.trunc((-viewRect.left + 0.5) + this.aabb.left);
 			const y = Math.trunc((-viewRect.top + 0.5) + this.aabb.top);
@@ -427,7 +427,7 @@ class MapObjectBase {
 			
 			ctx.beginPath();
 			ctx.rect(x, y, this.aabb.width, this.aabb.height);
-			ctx.fillStyle = this.$aabb_color || "rgba(20,255,20,0.5)";//
+			ctx.fillStyle = this.aabb_color || "rgba(20,255,20,0.5)";//
 			ctx.fill();
 			
 			ctx.lineWidth = 3;
@@ -769,8 +769,17 @@ class MapTile extends MapObject {
 		this._info = info;
 	}
 	load() {
-		this.textures[0] = new MapTexture(this._texture_raw);
+		let texture = new MapTexture(this._texture_raw);
+
+		this.textures[0] = texture;
 		this.textures[0]._url = ["/images", "Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
+
+		let hw, hh;
+
+		hw = texture._raw.__w;
+		hh = texture._raw.__h;
+
+		this.aabb = new Rectangle(this.x, this.y, hw, hh);
 	}
 
 	/**
@@ -1154,6 +1163,7 @@ class MapBackSkeletalAnim extends MapBackBase {
 		}
 	}
 }
+
 
 export class LifeSpawnPoint {
 	/**
@@ -2030,6 +2040,7 @@ export class SceneMap {
 			}
 		}
 		else if (Object.keys(layer.tile).length) {
+			debugger;
 			console.warn("[" + i + "].tile = " + JSON.stringify(layer.tile));
 		}
 		for (let j = 0, ti = layer.tile[j]; !objIsEmpty(ti); j++ , ti = layer.tile[j]) {

@@ -13,6 +13,7 @@ import {
 import DebugDraw from "./DebugDraw";
 
 import { Ground } from "./Ground.js";
+import { LadderRope, MapLadderRopeLoader } from "./LadderRope.js";
 import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
 import { PMob } from "./PMob.js";
 
@@ -86,6 +87,9 @@ export class World extends b2World {
 		//}
 
 		this.ground = new Ground();
+
+		/** @type {LadderRope[]} */
+		this.ladderRope = [];
 		
 		/** @type {b2Body} */
 		this.mapBound_body = null;
@@ -146,7 +150,8 @@ export class World extends b2World {
 	 * after load map
 	 */
 	async load(map_raw_data) {
-		await this.ground.load(map_raw_data, this);
+		this.ground.load(map_raw_data, this);
+		this.ladderRope = MapLadderRopeLoader.load(map_raw_data, this);
 	}
 	unload() {
 		if (this.IsLocked()) {
@@ -155,6 +160,7 @@ export class World extends b2World {
 		}
 		else {
 			this.ground.unload(this);
+			this.ladderRope.length = 0;
 			this.DestroyBody(this.mapBound_body);
 		}
 	}
@@ -619,6 +625,15 @@ export class World extends b2World {
 			if (player && player.$foothold) {
 				player.$foothold.$drawDebugInfo2(renderer, "#F00");
 			}
+
+			this.ladderRope.forEach(lr => {
+				const width = lr.calcWidth();
+				ctx.beginPath();
+				ctx.rect(lr.x - width * 0.5, lr.y1, width, lr.y2 - lr.y1);
+				ctx.fillStyle = "#E117";
+				ctx.fill();
+			});
+
 			ctx.restore();
 		}
 	}

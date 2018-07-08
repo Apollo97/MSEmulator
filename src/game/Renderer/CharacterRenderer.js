@@ -189,6 +189,16 @@ class FragmentTexture extends SpriteBase {
 
 		this.filter = new ImageFilter();
 		this.opacity = 1;
+
+
+		/** @type {string} - extra property. */
+		this._slot = null;
+
+		/** @type {string} - extra property. 在哪個部位 */
+		this._place = null;
+
+		/** @type {string} - extra property: _slot itemId, _place, _raw.z z */
+		this.classList = null;
 	}
 
 	/**
@@ -2721,17 +2731,27 @@ export class CharacterAnimationBase {
 			this.__add_equip_to_frag_list(slots, item);
 		}
 
+		let is_back = false;
+
 		for (let i in slots) {
 			/** @type {FragmentTexture[]} */
 			let fts = slots[i];
 			for (let j in fts) {
 				/** @type {FragmentTexture} */
 				let ft = fts[j];
+				if (is_back) {
+					if (ft._place.startsWith("face")) {
+						continue;
+					}
+				}
+				else if (ft._place.startsWith("backHair")) {
+					is_back = true;
+				}
 				this.__add_frag_to_list(ft);
 			}
 		}
 		{
-			let ae = this.__frag_list[114];//Ae
+			let ae = this.__frag_list[114];//TODO: Ae
 			if (ae) {
 				this.__frag_list.push(ae);
 			}
