@@ -380,7 +380,12 @@ export class BaseSceneCharacter extends SceneObject {
 			}
 
 			if (ladder) {
-				charaRenderer.action = "ladder";
+				if (this.$physics.ladder.isLadder()) {
+					charaRenderer.action = "ladder";
+				}
+				else {
+					charaRenderer.action = "rope";
+				}
 
 				//TODO: action="ladder": need better solution
 				if (pState.ladder_move_dir) {
