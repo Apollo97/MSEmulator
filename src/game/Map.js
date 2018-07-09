@@ -774,12 +774,7 @@ class MapTile extends MapObject {
 		this.textures[0] = texture;
 		this.textures[0]._url = ["/images", "Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
 
-		let hw, hh;
-
-		hw = texture._raw.__w;
-		hh = texture._raw.__h;
-
-		this.aabb = new Rectangle(this.x, this.y, hw, hh);
+		this.__calc_aabb();
 	}
 
 	/**
