@@ -21,6 +21,7 @@ import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
 
 import { IRenderer } from "../IRenderer.js";
 import { debug } from "util";
+import { FilterHelper } from "./Filter.js";
 
 
 window.$gravityAcc = 2000;
@@ -197,7 +198,7 @@ export class World extends b2World {
 		let fdef = new b2FixtureDef();
 		let shape;
 
-		fdef.filter.loadPreset("foothold");
+		fdef.filter.Copy(FilterHelper.get("foothold", "portal"));
 
 		bdef.userData = portal;
 		bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
@@ -259,7 +260,7 @@ export class World extends b2World {
 
 		fdef.$type = "MapBorder";
 		fdef.shape = shape;
-		fdef.filter.loadPreset("foothold");
+		fdef.filter.Copy(FilterHelper.get("default", "map_border"));
 
 		let bb = this.CreateBody(bdef);
 		bb.$type = "MapBorder";

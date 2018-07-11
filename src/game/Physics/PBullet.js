@@ -2,7 +2,6 @@
 import { Rectangle, Vec2 } from "../math.js";
 
 import {
-	PFilterHelper,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
@@ -19,6 +18,7 @@ import { SceneSkill, SkillEffectAnimation } from "../Skill.js";
 import { AttackInfo } from "../../Common/AttackInfo.js";
 
 import { BaseSceneCharacter } from "../SceneCharacter.js";//?? SceneCharacter, SceneRemoteCharacter
+import { FilterHelper } from "./Filter.js";
 
 
 export class PBullet {
@@ -95,10 +95,9 @@ export class PBullet {
 		
 		//TODO: implement filter: player_bullet
 		fdef.shape = shape;
-		fdef.filter.loadPreset("default");//player_bullet
-		//PFilterHelper.specialFilter(fdef.filter, ??);//remote player bullet (pvp)
-
-		//fdef.loadPreset("default");
+		fdef.filter.Copy(FilterHelper.get("default", "bullet"));
+		//fdef.filter.Copy(FilterHelper.get("default", "bullet_pvp"));
+		
 		fdef.userData = this;
 
 		let fixture = this.body.CreateFixture(fdef);

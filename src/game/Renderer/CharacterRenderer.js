@@ -3112,7 +3112,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 	_outlink() {
 		if (this.slots.body && this.slots.body.id && this.slots.face && this.slots.face.id && this.action && this.emotion) {
-			let link = "https://labs.maplestory.io/api/character/center/" + this.slots.body.id + "/";
+			let link = "https://labs.maplestory.io/api/GMS/latest/character/center/" + this.slots.body.id + "/";
 			let slots = [...this.slots.enumerate()].map(a => parseInt(a.id, 10));
 
 			slots[0] = this.slots.face.id + ":" + this.emotion;
@@ -3120,6 +3120,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			link += slots.join(",");
 
 			link += "/" + this.action + "?showears=" + (this.elfEar ? "true" : "false");
+
+			link += "&showLefEars=" + (this.lefEar ? "true" : "false");
 
 			return link;
 		}

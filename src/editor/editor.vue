@@ -172,7 +172,7 @@
 					<template slot="content">
 						<div v-if="scene_map() && scene_map()[mapEditorMode].length" :style="wnd_debug_style">
 							<div style="background: white;">
-								<input v-model="wnd_debug_style.background" type="color" />
+								<input v-model="wnd_debug_style.background" type="color" title="window background color" />
 								<label>layer <select v-model="selectedLayer">
 										<option v-for="layer in scene_map()[mapEditorMode].length">{{layer - 1}}</option>
 									</select>
@@ -395,13 +395,36 @@
 				context.commit("increaseId");
 				const id = context.getters.lastId;
 
+				/** @type {SceneCharacter} */
 				let chara;
 
+				//const handler = {
+				//	defineProperty(target, key, descriptor) {
+				//		if (key == "$physics") {
+				//			debugger;
+				//		}
+				//		return Reflect.defineProperty(...arguments);
+				//	},
+				//	set(target, key, descriptor) {
+				//		if (key == "$physics") {
+				//			debugger;
+				//		}
+				//		return Reflect.set(...arguments);
+				//	},
+				//	ownKeys(target, key, descriptor) {
+				//		if (key == "$physics") {
+				//			debugger;
+				//		}
+				//		return Reflect.ownKeys(...arguments);
+				//	},
+				//};
 				if (payload && payload.remote_chara) {
 					chara = new SceneRemoteCharacter(window.scene_map);
+					//chara = new Proxy(new SceneRemoteCharacter(window.scene_map), handler);
 				}
 				else {
 					chara = new SceneCharacter(window.scene_map);
+					//chara = new Proxy(new SceneCharacter(window.scene_map), handler);
 				}
 				chara.id = id;
 

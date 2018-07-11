@@ -1,9 +1,11 @@
 ﻿
 const box2d = require("../../Box2D/build/Box2D/Box2D/Box2D.js");
 
+const { FilterHelper } = require("./Filter.js");
+
 const {
 	b2Vec2,
-	b2Filter, b2Body, b2Fixture,
+	b2Body, b2Fixture,
 	b2Contact, b2Manifold, b2ContactImpulse,
 	b2ContactListener
 } = box2d;
@@ -282,97 +284,7 @@ class FixtureContactListener {
 }
 
 
-//b2Filter.prototype.groupIndex = 0;
-//b2Filter.prototype.maskBits = 0xFFFFFFFF;//all
-//b2Filter.prototype.categoryBits = 1;
-
-/**
- * @param {string} categoryName
- */
-b2Filter.prototype.ignore = function (categoryName) {
-	let preset = b2Filter["s_" + categoryName];
-	if (process.env.NODE_ENV !== 'production') {
-		if (!preset) {
-			let msg = "not found b2Filter preset: " + categoryName;
-			console.error(msg);
-			alert(msg);
-			return;
-		}
-	}
-	this.maskBits = (this.maskBits & ~preset.categoryBits) >>> 0;
-}
-
-/**
- * @param {string} categoryName
- */
-b2Filter.prototype.addCategory = function (categoryName) {
-	let preset = b2Filter["s_" + categoryName];
-	if (process.env.NODE_ENV !== 'production') {
-		if (!preset) {
-			let msg = "not found b2Filter preset: " + categoryName;
-			console.error(msg);
-			alert(msg);
-			return;
-		}
-	}
-	this.categoryBits = this.categoryBits | preset.categoryBits;
-}
-
-/**
- * @param {string} categoryName
- */
-b2Filter.prototype.loadPreset = function (categoryName) {
-	let preset = b2Filter["s_" + categoryName];
-	if (process.env.NODE_ENV !== 'production') {
-		if (!preset) {
-			let msg = "not found b2Filter preset: " + categoryName;
-			console.error(msg);
-			alert(msg);
-			return;
-		}
-	}
-	this.groupIndex = preset.groupIndex;
-	this.maskBits = preset.maskBits;
-	this.categoryBits = preset.categoryBits;
-}
-
-/**
- * @param {string} categoryName
- */
-b2Filter.registerCategory = function (categoryName) {
-	if (process.env.NODE_ENV !== 'production') {
-		if (b2Filter["s_" + categoryName]) {
-			let msg = "exist b2Filter preset: " + categoryName;
-			console.error(msg);
-			alert(msg);
-			return;
-		}
-		if (b2Filter._next_category > 0x80000000) {
-			let msg = "no empty b2Filter preset";
-			console.error(msg);
-			alert(msg);
-			return;
-		}
-	}
-	let preset = b2Filter["s_" + categoryName] = new b2Filter();
-
-	preset.groupIndex = 0;
-	preset.categoryBits = b2Filter._next_category;
-	preset.maskBits = 0xFFFFFFFF;//all
-
-	b2Filter._next_category = b2Filter._next_category << 1;
-
-	return preset;
-}
-b2Filter._next_category = 1;
-
-let s_default = b2Filter.registerCategory("default");
-
-let s_foothold = b2Filter.registerCategory("foothold");
-s_foothold.ignore("foothold");
-
-
 
 module.exports = Object.assign(box2d, {
-	FixtureContactListener
+	FixtureContactListener, FilterHelper
 });

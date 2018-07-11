@@ -310,19 +310,7 @@
 				//this.system.resolution.x = width;
 				this.system.resolution.y = height;
 			},
-		},
-		mounted: function () {
-			window.$statusBar = this;
-			this.system._$window_resize = this._window_onresize.bind(this);
-			window.addEventListener("resize", this.system._$window_resize);
-		},
-		beforeDestroy: function () {
-			window.removeEventListener("resize", this.system._$window_resize);
-		},
-		updated: async function () {
-			this.$nextTick(async() => {
-				await this.$store.dispatch("waitAllLoaded");
-				
+			updatePosition: function () {
 				if (this.$refs.status) {
 					//$(this.$refs.status.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
 					$(this.$refs.status.$el).position({ my: "center bottom", at: "center top+33", of: $(this.$refs.expBar.$el) });
@@ -332,9 +320,29 @@
 					//$(this.$refs.menu.$el).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
 					$(this.$refs.menu.$el).position({ my: "left bottom", at: "center+110 top+33", of: $(this.$refs.expBar.$el) })
 				}
+			},
+			myUpdate: function () {
+				this.$nextTick(async () => {
+					await this.$store.dispatch("waitAllLoaded");
 
-				//$(this.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
-			});
+					this.updatePosition();
+
+					//$(this.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
+				});
+			},
+		},
+		mounted: function () {
+			window.$statusBar = this;
+			this.system._$window_resize = this._window_onresize.bind(this);
+			window.addEventListener("resize", this.system._$window_resize);
+
+			this._window_onresize();
+		},
+		beforeDestroy: function () {
+			window.removeEventListener("resize", this.system._$window_resize);
+		},
+		updated: function () {
+			this.myUpdate();
 		},
 		mixins: [BasicComponent],
 	};

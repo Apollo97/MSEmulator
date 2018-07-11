@@ -15,6 +15,12 @@ export class SceneObject {
 
 		/** @type {PPlayer} */
 		this.$physics = null;
+		Object.defineProperty(this, "$physics", {
+			configurable: true,
+			enumerable: false,
+			writable: true,
+			value: null,
+		});
 
 		this.renderer = null;
 	}

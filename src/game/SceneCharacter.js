@@ -161,6 +161,7 @@ const keyboard_map = [
 		s: new KeySlot("Action", new ActionSlot("down")),
 		d: new KeySlot("Action", new ActionSlot("right")),
 		q: new KeySlot("Action", new ActionSlot("jump")),
+		f: new KeySlot("Skill", new SkillSlot("23001002")),//debug
 		x: new KeySlot("Skill", new SkillSlot("1001005")),
 		c: new KeySlot("Skill", new SkillSlot("64120000")),
 		v: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
@@ -172,8 +173,8 @@ export class BaseSceneCharacter extends SceneObject {
 	constructor() {
 		super();
 
-		/** @type {PPlayer} */
-		this.$physics = null;//new PPlayer();
+		///** @type {PPlayer} */
+		//this.$physics = null;//new PPlayer();
 
 		/** @type {CharacterRenderer} */
 		this.renderer = null;
@@ -608,7 +609,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 					skill = this.invokeSkill(sk.skill_id);
 				}
 				if ((keyDown || keyUp) && skill) {
-					skill.control(ikey, keyDown, keyUp)
+					skill.control(ikey, keyDown, keyUp);
 				}
 			}
 		};
@@ -851,7 +852,7 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 		if (process.env.NODE_ENV !== 'production') {
 			delete this.$physics;
 			Object.defineProperty(this, "$physics", {
-				enumerable: true,
+				enumerable: false,
 				configurable: false,
 				get: function () {
 					return this.$$physics;
@@ -867,7 +868,7 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 
 			delete this.renderer;
 			Object.defineProperty(this, "renderer", {
-				enumerable: true,
+				enumerable: false,
 				configurable: false,
 				get: function () {
 					return this.$$renderer;

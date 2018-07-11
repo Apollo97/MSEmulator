@@ -10,6 +10,7 @@ import {
 
 import { World } from "./World";
 import { PPlayer } from "./PPlayer.js";
+import { FilterHelper } from "./Filter.js";
 
 
 export class MapLadderRope {
@@ -95,7 +96,7 @@ export class LadderRope extends MapLadderRope {
 
 		//TODO: implement filter: ladder|rope
 		fdef.shape = shape;
-		fdef.filter.loadPreset("default");//player_bullet
+		fdef.filter.Copy(FilterHelper.get("default", "ladder"));
 
 		fdef.isSensor = true;
 		fdef.userData = this;

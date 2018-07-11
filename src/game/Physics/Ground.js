@@ -15,9 +15,35 @@ import { Foothold } from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
 import { b2Fixture } from "../../Box2D/build/Box2D/Box2D/Box2D.js";
+import { FilterHelper } from "./Filter.js";
 
+/**
+ * 可以防止player卡在foothold裡面，速度太快會穿過
+ */
 window.CREATE_SOLID_FOOTHOLD = false;
-window.USE_GHOST_VERTEX = false;
+/**
+ * polygon + edge
+ */
+window.CREATE_SOLID_AND_EDGE_FOOTHOLD = false;
+
+/**
+ * b2EdgeShape ghost vertex
+ */
+window.USE_GHOST_VERTEX = true;
+
+/**
+ * 在連續的foothold間插入foothold，可以防止player從縫隙穿過
+ */
+window.LERP_FOOTHOLD = true;
+
+/**
+ * @param {number} left
+ * @param {number} right
+ * @param {number} interpolater - 0~1
+ */
+function lerp(left, right, interpolater) {
+	return left + interpolater * (right - left);
+}
 
 export class Ground {
 	constructor() {
@@ -107,100 +133,139 @@ export class Ground {
 			}
 		}
 
-		{
-			let bdef = new b2BodyDef();
-			let fdef = new b2FixtureDef();
-			let shape;
+		if (window.CREATE_SOLID_AND_EDGE_FOOTHOLD) {
+			this._create_foothold(world, false);//edge
+			this._create_foothold(world, true);//polygon
+		}
+		else {
+			this._create_foothold(world, window.CREATE_SOLID_FOOTHOLD);
+		}
+	}
 
-			fdef.filter.loadPreset("foothold");
+	/**
+	 * @param {World} world
+	 * @param {boolean} is_solid
+	 */
+	_create_foothold(world, is_solid) {
+		let bdef = new b2BodyDef();
+		let fdef = new b2FixtureDef();
 
-			if (window.CREATE_SOLID_FOOTHOLD) {
-				shape = new b2PolygonShape();
+		/** @type {b2PolygonShape&b2EdgeShape} */
+		let shape;
+
+
+		if (is_solid) {
+			shape = new b2PolygonShape();
+		}
+		else {
+			shape = new b2EdgeShape();
+		}
+
+		bdef.type = b2BodyType.b2_kinematicBody;//b2_staticBody
+		bdef.linearDamping = 1;
+		bdef.gravityScale = 0;
+		bdef.userData = this;
+		//bdef.bullet = true;
+
+		fdef.shape = shape;
+		fdef.density = 1;
+		fdef.filter.Copy(FilterHelper.get("foothold"));
+		fdef.friction = 1;
+		fdef.restitution = 0;
+
+		for (let i = 0; i < this.footholds.length; ++i) {
+			const fh = this.footholds[i];
+			//if (fh.is_wall) {
+			//	this._create_wall(fh);
+			//	continue;
+			//}
+			let x1, y1, x2, y2;
+
+			x1 = fh.x1 / $gv.CANVAS_SCALE;
+			y1 = fh.y1 / $gv.CANVAS_SCALE;
+			x2 = fh.x2 / $gv.CANVAS_SCALE;
+			y2 = fh.y2 / $gv.CANVAS_SCALE;
+
+			create.call(this, fh, x1, y1, x2, y2, null);
+			
+			if (window.LERP_FOOTHOLD && fh.next != null) {
+				const next = this.footholds[fh.next];
+				let x1n, y1n, x2n, y2n;
+
+				let lerp_current = 0.5 + Math.clamp(Math.abs(y1 - next.y2 / $gv.CANVAS_SCALE), 0, 1) * 0.35;
+				let lerp_next = (1 - lerp_current);
+
+				x1n = lerp(x1, x2, lerp_current);
+				y1n = lerp(y1, y2, lerp_current);
+				x2n = lerp(next.x1 / $gv.CANVAS_SCALE, next.x2 / $gv.CANVAS_SCALE, lerp_next);
+				y2n = lerp(next.y1 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE, lerp_next);
+
+				create.call(this, fh, x1n, y1n, x2n, y2n, "Next");
+			}
+		}
+		function create(fh, x1, y1, x2, y2, bodyName) {
+			const cx = (x2 + x1) * 0.5;
+			const cy = (y2 + y1) * 0.5;
+			bdef.position.Set(cx, cy);
+
+			let hlen;
+			const dx = x2 - x1;
+			const dy = y2 - y1;
+			if (dy == 0) {
+				bdef.angle = dx < 0 ? Math.PI : 0;
+				hlen = dx * 0.5;
+			}
+			else if (dx == 0) {
+				bdef.angle = dy < 0 ? (-Math.PI * 0.5) : (Math.PI * 0.5);
+				hlen = dy * 0.5;
 			}
 			else {
-				shape = new b2EdgeShape();
+				bdef.angle = Math.atan2(dy, dx);
+				hlen = (Math.sqrt(dy ** 2 + dx ** 2)) * 0.5;
 			}
 
-			bdef.type = b2BodyType.b2_kinematicBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
-			bdef.linearDamping = 1;
-			bdef.gravityScale = 0;
-			bdef.userData = this;
-			//bdef.bullet = true;
+			let body = world.CreateBody(bdef);
+			body.$type = "ground";
 
-			fdef.shape = shape;
-			fdef.density = 1;
-			//fdef.filter = world.getFilterDefine("ground");
-			fdef.friction = 1;
-			fdef.restitution = 0;
+			if (is_solid) {
+				const hheight = 0.5 / $gv.CANVAS_SCALE;//1px
+				shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
+			}
+			else {
+				shape.m_vertex1.Set(-hlen, 0)
+				shape.m_vertex2.Set(hlen, 0);
 
-			for (let i = 0; i < this.footholds.length; ++i) {
-				const fh = this.footholds[i];
-				//if (fh.is_wall) {
-				//	this._create_wall(fh);
-				//	continue;
-				//}
-				let x1, y1, x2, y2;
-				
-				x1 = fh.x1 / $gv.CANVAS_SCALE;
-				y1 = fh.y1 / $gv.CANVAS_SCALE;
-				x2 = fh.x2 / $gv.CANVAS_SCALE;
-				y2 = fh.y2 / $gv.CANVAS_SCALE;
-
-				const cx = (x2 + x1) * 0.5;
-				const cy = (y2 + y1) * 0.5;
-				bdef.position.Set(cx, cy);
-				
-				let hlen;
-				const dx = x2 - x1;
-				const dy = y2 - y1;
-				if (dy == 0) {
-					bdef.angle = dx < 0 ? Math.PI : 0;
-					hlen = dx * 0.5;
-				}
-				else if (dx == 0) {
-					bdef.angle = dy < 0 ? (-Math.PI * 0.5) : (Math.PI * 0.5);
-					hlen = dy * 0.5;
-				}
-				else {
-					bdef.angle = Math.atan2(dy, dx);
-					hlen = (Math.sqrt(dy ** 2 + dx ** 2)) * 0.5;
-				}
-
-				let body = world.CreateBody(bdef);
-				body.$type = "ground";
-
-				if (window.CREATE_SOLID_FOOTHOLD) {
-					const hheight = 1.5 / $gv.CANVAS_SCALE;
-					shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
-				}
-				else {
-					shape.m_vertex1.Set(-hlen, 0)
-					shape.m_vertex2.Set(hlen, 0);
-
-					if (window.USE_GHOST_VERTEX) {
-						if (fh.prev != null) {
-							const prev = this.footholds[fh.prev];
-							shape.m_vertex0.Set(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
-							shape.m_hasVertex0 = true;
-						}
-						if (fh.next != null) {
-							const next = this.footholds[fh.next];
-							shape.m_vertex3.Set(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
-							shape.m_hasVertex3 = true;
-						}
+				if (bodyName && window.USE_GHOST_VERTEX) {
+					if (fh.prev != null) {
+						const prev = this.footholds[fh.prev];
+						shape.m_vertex0.Set(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
+						shape.m_hasVertex0 = true;
+					}
+					if (fh.next != null) {
+						const next = this.footholds[fh.next];
+						shape.m_vertex3.Set(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
+						shape.m_hasVertex3 = true;
 					}
 				}
+			}
 
-				fdef.userData = fh;
+			fdef.userData = fh;
 
-				let fixture = body.CreateFixture(fdef);
+			let fixture = body.CreateFixture(fdef);
 
-				fixture.beginContact = this.beginContact_bodyBase_oneway;
-				fixture.endContact = this.endContact_bodyBase_oneway;
-				fixture.preSolve = this.preSolveGround_bodyBase_oneway;//preSolveGround_t2
+			fixture.beginContact = this.beginContact_bodyBase_oneway;
+			fixture.endContact = this.endContact_bodyBase_oneway;
+			fixture.preSolve = this.preSolveGround_bodyBase_oneway;//preSolveGround_t2
 
+			if (bodyName) {
+				fh["body" + bodyName] = body;
+				if (!this["bodies" + bodyName]) {
+					this["bodies" + bodyName] = [];
+				}
+				this["bodies" + bodyName].push(body);
+			}
+			else {
 				fh.body = body;
-
 				this.bodies.push(body);
 			}
 		}
@@ -301,7 +366,7 @@ export class Ground {
 		const fh = fa.GetUserData();
 		if (fh.is_wall && fb.$type == "pl_ft_walk") {
 			contact.SetFriction(0);
-			return;
+			//return;
 		}
 		
 		/** @type {PPlayer} */
@@ -438,6 +503,7 @@ export class Ground {
 		/** @param {b2Vec2} cpoint */
 		function normal_contact(cpoint) {
 			let ccc = $fh && (
+				fh.is_wall ||
 				(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||
 				(fh != player._foothold && (fh.y1 > $fh.y1 || fh.y2 > $fh.y2))
 			);

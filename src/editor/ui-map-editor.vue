@@ -1,15 +1,12 @@
-
+﻿
 <template>
 	<div>
+		<div style="display: none;">{{aaaa}}</div>
 		<template v-for="(obj, index) in objs">
 			<div>
-				<div class="info sticky" style="border-bottom: 1px solid black;">
+				<div @click="scrollIntoView($event,obj)" :style="get_ObjPath_style(obj)" class="info sticky" title="select it and scroll into view">
 					<span>[{{index}}]</span>
-					<span @contextmenu.prevent="copyToClipboard($event,obj._url)"
-						  @click="scrollIntoView($event,obj)"
-						  :style="obj.display_aabb?{background:obj.aabb_color}:{}"
-						  class="text"
-						  >{{obj._url}}</span>
+					<span @contextmenu.prevent="copyToClipboard($event,obj._url)" class="text" >{{obj._url}}</span>
 				</div>
 				<div class="view">
 					<div v-if="displayMode!=2" class="info">
@@ -192,7 +189,12 @@ export default {
 	//		type: MapObjectBase,
 	//		required: true
 	//	},
-	//}
+	//},
+	data: function () {
+		return {
+			aaaa: 0,
+		};
+	},
 	methods: {
 		isShowRX: function (typeb) {
 			return typeb == 4 || typeb == 5;
@@ -206,12 +208,19 @@ export default {
 		isShowCY: function (typeb) {
 			return typeb == 2 || typeb == 3 || typeb == 5 || typeb == 6 || typeb == 7;
 		},
+		get_ObjPath_style: function (obj) {
+			let style = obj.display_aabb ? { background:obj.aabb_color } : { };
+			style["border-bottom"] = "1px solid black";
+			return style;
+		},
 		scrollIntoView: function(event, obj) {
-			let center = obj.aabb.center;
+			const center = obj.aabb.center;
 			$gv.m_viewRect.setCenter(center.x, center.y);
 			obj.$select();
 			
 			event.currentTarget.scrollIntoView();
+
+			this.aaaa++;
 		},
 		fupdate: function () {
 			this.$forceUpdate();

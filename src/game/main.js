@@ -89,6 +89,8 @@ window.onkeydown = function (e) {
 		$gv.m_editor_mode = !$gv.m_editor_mode;
 
 		app.vue.editor_mode = $gv.m_editor_mode;
+
+		app.vue.$refs.statusBar.myUpdate();
 	}
 }
 

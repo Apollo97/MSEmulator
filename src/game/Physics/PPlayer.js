@@ -1,6 +1,5 @@
 ﻿
 import {
-	PFilterHelper,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
@@ -19,6 +18,7 @@ import { SceneObject } from "../SceneObject.js";
 
 import { SceneMap } from "../Map.js";
 import { LadderRope } from "./LadderRope.js";
+import { FilterHelper } from "./Filter.js";
 
 
 const DEGTORAD = Math.PI / 180;
@@ -63,18 +63,23 @@ const chara_profile = {
 
 export class PPlayerState {
 	constructor() {
-		this.jump = true;
-
 		/** @type {boolean} - ApplyForce(jump_force) until leave foothold */
 		this._begin_jump = false;
 
-		///** @type {0|1|2} noJump(0), Jumping(1), Falling(2) */
-		//this.jumpState = true;
+		/** jump_count = jump ? jump_count : 0 */
+		this.jump = true;
+
+		/** jump_count = jump ? jump_count : 0 */
+		this.jump_count = 0;
+
+		/** ?? */
 		this._drop = true;
+
 		this.walk = false;
 
 		this.prone = false;
 
+		/** TODO: fallDown */
 		this.dropDown = false;
 
 		this._fly = false;//not jump 
@@ -319,6 +324,7 @@ class PCharacterBase {
 			if (!this.$ladder_pj) {
 				this.state.ladder = true;
 				this.state.jump = false;
+				this.state.jump_count = 0;
 
 				this.body.SetAwake(true);
 				this.body.SetLinearVelocity2(0, 0);
@@ -402,6 +408,7 @@ class PCharacterBase {
 
 	actionJump() {
 		this.state._begin_jump = true;
+		++this.state.jump_count;
 	}
 	//actionWalk(front) {
 	//}
@@ -443,19 +450,20 @@ class PCharacterBase {
 			if (keys.jump) {
 				const world = this.body.m_world;
 				const mass = this._getMass();
-				let f = new b2Vec2(0, -world.m_gravity.y * mass);
 
 				if (keys.left) {
 					this.useLadder(false);
 					world.doAfterStep(() => {
-						this.body.ApplyForceToCenter(f, true);
+						//const f = new b2Vec2(0, -world.m_gravity.y * mass);
+						//this.body.ApplyForceToCenter(f, true);
 						this.body.ApplyLinearImpulseToCenter2(-speed * mass, 0);
 					});
 				}
 				else if (keys.right) {
 					this.useLadder(false);
 					world.doAfterStep(() => {
-						this.body.ApplyForceToCenter(f, true);
+						//const f = new b2Vec2(0, -world.m_gravity.y * mass);
+						//this.body.ApplyForceToCenter(f, true);
 						this.body.ApplyLinearImpulseToCenter2(speed * mass, 0);
 					});
 				}
@@ -630,9 +638,7 @@ class PCharacterBase {
 		let fdef = new b2FixtureDef();
 		let shape = new b2PolygonShape();
 
-		fdef.filter.loadPreset("default");
-
-		bdef.type = (b2BodyType.b2_dynamicBody);//b2_dynamicBody//b2_staticBody//b2_kinematicBody
+		bdef.type = b2BodyType.b2_dynamicBody;
 		bdef.bullet = true;//get real contact point
 		bdef.position.Set(first_pos.x, first_pos.y);
 		bdef.userData = this;
@@ -648,6 +654,8 @@ class PCharacterBase {
 
 		let jmp_body_pos_y = first_pos.y + this.chara_profile.height * 0.75 * 0.5;
 
+		fdef.filter.Copy(FilterHelper.get("default", "body"));
+		//
 		fdef.filter.maskBits = 0;
 
 		//head
@@ -661,16 +669,17 @@ class PCharacterBase {
 			fdef.density = this.chara_profile.density;
 			fdef.friction = FOOT_FRICTION;
 			fdef.restitution = 0;
-			fdef.shape = (shape);
+			fdef.shape = shape;
 			//
 			this.fixture = this.body.CreateFixture(fdef);
 			this.fixture.$type = "player";
 		}
-		fdef.filter.loadPreset("default");
 
+		fdef.filter.Copy(FilterHelper.get("default", "foot"));
+		//
 		//create walker
 		{
-			//bdef.type = (b2BodyType.b2_dynamicBody);//b2_dynamicBody//b2_staticBody//b2_kinematicBody
+			bdef.type = b2BodyType.b2_dynamicBody;
 			bdef.position.Set(first_pos.x, jmp_body_pos_y);
 			this.foot_walk = world.CreateBody(bdef);
 
@@ -839,8 +848,12 @@ class PCharacterBase {
 		}
 	}
 
+	/**
+	 * @param {Foothold} foothold
+	 * @param {b2Vec2} foot_at
+	 */
 	_which_foothold_contact(foothold, foot_at) {
-		if (this.$foothold != foothold && !this.state._drop) {
+		if (this.$foothold != foothold && !this.state.dropDown) {
 			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主；忽略連續 foothold 重疊的點
 			if (this._foot_at && foot_at.y < this._foot_at.y) {
 				if (this.$foothold) {
@@ -856,8 +869,10 @@ class PCharacterBase {
 				}
 			}
 		}
-		this._foothold = foothold;
-		this._foot_at = foot_at.Clone();
+		if (!foothold.is_wall) {
+			this._foothold = foothold;
+			this._foot_at = foot_at.Clone();
+		}
 		return true;
 	}
 
@@ -908,6 +923,7 @@ class PCharacterBase {
 		// apply state
 		if (this.state.ladder) {
 			this.state.jump = false;
+			this.state.jump_count = 0;
 		}
 		else {
 			if (this.state._begin_jump) {
@@ -961,6 +977,7 @@ class PCharacterBase {
 		else {
 			if (this.$foothold) {
 				this.state.jump = false;
+				this.state.jump_count = 0;
 				if (this.$foothold == this._foothold) {
 					//console.log("stable cantact");
 					//debugger;
@@ -969,6 +986,7 @@ class PCharacterBase {
 			else {
 				this.state.jump = true;
 				this.state._begin_jump = false;
+				//
 				if (!this._foothold) {
 				}
 				else {

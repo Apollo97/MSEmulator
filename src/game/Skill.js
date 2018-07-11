@@ -586,7 +586,7 @@ class SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
-	 * @returns {boolean} - is player control proxy
+	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
 	}
@@ -859,7 +859,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
-	 * @returns {boolean} - is player control proxy
+	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
 		if (keyUp) {
@@ -913,8 +913,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @override
 	 */
 	_init() {
-		this.jump_count = 0;//is_launch = this.jump_count > 0
-		this.jump_max_count = 2;
+		this.jump_max_count = (window.jump_max_count || 2);
 	}
 
 	jump2() {
@@ -931,7 +930,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
 	 * @param {number} keyUp - is keyUp
-	 * @returns {boolean} - is player control proxy
+	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
 		if (!this._owner) {
@@ -940,23 +939,21 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 		}
 		const $physics = this._owner.$physics;
 
-		if (keyUp && $physics.state.jump) {
-			++this.jump_count;
-		}
-
-		if (this.jump_count == 0) {
-			//proxy
-			inputKey.jump = keyDown;
-			$physics.control(inputKey);
-			return true;
-		}
-		else if ($physics.state.jump) {
-			if (keyDown == 1 && this.jump_count < this.jump_max_count) {
+		if ($physics.state.jump_count == 0) {
+			if ($physics.state.jump && !$physics.state.dropDown) {
 				this.jump2();
+				$physics.state.jump_count += 2;
+			}
+			else {//normal jump
+				inputKey.jump = keyDown;
+				return false;
 			}
 		}
-		else {//??
-			this.is_end = true;
+		else if ($physics.state.jump) {
+			if (keyDown == 1 && $physics.state.jump_count < this.jump_max_count) {
+				this.jump2();
+				$physics.state.jump_count += 1;
+			}
 		}
 	}
 
@@ -967,7 +964,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	update(stamp) {
 		const $physics = this._owner.$physics;
 
-		if (this.jump_count > 1) {
+		if ($physics.state.jump_count > 1) {
 			if ($physics.$foothold || this._actani.isEnd()) {
 				this.is_end = true;
 			}

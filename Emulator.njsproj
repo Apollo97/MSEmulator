@@ -72,6 +72,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\MobSkill\238.FairyDust.js" />
     <Compile Include="src\game\MobSkill\238.FlowerTrap.js" />
     <Compile Include="src\game\MobSkill\MobSkillBase.js" />
+    <Compile Include="src\game\Physics\Filter.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\game\Physics\LadderRope.js">
       <SubType>Code</SubType>
     </Compile>
