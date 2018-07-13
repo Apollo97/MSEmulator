@@ -20,7 +20,6 @@ import { PMob } from "./PMob.js";
 import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
 
 import { IRenderer } from "../IRenderer.js";
-import { debug } from "util";
 import { FilterHelper } from "./Filter.js";
 
 
@@ -118,6 +117,8 @@ export class World extends b2World {
 				this._DestroyBody(b);
 			}
 		}
+
+		this.draw_foothold_path_count = 1;
 	}
 
 	$test_b2ParticleSystem() {
@@ -467,6 +468,7 @@ export class World extends b2World {
 		/** @type {CanvasRenderingContext2D} */
 		const ctx = renderer.ctx;
 
+		/** @type {PPlayer} */
 		const player = window.chara ? window.chara.$physics : this.player;
 
 		if ($gv.m_display_physics_debug) {
@@ -623,15 +625,43 @@ export class World extends b2World {
 			if (player && player._foothold) {
 				player._foothold.$drawDebugInfo2(renderer, "#FF0");
 			}
-			if (player && player.$foothold) {
-				player.$foothold.$drawDebugInfo2(renderer, "#F00");
-			}
 
+			let $foothold, $ladderRope;
+			if (player) {
+				$foothold = player.$foothold;
+				$ladderRope = player.ladder;
+			}
+			if ($foothold && this.draw_foothold_path_count) {
+				$foothold.$drawDebugInfo2(renderer, "#F00");
+
+				//draw path
+				let count = this.draw_foothold_path_count;
+				ctx.lineWidth = 2.5;
+				ctx.strokeStyle = "#00FE";
+				if (player.state.front > 0) {
+					$foothold = this.ground.footholds[$foothold.next];
+					for (; $foothold; $foothold = this.ground.footholds[$foothold.next]) {
+						$foothold._drawLine(ctx);
+						if ((--count) <= 0) {
+							break;
+						}
+					}
+				}
+				else if (player.state.front < 0) {
+					$foothold = this.ground.footholds[$foothold.prev];
+					for (; $foothold; $foothold = this.ground.footholds[$foothold.prev]) {
+						$foothold._drawLine(ctx);
+						if ((--count) <= 0) {
+							break;
+						}
+					}
+				}
+			}
 			this.ladderRope.forEach(lr => {
 				const width = lr.calcWidth();
 				ctx.beginPath();
 				ctx.rect(lr.x - width * 0.5, lr.y1, width, lr.y2 - lr.y1);
-				ctx.fillStyle = "#E117";
+				ctx.fillStyle = lr == $ladderRope ? "#E117":"#EB17";
 				ctx.fill();
 			});
 

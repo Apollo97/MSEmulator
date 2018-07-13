@@ -94,6 +94,9 @@ Settings.prototype.drawControllers = true;
  */
 Settings.prototype.drawParticle = true;
 
+function setFlags(flags, bit, flag) {
+	return flag ? (flags | bit):(flags & ~bit);
+}
 
 class DebugDraw extends b2Draw {
 	/**
@@ -120,6 +123,23 @@ class DebugDraw extends b2Draw {
 		if (settings.drawParticle) { flags |= b2DrawFlags.e_particleBit; }
 		this.SetFlags(flags);
 	}
+
+	set flag_drawAll(flag) { this.m_drawFlags = flag ? b2DrawFlags.e_all:b2DrawFlags.e_noneBit;  }
+	set flag_drawShape(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_shapeBit, flag); }
+	set flag_drawJoint(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_jointBit, flag); }
+	set flag_drawAabb(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_aabbBit, flag); }
+	set flag_drawPair(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_pairBit, flag); }
+	set flag_drawCenterOfMass(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_centerOfMassBit, flag); }
+	set flag_drawParticle(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_particleBit, flag); }
+	set flag_drawController(flag) { this.m_drawFlags = setFlags(this.m_drawFlags, b2DrawFlags.e_controllerBit, flag); }
+
+	get flag_drawShape() { return this.m_drawFlags & b2DrawFlags.e_shapeBit; }
+	get flag_drawJoint() { return this.m_drawFlags & b2DrawFlags.e_jointBit; }
+	get flag_drawAabb() { return this.m_drawFlags & b2DrawFlags.e_aabbBit; }
+	get flag_drawPair() { return this.m_drawFlags & b2DrawFlags.e_pairBit; }
+	get flag_drawCenterOfMass() { return this.m_drawFlags & b2DrawFlags.e_centerOfMassBit; }
+	get flag_drawParticle() { return this.m_drawFlags & b2DrawFlags.e_particleBit; }
+	get flag_drawController() { return this.m_drawFlags & b2DrawFlags.e_controllerBit; }
 }
 
 /**

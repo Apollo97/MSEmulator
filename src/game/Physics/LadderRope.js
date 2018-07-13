@@ -80,7 +80,7 @@ export class LadderRope extends MapLadderRope {
 		const hwidth = this.calcHalfWidth() / $gv.CANVAS_SCALE;
 		const hheight = (y2 - y1) * 0.5;
 
-		bdef.type = b2BodyType.b2_staticBody;//b2BodyType.b2_kinematicBody;//
+		bdef.type = b2BodyType.b2_kinematicBody;//可移動
 		bdef.position.Set(x, y1);
 
 		bdef.angle = 0;

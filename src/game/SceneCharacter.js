@@ -320,7 +320,7 @@ export class BaseSceneCharacter extends SceneObject {
 		if ($gv.m_editor_mode) {
 			if (this.renderer.speed > 0 && this.$physics && this.enablePhysics) {
 				this._applyState({
-					//front: this.renderer.front,
+					front: this.$physics.state.front,
 				});
 			}
 		}

@@ -1,6 +1,6 @@
 ﻿
 import {
-	b2_linearSlop,
+	b2_polygonRadius,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2PolygonShape, b2EdgeShape,
@@ -30,6 +30,8 @@ window.CREATE_SOLID_AND_EDGE_FOOTHOLD = false;
  * b2EdgeShape ghost vertex
  */
 window.USE_GHOST_VERTEX = true;
+
+window.FOOTHOLD_IS_BULLET = window.CREATE_SOLID_FOOTHOLD && !window.CREATE_SOLID_AND_EDGE_FOOTHOLD;
 
 /**
  * 在連續的foothold間插入foothold，可以防止player從縫隙穿過
@@ -161,11 +163,11 @@ export class Ground {
 			shape = new b2EdgeShape();
 		}
 
-		bdef.type = b2BodyType.b2_kinematicBody;//b2_staticBody
+		bdef.type = b2BodyType.b2_kinematicBody;//可移動
 		bdef.linearDamping = 1;
 		bdef.gravityScale = 0;
 		bdef.userData = this;
-		//bdef.bullet = true;
+		bdef.bullet = window.FOOTHOLD_IS_BULLET;
 
 		fdef.shape = shape;
 		fdef.density = 1;
@@ -188,19 +190,38 @@ export class Ground {
 
 			create.call(this, fh, x1, y1, x2, y2, null);
 			
-			if (window.LERP_FOOTHOLD && fh.next != null) {
-				const next = this.footholds[fh.next];
+			const next = this.footholds[fh.next];
+			if (next) {
 				let x1n, y1n, x2n, y2n;
+				let nx1, ny1, nx2, ny2;
 
-				let lerp_current = 0.5 + Math.clamp(Math.abs(y1 - next.y2 / $gv.CANVAS_SCALE), 0, 1) * 0.35;
-				let lerp_next = (1 - lerp_current);
+				nx1 = next.x1 / $gv.CANVAS_SCALE;
+				ny1 = next.y1 / $gv.CANVAS_SCALE;
+				nx2 = next.x2 / $gv.CANVAS_SCALE;
+				ny2 = next.y2 / $gv.CANVAS_SCALE;
 
-				x1n = lerp(x1, x2, lerp_current);
-				y1n = lerp(y1, y2, lerp_current);
-				x2n = lerp(next.x1 / $gv.CANVAS_SCALE, next.x2 / $gv.CANVAS_SCALE, lerp_next);
-				y2n = lerp(next.y1 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE, lerp_next);
+				let v1 = new b2Vec2(x1 - x2, y1 - y2);
+				let v2 = new b2Vec2(nx2 - nx1, ny2 - ny1);
+				let a = Math.atan2(b2Vec2.CrossVV(v1, v2), b2Vec2.DotVV(v1, v2));
 
-				create.call(this, fh, x1n, y1n, x2n, y2n, "Next");
+				fh.next_a = a;
+				fh.next_a_deg = Math.abs(Math.trunc(a * 180 / Math.PI)) % 180;
+
+				if (window.LERP_FOOTHOLD && fh.next != null) {
+					if (!0) {
+						let lerp_current = 0.5 + Math.clamp(Math.abs(y1 - next.y2 / $gv.CANVAS_SCALE), 0, 1) * 0.4;
+						let lerp_next = (1 - lerp_current);
+
+						x1n = lerp(x1, x2, lerp_current);
+						y1n = lerp(y1, y2, lerp_current);
+						x2n = lerp(nx1, nx2, lerp_next);
+						y2n = lerp(ny1, ny2, lerp_next);
+
+						if (x1n) {
+							create.call(this, fh, x1n, y1n, x2n, y2n, "Next");
+						}
+					}
+				}
 			}
 		}
 		function create(fh, x1, y1, x2, y2, bodyName) {
@@ -228,8 +249,9 @@ export class Ground {
 			body.$type = "ground";
 
 			if (is_solid) {
-				const hheight = 0.5 / $gv.CANVAS_SCALE;//1px
-				shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
+				const hheight = b2_polygonRadius / $gv.CANVAS_SCALE;//or 1px
+				shape.SetAsBox(hlen, hheight);
+				//shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
 			}
 			else {
 				shape.m_vertex1.Set(-hlen, 0)
@@ -451,13 +473,24 @@ export class Ground {
 				//if (ppw.y > cpoint.y) {//TODO: ??
 				//	continue;
 				//}
-				let dist = b2Vec2.SubVV(ppw, cpoint, new b2Vec2()).Length();
+				let dist = b2Vec2.SubVV(cpoint, ppw, new b2Vec2());
+				let length = dist.Length();
 
-				player._$footCFDist = dist;
-				player._$footCFSub = Math.abs(dist - player.chara_profile.foot_width);
+				player._$footCFDist = length;
+				player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
+
+				if (fh.is_wall) {
+					const relPPoint = platformBody.GetLocalPoint(ppw, new b2Vec2());
+					const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
+					if (-relPPoint.y > foot_width) {
+						normal_contact(cpoint);
+						return;
+					}
+					continue;
+				}
 
 				if (player.$foothold && player.$foothold != fh) {
-					if (player._$footCFSub > (b2_linearSlop * 2)) {
+					if (player._$footCFSub > b2_polygonRadius) {
 						player.leave_$fh = fh;
 						continue;
 					}
@@ -479,7 +512,7 @@ export class Ground {
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
 				//borderline case, moving only slightly out of platform
 				const relativePoint = platformBody.GetLocalPoint(cpoint, new b2Vec2());
-				const platformFaceY = b2_linearSlop;
+				const platformFaceY = b2_polygonRadius;//shape is edge
 				if (relativePoint.y <= platformFaceY) {
 					if (playerBody.$type == "pl_ft_walk") {
 						//player._foothold = fh;
@@ -540,9 +573,9 @@ export class Ground {
 			{
 				//player._$fallEdge = null;//??
 
-				//if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
-				//	playerBody.ApplyForceToCenter(GRAVITY);
-				//}
+				if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
+					playerBody.ApplyForceToCenter(GRAVITY);
+				}
 			}
 		}
 	}

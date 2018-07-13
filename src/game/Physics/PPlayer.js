@@ -1,5 +1,6 @@
 ﻿
 import {
+	b2_linearSlop,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
@@ -374,6 +375,11 @@ class PCharacterBase {
 			}
 		}
 		else {
+			//TODO: action="ladder": need better solution
+			if (this.chara && this.chara.renderer && "_$anim_spd" in this.state) {
+				this.chara.renderer.speed = this.state._$anim_spd;
+				delete this.state._$anim_spd;
+			}
 			if (this.ladder) {
 				this.ladder = null;
 
@@ -387,12 +393,6 @@ class PCharacterBase {
 					this.foot_walk.SetAwake(true);
 					this.foot_walk.SetLinearVelocity2(0, 0);
 					this.foot_walk.m_type = b2BodyType.b2_dynamicBody;
-
-					//TODO: action="ladder": need better solution
-					if (this.chara && this.chara.renderer) {
-						this.chara.renderer.speed = this.state._$anim_spd;
-						delete this.state._$anim_spd;
-					}
 				}
 			}
 			if (this.$ladder_pj) {
@@ -536,7 +536,16 @@ class PCharacterBase {
 				this.state.walk = false;
 
 				if (!this.state.jump) {
-					this.walker.SetMotorSpeed(0);//stop motor
+					let vx = velocity.x;
+					if (vx > 50 * b2_linearSlop) {
+						this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);//煞車但無法止滑
+					}
+					else if (vx < -50 * b2_linearSlop) {
+						this.walker.SetMotorSpeed(-vx * Math.PI / 2 / Math.PI / this.chara_profile.width / 2);//煞車但無法止滑
+					}
+					else {
+						this.walker.SetMotorSpeed(0);//stop motor
+					}
 				}
 				else {
 					this.walker.SetMotorSpeed(0);//stop motor
@@ -849,12 +858,18 @@ class PCharacterBase {
 	}
 
 	/**
+	 * 決定接觸哪一個foothold，忽略牆壁
+	 * if foothold is wall then return true
 	 * @param {Foothold} foothold
 	 * @param {b2Vec2} foot_at
 	 */
 	_which_foothold_contact(foothold, foot_at) {
+		if (foothold.is_wall) {
+			return true;
+		}
 		if (this.$foothold != foothold && !this.state.dropDown) {
-			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主；忽略連續 foothold 重疊的點
+			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
+			// 忽略連續 foothold 重疊的點(x)
 			if (this._foot_at && foot_at.y < this._foot_at.y) {
 				if (this.$foothold) {
 					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
@@ -869,10 +884,8 @@ class PCharacterBase {
 				}
 			}
 		}
-		if (!foothold.is_wall) {
-			this._foothold = foothold;
-			this._foot_at = foot_at.Clone();
-		}
+		this._foothold = foothold;
+		this._foot_at = foot_at.Clone();
 		return true;
 	}
 

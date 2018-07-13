@@ -940,7 +940,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 		const $physics = this._owner.$physics;
 
 		if ($physics.state.jump_count == 0) {
-			if ($physics.state.jump && !$physics.state.dropDown) {
+			if (keyDown == 1 && $physics.state.jump) {
 				this.jump2();
 				$physics.state.jump_count += 2;
 			}

@@ -2,6 +2,7 @@
 import {
 	b2Fixture,
 } from "./Physics.js";
+import { IRenderer } from "../IRenderer.js";
 
 export class Foothold {
 	/**
@@ -34,6 +35,22 @@ export class Foothold {
 		this.fixture = null;
 
 		this.$showDebugInfo = false;
+
+		/** @type {number} - this和next_fh的夾角 */
+		this.next_a = undefined;
+
+		this.next_a_deg = undefined;
+	}
+
+	/** @type {Foothold} */
+	get next_fh() {
+		const footholds = this.body.m_world.ground.footholds;
+		return footholds[this.next];
+	}
+	/** @type {Foothold} */
+	get prev_fh() {
+		const footholds = this.body.m_world.ground.footholds;
+		return footholds[this.prev];
 	}
 
 	get x1() { return this._raw.x1; }
@@ -58,7 +75,7 @@ export class Foothold {
 	}
 
 	/**
-	 * @param {IRenderer} renderer
+	 * @param {CanvasRenderingContext2D} ctx
 	 */
 	_drawLine(ctx) {
 		ctx.beginPath()
@@ -68,7 +85,7 @@ export class Foothold {
 	}
 
 	/**
-	 * @param {IRenderer} renderer
+	 * @param {CanvasRenderingContext2D} ctx
 	 */
 	_drawLineV01(ctx) {
 		if (this.m_hasVertex0) {
@@ -80,7 +97,7 @@ export class Foothold {
 	}
 
 	/**
-	 * @param {IRenderer} renderer
+	 * @param {CanvasRenderingContext2D} ctx
 	 */
 	_drawLineV23(ctx) {
 		if (this.m_hasVertex3) {
@@ -97,10 +114,13 @@ export class Foothold {
 			y: Math.max(y2, y1),
 		};
 	}
+	/**
+	 * @param {IRenderer} renderer
+	 */
 	$drawDebugInfo(renderer) {
 		const ctx = renderer.ctx;
 		const fh = this;
-		const text = `[${fh.id}](${fh.x1}, ${fh.y1})[${fh.group}]{${fh._raw.piece}}`;
+		const text = `[${fh.id}](${fh.x1}, ${fh.y1})[${fh.group}]{${fh._raw.piece}}∠${fh.next_a_deg}`;
 
 		const ta = ctx.textAlign, tb = ctx.textBaseline;
 		const tp = this.$_text_pos(fh.x1, fh.y1, fh.x2, fh.y2);
@@ -127,10 +147,14 @@ export class Foothold {
 		ctx.textAlign = ta;
 		ctx.textBaseline = tb;
 	}
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {string} color
+	 */
 	$drawDebugInfo2(renderer, color) {
 		const ctx = renderer.ctx;
 		const fh = this;
-		const text = `${fh.prev}<${fh.id}>${fh.next} C{${fh.chain}} (${fh.x1}, ${fh.y1})(${fh.x2}, ${fh.y2}) L[${fh.layer}] G[${fh.group}] P{${fh._raw.piece}}`;
+		const text = `${fh.prev}<${fh.id}>${fh.next} C{${fh.chain}} (${fh.x1}, ${fh.y1})(${fh.x2}, ${fh.y2}) L[${fh.layer}] G[${fh.group}] P{${fh._raw.piece}}∠${fh.next_a_deg}`;
 
 		let ta = ctx.textAlign, tb = ctx.textBaseline;
 		const tp = this.$_text_pos(fh.x1, fh.y1, fh.x2, fh.y2);
