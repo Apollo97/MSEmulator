@@ -4,7 +4,7 @@ import {
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2PolygonShape, b2EdgeShape,
-	b2Body,
+	b2Body, b2Fixture,
 	b2Contact, b2Manifold, b2ContactImpulse, b2WorldManifold
 } from "./Physics.js";
 
@@ -14,11 +14,10 @@ import { World, GRAVITY } from "./World.js";
 import { Foothold } from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
-import { b2Fixture } from "../../Box2D/build/Box2D/Box2D/Box2D.js";
 import { FilterHelper } from "./Filter.js";
 
 /**
- * 可以防止player卡在foothold裡面，速度太快會穿過
+ * 可以防止player卡在foothold裡面
  */
 window.CREATE_SOLID_FOOTHOLD = false;
 /**
@@ -31,12 +30,7 @@ window.CREATE_SOLID_AND_EDGE_FOOTHOLD = false;
  */
 window.USE_GHOST_VERTEX = true;
 
-window.FOOTHOLD_IS_BULLET = window.CREATE_SOLID_FOOTHOLD && !window.CREATE_SOLID_AND_EDGE_FOOTHOLD;
-
-/**
- * 在連續的foothold間插入foothold，可以防止player從縫隙穿過
- */
-window.LERP_FOOTHOLD = true;
+window.FOOTHOLD_IS_BULLET = true;
 
 /**
  * @param {number} left
@@ -188,7 +182,6 @@ export class Ground {
 			x2 = fh.x2 / $gv.CANVAS_SCALE;
 			y2 = fh.y2 / $gv.CANVAS_SCALE;
 
-			create.call(this, fh, x1, y1, x2, y2, null);
 			
 			const next = this.footholds[fh.next];
 			if (next) {
@@ -206,25 +199,9 @@ export class Ground {
 
 				fh.next_a = a;
 				fh.next_a_deg = Math.abs(Math.trunc(a * 180 / Math.PI)) % 180;
-
-				if (window.LERP_FOOTHOLD && fh.next != null) {
-					if (!0) {
-						let lerp_current = 0.5 + Math.clamp(Math.abs(y1 - next.y2 / $gv.CANVAS_SCALE), 0, 1) * 0.4;
-						let lerp_next = (1 - lerp_current);
-
-						x1n = lerp(x1, x2, lerp_current);
-						y1n = lerp(y1, y2, lerp_current);
-						x2n = lerp(nx1, nx2, lerp_next);
-						y2n = lerp(ny1, ny2, lerp_next);
-
-						if (x1n) {
-							create.call(this, fh, x1n, y1n, x2n, y2n, "Next");
-						}
-					}
-				}
 			}
 		}
-		function create(fh, x1, y1, x2, y2, bodyName) {
+		function create(fh, x1, y1, x2, y2) {
 			const cx = (x2 + x1) * 0.5;
 			const cy = (y2 + y1) * 0.5;
 			bdef.position.Set(cx, cy);
@@ -249,23 +226,22 @@ export class Ground {
 			body.$type = "ground";
 
 			if (is_solid) {
-				const hheight = b2_polygonRadius / $gv.CANVAS_SCALE;//or 1px
+				const hheight = b2_polygonRadius;
 				shape.SetAsBox(hlen, hheight);
-				//shape.SetAsBox(hlen, hheight, new b2Vec2(0, 0.75 / $gv.CANVAS_SCALE), 0);
 			}
 			else {
 				shape.m_vertex1.Set(-hlen, 0)
 				shape.m_vertex2.Set(hlen, 0);
 
-				if (bodyName && window.USE_GHOST_VERTEX) {
+				if (window.USE_GHOST_VERTEX) {
 					if (fh.prev != null) {
 						const prev = this.footholds[fh.prev];
-						shape.m_vertex0.Set(prev.x1 / $gv.CANVAS_SCALE, prev.y1 / $gv.CANVAS_SCALE);
+						shape.m_vertex0.Set(prev.x2 / $gv.CANVAS_SCALE, prev.y2 / $gv.CANVAS_SCALE);
 						shape.m_hasVertex0 = true;
 					}
 					if (fh.next != null) {
 						const next = this.footholds[fh.next];
-						shape.m_vertex3.Set(next.x2 / $gv.CANVAS_SCALE, next.y2 / $gv.CANVAS_SCALE);
+						shape.m_vertex3.Set(next.x1 / $gv.CANVAS_SCALE, next.y1 / $gv.CANVAS_SCALE);
 						shape.m_hasVertex3 = true;
 					}
 				}
@@ -279,17 +255,8 @@ export class Ground {
 			fixture.endContact = this.endContact_bodyBase_oneway;
 			fixture.preSolve = this.preSolveGround_bodyBase_oneway;//preSolveGround_t2
 
-			if (bodyName) {
-				fh["body" + bodyName] = body;
-				if (!this["bodies" + bodyName]) {
-					this["bodies" + bodyName] = [];
-				}
-				this["bodies" + bodyName].push(body);
-			}
-			else {
-				fh.body = body;
-				this.bodies.push(body);
-			}
+			fh.body = body;
+			this.bodies.push(body);
 		}
 	}
 
@@ -504,7 +471,7 @@ export class Ground {
 						normal_contact(cpoint);
 						return;
 					}
-					break;
+					continue;
 				}
 				normal_contact(cpoint);
 				return;//nothing: not target, normal contact ground
@@ -522,7 +489,7 @@ export class Ground {
 							normal_contact(cpoint);
 							return;//contact point is less than 5cm inside front face of platfrom
 						}
-						break;
+						//continue;//not primary, normal contact ground
 					}
 					normal_contact(cpoint);
 					return;//nothing: not target, normal contact ground
@@ -601,7 +568,7 @@ export class Ground {
 		//	player._foot_at = null;
 		//}
 
-		if (player.$foothold && fh == player.$foothold) {
+		if (player.$foothold && fh == player.$foothold) {//正常離開地面
 			player.prev_$fh = player.$foothold;
 			player.$foothold = null;
 		}

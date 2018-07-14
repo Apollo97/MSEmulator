@@ -138,6 +138,23 @@ class ControlKeys {
 	}
 }
 
+export class FootContact {
+	/**
+	 * @param {Foothold} foothold
+	 * @param {b2Vec2} position
+	 * @param {number} priority
+	 */
+	constructor(foothold, position, priority) {
+		/** @type {Foothold} */
+		this.foothold = foothold;
+
+		/** @type {b2Vec2} */
+		this.position = position;
+
+		/** @type {number} */
+		this.priority = priority;
+	}
+}
 
 class PCharacterBase {
 	constructor() {
@@ -169,8 +186,14 @@ class PCharacterBase {
 		 */
 		this.prev_$fh = null;
 
-		/** @type {{ x:number, y:number }} in World::Setp */
+		/** @type {{ x:number, y:number }} - contact foothold point */
 		this._foot_at = new b2Vec2();
+
+		///** @type {FootContact[]} - 沒用 */
+		//this._foot_contact_list = [];
+
+		/** @type {number} */
+		this._foothold_priority = 0;
 
 		/**
 		 * no contact leave_$fh
@@ -859,13 +882,13 @@ class PCharacterBase {
 
 	/**
 	 * 決定接觸哪一個foothold，忽略牆壁
-	 * if foothold is wall then return true
 	 * @param {Foothold} foothold
 	 * @param {b2Vec2} foot_at
+	 * @returns {number}
 	 */
-	_which_foothold_contact(foothold, foot_at) {
+	__priority_foothold_contact(foothold, foot_at) {
 		if (foothold.is_wall) {
-			return true;
+			return 0;
 		}
 		if (this.$foothold != foothold && !this.state.dropDown) {
 			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
@@ -876,17 +899,40 @@ class PCharacterBase {
 						(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
 					}
 					else {
-						return false;
+						return 1;
 					}
 				}
 				else {
-					return false;
+					return 2;
 				}
 			}
 		}
-		this._foothold = foothold;
-		this._foot_at = foot_at.Clone();
-		return true;
+		return 3;
+	}
+
+	/**
+	 * 決定接觸哪一個foothold，忽略牆壁
+	 * if foothold is wall then return true
+	 * @param {Foothold} foothold
+	 * @param {b2Vec2} foot_at
+	 */
+	_which_foothold_contact(foothold, foot_at) {
+		if (foothold.is_wall) {
+			return true;
+		}
+		let priority = this.__priority_foothold_contact(foothold, foot_at);
+		if (priority > 0) {
+			//let foot_contact = new FootContact(foothold, foot_at, priority);
+			//this._foot_contact_list.push(foot_contact);
+
+			if (!this._foothold_priority || priority >= this._foothold_priority) {
+				this._foothold = foothold;
+				this._foot_at = foot_at.Clone();
+				this._foothold_priority = priority;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -932,6 +978,10 @@ class PCharacterBase {
 		this.state._drop = false;
 		this._foothold = null;
 		this._foot_at = null;
+
+		//if (this._foot_contact_list.length) {
+		//	this._foot_contact_list.length = 0;
+		//}
 
 		// apply state
 		if (this.state.ladder) {
@@ -982,6 +1032,15 @@ class PCharacterBase {
 	 */
 	AfterStep() {
 		//this._endContactFoothold();
+
+		//if (this._foot_contact_list.length && !this._foothold && !this.$foothold) {
+		//	let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
+		//	this.$foothold = max.foothold;
+		//	this._foothold = max.foothold;
+		//	this._foot_at = max.position;
+		//	this._foothold_priority = max.priority;
+		//}
+
 		if (this.state.ladder) {
 			this.body.SetLinearVelocity2(0, 0);
 			//
@@ -992,18 +1051,22 @@ class PCharacterBase {
 				this.state.jump = false;
 				this.state.jump_count = 0;
 				if (this.$foothold == this._foothold) {
-					//console.log("stable cantact");
+					//console.log("stable contact");
 					//debugger;
 				}
 			}
 			else {
-				this.state.jump = true;
+				if (this.state.walk && !this.state._begin_jump && this.prev_$fh) {
+				}
+				else {
+					this.state.jump = true;
+				}
 				this.state._begin_jump = false;
-				//
+				
 				if (!this._foothold) {
 				}
 				else {
-					//console.log("no stable cantact");
+					//console.log("no stable contact");
 					//debugger;
 				}
 			}
