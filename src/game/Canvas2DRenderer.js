@@ -248,6 +248,11 @@ export class Engine extends IRenderer {
 		return this._globalAlpha;//this.ctx.globalAlpha;
 	}
 	set globalAlpha(value) {
+		if (process.env.NODE_ENV !== 'production') {
+			if (value < 0 || value > 1) {
+				debugger;
+			}
+		}
 		if (this._globalAlpha != value) {
 			this._globalAlpha = value;
 			this.ctx.globalAlpha = value;

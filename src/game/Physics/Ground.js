@@ -182,6 +182,7 @@ export class Ground {
 			x2 = fh.x2 / $gv.CANVAS_SCALE;
 			y2 = fh.y2 / $gv.CANVAS_SCALE;
 
+			create.call(this, fh, x1, y1, x2, y2);
 			
 			const next = this.footholds[fh.next];
 			if (next) {

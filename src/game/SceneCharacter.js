@@ -307,8 +307,12 @@ export class BaseSceneCharacter extends SceneObject {
 				else {
 					skill.update(stamp, this);
 				}
+
 				//TODO: 結算攻擊傷害，skill.attackInfo
 				this._handleAttack();
+
+				//clear all attack
+				skill.attackInfo.allAttack.length = 0;
 			}
 			else {
 				debugger;

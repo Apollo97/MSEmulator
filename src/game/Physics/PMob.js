@@ -384,7 +384,15 @@ export class PMob extends PRemoteCharacter {
 	get _category() {
 		return this._info.category;
 	}
-	
+
+	/**
+	 * @override
+	 * @returns {string}
+	 */
+	get _body_category() {
+		return "mob";
+	}
+
 	/**
 	 * @param {World} world
 	 * @returns {void}

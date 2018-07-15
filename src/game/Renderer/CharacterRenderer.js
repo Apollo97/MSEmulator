@@ -2162,6 +2162,9 @@ export class CharacterAnimationBase {
 
 		/** @type {number} - animation speed rate */
 		this.speed = 1;
+
+		/** @type {boolean} */
+		this.fixed_speed = false;
 		
 		this._action = "stand1";
 		this._action_frame = 0;
@@ -2264,6 +2267,11 @@ export class CharacterAnimationBase {
 
 		/** @type {number} */
 		this._emotion_frame = 0;
+	}
+
+	/** @type {number} - 0~1 */
+	getSpeed() {
+		return this.fixed_speed ? 1 : this.speed;
 	}
 
 	/**
@@ -2540,7 +2548,7 @@ export class CharacterAnimationBase {
 	}
 
 	/**
-	 * @param {any} number  0 <= stamp < Infinity
+	 * @param {number} stamp - 0 <= stamp < Infinity
 	 */
 	_update(stamp) {
 		if (this.actani) {
@@ -2567,10 +2575,7 @@ export class CharacterAnimationBase {
 	 * @param {any} number  0 < stamp * speed < Infinity
 	 */
 	update(stamp) {
-		stamp *= this.speed;
-		if (!stamp) {
-			return;
-		}
+		stamp *= this.getSpeed();
 
 		this._update(stamp);
 	}

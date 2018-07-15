@@ -199,7 +199,7 @@ export class World extends b2World {
 		let fdef = new b2FixtureDef();
 		let shape;
 
-		fdef.filter.Copy(FilterHelper.get("foothold", "portal"));
+		fdef.filter.Copy(FilterHelper.get("portal"));
 
 		bdef.userData = portal;
 		bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
@@ -261,7 +261,7 @@ export class World extends b2World {
 
 		fdef.$type = "MapBorder";
 		fdef.shape = shape;
-		fdef.filter.Copy(FilterHelper.get("default", "map_border"));
+		fdef.filter.Copy(FilterHelper.get("map_border"));
 
 		let bb = this.CreateBody(bdef);
 		bb.$type = "MapBorder";

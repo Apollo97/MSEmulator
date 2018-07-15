@@ -95,8 +95,8 @@ export class PBullet {
 		
 		//TODO: implement filter: player_bullet
 		fdef.shape = shape;
-		fdef.filter.Copy(FilterHelper.get("default", "bullet"));
-		//fdef.filter.Copy(FilterHelper.get("default", "bullet_pvp"));
+		fdef.filter.Copy(FilterHelper.get("bullet"));
+		//fdef.filter.Copy(FilterHelper.get("pvp_bullet"));
 		
 		fdef.userData = this;
 
@@ -169,9 +169,6 @@ function bullet_default_preSolve(contact, oldManifold, fa, fb) {
 	/** @type {PPlayer} */
 	const targetPlayer = fb.m_userData;
 	if (!targetPlayer) {
-		return;
-	}
-	if (!(targetPlayer instanceof PPlayer)) {//TODO: use filter
 		return;
 	}
 

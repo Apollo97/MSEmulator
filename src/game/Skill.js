@@ -264,7 +264,7 @@ export class SkillEffectAnimation extends Animation {
 	 * @param {number} stamp
 	 */
 	update_r(stamp) {
-		stamp *= this.targetRenderer.speed;
+		stamp *= this.targetRenderer.getSpeed();
 		
 		super.update(stamp);
 	}
@@ -608,10 +608,11 @@ class SkillAnimationBase {
 	}
 
 	/**
+	 * no timer
 	 * @param {number} stamp
 	 */
 	_default_update(stamp) {
-		stamp *= this._crr.speed;
+		//stamp *= this.targetRenderer.getSpeed();
 
 		if (this._actani) {
 			if (this._actani.delay) {// not start yet
@@ -819,10 +820,15 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 		this.tick = 0;
 
 		this.fadeTotalTime = this._actani.getTotalTime();
+
+		this._crr.fixed_speed = true;
 	}
 
 	_prepare() {
 		this.current_effect.opacity = this.time / this.fadeTotalTime;
+		if (this.current_effect.opacity > 1) {
+			this.current_effect.opacity = 1;
+		}
 
 		if (this._actani.isEnd()) {
 			this.current_effect.opacity = 0;//prepare
@@ -831,24 +837,32 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 			this.state = "keydown";
 			this._state_func = this._keydown;
 			this.current_effect = this._addEffect(this.state);
+
+			this._actani.loop = true;
+			this.current_effect.is_loop = true;
+
 			this.time = 0;//reset
 		}
 	}
 	_keydown() {
 		if (this._actani.isEnd()) {
-			this.current_effect.reset();
-			this.current_effect.opacity = 1;
-			this._actani.reset();
+			//this.current_effect.reset();
+			//this.current_effect.opacity = 1;
+			//this._actani.reset();
 			this.time = 0;//reset
 		}
 	}
 	_keydownend() {
 		this.current_effect.opacity = 1 - (this.time / this.fadeTotalTime);
+		if (this.current_effect.opacity < 0) {
+			this.current_effect.opacity = 0;
+		}
 
 		if (this._actani.isEnd()) {
 			this.current_effect.opacity = 0;//keydownend
 			this.current_effect.destroy();
 
+			this._crr.fixed_speed = false;
 			this.is_launch = true;
 			this.is_end = true;
 		}
@@ -870,6 +884,8 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 			this._state_func = this._keydownend;
 			this.current_effect = this._addEffect(this.state);
 			this.fadeTotalTime = this._actani.getTotalTime();
+
+			this._actani.loop = false;
 			this.time = 0;//reset
 		}
 	}
@@ -883,8 +899,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 		//keydown(second step): keydown + keydown0
 		//keyup: keydownend
 
-		stamp *= this._crr.speed;
-
+		stamp *= this._crr.getSpeed();
 		this.time += stamp;
 
 		++this.tick;
@@ -1020,6 +1035,8 @@ export class SceneSkill extends SkillAnimationBase {
 			throw new Error("skill ID format");
 		}
 		//skillId = 1120017;//1001005;// jobId + 4-digit
+
+		this.attackInfo.skill = skillId;
 		
 		let loaded_skill = SceneSkill.__loaded_skill[skillId];
 		if (loaded_skill && loaded_skill.data) {

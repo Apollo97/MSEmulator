@@ -661,6 +661,14 @@ class PCharacterBase {
 	}
 
 	/**
+	 * @virtual
+	 * @returns {string}
+	 */
+	get _body_category() {
+		return "body";
+	}
+
+	/**
 	 * @param {World} world
 	 * @returns {void}
 	 */
@@ -686,9 +694,7 @@ class PCharacterBase {
 
 		let jmp_body_pos_y = first_pos.y + this.chara_profile.height * 0.75 * 0.5;
 
-		fdef.filter.Copy(FilterHelper.get("default", "body"));
-		//
-		fdef.filter.maskBits = 0;
+		fdef.filter.Copy(FilterHelper.get(this._body_category));
 
 		//head
 		{
@@ -707,7 +713,7 @@ class PCharacterBase {
 			this.fixture.$type = "player";
 		}
 
-		fdef.filter.Copy(FilterHelper.get("default", "foot"));
+		fdef.filter.Copy(FilterHelper.get("foot"));
 		//
 		//create walker
 		{

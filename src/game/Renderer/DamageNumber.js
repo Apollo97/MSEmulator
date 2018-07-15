@@ -210,6 +210,8 @@ export class DamageNumber extends Drawable {
 		this.x = x;
 		this.y = y;
 
+		this.vy = DamageNumber.move_y / DamageNumber.time_tt;
+
 		this.time = 0;
 		this.state = 0;
 
@@ -254,15 +256,19 @@ export class DamageNumber extends Drawable {
 	update(stamp) {
 		this.time += stamp;
 
-		this.y += (DamageNumber.move_y / DamageNumber.time_tt) * stamp;
+		this.y += this.vy * stamp;
 
 		if (this.state == 0) {
+			this.vy = this.vy * DamageNumber.move_avy;
+
 			if (this.time > DamageNumber.time_d1) {
 				this.time = 0;
 				this.state = 1;
 			}
 		}
 		else if (this.state == 1) {
+			this.vy = this.vy * DamageNumber.move_avy2;
+
 			if (this.time < DamageNumber.time_d2) {
 				this.opacity = 1 - (this.time / DamageNumber.time_d2);
 				//this.opacity = Math.clamp(this.opacity, 0, 1);
@@ -283,7 +289,9 @@ export class DamageNumber extends Drawable {
 DamageNumber.time_d1 = 1000;
 DamageNumber.time_d2 = 1000;
 DamageNumber.time_tt = DamageNumber.time_d1 + DamageNumber.time_d2;
-DamageNumber.move_y = -250;
+DamageNumber.move_y = -300;
+DamageNumber.move_avy = 1.001;
+DamageNumber.move_avy2 = 0.99;
 
 export class DamageNumberTest extends DamageNumber {
 	/**
