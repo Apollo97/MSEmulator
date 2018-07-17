@@ -287,6 +287,12 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
+
+*.vshost.exe
+*.vshost.exe.config
+*.vshost.exe.manifest
+
+
 /Tools/EquipList/libwz.net.dll
 /Tools/EquipList/EquipList.exe
 

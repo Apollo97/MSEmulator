@@ -1,9 +1,11 @@
 ﻿
 import { b2Filter } from "../../Box2D/build/Box2D/Box2D/Dynamics/b2Fixture";
+import { b2ContactFilter } from "../../Box2D/build/Box2D/Box2D/Box2D";
 
 
-/** @type {{[name:string]:b2Filter}} */
-let filter_preset = {};
+/** @type {{[string]:FilterHelper}} */
+let filter_preset = {
+};
 
 let next_category = 1;
 
@@ -43,8 +45,9 @@ export class FilterHelper extends b2Filter {
 	}
 
 	/**
-	 * @param {string} categoryName
-	 * @param {string} debugName - 
+	 * @template T
+	 * @param {T extends keyof filter_preset} categoryName
+	 * @param {string} debugName
 	 */
 	static get(categoryName, debugName) {
 		let preset = filter_preset["s_" + categoryName];
@@ -58,6 +61,7 @@ export class FilterHelper extends b2Filter {
 		if (debugName) {
 			let debugCategory = filter_preset["s_" + debugName];
 			console.warn("filter: " + debugName + "%o", debugCategory);
+			debugger;
 		}
 		return preset;
 	}
@@ -102,56 +106,76 @@ export class FilterHelper extends b2Filter {
 }
 
 const filter_table = [
-/*                 default    body    foothold    foot    bullet    pvp_bullet    mob    mob_bullet    map_obj */
-/* default */    [ 1,         1,      1,          1,      1,        1,            1,     1,            1,     ],
-/* body */       [ 1,         0,      0,          0,      0,        1,            1,     1,            1,     ],
-/* foothold */   [ 1,         0,      0,          1,      0,        0,            0,     0,            1,     ],
-/* foot */       [ 1,         0,      1,          0,      0,        0,            0,     0,            0,     ],
-/* bullet */     [ 1,         0,      0,          0,      0,        0,            1,     0,            0,     ],
-/* pvp_bullet */ [ 1,         1,      0,          0,      0,        0,            1,     0,            0,     ],
-/* mob */        [ 1,         1,      0,          0,      1,        1,            0,     0,            0,     ],
-/* mob_bullet */ [ 1,         1,      0,          0,      0,        0,            0,     0,            0,     ],
-/* portal */     [ 1,         1,      0,          0,      0,        0,            0,     0,            0,     ],
-/* map_obj */    [ 1,         1,      0,          0,      0,        0,            0,     0,            0,     ],
-/* map_border */ [ 1,         1,      0,          1,      0,        0,            1,     0,            0,     ],
+/*                 default  body  foothold  foot  bullet  pvp_bullet  mob  mob_bullet  portal  ladder  map_obj  map_border */
+/* default */    [ 1,       1,    1,        1,    1,      1,          1,   1,          1,      1,      1,       1,     ],
+/* body */       [ 1,       0,    0,        0,    0,      1,          1,   1,          1,      1,      1,       1,     ],
+/* foothold */   [ 1,       0,    0,        1,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* foot */       [ 1,       0,    1,        0,    0,      0,          0,   0,          0,      0,      0,       1,     ],
+/* bullet */     [ 1,       0,    0,        0,    0,      0,          1,   0,          0,      0,      0,       0,     ],
+/* pvp_bullet */ [ 1,       1,    0,        0,    0,      0,          1,   0,          0,      0,      0,       0,     ],
+/* mob */        [ 1,       1,    0,        0,    1,      1,          0,   0,          0,      0,      0,       0,     ],
+/* mob_bullet */ [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* portal */     [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* ladder */     [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* map_obj */    [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* map_border */ [ 1,       1,    0,        1,    0,      0,          1,   0,          0,      0,      0,       0,     ],
 /*  */
 ];
 
-let filter_list = [
-	FilterHelper.registerCategory("default"),
-	FilterHelper.registerCategory("body"),
-	FilterHelper.registerCategory("foothold"),
-	FilterHelper.registerCategory("foot"),
-	FilterHelper.registerCategory("bullet"),
-	FilterHelper.registerCategory("pvp_bullet"),
-	FilterHelper.registerCategory("mob"),
-	FilterHelper.registerCategory("mob_bullet"),
-	FilterHelper.registerCategory("portal"),
-	FilterHelper.registerCategory("map_obj"),
-	FilterHelper.registerCategory("map_border"),
-];
+(function init() {
+	let filter_list = [
+		FilterHelper.registerCategory("default"),
+		FilterHelper.registerCategory("body"),
+		FilterHelper.registerCategory("foothold"),
+		FilterHelper.registerCategory("foot"),
+		FilterHelper.registerCategory("bullet"),
+		FilterHelper.registerCategory("pvp_bullet"),
+		FilterHelper.registerCategory("mob"),
+		FilterHelper.registerCategory("mob_bullet"),
+		FilterHelper.registerCategory("portal"),
+		FilterHelper.registerCategory("ladder"),
+		FilterHelper.registerCategory("map_obj"),
+		FilterHelper.registerCategory("map_border"),
+	];
 
-for (let i = 0; i < filter_table.length; ++i) {
-	for (let j = 0; j < filter_table[i].length; ++j) {
-		if (!filter_table[i][j]) {
-			filter_list[i].maskBits = (filter_list[i].maskBits & ~(1 << j)) >>> 0;//uint32
+	for (let i = 0; i < filter_table.length; ++i) {
+		for (let j = 0; j < filter_table[i].length; ++j) {
+			if (!filter_table[i][j]) {
+				filter_list[i].maskBits = (filter_list[i].maskBits & ~(1 << j)) >>> 0;//uint32
+			}
 		}
 	}
-}
+})();
 
-(function () {
-	const s_default = filter_list[0];
+(function test() {
+	const s_default = FilterHelper.get("default");
 	if (!(s_default.categoryBits == 0b1 && s_default.maskBits == 0b11111111111111111111111111111111)) {
 		debugger;
 	}
 
-	const s_foothold = filter_list[2];
-	if (!(s_foothold.categoryBits == 0b100 && s_foothold.maskBits == 0b11111111111111111111111100001001)) {
+	const s_foothold = FilterHelper.get("foothold");
+	if (!(s_foothold.categoryBits == 0b100 && s_foothold.maskBits == 0b11111111111111111111000000001001)) {
 		debugger;
 	}
 
-	const s_foot = filter_list[3];
-	if (!(s_foot.categoryBits == 0b1000 && s_foot.maskBits == 0b11111111111111111111111000000101)) {
+	const s_foot = FilterHelper.get("foot");
+	if (!(s_foot.categoryBits == 0b1000 && s_foot.maskBits == 0b11111111111111111111100000000101)) {
+		debugger;
+	}
+
+	let contactFilter = new b2ContactFilter();
+
+
+	function Fixture(filterName) {
+		return {
+			GetFilterData: () => FilterHelper.get(filterName),
+			GetBody: () => { return {
+				GetType: () => 2,
+				ShouldCollideConnected: () => true,
+			} },
+		};
+	}
+	if (!contactFilter.ShouldCollide(Fixture("body"), Fixture("ladder"))) {
 		debugger;
 	}
 })();

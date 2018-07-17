@@ -530,20 +530,22 @@ class ItemEffect {
 	}
 
 	static async Init() {
-		let itemEffectList = {};
-		let raw = JSON.parse(await $get("/ls/Effect/ItemEff.img/"));
+		try {
+			/** @type {Set<string>} */
+			let itemEffectList = ItemEffect._list;
 
-		if (!raw) {
-			console.error("No item effect");
-			alert("No item effect");
+			/** @type {string[]} */
+			let raw = JSON.parse(await $get("/ls/Effect/ItemEff.img/"));
+
+			itemEffectList.clear();
+
+			raw.forEach(id => {
+				itemEffectList.add(id);
+			});
+		}
+		catch (ex) {
 			return false;
 		}
-
-		raw.forEach(i => {
-			itemEffectList[i] = 1;
-		});
-
-		ItemEffect._list = itemEffectList;
 	}
 
 	/**
@@ -566,7 +568,7 @@ class ItemEffect {
 		const id = Number(equipID);
 		const url = `/Effect/ItemEff.img/${id}/effect`;
 
-		if (ItemEffect._list && !ItemEffect._list[id]) {
+		if (!ItemEffect._list[id]) {
 			//if (!confirm("Try load: " + url)) {
 			//	return;
 			//}
@@ -644,6 +646,8 @@ class ItemEffect {
 		}
 	}
 }
+/** @type {Set<string>} */
+ItemEffect._list = new Set();
 
 class CharacterFragmentBase {
 	constructor(textures) {
@@ -1041,13 +1045,14 @@ class CharacterEquipBase extends ICharacterEquip {
 	}
 	__load_fragments() {
 		const fragmentConstructor = this.fragmentConstructor;
-		const action_list = this._action_list;
+
+		//Object.keys(this._raw_textures).map(k => { return '0' in this._raw_textures[k]; })
+
+		let action_list = Object.keys(this._raw_textures);
 
 		let textures = {};
-		for (let i = 0; i < action_list.length; ++i) {
-			let action = action_list[i];
-
-			if (action in this._raw_textures) {
+		for (let action of action_list) {
+			if ("0" in this._raw_textures[action]) {
 				let _url = this._base_path + action;
 
 				textures[action] = this.__load_frame_textures(this._raw_textures[action], _url);
@@ -1243,27 +1248,11 @@ class CharacterEquipBase extends ICharacterEquip {
 	 * @returns {string}
 	 */
 	getIconRawUrl() {
-		const type = ItemCategoryInfo.get(this.id).slot;
-		switch (type) {
-			case "head":
-				return "/images" + this._url + "stand1/0/head";
-			case "body":
-				return "/images" + this._url + "stand1/0/body";
-			case "hair":
-				return "/images" + this._url + "stand1/0/hair";
-			case "face":
-				return "/images" + this._url + "blink/0/face";
-			default:
-				return "/images" + this._url + "info/iconRaw";
-		}
-	}
-
-	get _action_list() {
-		console.warn("Not implement");
+		return ItemCategoryInfo.getIconRawUrl(this.id);
 	}
 
 	/**
-	 * @returns {object} raw_textures[...actions][...frames][...fragments]
+	 * @returns {{[actions:string]:{["0"]:Sprite,[frames:string]:Sprite}}} raw_textures[...actions][...frames][...fragments]
 	 */
 	get _raw_textures() {
 		return this._raw;
@@ -1333,10 +1322,6 @@ class CharacterEquip extends CharacterEquipBase {
 
 	get fragmentConstructor() {
 		return CharacterBodyFragment;
-	}
-
-	get _action_list() {
-		return window.character_action_list;
 	}
 }
 
@@ -1564,10 +1549,6 @@ class CharacterEquipFaceAcc extends CharacterEquipBase {
 
 	get fragmentConstructor() {
 		return CharacterFaceFragment;
-	}
-
-	get _action_list() {
-		return window.character_emotion_list;
 	}
 }
 class CharacterEquipFace extends CharacterEquipFaceAcc {
@@ -2857,13 +2838,16 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 	static async Init() {
 		let result = await Promise.all([
-			$get("/make_zorders"),
+			$get.data("/zmap.img/"),
 			$get.data("/smap.img/"),
 			ItemEffect.Init(),
 			ActionAnimation.Init(),//action definition
 		]);
 
-		zMap = JSON.parse(result[0]);
+		let _zMap = JSON.parse(result[0]);
+		zMap = {};
+		Object.keys(_zMap).reverse().forEach((k, i) => zMap[k] = i + 1);
+
 		sMap = JSON.parse(result[1]);
 	}
 

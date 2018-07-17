@@ -6,7 +6,7 @@ import {
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2EdgeShape, b2PolygonShape, b2CircleShape,
 	b2MouseJointDef,
-	b2ContactListener,
+	b2ContactListener, b2Contact,
 	b2ParticleSystemDef, b2ParticleSystem, b2ParticleFlag, b2ParticleGroupDef
 } from "./Physics.js";
 
@@ -37,37 +37,49 @@ export const GRAVITY = new b2Vec2(0, window.$gravityAcc / $gv.CANVAS_SCALE);
 class ContactListener extends b2ContactListener {
 	/** @param {b2Contact} contact */
 	BeginContact(contact) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa.beginContact.call(fa.m_userData, contact, fa, fb);
-		fb.beginContact.call(fb.m_userData, contact, fb, fa);
+		const fa = contact.m_fixtureA;
+		const fb = contact.m_fixtureB;
+		const childIndexA = contact.m_indexA;
+		const childIndexB = contact.m_indexB;
+
+		fa.beginContact.call(fa.m_userData, contact, fa, fb, childIndexA, childIndexB);
+		fb.beginContact.call(fb.m_userData, contact, fb, fa, childIndexB, childIndexA);
 	}
 	/** @param {b2Contact} contact */
 	EndContact(contact) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa.endContact.call(fa.m_userData, contact, fa, fb);
-		fb.endContact.call(fb.m_userData, contact, fb, fa);
+		const fa = contact.m_fixtureA;
+		const fb = contact.m_fixtureB;
+		const childIndexA = contact.m_indexA;
+		const childIndexB = contact.m_indexB;
+
+		fa.endContact.call(fa.m_userData, contact, fa, fb, childIndexA, childIndexB);
+		fb.endContact.call(fb.m_userData, contact, fb, fa, childIndexB, childIndexA);
 	}
 	/**
 	 * @param {b2Contact} contact
 	 * @param {b2Manifold} oldManifold
 	 */
 	PreSolve(contact, oldManifold) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa.preSolve.call(fa.m_userData, contact, oldManifold, fa, fb);
-		fb.preSolve.call(fb.m_userData, contact, oldManifold, fb, fa);
+		const fa = contact.m_fixtureA;
+		const fb = contact.m_fixtureB;
+		const childIndexA = contact.m_indexA;
+		const childIndexB = contact.m_indexB;
+
+		fa.preSolve.call(fa.m_userData, contact, oldManifold, fa, fb, childIndexA, childIndexB);
+		fb.preSolve.call(fb.m_userData, contact, oldManifold, fb, fa, childIndexB, childIndexA);
 	}
 	/**
 	 * @param {b2Contact} contact
 	 * @param {b2ContactImpulse} impulse
 	 */
 	PostSolve(contact, impulse) {
-		let fa = contact.GetFixtureA();
-		let fb = contact.GetFixtureB();
-		fa.postSolve.call(fa.m_userData, contact, impulse, fa, fb);
-		fb.postSolve.call(fb.m_userData, contact, impulse, fb, fa);
+		const fa = contact.m_fixtureA;
+		const fb = contact.m_fixtureB;
+		const childIndexA = contact.m_indexA;
+		const childIndexB = contact.m_indexB;
+
+		fa.postSolve.call(fa.m_userData, contact, impulse, fa, fb, childIndexA, childIndexB);
+		fb.postSolve.call(fb.m_userData, contact, impulse, fb, fa, childIndexB, childIndexA);
 	}
 }
 

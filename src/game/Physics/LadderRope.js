@@ -96,7 +96,7 @@ export class LadderRope extends MapLadderRope {
 
 		//TODO: implement filter: ladder|rope
 		fdef.shape = shape;
-		fdef.filter.Copy(FilterHelper.get("default", "ladder"));
+		fdef.filter.Copy(FilterHelper.get("ladder"));
 
 		fdef.isSensor = true;
 		fdef.userData = this;

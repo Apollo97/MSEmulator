@@ -3,7 +3,7 @@ import {
 	b2_polygonRadius,
 	b2Vec2,
 	b2BodyType, b2BodyDef, b2FixtureDef,
-	b2PolygonShape, b2EdgeShape,
+	b2PolygonShape, b2EdgeShape, b2ChainShape,
 	b2Body, b2Fixture,
 	b2Contact, b2Manifold, b2ContactImpulse, b2WorldManifold
 } from "./Physics.js";
@@ -11,10 +11,15 @@ import {
 import { Vec2, Rectangle } from "../math.js";
 
 import { World, GRAVITY } from "./World.js";
-import { Foothold } from "./Foothold.js";
+import { FootholdChain, Foothold as _Foothold, FootholdChainChild, Foothold } from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
 import { FilterHelper } from "./Filter.js";
+
+
+//const Foothold = _Foothold;
+const Foothold = FootholdChainChild;
+
 
 /**
  * 可以防止player卡在foothold裡面
@@ -85,64 +90,132 @@ export class Ground {
 				}
 			}
 		}
-		
-		let chain = 0, rectChains = this.rectChains = [];
+
+		/** @type {FootholdChain[]} */
+		let chains = [];
+
+		let chainId = 0;
+		let rectChains = this.rectChains = [];
+
 		for (let i = 0; i < this.footholds.length; ++i) {
 			const foothold = this.footholds[i];
-			let circular = 0;
 			
 			if (foothold.chain == null) {
-				let left, top, right, bottom;
-				
-				left = foothold.x1;
-				top = foothold.y1;
-				right = foothold.x2;
-				bottom = foothold.y2;
-				
-				foothold.chain = chain;
-				
-				for (let fh = foothold; fh != null; fh = this.footholds[fh.prev]) {
-					fh.chain = chain;
-					left = Math.min(left, fh.x1, fh.x2);
-					top = Math.min(top, fh.y1, fh.y2);
-					right = Math.max(right, fh.x1, fh.x2);
-					bottom = Math.max(bottom, fh.y1, fh.y2);
-					
-					if (fh == foothold) {
-						if (circular++ > 0) {
-							break;
-						}
-					}
-				}
-				if (circular == 0) {
-					for (let fh = foothold; fh != null; fh = this.footholds[fh.next]) {
-						fh.chain = chain;
-						left = Math.min(left, fh.x1, fh.x2);
-						top = Math.min(top, fh.y1, fh.y2);
-						right = Math.max(right, fh.x1, fh.x2);
-						bottom = Math.max(bottom, fh.y1, fh.y2);
-					}
-				}
-				rectChains[chain] = Rectangle.parse(left, top, right, bottom);
-				
-				chain++;
-			}
-		}
+				/** @type {foothold} */
+				let head;
 
-		if (window.CREATE_SOLID_AND_EDGE_FOOTHOLD) {
-			this._create_foothold(world, false);//edge
-			this._create_foothold(world, true);//polygon
-		}
-		else {
-			this._create_foothold(world, window.CREATE_SOLID_FOOTHOLD);
+				for (let fh = foothold; fh != null; fh = this.footholds[fh.prev]) {
+					if (fh.prev != null && fh.prev == foothold.id) {
+						head = fh;
+						break;
+					}
+				}
+				if (!head) {
+					head = foothold;
+				}
+
+				let chain = new FootholdChain(chainId);
+
+				chain.init(head, this.footholds, Foothold);
+
+				if (Foothold == _Foothold) {
+					if (window.CREATE_SOLID_AND_EDGE_FOOTHOLD) {
+						this._create_foothold(world, chain, false);//edge
+						this._create_foothold(world, chain, true);//polygon
+					}
+					else {
+						this._create_foothold(world, chain, window.CREATE_SOLID_FOOTHOLD);
+					}
+				}
+				else if (Foothold == FootholdChainChild) {
+					this._create_chain(world, chain);
+				}
+
+				chains.push(chain);
+
+				rectChains[chainId] = chain.bound;
+				
+				chainId++;
+			}
 		}
 	}
 
 	/**
 	 * @param {World} world
+	 * @param {FootholdChain} chain
+	 */
+	_create_chain(world, chain) {
+		/** @type {b2Body} */
+		let body;
+
+		/** @type {b2ChainShape} */
+		let shape;
+
+		{
+			let bdef = new b2BodyDef();
+
+			const center = chain.bound.center;
+
+			bdef.type = b2BodyType.b2_kinematicBody;//可移動
+			bdef.position.Set(center.x / $gv.CANVAS_SCALE, center.y / $gv.CANVAS_SCALE);
+			bdef.angle = 0;
+			bdef.gravityScale = 0;
+			bdef.linearDamping = 1;
+			bdef.bullet = true;
+			bdef.userData = this;
+
+			body = world.CreateBody(bdef);
+			body.$type = "ground";
+
+			this.bodies.push(body);
+		}
+
+		{
+			shape = new b2ChainShape();
+
+			/** @type {b2Vec2[]} */
+			let vertices = [body.GetLocalPoint(chain.footholds[0].GetVertex1(), new b2Vec2())];
+
+			for (let i = 0; i < chain.footholds.length; ++i) {
+				const fh = chain.footholds[i];
+
+				vertices.push(body.GetLocalPoint(fh.GetVertex2(), new b2Vec2()));
+
+				fh.body = body;
+				fh._chain = chain;
+			}
+
+			if (chain.loop) {
+				shape.CreateLoop(vertices);
+			}
+			else {
+				shape.CreateChain(vertices);
+			}
+		}
+
+		{
+			let fdef = new b2FixtureDef();
+			fdef.shape = shape;
+			fdef.density = 1;
+			fdef.filter.Copy(FilterHelper.get("foothold"));
+			fdef.friction = 1;
+			fdef.restitution = 0;
+			fdef.userData = chain;
+
+			let fixture = body.CreateFixture(fdef);
+
+			//fixture.beginContact = this.beginContact_bodyBase_oneway;
+			fixture.endContact = this.endContact_bodyBase_oneway;
+			fixture.preSolve = this.preSolveGround_bodyBase_oneway;
+		}
+	}
+
+	/**
+	 * @param {World} world
+	 * @param {FootholdChain} chain
 	 * @param {boolean} is_solid
 	 */
-	_create_foothold(world, is_solid) {
+	_create_foothold(world, chain, is_solid) {
 		let bdef = new b2BodyDef();
 		let fdef = new b2FixtureDef();
 
@@ -168,9 +241,10 @@ export class Ground {
 		fdef.filter.Copy(FilterHelper.get("foothold"));
 		fdef.friction = 1;
 		fdef.restitution = 0;
+		//fdef.userData = chain;
 
-		for (let i = 0; i < this.footholds.length; ++i) {
-			const fh = this.footholds[i];
+		for (let i = 0; i < chain.footholds.length; ++i) {
+			const fh = chain.footholds[i];
 			//if (fh.is_wall) {
 			//	this._create_wall(fh);
 			//	continue;
@@ -182,9 +256,9 @@ export class Ground {
 			x2 = fh.x2 / $gv.CANVAS_SCALE;
 			y2 = fh.y2 / $gv.CANVAS_SCALE;
 
-			create.call(this, fh, x1, y1, x2, y2);
+			create.call(this, fh);
 			
-			const next = this.footholds[fh.next];
+			const next = chain.footholds[fh.next];
 			if (next) {
 				let x1n, y1n, x2n, y2n;
 				let nx1, ny1, nx2, ny2;
@@ -202,33 +276,25 @@ export class Ground {
 				fh.next_a_deg = Math.abs(Math.trunc(a * 180 / Math.PI)) % 180;
 			}
 		}
-		function create(fh, x1, y1, x2, y2) {
-			const cx = (x2 + x1) * 0.5;
-			const cy = (y2 + y1) * 0.5;
-			bdef.position.Set(cx, cy);
+		/**
+		 * @param {Foothold} fh
+		 * @param {number} x1
+		 * @param {number} y1
+		 * @param {number} x2
+		 * @param {number} y2
+		 */
+		function create(fh) {
+			b2Vec2.AddVV(fh.GetVertex1(), fh.GetVertex2(), bdef.position);
+			b2Vec2.MulVS(bdef.position, 0.5, bdef.position);
 
-			let hlen;
-			const dx = x2 - x1;
-			const dy = y2 - y1;
-			if (dy == 0) {
-				bdef.angle = dx < 0 ? Math.PI : 0;
-				hlen = dx * 0.5;
-			}
-			else if (dx == 0) {
-				bdef.angle = dy < 0 ? (-Math.PI * 0.5) : (Math.PI * 0.5);
-				hlen = dy * 0.5;
-			}
-			else {
-				bdef.angle = Math.atan2(dy, dx);
-				hlen = (Math.sqrt(dy ** 2 + dx ** 2)) * 0.5;
-			}
+			let hlen = fh.m_length * 0.5;
+			bdef.angle = fh.m_angle;
 
 			let body = world.CreateBody(bdef);
 			body.$type = "ground";
 
 			if (is_solid) {
-				const hheight = b2_polygonRadius;
-				shape.SetAsBox(hlen, hheight);
+				shape.SetAsBox(hlen, b2_polygonRadius);
 			}
 			else {
 				shape.m_vertex1.Set(-hlen, 0)
@@ -236,14 +302,14 @@ export class Ground {
 
 				if (window.USE_GHOST_VERTEX) {
 					if (fh.prev != null) {
-						const prev = this.footholds[fh.prev];
-						shape.m_vertex0.Set(prev.x2 / $gv.CANVAS_SCALE, prev.y2 / $gv.CANVAS_SCALE);
+						const prev = chain.footholds[fh.prev];
 						shape.m_hasVertex0 = true;
+						shape.m_vertex0.Copy(prev.GetVertex2());
 					}
 					if (fh.next != null) {
-						const next = this.footholds[fh.next];
-						shape.m_vertex3.Set(next.x1 / $gv.CANVAS_SCALE, next.y1 / $gv.CANVAS_SCALE);
+						const next = chain.footholds[fh.next];
 						shape.m_hasVertex3 = true;
+						shape.m_vertex3.Copy(next.GetVertex1());
 					}
 				}
 			}
@@ -252,9 +318,9 @@ export class Ground {
 
 			let fixture = body.CreateFixture(fdef);
 
-			fixture.beginContact = this.beginContact_bodyBase_oneway;
+			//fixture.beginContact = this.beginContact_bodyBase_oneway;
 			fixture.endContact = this.endContact_bodyBase_oneway;
-			fixture.preSolve = this.preSolveGround_bodyBase_oneway;//preSolveGround_t2
+			fixture.preSolve = this.preSolveGround_bodyBase_oneway;
 
 			fh.body = body;
 			this.bodies.push(body);
@@ -262,7 +328,7 @@ export class Ground {
 	}
 
 	/**
-	 * @returns { left: number, right: number }
+	 * @returns {{left: number, right: number}}
 	 */
 	_compute_left_right_border() {
 		let left = null, right = null;
@@ -299,61 +365,23 @@ export class Ground {
 		}
 		return { left, right };
 	}
-	
-	preSolveGround_t2(contact, oldManifold, fa, fb) {
-		const platformBody = fa.GetBody();//=>this.body
-		const otherBody = fb.GetBody();
-
-		/** @type {Foothold} */
-		const fh = fa.GetUserData();
-
-		/** @type {PPlayer} */
-		const player = fb.GetUserData();
-		if (!player) {
-			return;
-		}
-
-		if (!player.state.jump) {
-			player._foothold = fh;
-		}
-		else if (player._foothold != fh) {
-			contact.SetEnabled(false);
-			return;
-		}
-
-		let numPoints = contact.GetManifold().pointCount;
-		let worldManifold = new b2WorldManifold();
-		contact.GetWorldManifold(worldManifold);
-
-		for (let i = 0; i < numPoints; ++i) {
-			const pp = player.getPosition();
-			const mp = worldManifold.points[i];
-			const relpos = new b2Vec2(pp.x - mp.x, pp.y - mp.y);
-
-			//fixed-rotation
-			//let relpos = player.body.GetLocalPoint(worldManifold.points[i], new b2Vec2(0, 0));
-			if (relpos.y < 0) {
-				contact.SetEnabled(false);
-				return;
-			}
-		}
-	}
 
 	/**
 	 * @param {b2Contact} contact
 	 * @param {b2Fixture} fa
 	 * @param {b2Fixture} fb
+	 * @param {number} childIndexA
+	 * @param {number} childIndexB
 	 */
-	beginContact_bodyBase_oneway(contact, fa, fb) {
+	beginContact_bodyBase_oneway(contact, fa, fb, childIndexA, childIndexB) {
 		if (fb.$type == "player") {
 			debugger;
 		}
 		let numPoints, worldManifold;
-		const platformBody = fa.GetBody();//=>this.body
 		const playerBody = fb.GetBody();
 
 		/** @type {Foothold} */
-		const fh = fa.GetUserData();
+		const fh = this.getFootholdFromContact(childIndexA);
 		if (fh.is_wall && fb.$type == "pl_ft_walk") {
 			contact.SetFriction(0);
 			//return;
@@ -382,36 +410,30 @@ export class Ground {
 				contact.SetEnabled(false);
 				return;
 			}
-			//if (playerBody.$type == "pl_ft_walk") {
-				if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
-					player.leave_$fh.id != fh.id &&
-					player.leave_$fh.chain != fh.chain &&
-					(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
-					(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
-				) {
-					numPoints = contact.GetManifold().pointCount;
-					worldManifold = new b2WorldManifold();
-					contact.GetWorldManifold(worldManifold);
+			if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
+				player.leave_$fh.id != fh.id &&
+				player.leave_$fh.chain.id != fh.chain.id &&
+				(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
+				(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
+			) {
+				numPoints = contact.GetManifold().pointCount;
+				worldManifold = new b2WorldManifold();
+				contact.GetWorldManifold(worldManifold);
 
-					for (let i = 0; i < numPoints; ++i) {
-						const foot = player.foot_walk.GetPosition();
-						const cpoint = worldManifold.points[i];
-						if (cpoint.y > foot.y) {
-							player.leave_$fh = null;
-							player.state.dropDown = false;
-							//break;
-						}
+				for (let i = 0; i < numPoints; ++i) {
+					const foot = player.foot_walk.GetPosition();
+					const cpoint = worldManifold.points[i];
+					if (cpoint.y > foot.y) {
+						player.leave_$fh = null;
+						player.state.dropDown = false;
+						//break;
 					}
 				}
-				else {
-					contact.SetEnabled(false);
-					return;
-				}
-			//}
-			//else {
-			//	contact.SetEnabled(false);
-			//	return;
-			//}
+			}
+			else {
+				contact.SetEnabled(false);
+				return;
+			}
 		}
 		else {
 			player.state.dropDown = false;
@@ -431,10 +453,10 @@ export class Ground {
 		//check if contact points are moving into platform
 		for (let i = 0; i < numPoints; ++i) {
 			const cpoint = worldManifold.points[i];
-			const pointVelPlatform = platformBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
+			const pointVelPlatform = fh.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
 			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
 			const point = new b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
-			const relativeVel = platformBody.GetLocalVector(point, new b2Vec2());
+			const relativeVel = fh.GetLocalVector(point, new b2Vec2());
 
 			{
 				let ppw = player.foot_walk.GetPosition();
@@ -448,7 +470,7 @@ export class Ground {
 				player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
 
 				if (fh.is_wall) {
-					const relPPoint = platformBody.GetLocalPoint(ppw, new b2Vec2());
+					const relPPoint = fh.GetLocalPoint(ppw, new b2Vec2());
 					const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
 					if (-relPPoint.y > foot_width) {
 						normal_contact(cpoint);
@@ -479,21 +501,18 @@ export class Ground {
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
 				//borderline case, moving only slightly out of platform
-				const relativePoint = platformBody.GetLocalPoint(cpoint, new b2Vec2());
+				const relativePoint = fh.GetLocalPoint(cpoint, new b2Vec2());
 				const platformFaceY = b2_polygonRadius;//shape is edge
 				if (relativePoint.y <= platformFaceY) {
-					if (playerBody.$type == "pl_ft_walk") {
-						//player._foothold = fh;
-						if (player._which_foothold_contact(fh, cpoint)) {
-							if (player.$foothold && player.$foothold.id != fh.id) {
-							}
-							normal_contact(cpoint);
-							return;//contact point is less than 5cm inside front face of platfrom
+					//player._foothold = fh;
+					if (player._which_foothold_contact(fh, cpoint)) {
+						if (player.$foothold && player.$foothold.id != fh.id) {
 						}
-						//continue;//not primary, normal contact ground
+						normal_contact(cpoint);
+						return;//contact point is less than 5cm inside front face of platfrom
 					}
 					normal_contact(cpoint);
-					return;//nothing: not target, normal contact ground
+					return;//not primary, normal contact 
 				}
 			}
 		}
@@ -509,7 +528,7 @@ export class Ground {
 				(fh != player._foothold && (fh.y1 > $fh.y1 || fh.y2 > $fh.y2))
 			);
 			if (ccc && $fh != fh && (!player._$fallEdge || player._$fallEdge != $fh)) {
-				if (fh.chain != $fh.chain &&
+				if (fh.chain.id != $fh.chain.id &&
 					(!$fh.prev || $fh.y1 != fh.y2) &&
 					(!$fh.next || $fh.y2 != fh.y1)
 				) {
@@ -524,7 +543,8 @@ export class Ground {
 			}
 			{
 				if ((fh.prev == null && player.state.front < 0 && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
-					(fh.next == null && player.state.front > 0 && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)) {
+					(fh.next == null && player.state.front > 0 && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)
+				) {
 					player.state.jump = true;
 
 					player._$fallEdge = fh;
@@ -541,13 +561,20 @@ export class Ground {
 			{
 				//player._$fallEdge = null;//??
 
-				if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
-					playerBody.ApplyForceToCenter(GRAVITY);
-				}
+				//if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
+				//	playerBody.ApplyForceToCenter(GRAVITY/*.Clone().SelfMul(10)*/);
+				//}
 			}
 		}
 	}
-	endContact_bodyBase_oneway(contact, fa, fb) {
+	/**
+	 * @param {b2Contact} contact
+	 * @param {b2Fixture} fa
+	 * @param {b2Fixture} fb
+	 * @param {number} childIndexA
+	 * @param {number} childIndexB
+	 */
+	endContact_bodyBase_oneway(contact, fa, fb, childIndexA, childIndexB) {
 		/** @type {PPlayer} */
 		const player = fb.GetUserData();
 		if (!player) {
@@ -555,7 +582,7 @@ export class Ground {
 		}
 
 		/** @type {Foothold} */
-		const fh = fa.GetUserData();
+		const fh = this.getFootholdFromContact(childIndexA);
 		
 		if (fh == player._$fallEdge) {
 			player._$fallEdge = null;
@@ -582,10 +609,17 @@ export class Ground {
 	 * @param {b2Manifold} oldManifold
 	 * @param {b2Fixture} fa
 	 * @param {b2Fixture} fb
+	 * @param {number} childIndexA
+	 * @param {number} childIndexB
 	 */
-	preSolveGround_bodyBase_oneway(contact, oldManifold, fa, fb) {
+	preSolveGround_bodyBase_oneway(contact, oldManifold, fa, fb, childIndexA, childIndexB) {
+		/** @type {Ground} */
 		let that = fa.GetBody().GetUserData();
-		that.beginContact_bodyBase_oneway(contact, fa, fb);
+
+		/** @type {Foothold} */
+		let target = this;
+
+		that.beginContact_bodyBase_oneway.call(target, contact, fa, fb, childIndexA, childIndexB);
 		
 		//if (contact.IsEnabled() && contact.IsTouching()) {
 		//}

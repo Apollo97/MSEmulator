@@ -203,8 +203,9 @@ export class DamageNumber extends Drawable {
 	 * @param {DamagePair} damagePair
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
+	 * @param {number} delay
 	 */
-	constructor(style, damagePair, x, y) {
+	constructor(style, damagePair, x, y, delay = 0) {
 		super();
 
 		this.x = x;
@@ -212,6 +213,7 @@ export class DamageNumber extends Drawable {
 
 		this.vy = DamageNumber.move_y / DamageNumber.time_tt;
 
+		this.delay = delay;
 		this.time = 0;
 		this.state = 0;
 
@@ -256,25 +258,31 @@ export class DamageNumber extends Drawable {
 	update(stamp) {
 		this.time += stamp;
 
-		this.y += this.vy * stamp;
-
-		if (this.state == 0) {
-			this.vy = this.vy * DamageNumber.move_avy;
-
-			if (this.time > DamageNumber.time_d1) {
-				this.time = 0;
-				this.state = 1;
-			}
+		if (this.delay && this.time >= this.delay) {
+			this.time = 0;
+			this.delay = 0;
 		}
-		else if (this.state == 1) {
-			this.vy = this.vy * DamageNumber.move_avy2;
+		else {
+			this.y += this.vy * stamp;
 
-			if (this.time < DamageNumber.time_d2) {
-				this.opacity = 1 - (this.time / DamageNumber.time_d2);
-				//this.opacity = Math.clamp(this.opacity, 0, 1);
+			if (this.state == 0) {
+				this.vy = this.vy * DamageNumber.move_avy;
+
+				if (this.time > DamageNumber.time_d1) {
+					this.time = 0;
+					this.state = 1;
+				}
 			}
-			else {
-				this.opacity = 0;
+			else if (this.state == 1) {
+				this.vy = this.vy * DamageNumber.move_avy2;
+
+				if (this.time < DamageNumber.time_d2) {
+					this.opacity = 1 - (this.time / DamageNumber.time_d2);
+					//this.opacity = Math.clamp(this.opacity, 0, 1);
+				}
+				else {
+					this.opacity = 0;
+				}
 			}
 		}
 	}
@@ -316,8 +324,8 @@ export class DamageNumberLayer extends Layer {
 	 * @param {number} y - bottom_y
 	 * @param {string} style
 	 */
-	_addTest(realDamage = 9876543210, critical = false, x = 0, y = 0, style = "NoRed") {
-		this.objects.push(new DamageNumber(style, new DamagePair(realDamage, critical), x, y));
+	_addTest(realDamage = 9876543210, critical = false, x = 0, y = 0, style = "NoRed", delay) {
+		this.objects.push(new DamageNumber(style, new DamagePair(realDamage, critical), x, y, delay));
 	}
 
 	/**
@@ -358,8 +366,8 @@ export class DamageNumberLayer extends Layer {
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
 	 */
-	addDamagePair(style, damagePair, x, y) {
-		this.objects.push(new DamageNumber(style, damagePair, x, y));
+	addDamagePair(style, damagePair, x, y, delay) {
+		this.objects.push(new DamageNumber(style, damagePair, x, y, delay));
 	}
 }
 

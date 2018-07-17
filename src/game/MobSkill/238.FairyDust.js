@@ -37,7 +37,9 @@ export class FairyDustBall extends MobSkillBallBase {
 	
 	/** @param {PWorld} pWorld */
 	create(pWorld) {
-		this.$physics = {};// make dummy for debug
+		this.$physics = {// make dummy for debug
+			state: {}
+		};
 		
 		super.create(pWorld);//complete create
 	}
@@ -89,7 +91,7 @@ export class FairyDust extends MobSkillBase {
 	}
 	
 	get _base_path() {
-		return "Skill/MobSkill.img/238/level";
+		return "/Skill/MobSkill.img/238/level";
 	}
 }
 

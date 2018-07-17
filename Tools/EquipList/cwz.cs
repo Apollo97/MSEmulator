@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -208,26 +208,71 @@ internal class DataSource
 
 		if (0 <= index)
 		{
-			if (!link.EndsWith(".img/"))
-			{
-				outProp = DataSource._get_property(DataSource.packages[link.Substring(0, index + 4).Split('/')].root[""], link.Substring(index + 5).Split('/'), 0);
-				outPack = null;
-				return;
-				//return MInspect.packages[link.Substring(0, index + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
-			}
-			else
+			int i2 = link.IndexOf("/");
+			string archiveName = link.Substring(0, i2);
+			string[] names = { archiveName, archiveName + "2", archiveName + "001" };
+			string aName = "";
+
+			i2 += 1;
+
+			for (int nameIndex = 0; nameIndex <  names.Length; ++nameIndex)
 			{
 				try
 				{
-					outProp = DataSource.packages[link.Substring(0, index + 4).Split('/')].root[""];
-					outPack = null;
-					return;
+					aName = names[nameIndex];
+
+					wzpackage pack;
+
+					if ((index - i2 + 4) > 0)
+					{
+						pack = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')];
+					}
+					else
+					{
+						pack = DataSource.packages[aName];
+					}
+
+
+					if (!link.EndsWith(".img/"))
+					{
+						outProp = DataSource._get_property(pack.root[""], link.Substring(index + 5).Split('/'), 0);
+						outPack = null;
+						if (outProp != null)
+						{
+							return;
+						}
+						//return MInspect.packages[link.Substring(0, index - i2 + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
+					}
+					else
+					{
+						try
+						{
+							outProp = pack.root[""];
+							outPack = null;
+							if (outProp != null)
+							{
+								return;
+							}
+						}
+						catch (Exception)//no found property
+						{
+							try
+							{
+								outProp = null;
+								outPack = pack;
+								if (outPack != null)
+								{
+									return;
+								}
+							}
+							catch (Exception)
+							{
+							}
+						}
+					}
 				}
 				catch (Exception)
-				{
-					outProp = null;
-					outPack = DataSource.packages[link.Substring(0, index + 4).Split('/')];
-					return;
+				{// find next archive
 				}
 			}
 		}
@@ -237,6 +282,9 @@ internal class DataSource
 			outPack = DataSource.packages[link.Split('/')];
 			return;
 		}
+
+		outPack = null;
+		outProp = null;
 	}
 
 	protected static wzproperty _get_property(wzproperty property, string[] link, int step)
@@ -721,7 +769,9 @@ internal class ObjectInspectorBase
 					}
 				case 5: // UOL
 					return this.pod((prop.data as wzuol).target, deep);
-				//return (prop.data as wzuol).link;//need inspect
+					//return (prop.data as wzuol).link;//need inspect
+				case 6: // unnamed6, zmap.img
+					return prop.data + "";
 				//case 14: // 0x08
 				//	return prop.data;//trim_content(data + "");
 				default:
@@ -740,6 +790,7 @@ internal class ObjectInspectorBase
 		}
 		catch (Exception ex)
 		{
+			Console.WriteLine(ex.Message + "\n" + ex.StackTrace);
 			return "<Error: " + ex.Message + "\n" + ex.StackTrace + ">";
 		}
 		return "<unknow error>";
@@ -988,6 +1039,9 @@ internal class POD_XML
 					break;
 				case 5: // UOL
 					sb.Append(this.pod(name, (prop.data as wzuol).target));     //return (prop.data as wzuol).link;//need inspect
+					break;
+				case 6: // unnamed6, zmap.img
+					sb.Append("<" + "unnamed6" + " name=\"" + name + "\" value=\"" + (prop.data + "") + "\"/>");
 					break;
 				case 0x02 + 6: goto case 0x0b + 6;//int16
 				case 0x03 + 6: goto case 0x13 + 6;//int

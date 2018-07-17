@@ -1608,7 +1608,9 @@ class MapMob extends MapLifeEntity {
 	
 	_destroy(mapController) {
 		let lifeSpawnPoint = this.spawn;
-		lifeSpawnPoint.decreaseLife();
+		if (lifeSpawnPoint instanceof LifeSpawnPoint) {
+			lifeSpawnPoint.decreaseLife();
+		}
 		mapController.destroyMob(this);
 		this.renderer = null;
 	}
@@ -1773,26 +1775,34 @@ class MapLifeManager {
 	
 	/**
 	 * directly spawn npc
+	 * @param {string} npcID
+	 * @param {number} x
+	 * @param {number} y
 	 */
 	spawnNpc(npcID, x, y, flip=false, fh=0) {
-		let lifeSpawnPoint = {
+		let lifeSpawnPoint = new LifeSpawnPoint({
 			type: "n",
-			x: x || 0, y: y || 0, cy: y || 0,
+			x: x | 0, y: y | 0, cy: y | 0,
 			id: npcID,
 			fh: fh,
-		};
+			is_dummy: true,
+		});
 		this.spawn(lifeSpawnPoint);
 	}
 	/**
 	 * directly spawn mob
+	 * @param {string} mobID
+	 * @param {number} x
+	 * @param {number} y
 	 */
 	spawnMob(mobID, x, y, flip=false, fh=0) {
-		let lifeSpawnPoint = {
+		let lifeSpawnPoint = new LifeSpawnPoint({
 			type: "m",
-			x: x || 0, y: y || 0, cy: y || 0,
+			x: x | 0, y: y | 0, cy: y | 0,
 			id: mobID,
 			fh: fh,
-		};
+			is_dummy: true,
+		});
 		this.spawn(lifeSpawnPoint);
 	}
 	

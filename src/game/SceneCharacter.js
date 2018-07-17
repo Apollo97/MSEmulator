@@ -484,7 +484,7 @@ export class BaseSceneCharacter extends SceneObject {
 						targetObject.damage(this, realDamage);
 
 						//TODO: ?? target position
-						damageNumberLayer.addDamagePair("NoRed", damage, targetObject.x, targetObject.y - 100);
+						damageNumberLayer.addDamagePair("NoRed", damage, targetObject.x + (1 - j & 1) * 100, targetObject.y - 100, j * 100);
 					}
 					//
 					targetObject.knockback(this, 16, 16);
@@ -612,7 +612,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 				if (keyDown && can_use_skill) {
 					skill = this.invokeSkill(sk.skill_id);
 				}
-				if ((keyDown || keyUp) && skill) {
+				if (skill) {
 					skill.control(ikey, keyDown, keyUp);
 				}
 			}

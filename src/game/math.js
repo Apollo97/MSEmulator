@@ -182,6 +182,16 @@ export class Rectangle {
 			this.height = 0;
 		}
 	}
+
+	/**
+	 * @param {Rectangle} other
+	 */
+	copy(other) {
+		this.left = other.left;
+		this.top = other.top;
+		this.width = other.width;
+		this.height = other.height;
+	}
 	
 	clone() {
 		return new Rectangle(this);
@@ -249,7 +259,26 @@ export class Rectangle {
 		const bottom = y + hheight;
 		return (this.top < bottom && this.bottom > top);
 	}
-	
+
+	/**
+	 * @param {number} left
+	 * @param {number} top
+	 * @param {number} right
+	 * @param {number} bottom
+	 */
+	parse(left, top, right, bottom) {
+		this.left = left;
+		this.top = top;
+		this.right = right;
+		this.bottom = bottom;
+	}
+
+	/**
+	 * @param {number} left
+	 * @param {number} top
+	 * @param {number} right
+	 * @param {number} bottom
+	 */
 	static parse(left, top, right, bottom) {
 		return new Rectangle(left, top, right - left, bottom - top);
 	}

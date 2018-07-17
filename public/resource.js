@@ -386,8 +386,9 @@ export class ResourceManager {
 			xhr.onload = function () {
 				if (this.status == 404 || this.status == 500) {
 					ResourceManager.failed_urls.push(url);
-					resolve(null);
-					//reject("404/500: " + url);
+					debugger;
+					//resolve(null);
+					reject("404/500: " + url);
 				}
 				else if (this.status == 200) {
 					resolve(this.responseText);
@@ -398,8 +399,10 @@ export class ResourceManager {
 			};
 
 			xhr.ontimeout = function (e) {
+				debugger;
 				// XMLHttpRequest 超时。在此做某事。
-				resolve(null);
+				//resolve(null);
+				reject("404/500: " + url);
 			};
 
 			xhr.send();

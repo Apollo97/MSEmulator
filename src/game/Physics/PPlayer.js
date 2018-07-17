@@ -189,8 +189,8 @@ class PCharacterBase {
 		/** @type {{ x:number, y:number }} - contact foothold point */
 		this._foot_at = new b2Vec2();
 
-		///** @type {FootContact[]} - 沒用 */
-		//this._foot_contact_list = [];
+		/** @type {FootContact[]} - 沒用 */
+		this._foot_contact_list = [];
 
 		/** @type {number} */
 		this._foothold_priority = 0;
@@ -928,8 +928,8 @@ class PCharacterBase {
 		}
 		let priority = this.__priority_foothold_contact(foothold, foot_at);
 		if (priority > 0) {
-			//let foot_contact = new FootContact(foothold, foot_at, priority);
-			//this._foot_contact_list.push(foot_contact);
+			let foot_contact = new FootContact(foothold, foot_at, priority);
+			this._foot_contact_list.push(foot_contact);
 
 			if (!this._foothold_priority || priority >= this._foothold_priority) {
 				this._foothold = foothold;
@@ -985,9 +985,9 @@ class PCharacterBase {
 		this._foothold = null;
 		this._foot_at = null;
 
-		//if (this._foot_contact_list.length) {
-		//	this._foot_contact_list.length = 0;
-		//}
+		if (this._foot_contact_list.length) {
+			this._foot_contact_list.length = 0;
+		}
 
 		// apply state
 		if (this.state.ladder) {
@@ -1039,13 +1039,13 @@ class PCharacterBase {
 	AfterStep() {
 		//this._endContactFoothold();
 
-		//if (this._foot_contact_list.length && !this._foothold && !this.$foothold) {
-		//	let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
-		//	this.$foothold = max.foothold;
-		//	this._foothold = max.foothold;
-		//	this._foot_at = max.position;
-		//	this._foothold_priority = max.priority;
-		//}
+		if (this._foot_contact_list.length && !this._foothold && !this.$foothold) {
+			let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
+			this.$foothold = max.foothold;
+			this._foothold = max.foothold;
+			this._foot_at = max.position;
+			this._foothold_priority = max.priority;
+		}
 
 		if (this.state.ladder) {
 			this.body.SetLinearVelocity2(0, 0);
@@ -1088,7 +1088,7 @@ class PCharacterBase {
 	 * @returns {number}
 	 */
 	getLayer() {
-		return this.$foothold ? this.$foothold.layer : (this.prev_$fh ? this.prev_$fh.layer : (this.leave_$fh ? this.leave_$fh : 5));
+		return this.$foothold ? this.$foothold.layer : (this.prev_$fh ? this.prev_$fh.layer : (this.leave_$fh ? this.leave_$fh.layer : 5));
 	}
 }
 

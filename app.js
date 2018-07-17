@@ -11,13 +11,17 @@ const { Transform } = require('stream');
 const { StringDecoder } = require('string_decoder');
 const AsciiStringDecoder = new StringDecoder("ascii");
 
-const edge = require('edge');
 const IniParser = require('ini-parser');
-
-const CS_PROGRAM_REFERENCES = [path.join(__dirname, "bin", "libwz.net.dll"), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll", "System.Web.Extensions.dll"];
+let edge = null, CS_PROGRAM_REFERENCES = null;
 
 const process_argv = argv_parse(process.argv);
 const port = process_argv["--port"] || process_argv["-p"] || 80;
+
+if (!process_argv["--static"] && !process_argv["-s"]) {
+	edge = require('edge');
+
+	CS_PROGRAM_REFERENCES = [path.join(__dirname, "bin", "libwz.net.dll"), "mscorlib.dll", "System.Drawing.dll", "System.Windows.Forms.dll", "System.Configuration.dll", "System.Data.dll", "System.Web.Extensions.dll"];
+}
 
 let dataSource = null, dataTag = null;
 
@@ -26,7 +30,7 @@ main(process_argv["--init"]);
 function main(firstInit) {
 	let app;
 
-	if (firstInit) {
+	if (edge && firstInit) {
 		console.log("產生道具清單...");
 
 		let equipListTasks = [];
@@ -44,7 +48,7 @@ function main(firstInit) {
 	}
 	app = WebServer(app);
 
-	if (!process_argv["--static"] && !process_argv["-s"]) {
+	if (edge) {
 		app = DataServer(app);
 	}
 	else {
@@ -785,6 +789,8 @@ function DataServer(app) {
 		a_pp.get("/fs/update", function (req, res, next) {
 			let old_dp = _data_provider;
 
+			res.write(`<!DOCTYPE html><html lang="zh-tw"><head><meta charset="utf-8"></head>`);
+
 			try {
 				let dp = new DataProvider(old_dp.iniFilePath);
 
@@ -805,6 +811,8 @@ function DataServer(app) {
 				res.write(`</tbody></table></p>`);
 			}
 
+			res.write(`</body></html>`);
+
 			next();
 		});
 		
@@ -816,23 +824,26 @@ function DataServer(app) {
 			sendFile(task, req, res, next);
 		});
 	}
-	
-	let settingList = getSettingList("./");
-	
-	for (let i = 0; i < settingList.length; ++i) {
-		console.log(settingList[i] + "> loading archives");
-		try {
-			let dataProvider = new DataProvider(settingList[i]);
 
-			dataProvider.init();
+	function createDataProvider() {
+		let settingList = getSettingList("./");
 
-			Server(app, dataProvider);
-			console.log(settingList[i] + "> complete");
-		}
-		catch (ex) {
-			console.log(settingList[i] + "> " + "err: " + ex.message);
+		for (let i = 0; i < settingList.length; ++i) {
+			console.log(settingList[i] + "> loading archives");
+			try {
+				let dataProvider = new DataProvider(settingList[i]);
+
+				dataProvider.init();
+
+				Server(app, dataProvider);
+				console.log(settingList[i] + "> complete");
+			}
+			catch (ex) {
+				console.log(settingList[i] + "> " + "err: " + ex.message);
+			}
 		}
 	}
+	createDataProvider();
 	
 	app.get("/fs/update", function (req, res, next) {
 		res.end();

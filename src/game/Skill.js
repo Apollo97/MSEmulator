@@ -876,17 +876,21 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
-		if (keyUp) {
-			this.current_effect.opacity = 0;//keydown
-			this.current_effect.destroy();
+		switch (this.state) {
+			case "prepare":
+			case "keydown":
+				if (!keyDown || keyUp) {
+					this.current_effect.opacity = 0;//keydown
+					this.current_effect.destroy();
 
-			this.state = "keydownend";
-			this._state_func = this._keydownend;
-			this.current_effect = this._addEffect(this.state);
-			this.fadeTotalTime = this._actani.getTotalTime();
+					this.state = "keydownend";
+					this._state_func = this._keydownend;
+					this.current_effect = this._addEffect(this.state);
+					this.fadeTotalTime = this._actani.getTotalTime();
 
-			this._actani.loop = false;
-			this.time = 0;//reset
+					this._actani.loop = false;
+					this.time = 0;//reset
+				}
 		}
 	}
 
