@@ -494,18 +494,16 @@ class ItemEffectAnimation extends Animation {
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {boolean} actionExceptRotation
+	 * @param {number} angle
 	 * @param {boolean} flip
 	 */
-	render(renderer, actionExceptRotation, chara) {
-		const texture = this.textures[this.frame];
-		if (texture && texture.isLoaded()) {
-			if (actionExceptRotation) {
-				this.draw(renderer, 0, 0, 0, chara.front > 0);
-			}
-			else {
-				const oy = -texture.height * 0.25;
-				this.draw(renderer, 0, oy, chara.angle, flip);
-			}
+	render(renderer, actionExceptRotation, angle, flip) {
+		if (actionExceptRotation) {
+			this.draw(renderer, 0, 0, -angle, flip);
+		}
+		else {
+			const oy = -this.texture.height * 0.25;
+			this.draw(renderer, 0, oy, 0, flip);
 		}
 	}
 }
@@ -540,7 +538,7 @@ class ItemEffect {
 			itemEffectList.clear();
 
 			raw.forEach(id => {
-				itemEffectList.add(id);
+				itemEffectList.add(parseInt(id, 10));
 			});
 		}
 		catch (ex) {
@@ -568,7 +566,7 @@ class ItemEffect {
 		const id = Number(equipID);
 		const url = `/Effect/ItemEff.img/${id}/effect`;
 
-		if (!ItemEffect._list[id]) {
+		if (!ItemEffect._list.has(id)) {
 			//if (!confirm("Try load: " + url)) {
 			//	return;
 			//}
@@ -606,7 +604,7 @@ class ItemEffect {
 	 */
 	render(renderer, chara) {
 		if (this.animation && this.animation[this.action]) {
-			this.animation[this.action].render(renderer, this.actionExceptRotation, chara.front > 0);
+			this.animation[this.action].render(renderer, this.actionExceptRotation, chara.angle, chara.front > 0);
 		}
 	}
 

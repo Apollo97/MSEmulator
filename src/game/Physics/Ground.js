@@ -542,8 +542,8 @@ export class Ground {
 				return;
 			}
 			{
-				if ((fh.prev == null && player.state.front < 0 && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
-					(fh.next == null && player.state.front > 0 && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)
+				if ((fh.prev == null && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
+					(fh.next == null && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)
 				) {
 					player.state.jump = true;
 
@@ -598,7 +598,7 @@ export class Ground {
 
 		if (player.$foothold && fh == player.$foothold) {//正常離開地面
 			player.prev_$fh = player.$foothold;
-			player.$foothold = null;
+			player.$foothold = player._foothold;//contact other foothold
 		}
 		if (player.leave_$fh && player.leave_$fh == fh) {
 			player.leave_$fh = null;

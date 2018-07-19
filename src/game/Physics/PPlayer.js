@@ -1039,20 +1039,24 @@ class PCharacterBase {
 	AfterStep() {
 		//this._endContactFoothold();
 
-		if (this._foot_contact_list.length && !this._foothold && !this.$foothold) {
-			let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
-			this.$foothold = max.foothold;
-			this._foothold = max.foothold;
-			this._foot_at = max.position;
-			this._foothold_priority = max.priority;
-		}
-
 		if (this.state.ladder) {
 			this.body.SetLinearVelocity2(0, 0);
 			//
 			this.foot_walk.SetLinearVelocity2(0, 0);
 		}
 		else {
+			if (!this.state.dropDown) {
+				if (this._foothold) {
+					this.$foothold = this._foothold;
+				}
+				else if (this._foot_contact_list.length) {//目前沒用，永遠不會被執行 ??
+					let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
+					this.$foothold = max.foothold;
+					this._foothold = max.foothold;
+					this._foot_at = max.position;
+					this._foothold_priority = max.priority;
+				}
+			}
 			if (this.$foothold) {
 				this.state.jump = false;
 				this.state.jump_count = 0;
@@ -1062,11 +1066,7 @@ class PCharacterBase {
 				}
 			}
 			else {
-				if (this.state.walk && !this.state._begin_jump && this.prev_$fh) {
-				}
-				else {
-					this.state.jump = true;
-				}
+				this.state.jump = true;
 				this.state._begin_jump = false;
 				
 				if (!this._foothold) {
@@ -1074,11 +1074,6 @@ class PCharacterBase {
 				else {
 					//console.log("no stable contact");
 					//debugger;
-				}
-			}
-			if (!this.state.dropDown) {
-				if (this._foothold) {
-					this.$foothold = this._foothold;
 				}
 			}
 		}

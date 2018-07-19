@@ -2,22 +2,22 @@
 <template>
 	<div class="UIEditCharacterAttribute" style="display: inline-block;">
 		<div style="display: inline-block; vertical-align: top;">
-			<table>
+			<table style="border-collapse: collapse; border-spacing: 0px;">
 				<tr>
 					<td>
-            <template v-if="chara.speed">
-              <button @click="pauseAnimation" title="pause animation">
-                <img src="/images/player_pause.png" alt="pause" />
-              </button>
-            </template>
-            <template v-else="">
-              <button @click="pauseAnimation" title="play animation">
-                <img src="/images/player_play.png" alt="play" />
-              </button>
-            </template>
-          </td>
-          <td title="animation speed">
-            <input type="number" v-model.number="chara.speed" min="0" max="5" step="0.01" />
+						<template v-if="chara.speed">	
+							<button @click="pauseAnimation" title="pause animation">
+								<img src="/images/player_pause.png" alt="pause" />
+							</button>
+						</template>
+						<template v-else="">
+							<button @click="pauseAnimation" title="play animation">
+								<img src="/images/player_play.png" alt="play" />
+							</button>
+						</template>
+					</td>
+					<td title="animation speed">
+						<input type="number" v-model.number="chara.speed" min="0" max="5" step="0.01" />
 					</td>
 					<td>
 						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">禁用物理</button>
@@ -57,13 +57,26 @@
 						</select>
 					</td>
 				</tr>
-				<tr>
+				<tr title="禁用物理後可設定角色位置">
 					<th>位置</th>
 					<td colspan="3" style="display: flex; position: absolute;">
-            <input type="number" v-model.number="chara.x" min="-9999" max="9999" />
-            <input type="number" v-model.number="chara.y" min="-9999" max="9999" />
-            <input type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
-          </td>
+						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-9999" max="9999" />
+						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-9999" max="9999" />
+						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
+					</td>
+				</tr>
+				<tr title="禁用物理後可設定角色方向">
+					<td colspan="4">
+						<label>旋轉：
+							<input type="number" v-model.number="chara_angle" min="-180" max="180" step="10" />°
+						</label>
+						<label>方向：
+							<select :disabled="sceneChara.enablePhysics" v-model.number="chara.front">
+								<option value="1">右</option>
+								<option value="-1">左</option>
+							</select>
+						</label>
+					</td>
 				</tr>
 				<tr>
 					<th rowspan="2">耳朵</th>
@@ -83,10 +96,10 @@
 					</td>
 				</tr>
 				<!--<tr>
-		<td></td>
-		<td></td>
-		<td></td>
-	</tr>-->
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>-->
 			</table>
 		</div>
 		<div v-if="isShowDebug" style="width: 100%; display: inline-block; user-select: text;">
@@ -196,6 +209,14 @@
 			emotions: () => character_emotion_list,
 			chara: function () {
 				return this.sceneChara.renderer;
+			},
+			chara_angle: {
+				get: function () {
+					return Math.round(Math.degrees(this.sceneChara.renderer.angle));
+				},
+				set: function (deg) {
+					this.sceneChara.renderer.angle = Math.radians(deg);
+				}
 			},
 		},
 		methods: {
