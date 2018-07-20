@@ -17,8 +17,8 @@ import { PPlayer } from "./PPlayer.js";
 import { FilterHelper } from "./Filter.js";
 
 
-//const Foothold = _Foothold;
-const Foothold = FootholdChainChild;
+const Foothold = _Foothold;
+//const Foothold = FootholdChainChild;
 
 
 /**
@@ -258,7 +258,7 @@ export class Ground {
 
 			create.call(this, fh);
 			
-			const next = chain.footholds[fh.next];
+			const next = this.footholds[fh.next];
 			if (next) {
 				let x1n, y1n, x2n, y2n;
 				let nx1, ny1, nx2, ny2;
@@ -302,12 +302,12 @@ export class Ground {
 
 				if (window.USE_GHOST_VERTEX) {
 					if (fh.prev != null) {
-						const prev = chain.footholds[fh.prev];
+						const prev = this.footholds[fh.prev];
 						shape.m_hasVertex0 = true;
 						shape.m_vertex0.Copy(prev.GetVertex2());
 					}
 					if (fh.next != null) {
-						const next = chain.footholds[fh.next];
+						const next = this.footholds[fh.next];
 						shape.m_hasVertex3 = true;
 						shape.m_vertex3.Copy(next.GetVertex1());
 					}
@@ -403,6 +403,17 @@ export class Ground {
 		}
 
 		const $fh = player.$foothold;
+
+		if (fh.is_wall) {
+			if (player.prev_$fh.layer && player.prev_$fh.layer != fh.layer) {
+				contact.SetEnabled(false);
+				return;
+			}
+			else if (player.$foothold && player.$foothold.layer != fh.layer) {
+				contact.SetEnabled(false);
+				return;
+			}
+		}
 
 		if (player.state.dropDown && player.leave_$fh != null) {
 			//HACK: ?? foothold edge

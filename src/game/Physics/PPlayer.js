@@ -898,7 +898,7 @@ class PCharacterBase {
 		}
 		if (this.$foothold != foothold && !this.state.dropDown) {
 			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
-			// 忽略連續 foothold 重疊的點(x)
+			// 忽略連續 foothold 重疊的點
 			if (this._foot_at && foot_at.y < this._foot_at.y) {
 				if (this.$foothold) {
 					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
@@ -928,14 +928,15 @@ class PCharacterBase {
 		}
 		let priority = this.__priority_foothold_contact(foothold, foot_at);
 		if (priority > 0) {
-			let foot_contact = new FootContact(foothold, foot_at, priority);
-			this._foot_contact_list.push(foot_contact);
-
 			if (!this._foothold_priority || priority >= this._foothold_priority) {
 				this._foothold = foothold;
 				this._foot_at = foot_at.Clone();
 				this._foothold_priority = priority;
 				return true;
+			}
+			else {
+				let foot_contact = new FootContact(foothold, foot_at, priority);
+				this._foot_contact_list.push(foot_contact);
 			}
 		}
 		return false;

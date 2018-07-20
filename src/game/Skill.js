@@ -964,7 +964,7 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 				$physics.state.jump_count += 2;
 			}
 			else {//normal jump
-				inputKey.jump = keyDown;
+				inputKey.jump = inputKey.jump ? Math.max(keyDown, inputKey.jump) : keyDown;
 				return false;
 			}
 		}

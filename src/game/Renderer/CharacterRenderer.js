@@ -997,6 +997,9 @@ class CharacterEquipBase extends ICharacterEquip {
 					this.name = ss.name;
 					this.desc = ss.desc;
 				}
+			}, reason => {
+				this.name = "[" + id + "]";
+				this.desc = "";
 			});
 		}
 

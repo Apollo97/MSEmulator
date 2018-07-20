@@ -638,16 +638,14 @@
 				this.$hairMixColor2(params);
 			},
 
-			clickItem: async function (payload) {
+			clickItem: function (payload) {
 				let { id, category, equip } = payload;
 
 				if (this.chara) {
 					if (window.$io) {
-						let result = await this.chara.useItem(id, category);
-						if (result) {
+						return this.chara.useItem(id, category).then(function (result) {
 							console.log("can't use item: " + id);
-							return;
-						}
+						});
 					}
 					else if (!this.chara.renderer.unuse(id)) {
 						this.$store.commit("increaseProgressMax", { amount: 2 });
@@ -661,7 +659,10 @@
 						}
 						this.$store.commit("increaseProgress", { amount: 1 });
 						try {
-							await this.chara.renderer.__synchronize(0);
+							this.chara.renderer.__synchronize(0).then(() => {
+								this.$store.commit("increaseProgress", { amount: 1 });
+								app.updateScreen();
+							});
 						}
 						catch (ex) {
 							this.$store.commit("increaseProgress", { amount: 1 });//force exit
@@ -669,8 +670,6 @@
 							debugger;
 							throw ex;
 						}
-						this.$store.commit("increaseProgress", { amount: 1 });
-						app.updateScreen();
 					}
 				}
 				//this.$emit("hoverItem", payload);
