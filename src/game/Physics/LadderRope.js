@@ -54,16 +54,19 @@ export class LadderRope extends MapLadderRope {
 	}
 
 	calcHeight() {
-		return (this.y2 - this.y1) + 0.02;
+		return (this.y2 - this.y1);
 	}
 	calcHalfHeight() {
-		return (this.y2 - this.y1) * 0.5 + 0.01;
+		return (this.y2 - this.y1) * 0.5;
 	}
 	calcWidth() {
 		return (this.isLadder() ? 16 : 4);
 	}
 	calcHalfWidth() {
 		return (this.isLadder() ? 16 : 4) * 0.5;
+	}
+	calcLength() {
+		return (this.y2 - this.y1) / $gv.CANVAS_SCALE;
 	}
 
 	/**
@@ -75,7 +78,7 @@ export class LadderRope extends MapLadderRope {
 		let shape = new b2PolygonShape();
 
 		const x = this.x / $gv.CANVAS_SCALE;
-		const y1 = this.y1 / $gv.CANVAS_SCALE - 0.02;
+		const y1 = this.y1 / $gv.CANVAS_SCALE;
 		const y2 = this.y2 / $gv.CANVAS_SCALE;
 		const hwidth = this.calcHalfWidth() / $gv.CANVAS_SCALE;
 		const hheight = (y2 - y1) * 0.5;
@@ -92,9 +95,8 @@ export class LadderRope extends MapLadderRope {
 
 		this.body = world.CreateBody(bdef);
 
-		shape.SetAsBox(hwidth, hheight, new b2Vec2(0, hheight), 0);
+		shape.SetAsBox(hwidth, hheight + 0.5, new b2Vec2(0, hheight - 0.5), 0);
 
-		//TODO: implement filter: ladder|rope
 		fdef.shape = shape;
 		fdef.filter.Copy(FilterHelper.get("ladder"));
 
@@ -120,11 +122,11 @@ export class LadderRope extends MapLadderRope {
 		if (!targetPlayer) {
 			return;
 		}
-		if (!(targetPlayer instanceof PPlayer)) {//TODO: use filter
-			return;
-		}
 
-		targetPlayer.setLadder(this);
+		const foot = targetPlayer.foot_walk.GetPosition();
+		const relativePoint = this.body.GetLocalPoint(foot, new b2Vec2());
+
+		targetPlayer.contactLadder(this, relativePoint);
 
 		///** @type {BaseSceneCharacter} */
 		//const targetChara = targetPlayer.chara;
@@ -142,9 +144,6 @@ export class LadderRope extends MapLadderRope {
 		/** @type {PPlayer} */
 		const targetPlayer = fb.m_userData;
 		if (!targetPlayer) {
-			return;
-		}
-		if (!(targetPlayer instanceof PPlayer)) {//TODO: use filter
 			return;
 		}
 

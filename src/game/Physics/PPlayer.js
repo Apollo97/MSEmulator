@@ -93,8 +93,11 @@ export class PPlayerState {
 		/** @type {boolean} - is use ladder */
 		this.ladder = false;
 
-		/** @type {-1|0|1} - up: -1, down: 1, stop: 0 */
-		this.ladder_move_dir = false;
+		/**
+		 * action animation
+		 * @type {-1|0|1} - up: -1, down: 1, stop: 0
+		 */
+		this.ladder_move_dir = 0;
 
 		/** @type {number} - 無敵時間，unit is millisecond */
 		this.invincible = 0;
@@ -174,6 +177,7 @@ class PCharacterBase {
 		/** @type {b2Joint|b2RevoluteJoint} */
 		this.walker = null;
 
+
 		/** @type {Foothold} - in World::Setp */
 		this._foothold = null;
 
@@ -186,7 +190,7 @@ class PCharacterBase {
 		 */
 		this.prev_$fh = null;
 
-		/** @type {{ x:number, y:number }} - contact foothold point */
+		/** @type {b2Vec2} - contact foothold point */
 		this._foot_at = new b2Vec2();
 
 		/** @type {FootContact[]} - 沒用 */
@@ -201,11 +205,17 @@ class PCharacterBase {
 		 */
 		this.leave_$fh = null;
 		
+
 		/** @type {MapPortal} */
 		this.portal = null;
 
+
 		/** @type {LadderRope} */
 		this.ladder = null;
+
+		/** @type {b2Vec2} */
+		this._ladder_contact_point = null;
+
 
 		/** @type {number} */
 		this._walker_omega = 1;
@@ -328,13 +338,19 @@ class PCharacterBase {
 	/**
 	 * set ladder, not use
 	 * @param {LadderRope} ladder
+	 * @param {b2Vec2} ladderLocalPoint
 	 */
-	setLadder(ladder) {
+	contactLadder(ladder, ladderLocalPoint) {
 		if (ladder) {
 			this.ladder = ladder;
+			this._ladder_contact_point = ladderLocalPoint;
+		}
+		else if (ladder || ladderLocalPoint) {
+			debugger;
 		}
 		else {
-			debugger;
+			this.ladder = null;
+			this._ladder_contact_point = null;
 		}
 	}
 	/**
@@ -377,15 +393,16 @@ class PCharacterBase {
 					//pjd.Initialize(ladderBody, this.body, anchor, new b2Vec2(0, 1));
 					{
 						pjd.bodyA = ladderBody;
-						pjd.bodyB = this.body;
+						pjd.bodyB = this.foot_walk;//this.body;
 						//pjd.localAnchorA.Set(0, 0);
 						//pjd.localAnchorB.Set(0, 0);
 						pjd.localAxisA.Set(0, 1);
 						//pjd.referenceAngle = 0;
 					}
-					pjd.lowerTranslation = -this.chara_profile.foot_width * 2 - 1;
+					pjd.lowerTranslation = -this.chara_profile.foot_width;
 					pjd.upperTranslation = height + this.chara_profile.foot_width;
 					pjd.enableLimit = true;
+					pjd.maxMotorForce = this._getMass() * 1000;
 
 					/** @type {b2PrismaticJoint} */
 					let pj = world.CreateJoint(pjd);
@@ -404,7 +421,7 @@ class PCharacterBase {
 				delete this.state._$anim_spd;
 			}
 			if (this.ladder) {
-				this.ladder = null;
+				//this.ladder = null;
 
 				if (this.state.ladder) {
 					this.state.ladder = false;
@@ -454,21 +471,25 @@ class PCharacterBase {
 			const speed = (window.$LADDER_SPEED || 1);
 
 			if (keys.up && !keys.down) {
-				this.state.ladder_move_dir = 1;
+				this.state.ladder_move_dir = -1;//action animation
 
-				this.body.SetLinearVelocity2(0, -speed);
-				//
-				this.foot_walk.SetLinearVelocity2(0, -speed);
+				this.$ladder_pj.EnableMotor(true);
+				this.$ladder_pj.SetMotorSpeed(-speed);
 			}
 			else if (keys.down) {
-				this.state.ladder_move_dir = -1;
+				this.state.ladder_move_dir = 1;//action animation
 
-				this.body.SetLinearVelocity2(0, speed);
-				//
-				this.foot_walk.SetLinearVelocity2(0, speed);
+				this.$ladder_pj.EnableMotor(true);
+				this.$ladder_pj.SetMotorSpeed(speed);
 			}
-			else {
-				this.state.ladder_move_dir = 0;
+			else {//stop
+				this.state.ladder_move_dir = 0;//action animation
+
+				this.$ladder_pj.EnableMotor(false);
+
+				this.body.SetLinearVelocity2(0, 0);
+				//
+				this.foot_walk.SetLinearVelocity2(0, 0);
 			}
 			if (keys.jump) {
 				const world = this.body.m_world;
@@ -510,9 +531,9 @@ class PCharacterBase {
 					return;
 				}
 			}
-			if (this.ladder && (
-				(keys.down && this.$foothold) ||
-				(keys.up && !this.$foothold))
+			if (this.ladder && this._ladder_contact_point && (
+				(keys.down && this.$foothold && this._ladder_contact_point.y <= 0) ||
+				(keys.up && !this.$foothold && this._ladder_contact_point.y > 0))
 			) {
 				this.useLadder(true);
 				return;
@@ -674,6 +695,7 @@ class PCharacterBase {
 	 */
 	_create(world) {
 		let first_pos = new b2Vec2(1 / $gv.CANVAS_SCALE, -2 / $gv.CANVAS_SCALE);
+		let jmp_body_pos_y = first_pos.y + this.chara_profile.height * 0.75 * 0.5;
 		let bdef = new b2BodyDef();
 		let fdef = new b2FixtureDef();
 		let shape = new b2PolygonShape();
@@ -692,8 +714,6 @@ class PCharacterBase {
 		}
 		this.body.$type = "player";
 
-		let jmp_body_pos_y = first_pos.y + this.chara_profile.height * 0.75 * 0.5;
-
 		fdef.filter.Copy(FilterHelper.get(this._body_category));
 
 		//head
@@ -701,11 +721,11 @@ class PCharacterBase {
 			shape.SetAsBox(
 				this.chara_profile.width * 0.5,
 				this.chara_profile.height * 0.75 * 0.5,
-				new b2Vec2(0, 0),
+				b2Vec2.ZERO,//new b2Vec2(0, 0),//
 				0);
 
 			fdef.density = this.chara_profile.density;
-			fdef.friction = FOOT_FRICTION;
+			fdef.friction = 0;
 			fdef.restitution = 0;
 			fdef.shape = shape;
 			//
@@ -1041,9 +1061,18 @@ class PCharacterBase {
 		//this._endContactFoothold();
 
 		if (this.state.ladder) {
-			this.body.SetLinearVelocity2(0, 0);
-			//
-			this.foot_walk.SetLinearVelocity2(0, 0);
+			if (this.$ladder_pj) {
+				const upper = this.$ladder_pj.GetUpperLimit();
+				const lower =this.$ladder_pj.GetLowerLimit();
+				const translation = this.$ladder_pj.GetJointTranslation();
+
+				if (this.state.ladder_move_dir > 0 && translation > upper) {//down
+					this.useLadder(false);
+				}
+				else if (this.state.ladder_move_dir < 0 && translation < lower) {//up
+					this.useLadder(false);
+				}
+			}
 		}
 		else {
 			if (!this.state.dropDown) {
