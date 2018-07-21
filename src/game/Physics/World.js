@@ -354,6 +354,18 @@ export class World extends b2World {
 	}
 
 	/**
+	 * @param {function():void} func
+	 */
+	onceUnlock(func) {
+		if (this.m_locked) {
+			this._onceAfterStep.push(func);
+		}
+		else {
+			func();
+		}
+	}
+
+	/**
 	 * do once AfterStep
 	 * @param {function():void} func
 	 */

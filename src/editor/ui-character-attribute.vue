@@ -57,7 +57,7 @@
 						</select>
 					</td>
 				</tr>
-				<tr title="禁用物理後可設定角色位置">
+				<tr title="禁用物理後可設定角色的位置">
 					<th>位置</th>
 					<td colspan="3" style="display: flex; position: absolute;">
 						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-9999" max="9999" />
@@ -65,10 +65,10 @@
 						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
 					</td>
 				</tr>
-				<tr title="禁用物理後可設定角色方向">
+				<tr title="禁用物理後可設定角色的旋轉和方向">
 					<td colspan="4">
 						<label>旋轉：
-							<input type="number" v-model.number="chara_angle" min="-180" max="180" step="10" />°
+							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara_angle" min="-180" max="180" step="10" />°
 						</label>
 						<label>方向：
 							<select :disabled="sceneChara.enablePhysics" v-model.number="chara.front">

@@ -123,16 +123,12 @@ export class LadderRope extends MapLadderRope {
 			return;
 		}
 
-		const foot = targetPlayer.foot_walk.GetPosition();
-		const relativePoint = this.body.GetLocalPoint(foot, new b2Vec2());
+		if (!targetPlayer.state.ladder) {// is not use ladder
+			const foot = targetPlayer.foot_walk.GetPosition();
+			const relativePoint = this.body.GetLocalPoint(foot, new b2Vec2());
 
-		targetPlayer.contactLadder(this, relativePoint);
-
-		///** @type {BaseSceneCharacter} */
-		//const targetChara = targetPlayer.chara;
-		//if (!targetChara) {
-		//	return;
-		//}
+			targetPlayer.contactLadder(this, relativePoint);
+		}
 	}
 
 	/**
@@ -147,13 +143,7 @@ export class LadderRope extends MapLadderRope {
 			return;
 		}
 
-		targetPlayer.useLadder(false);
-
-		///** @type {BaseSceneCharacter} */
-		//const targetChara = targetPlayer.chara;
-		//if (!targetChara) {
-		//	return;
-		//}
+		targetPlayer.leaveLadder();
 	}
 }
 

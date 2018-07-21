@@ -379,26 +379,29 @@ export class BaseSceneCharacter extends SceneObject {
 		// renderer: apply default action
 		if (!pState.invokeSkill) {
 			const { front, jump, walk, prone, fly, ladder } = player_state;
+			const enablePhysics = chara.enablePhysics;
 
 			if (front != null) {
 				charaRenderer.front = front;
 			}
 
 			if (ladder) {
-				if (this.$physics.ladder.isLadder()) {
-					charaRenderer.action = "ladder";
-				}
-				else {
-					charaRenderer.action = "rope";
-				}
+				if (enablePhysics && this.$physics.ladder) {
+					if (this.$physics.ladder.isLadder()) {
+						charaRenderer.action = "ladder";
+					}
+					else {
+						charaRenderer.action = "rope";
+					}
 
-				//TODO: action="ladder": need better solution
-				if (pState.ladder_move_dir) {
-					pState._$anim_spd = charaRenderer.speed;
-					charaRenderer.speed = 1;
-				}
-				else {
-					charaRenderer.speed = 0;
+					//TODO: action="ladder": need better solution
+					if (pState.ladder_move_dir) {
+						pState._$anim_spd = charaRenderer.speed;
+						charaRenderer.speed = 1;
+					}
+					else {
+						charaRenderer.speed = 0;
+					}
 				}
 			}
 			else if (jump) {
@@ -415,6 +418,15 @@ export class BaseSceneCharacter extends SceneObject {
 			}
 			else {
 				charaRenderer.action = "stand1";
+			}
+
+			if (enablePhysics) {
+				if (this.$physics.body.GetAngle() || this.$physics.body.GetAngularVelocity()) {
+					charaRenderer.angle = this.$physics.body.GetAngle();
+				}
+				else {
+					charaRenderer.angle = 0;
+				}
 			}
 
 			//TODO: keyboard: emotion key

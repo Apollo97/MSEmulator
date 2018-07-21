@@ -353,15 +353,42 @@ class PCharacterBase {
 			this._ladder_contact_point = null;
 		}
 	}
+	leaveLadder() {
+		/** @type {World} */
+		const world = this.body.m_world;
+
+		world.onceUnlock(() => {
+			this._useLadder(false);
+			this.contactLadder(null, null);//set no contact
+		});
+	}
 	/**
 	 * @param {boolean} flag - true: use, false: no use
 	 */
 	useLadder(flag) {
 		/** @type {World} */
-		let world = this.body.m_world;
+		const world = this.body.m_world;
+
+		world.onceUnlock(() => {
+			this._useLadder(flag);
+		});
+	}
+	/**
+	 * @param {boolean} flag - true: use, false: no use
+	 */
+	_useLadder(flag) {
+		/** @type {World} */
+		const world = this.body.m_world;
 
 		if (flag) {
-			if (!this.$ladder_pj) {
+			if (this.ladder && !this.$ladder_pj) {
+				const ladderBody = this.ladder.body;
+
+				if (ladderBody.GetAngle() || ladderBody.GetAngularVelocity()) {
+					this.body.SetAngle(ladderBody.GetAngle());
+					this.body.SetFixedRotation(false);
+				}
+
 				this.state.ladder = true;
 				this.state.jump = false;
 				this.state.jump_count = 0;
@@ -376,39 +403,33 @@ class PCharacterBase {
 
 				this.walker.SetMotorSpeed(0);
 
-				world.doAfterStep(() => {
-					let ladder = this.ladder;
-					if (!ladder) {
-						return;
-					}
+				// create joint
 
-					let height = ladder.calcHeight() / $gv.CANVAS_SCALE;
+				let height = this.ladder.calcHeight() / $gv.CANVAS_SCALE;
 
-					//let ground = world.ground.bodies[0];
-					let ladderBody = this.ladder.body;
+				//let ground = world.ground.bodies[0];
 
-					this.setPosition(ladderBody.GetPosition().x, this.getPosition().y);
+				this.setPosition(ladderBody.GetPosition().x, this.getPosition().y);
 
-					let pjd = new b2PrismaticJointDef();
-					//pjd.Initialize(ladderBody, this.body, anchor, new b2Vec2(0, 1));
-					{
-						pjd.bodyA = ladderBody;
-						pjd.bodyB = this.foot_walk;//this.body;
-						//pjd.localAnchorA.Set(0, 0);
-						//pjd.localAnchorB.Set(0, 0);
-						pjd.localAxisA.Set(0, 1);
-						//pjd.referenceAngle = 0;
-					}
-					pjd.lowerTranslation = -this.chara_profile.foot_width;
-					pjd.upperTranslation = height + this.chara_profile.foot_width;
-					pjd.enableLimit = true;
-					pjd.maxMotorForce = this._getMass() * 1000;
+				let pjd = new b2PrismaticJointDef();
+				//pjd.Initialize(ladderBody, this.body, anchor, new b2Vec2(0, 1));
+				{
+					pjd.bodyA = ladderBody;
+					pjd.bodyB = this.foot_walk;//this.body;
+					//pjd.localAnchorA.Set(0, 0);
+					//pjd.localAnchorB.Set(0, 0);
+					pjd.localAxisA.Set(0, 1);
+					//pjd.referenceAngle = 0;
+				}
+				pjd.lowerTranslation = -this.chara_profile.foot_width;
+				pjd.upperTranslation = height + this.chara_profile.foot_width;
+				pjd.enableLimit = true;
+				pjd.maxMotorForce = this._getMass() * 1000;
 
-					/** @type {b2PrismaticJoint} */
-					let pj = world.CreateJoint(pjd);
+				/** @type {b2PrismaticJoint} */
+				let pj = world.CreateJoint(pjd);
 
-					this.$ladder_pj = pj;
-				});
+				this.$ladder_pj = pj;
 			}
 			else {
 				debugger;
@@ -436,12 +457,11 @@ class PCharacterBase {
 				}
 			}
 			if (this.$ladder_pj) {
-				world.doAfterStep(() => {
-					if (this.$ladder_pj) {
-						world.DestroyJoint(this.$ladder_pj);
-						delete this.$ladder_pj;
-					}
-				});
+				world.DestroyJoint(this.$ladder_pj);
+				delete this.$ladder_pj;
+
+				this.body.SetAngle(0);
+				this.body.SetFixedRotation(true);
 			}
 		}
 	}
@@ -467,8 +487,19 @@ class PCharacterBase {
 			return;
 		}
 
-		if (this.state.ladder) {
+		if (this.state.ladder && this.$ladder_pj) {
+			const ladderBody = this.ladder.body;
 			const speed = (window.$LADDER_SPEED || 1);
+
+			if (ladderBody) {
+				if (ladderBody.GetAngle() || ladderBody.GetAngularVelocity()) {
+					this.body.SetAngle(ladderBody.GetAngle());
+					this.body.SetFixedRotation(false);
+				}
+			}
+			//else {
+			//	debugger;
+			//}
 
 			if (keys.up && !keys.down) {
 				this.state.ladder_move_dir = -1;//action animation
@@ -476,7 +507,7 @@ class PCharacterBase {
 				this.$ladder_pj.EnableMotor(true);
 				this.$ladder_pj.SetMotorSpeed(-speed);
 			}
-			else if (keys.down) {
+			else if (keys.down && !keys.up) {
 				this.state.ladder_move_dir = 1;//action animation
 
 				this.$ladder_pj.EnableMotor(true);
@@ -495,7 +526,10 @@ class PCharacterBase {
 				const world = this.body.m_world;
 				const mass = this._getMass();
 
-				if (keys.left) {
+				if (keys.left && keys.right) {
+					this.useLadder(false);
+				}
+				else if (keys.left) {
 					this.useLadder(false);
 					world.doAfterStep(() => {
 						//const f = new b2Vec2(0, -world.m_gravity.y * mass);
@@ -512,6 +546,10 @@ class PCharacterBase {
 					});
 				}
 			}
+		}
+		else if (this.$ladder_pj) {
+			debugger
+			this.useLadder(false);
 		}
 		else {
 			if (this.state.outOfControl) {
@@ -535,6 +573,7 @@ class PCharacterBase {
 				(keys.down && this.$foothold && this._ladder_contact_point.y <= 0) ||
 				(keys.up && !this.$foothold && this._ladder_contact_point.y > 0))
 			) {
+				this.state.ladder_move_dir = 0;//reset
 				this.useLadder(true);
 				return;
 			}
@@ -562,14 +601,14 @@ class PCharacterBase {
 				this.state.prone = false;
 			}
 
-			if (keys.left) {
+			if (keys.left && !keys.right) {
 				this.state.walk = true;
 				this.state.front = -1;
 				this.walker.SetMotorSpeed(-wheel_sp);
 				this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
 				//this.walker.EnableMotor(true);//power on
 			}
-			else if (keys.right) {
+			else if (keys.right && !keys.left) {
 				this.state.walk = true;
 				this.state.front = 1;
 				this.walker.SetMotorSpeed(wheel_sp);
