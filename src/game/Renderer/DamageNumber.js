@@ -7,13 +7,67 @@ import { DamagePair, AttackInfo } from "../../Common/AttackInfo";
 // 123
 // NoRed[1][1], NoRed[0][2], NoRed[0][3], ...
 
-// NoCri
+class _DamageSkin {
+	constructor() {
+		/** @type {DamageNumberTextures} */
+		this.NoRed = null;
+		/** @type {DamageNumberTextures} */
+		this.NoCri = null;
+	}
+}
+class _DamageSkinDefault extends _DamageSkin {
+	constructor() {
+		super();
 
-// NoViolet
+		/** @type {DamageNumberRenderer} */
+		this.NoBlue = null;
+		/** @type {DamageNumberRenderer} */
+		this.NoViolet = null;
+		/** @type {DamageNumberRenderer} */
+		this.NoProduction = null;
+		/** @type {DamageNumberRenderer} */
+		this.NoKite = null;
+	}
+}
 
 
-/** @type {{[style:string]:DamageNumberRenderer}} */
-const loaded_damage = {};
+/** @type {{default:_DamageSkinDefault,[skin:string]:_DamageSkin}} */
+const loaded_skin = {};
+
+class DamageNumberTextures {
+	constructor() {
+		/** @type {Sprite} */
+		for (let i = 0; i <= 9; ++i) {
+			this[i] = null;
+		}
+		this.addedCanvasH = 0;
+	}
+	/**
+	 * @param {string} path
+	 */
+	async _load(path) {
+		const jsonText = await $get.data(path);
+		const _raw = JSON.parse(jsonText);
+		
+		Object.keys(_raw).forEach(key => {
+			let texture = new Sprite(_raw[key]);
+
+			texture._url = "/images" + [path, key].join("/");
+
+			this[key] = texture;
+		});
+
+		this.addedCanvasH = _raw.addedCanvasH | 0;
+	}
+}
+/** @type {Sprite} */
+DamageNumberTextures.prototype.Miss = null;
+/** @type {Sprite} */
+DamageNumberTextures.prototype.guard = null;
+/** @type {Sprite} */
+DamageNumberTextures.prototype.shot = null;
+/** @type {Sprite} */
+DamageNumberTextures.prototype.effect = null;
 
 
 function font_adv(texture) {
@@ -42,7 +96,10 @@ class DamageNumberRenderer {
 		/** @type {string} */
 		this.style = null;
 
-		/** @type {Sprite[][]} - this.textures[is_first_num ? 1:0][num] */
+		/** @type {string} */
+		this.skin = null;
+
+		/** @type {DamageNumberTextures[]} - this.textures[is_first_num ? 1:0][num] */
 		this.textures = [];
 
 		/** @type {number[]} */
@@ -61,40 +118,47 @@ class DamageNumberRenderer {
 	 */
 	_copy(other) {
 		this._url = other._url;
+		this.skin = other.skin;
 		this.style = other.style;
 		this.textures = other.textures;
+
+		//loading
+		if (this._$promise) {
+			this._$promise = other._$promise;
+		}
 	}
 
 	/**
+	 * @param {string} skin
 	 * @param {string} style
 	 * @returns {Promise<DamageNumberRenderer>}
 	 */
-	async _load(style) {
-		const url = this._base_path + style;
+	async _load(skin, style) {
 		let tasks = [];
+		let url;
 
-		loaded_damage[style] = this;
+		if (skin == "default") {
+			url = this._default_base_path + style;
+		}
+		else {
+			url = this._skin_base_path + [skin, style].join("/");
+		}
+
+		if (!loaded_skin[skin]) {
+			loaded_skin[skin] = {};
+		}
+		loaded_skin[skin][style] = this;
 
 		this._url = url;
+		this.skin = skin;
 		this.style = style;
 
 		for (let i = 0; i <= 1; ++i) {
 			const sPath = url + i;
+			
+			this.textures[i] = new DamageNumberTextures();
 
-			let task = $get.data(sPath).then(rawText => {
-				const _raw = JSON.parse(rawText);
-
-				this.textures[i] = [];
-
-				for (let j = 0; j <= 9; ++j) {
-					let texture = new Sprite(_raw[j]);
-
-					texture._url = ["/images", sPath, j].join("/");
-
-					this.textures[i][j] = texture;
-				}
-			});
-			tasks[i] = task;
+			tasks[i] = this.textures[i]._load(sPath);
 		}
 
 		await Promise.all(tasks);
@@ -103,17 +167,22 @@ class DamageNumberRenderer {
 	}
 		
 	/**
+	 * @param {string} skin
 	 * @param {string} style
 	 * @returns {Promise<DamageNumberRenderer>}
 	 */
-	async load(style = "NoRed") {
-		let loaded = loaded_damage[style];
+	async load(skin, style) {
+		let loaded;
+
+		if (loaded_skin[skin]) {
+			loaded = loaded_skin[skin][style];
+		}
 
 		if (loaded) {
-			this._copy(loaded);
+			this._copy(skin, loaded);
 		}
 		else {
-			this._$promise = this._load(style);
+			this._$promise = this._load(skin, style);
 
 			await this._$promise;
 
@@ -131,11 +200,6 @@ class DamageNumberRenderer {
 	 * @param {number} cy
 	 */
 	draw(renderer, damage, critical, cx, cy) {
-		if (process.env.NODE_ENV !== 'production') {
-			if (!this.textures || !this.textures[0] || !this.textures[1]) {
-				return;
-			}
-		}
 		let str_damage = damage.toFixed(0);
 
 		/** @type {Sprite} */
@@ -188,24 +252,28 @@ class DamageNumberRenderer {
 		}
 	}
 
-	get _base_path() {
+	get _default_base_path() {
 		return "/Effect/BasicEff.img/";
 	}
+	get _skin_base_path() {
+		return "/Effect/BasicEff.img/damageSkin/";
+	}
 }
-DamageNumberRenderer.loaded_damage = loaded_damage;
+DamageNumberRenderer.loaded_skin = loaded_skin;
 DamageNumberRenderer.max_display_digit = Math.trunc(Math.log10(Number.MAX_SAFE_INTEGER) + 1);
 DamageNumberRenderer.max_rand_y = 5;
 
 
 export class DamageNumber extends Drawable {
 	/**
+	 * @param {string} skin
 	 * @param {string} style
 	 * @param {DamagePair} damagePair
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
 	 * @param {number} delay
 	 */
-	constructor(style, damagePair, x, y, delay = 0) {
+	constructor(skin, style, damagePair, x, y, delay) {
 		super();
 
 		this.x = x;
@@ -218,25 +286,54 @@ export class DamageNumber extends Drawable {
 		this.state = 0;
 
 		this.damagePair = damagePair;
-		this.renderer = new DamageNumberRenderer();
 
-		let loaded = loaded_damage[style];
+		/** @type {DamageNumberRenderer} */
+		this.renderer;
+
+		this._load(skin, style);
+	}
+
+	/**
+	 * @param {string} skin
+	 * @param {string} style
+	 * @param {number} recursive
+	 */
+	_load(skin, style, recursive) {
+		/** @type {DamageNumberRenderer} */
+		let loaded;
+		
+		if (loaded_skin[skin]) {
+			loaded = loaded_skin[skin][style];
+		}
 
 		if (loaded) {
-			this.renderer._copy(loaded);
+			this.renderer = loaded;
 
 			this._$promise = this.renderer._$promise;
 		}
 		else {
-			this._$promise = this.renderer.load(style)
+			this.renderer = new DamageNumberRenderer();
+			this._$promise = this.renderer.load(skin, style);
 		}
 		if (this._$promise) {
 			this.render = this.$noRender;
 
-			this._$promise.then(() => {
-				delete this.render;
-				delete this._$promise;
-			});
+			this._$promise
+				.then(() => {
+					delete this.render;
+					delete this._$promise;
+				}).catch(() => {
+					delete this._$promise;
+					console.error(`Can't load damageSkin[${skin}][${style}]`);
+
+					if (recursive) {
+						throw Error();
+					}
+					else {
+						console.log(`try load damageSkin["default"][${style}]`);
+						this._load("default", style, 1);
+					}
+				});
 		}
 	}
 
@@ -322,10 +419,12 @@ export class DamageNumberLayer extends Layer {
 	 * @param {number} critical
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
+	 * @param {number} delay
+	 * @param {string} skin
 	 * @param {string} style
 	 */
-	_addTest(realDamage = 9876543210, critical = false, x = 0, y = 0, style = "NoRed", delay) {
-		this.objects.push(new DamageNumber(style, new DamagePair(realDamage, critical), x, y, delay));
+	_addTest(realDamage = 9876543210, critical = false, x = 0, y = 0, delay = 0, skin = null, style = "NoRed") {
+		this.objects.push(new DamageNumber(skin, style, new DamagePair(realDamage, critical), x, y, delay));
 	}
 
 	/**
@@ -333,17 +432,19 @@ export class DamageNumberLayer extends Layer {
 	 * @param {number} critical
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
+	 * @param {number} delay
+	 * @param {string} skin
 	 * @param {string} style
 	 */
-	_addTest2(realDamage = 9876543210, critical = false, x = 0, y = 0, style = "NoRed") {
-		this.objects.push(new DamageNumberTest(style, new DamagePair(realDamage, critical), x, y));
+	_addTest2(realDamage = 9876543210, critical = false, x = 0, y = 0, delay = 0, skin = null, style = "NoRed") {
+		this.objects.push(new DamageNumberTest(skin, style, new DamagePair(realDamage, critical), x, y, delay));
 	}
 
 	/**
 	 * @param {string} style
 	 * @param {AttackInfo} attackInfo
 	 */
-	_addAttack(style, attackInfo) {
+	_addAttack(skin, style, attackInfo) {
 		attackInfo.allAttack.forEach(attack => {
 			let target = attack.getTargetObject();
 			if (target) {
@@ -354,20 +455,23 @@ export class DamageNumberLayer extends Layer {
 				y = pos.y * $gv.CANVAS_SCALE - 70;
 
 				attack.allDamage.forEach(damage => {
-					this.addDamagePair(style, damage, x, y);
+					this.addDamagePair(skin, style, damage, x, y);
 				});
 			}
 		});
 	}
 
 	/**
-	 * @param {string} style
+	 * @template K
+	 * @param {string} skin
+	 * @param {K extends keyof loaded_skin[skin] ? K:never} style
 	 * @param {DamagePair} damagePair
 	 * @param {number} x - center_x
 	 * @param {number} y - bottom_y
+	 * @param {number} delay
 	 */
-	addDamagePair(style, damagePair, x, y, delay) {
-		this.objects.push(new DamageNumber(style, damagePair, x, y, delay));
+	addDamagePair(skin, style, damagePair, x, y, delay = 0) {
+		this.objects.push(new DamageNumber(skin, style, damagePair, x, y, delay));
 	}
 }
 

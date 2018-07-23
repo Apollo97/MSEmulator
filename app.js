@@ -259,11 +259,24 @@ function WebServer(app) {
 		next();
 	});
 
-	//
 	const ROOT_PATH = path.join(__dirname, "public");
 	const $sendFile_options = {
 		root: ROOT_PATH,
 	};
+
+	//default extname is .png
+	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
+		let url = decodeURI(req.path);
+		let file_path = url + ".png";
+
+		res.sendFile(file_path, $sendFile_options, function (err) {
+			if (err) {
+				next();//no print err
+				return;
+			}
+		});
+	});
+
 	app.get(/\/(pack|data)\/.*\.img\/(.*)/, function (req, res, next) {
 		let url = decodeURI(req.path);
 		let match = url.match(/\/(pack|data)\/(.*\.img)\/(.*)/);

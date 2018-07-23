@@ -484,6 +484,7 @@ export class BaseSceneCharacter extends SceneObject {
 						let damVar = this.stat.getCurrentMaxBaseDamage() - this.stat.getCurrentMinBaseDamage();
 						let realDamage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
 						let damage = attack.allDamage[j] = new DamagePair();
+						let style;
 
 						if (Math.trunc(Math.random() * 100) < this.stat.critRate) {
 							realDamage = realDamage * (1 + this.stat.critDamage / 100);
@@ -495,8 +496,15 @@ export class BaseSceneCharacter extends SceneObject {
 
 						targetObject.damage(this, realDamage);
 
+						if (damage.critical) {
+							style = "NoCri";
+						}
+						else {
+							style = "NoRed";
+						}
+
 						//TODO: ?? target position
-						damageNumberLayer.addDamagePair("NoRed", damage, targetObject.x + (1 - j & 1) * 100, targetObject.y - 100, j * 100);
+						damageNumberLayer.addDamagePair(this.m_damageSkin || "default", style, damage, targetObject.x + (attack.allDamage.length > 1 ? (25 - (1 - j & 1) * 25) : 0), targetObject.y, j * 100);
 					}
 					//
 					targetObject.knockback(this, 16, 16);
