@@ -101,13 +101,7 @@ export class PPlayerState {
 
 		/** @type {number} - 無敵時間，unit is millisecond */
 		this.invincible = 0;
-
-		/** @type {number} - knockback time，unit is millisecond */
-		this.knockback = 0;
-
-		/** @type {boolean} - off walker power */
-		this.outOfControl = false;
-
+		
 		/** @type {boolean} - can not move or jump */
 		this.freeze = false;
 
@@ -116,6 +110,14 @@ export class PPlayerState {
 
 		/** @type {number} - use portal cooldown time，unit is millisecond */
 		this.portal_cooldown = 0;
+		
+		//
+
+		/** @type {number} - knockback time，unit is millisecond */
+		this.knockback = 0;
+
+		/** @type {boolean} - off walker power */
+		this.outOfControl = false;
 	}
 }
 
@@ -569,7 +571,7 @@ class PCharacterBase {
 					return;
 				}
 			}
-			if (this.ladder && this._ladder_contact_point && (
+			if (this.ladder && this._ladder_contact_point && (//TODO: need update this._ladder_contact_point
 				(keys.down && this.$foothold && this._ladder_contact_point.y <= 0) ||
 				(keys.up && !this.$foothold && this._ladder_contact_point.y > 0))
 			) {
@@ -648,7 +650,7 @@ class PCharacterBase {
 	}
 
 	_isCanMove() {
-		return !this.state.freeze && !this.state.invokeSkill;
+		return !this.state.freeze && !this.state.knockback;
 	}
 
 	/**

@@ -707,7 +707,7 @@ class MapObjectSkeletalAnim extends MapObject {
 			}
 			
 			if (raw.spineRandomStart) {
-				let t = ssanim.getAnimLength() * Math.random();
+				let t = ssanim.anim_length * Math.random();
 				ssanim.setAnimTime(t);
 			}
 			

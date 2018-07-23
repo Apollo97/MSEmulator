@@ -1,9 +1,4 @@
 
-let ENABLE_RENDER_DEBUG_DATA = false;
-let ENABLE_RENDER_DEBUG_POSE = false;
-
-let ANIM_BLEND = 0.0;
-
 let SSAnim = (function () {
 	function _base64ToArrayBuffer(base64) {
 		var binary_string = window.atob(base64);
@@ -14,8 +9,6 @@ let SSAnim = (function () {
 		}
 		return bytes;
 	}
-
-	let renderer = null;
 
 	class SSAnim {
 		constructor() {
@@ -33,14 +26,14 @@ let SSAnim = (function () {
 		}
 		
 		static GetRenderer() {
-			return renderer;
+			return SSAnim.renderer;
 		}
 		static SetRenderingContext(ctx) {
 			if (ctx instanceof CanvasRenderingContext2D) {
-				renderer = new RenderCtx2D(ctx);
+				SSAnim.renderer = new RenderCtx2D(ctx);
 			}
 			else if (ctx instanceof WebGLRenderingContext) {
-				renderer = new RenderWebGL(ctx);
+				SSAnim.renderer = new RenderWebGL(ctx);
 			}
 		}
 		
@@ -93,7 +86,7 @@ let SSAnim = (function () {
 				}
 				let counter_dec = function() {
 					if (--counter === 0) {
-						that.resource = renderer.loadData(that.spine_data, that.atlas_data, images);
+						that.resource = SSAnim.renderer.loadData(that.spine_data, that.atlas_data, images);
 						that._updateFile();
 						resolve();
 					}
@@ -177,7 +170,7 @@ let SSAnim = (function () {
 						}
 						let counter_dec = function() {
 							if (--counter === 0) {
-								renderer.loadData(that.spine_data, that.atlas_data, images);
+								SSAnim.renderer.loadData(that.spine_data, that.atlas_data, images);
 								that._updateFile();
 								resolve({
 									file_path,
@@ -242,8 +235,8 @@ let SSAnim = (function () {
 			});
 		}
 		unload() {
-			renderer.setResource(this.resource);
-			renderer.dropData(this.spine_data, this.atlas_data);
+			SSAnim.renderer.setResource(this.resource);
+			SSAnim.renderer.dropData(this.spine_data, this.atlas_data);
 		}
 		
 		_updateFile() {
@@ -258,30 +251,32 @@ let SSAnim = (function () {
 			return this.spine_data.skeleton.height;
 		}
 		
+		get anim_time() {
+			return this.spine_pose.getTime();
+		}
+		set anim_time(value) {
+			this.spine_pose.setTime(value);
+			this.spine_pose_next.setTime(value);
+		}
+		
+		getAnimKeysCount(){
+			return this.spine_data.anim_keys.length;
+		}
+		
 		updateSkin(skin_index) {
 			let skin_key = this.spine_data.skin_keys[skin_index];
 			this.spine_pose.setSkin(skin_key);
 			this.spine_pose_next.setSkin(skin_key);
-		}
-		
-		setAnimTime(time) {
-			this.anim_time = time;
-			this.spine_pose.setTime(time);
-			this.spine_pose_next.setTime(time);
-		}
-		getAnimLength() {
-			return this.spine_pose.curAnimLength() || 1000;
 		}
 
 		updateAnim(anim_index) {
 			this.anim_time = 0;
 			let anim_key = this.spine_data.anim_keys[anim_index];
 			this.spine_pose.setAnim(anim_key);
+			this.anim_length = this.spine_pose.curAnimLength() || 1000;
+			
 			let anim_key_next = this.spine_data.anim_keys[(anim_index + 1) % this.spine_data.anim_keys.length];
 			this.spine_pose_next.setAnim(anim_key_next);
-			this.spine_pose.setTime(this.anim_time);
-			this.spine_pose_next.setTime(this.anim_time);
-			this.anim_length = this.spine_pose.curAnimLength() || 1000;
 			this.anim_length_next = this.spine_pose_next.curAnimLength() || 1000;
 		}
 		
@@ -299,7 +294,7 @@ let SSAnim = (function () {
 
 			//this.spine_pose.events.forEach(function (event) { console.log("event", event.name, event.int_value, event.float_value, event.string_value); });
 
-			if (ANIM_BLEND > 0) {
+			if (SSAnim.ANIM_BLEND > 0) {
 				this.spine_pose_next.strike();
 
 				// blend next pose bone into pose bone
@@ -308,7 +303,7 @@ let SSAnim = (function () {
 					if (!bone_next) {
 						return;
 					}
-					spine.Space.tween(bone.local_space, bone_next.local_space, ANIM_BLEND, bone.local_space);
+					spine.Space.tween(bone.local_space, bone_next.local_space, SSAnim.ANIM_BLEND, bone.local_space);
 				});
 
 				// compute bone world space
@@ -319,25 +314,29 @@ let SSAnim = (function () {
 		}
 		
 		render() {
-			renderer.setResource(this.resource);
+			SSAnim.renderer.setResource(this.resource);
 			
-			renderer.drawPose(this.spine_pose, this.atlas_data);
+			SSAnim.renderer.drawPose(this.spine_pose, this.atlas_data);
 
-			if (ENABLE_RENDER_DEBUG_DATA) {
-				renderer.drawDebugData(this.spine_pose, this.atlas_data, {
+			if (SSAnim.ENABLE_RENDER_DEBUG_DATA) {
+				SSAnim.renderer.drawDebugData(this.spine_pose, this.atlas_data, {
 					bone: true,
 					ik: true,
 				});
 			}
 
-			if (ENABLE_RENDER_DEBUG_POSE) {
-				renderer.drawDebugPose(this.spine_pose, this.atlas_data, {
+			if (SSAnim.ENABLE_RENDER_DEBUG_POSE) {
+				SSAnim.renderer.drawDebugPose(this.spine_pose, this.atlas_data, {
 					bone: true,
 					ik: true,
 				});
 			}
 		}
 	}
+	SSAnim.ENABLE_RENDER_DEBUG_DATA = false;
+	SSAnim.ENABLE_RENDER_DEBUG_POSE = false;
+	SSAnim.ANIM_BLEND = 0.0;
+	SSAnim.renderer = null;
 
 	function loadText(url, callback) {
 		let req = new XMLHttpRequest();

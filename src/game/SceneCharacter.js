@@ -396,12 +396,15 @@ export class BaseSceneCharacter extends SceneObject {
 
 					//TODO: action="ladder": need better solution
 					if (pState.ladder_move_dir) {
-						pState._$anim_spd = charaRenderer.speed;
+						if (pState._$anim_spd == null && charaRenderer.speed) {
+							pState._$anim_spd = charaRenderer.speed;
+						}
 						charaRenderer.speed = 1;
 					}
 					else {
 						charaRenderer.speed = 0;
 					}
+					charaRenderer.actani._is_end = true;
 				}
 			}
 			else if (jump) {

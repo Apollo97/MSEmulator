@@ -992,6 +992,12 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 			if (this._actani.isEnd()) {
 				this.is_end = true;
 			}
+			else if ($gv.m_editor_mode) {
+				this.is_end = true;
+			}
+		}
+		else if (this._actani.isEnd()) {
+			this.is_end = true;
 		}
 	}
 }

@@ -513,10 +513,21 @@ export class World extends b2World {
 
 			this.DrawDebugData();
 
+			//display player's front
 			if (player && player.body) {
 				const pos = player.getPosition();
-				ctx.fillStyle = "red";
-				ctx.fillRect(pos.x, pos.y, 1, 1);
+				ctx.fillStyle = "#F00A";
+				
+				//test settings.canvasScale
+				if (player.state.front > 0) {
+					ctx.fillRect(pos.x, pos.y, 1, 1);
+				}
+				else if (player.state.front < 0) {
+					ctx.fillRect(pos.x - 1, pos.y, 1, 1);
+				}
+				else {
+					ctx.fillRect(pos.x - 0.5, pos.y, 1, 1);
+				}
 			}
 
 			ctx.restore();

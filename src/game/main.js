@@ -481,9 +481,19 @@ export class Game {
 				scene_map.endRender(engine);
 			}
 			else {
-				scene_map.applyCamera(engine);
-				for (let i = 0; i < charaList.length; ++i) {
-					charaList[i].render(engine);
+				if ($gv.m_display_other_player || $gv.m_display_player) {
+					scene_map.applyCamera(engine);
+					
+					for (let i = 0; i < charaList.length; ++i) {
+						if (charaList[i] != chara && $gv.m_display_other_player) {
+							charaList[i].render(engine);
+						}
+					}
+					if ($gv.m_display_player && chara) {
+						chara.render(engine);
+					}
+					
+					EffectManager.Render(engine);
 				}
 			}
 
@@ -513,32 +523,37 @@ export class Game {
 				scene_map.applyCamera(engine);
 				{
 					EffectManager.Render(engine);
-
-					if ($gv.m_display_debug_info) {
-						/** @type {CanvasRenderingContext2D} */
-						const ctx = engine.ctx;
-						{
-							ctx.beginPath();
-
-							ctx.fillStyle = "white";
-							ctx.fillRect(0, 0, 96, 50);
-
-							ctx.fillStyle = "black";
-							ctx.fillText("map origin", 5, 14, 96);
-
-							ctx.fillText("view-x: " + $gv.m_viewRect.x.toFixed(0), 5, 30, 96);
-
-							ctx.fillText("view-y: " + $gv.m_viewRect.y.toFixed(0), 5, 46, 96);
-						}
-					}
-
-					scene_map.controller.render(engine);
 				}
 				engine.loadIdentity();
 			}
 			
-			if ($gv.m_display_debug_info) {
-				this._render_debug_info();
+			{
+				scene_map.applyCamera(engine);
+				
+				if ($gv.m_display_debug_info) {
+					/** @type {CanvasRenderingContext2D} */
+					const ctx = engine.ctx;
+					{
+						ctx.beginPath();
+
+						ctx.fillStyle = "white";
+						ctx.fillRect(0, 0, 96, 50);
+
+						ctx.fillStyle = "black";
+						ctx.fillText("map origin", 5, 14, 96);
+
+						ctx.fillText("view-x: " + $gv.m_viewRect.x.toFixed(0), 5, 30, 96);
+
+						ctx.fillText("view-y: " + $gv.m_viewRect.y.toFixed(0), 5, 46, 96);
+					}
+				}
+				scene_map.controller.render(engine);
+				
+				engine.loadIdentity();
+				
+				if ($gv.m_display_debug_info) {
+					this._render_debug_info();
+				}
 			}
 		}
 		engine.endScene();

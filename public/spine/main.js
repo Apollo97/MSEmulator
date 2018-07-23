@@ -1,4 +1,6 @@
 
+import { } from "../resource.js";
+
 function  ajax_get(url) {
 	return new Promise(function (resolve, reject) {
 		var xhr = new XMLHttpRequest();
@@ -48,6 +50,43 @@ main.start = function() {
 	var controls = document.createElement('div');
 	controls.style.position = 'absolute';
 	document.body.appendChild(controls);
+
+	var add_textbox_control = function(text, value, callback) {
+		var control = document.createElement('div');
+		var input = document.createElement('input');
+		input.type = 'text';
+		input.value = value;
+		input.style = "width: 20em;";
+		
+		input.addEventListener('keydown', function(e) {
+			callback.call(this, this.value, e.code);
+		});
+		control.appendChild(input);
+		var label = document.createElement('label');
+		label.innerHTML = text;
+		control.appendChild(label);
+		controls.appendChild(control);
+		
+		return input;
+	}
+
+	var add_radio_control = function(text, name, checked, callback) {
+		var control = document.createElement('div');
+		var input = document.createElement('input');
+		input.name = name;
+		input.type = 'radio';
+		input.checked = checked;
+		input.addEventListener('click', function() {
+			callback.call(this, this.checked);
+		});
+		control.appendChild(input);
+		var label = document.createElement('label');
+		label.innerHTML = text;
+		control.appendChild(label);
+		controls.appendChild(control);
+		
+		return input;
+	}
 
 	var add_checkbox_control = function(text, checked, callback) {
 		var control = document.createElement('div');
@@ -123,12 +162,70 @@ main.start = function() {
 			canvas_gl.style.height = canvas_gl.height + 'px';
 		});
 	//
-
-	add_checkbox_control("GL", enable_render_webgl, function(checked) {
-		enable_render_webgl = checked;
+	
+	let textbox_path = add_textbox_control("path", "/Map/Effect3.img/BossLucid/Lucid", function (path, keydown) {
+		if (keydown == "Enter" || keydown == "NumpadEnter") {
+			reload();
+		}
 	});
-	add_checkbox_control("2D", enable_render_ctx2d, function(checked) {
-		enable_render_ctx2d = checked;
+	
+	function reload() {
+		let path = textbox_path.value;
+		
+		cancelAnimationFrame(animation_id);//stop
+		
+		ssanim = window.ssanim = [];
+		
+		if (enable_render_ctx2d) {
+			SSAnim.SetRenderingContext(ctx);
+		}
+		else if (enable_render_webgl) {
+			SSAnim.SetRenderingContext(gl);
+		}
+		
+		let ann = new SSAnim();
+		tasks.push(ann.load(path));
+		ssanim.push(ann);
+		
+		Promise.all(tasks).then(function () {
+			tasks = [];
+			animation_id = requestAnimationFrame(loop);
+		}).catch(function (err) {
+			console.error(err);
+			alert(err.message);
+			tasks = [];
+		});
+	}
+	
+	let radio_enable_render_webgl, radio_enable_render_ctx2d;
+
+	radio_enable_render_webgl = add_radio_control("GL", "renderer", enable_render_webgl, function(checked) {
+		if (confirm("reload ?")) {
+			cancelAnimationFrame(animation_id);//stop
+			enable_render_webgl = checked;
+			enable_render_ctx2d = !checked;
+			canvas.style.display = "none";
+			canvas_gl.style.display = "block";
+			reload();
+		}
+		else {
+			radio_enable_render_ctx2d.checked = true;
+			this.checked = false;
+		}
+	});
+	radio_enable_render_ctx2d = add_radio_control("2D", "renderer", enable_render_ctx2d, function(checked) {
+		if (confirm("reload ?")) {
+			cancelAnimationFrame(animation_id);//stop
+			enable_render_ctx2d = checked;
+			enable_render_webgl = !checked;
+			canvas.style.display = "block";
+			canvas_gl.style.display = "none";
+			reload();
+		}
+		else {
+			radio_enable_render_webgl.checked = true;
+			this.checked = false;
+		}
 	});
 		
 	camera_x = 0;
@@ -137,13 +234,13 @@ main.start = function() {
 	
 	camera_x = 0;
 	camera_y = 0;//canvas.height / 2;
-	camera_zoom = 0.5
+	camera_zoom = 0.5;
 
-	add_checkbox_control("2D Debug Data", ENABLE_RENDER_DEBUG_DATA, function(checked) {
-		ENABLE_RENDER_DEBUG_DATA = checked;
+	add_checkbox_control("2D Debug Data", SSAnim.ENABLE_RENDER_DEBUG_DATA, function(checked) {
+		SSAnim.ENABLE_RENDER_DEBUG_DATA = checked;
 	});
-	add_checkbox_control("2D Debug Pose", ENABLE_RENDER_DEBUG_POSE, function(checked) {
-		ENABLE_RENDER_DEBUG_POSE = checked;
+	add_checkbox_control("2D Debug Pose", SSAnim.ENABLE_RENDER_DEBUG_POSE, function(checked) {
+		SSAnim.ENABLE_RENDER_DEBUG_POSE = checked;
 	});
 	add_range_control("x", camera_x, -canvas.width, canvas.width, 1, function(value) {
 		camera_x = parseFloat(value);
@@ -178,6 +275,7 @@ main.start = function() {
 	SSAnim.SetRenderingContext(ctx);
 	//SSAnim.SetRenderingContext(gl);
 	
+	var animation_id = null;
 	var tasks = [];
 	var ssanim = window.ssanim = [];
 	
@@ -187,37 +285,37 @@ main.start = function() {
 		let sp = 1;
 		
 		if (sp == 0) {
-			path = "Map/Back/arcana1.img/spine/" + i;
+			path = "/Map/Back/arcana1.img/spine/" + i;
 			//fname = "skeleton";
 		}
 		else if (sp == 1) {
-			path = "Map/Effect3.img/BossLucid/Lucid";
+			path = "/Map/Effect3.img/BossLucid/Lucid";
 			//fname = "lusi";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 2) {
-			path = "Map/Obj/Lacheln.img/Boss/obj/9";
+			path = "/Map/Obj/Lacheln.img/Boss/obj/9";
 			//fname = "a_1";//002
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 3) {
-			path = "Map/Obj/arcana.img/town/spine/0";
+			path = "/Map/Obj/arcana.img/town/spine/0";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 4) {
-			path = "Map/Obj/arcana.img/town/spine/1";
+			path = "/Map/Obj/arcana.img/town/spine/1";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 5) {
-			path = "Map/Back/Lacheln.img/spine/0";
+			path = "/Map/Back/Lacheln.img/spine/0";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
@@ -228,12 +326,17 @@ main.start = function() {
 	}
 	
 	Promise.all(tasks).then(function () {
-		requestAnimationFrame(loop);
+		animation_id = requestAnimationFrame(loop);
+		tasks = [];
+	}).catch(function (err) {
+		console.error(err);
+		alert(err.message);
+		tasks = [];
 	});
 
 	var prev_time = 0;
 	var loop = function(time) {
-		requestAnimationFrame(loop);
+		animation_id = requestAnimationFrame(loop);
 
 		var dt = time - (prev_time || time);
 		prev_time = time; // ms
@@ -276,4 +379,6 @@ main.start = function() {
 		}
 	}
 }
+
+window.addEventListener('load', function (event) { main.start(); }, false);
 
