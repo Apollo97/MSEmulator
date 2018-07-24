@@ -425,7 +425,7 @@
 						if (img.src.indexOf("maplestory.io") >= 0) {
 							return;
 						}
-						let path = img.src.replace("/images/", "/data/");
+						let path = img.src.replace("images/", "/data/");
 						$get(path).then(function (result) {
 							try {
 								let obj = JSON.parse(result);

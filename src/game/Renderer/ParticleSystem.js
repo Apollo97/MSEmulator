@@ -190,6 +190,8 @@ class _ParticleGroupData {
 
 export class ParticleGroup extends _ParticleGroupData {
 	constructor() {
+		super();
+
 		this.x = 0;
 		this.y = 0;
 
@@ -234,7 +236,7 @@ export class ParticleGroup extends _ParticleGroupData {
 		this.particleName = particle_name;
 
 		/** @type ParticleGroupData */
-		let data = JSON.parse(await $get.data(this._particle_path));
+		let data = await $get.data(this._particle_path);
 		
 		Object.assign(this, data);
 

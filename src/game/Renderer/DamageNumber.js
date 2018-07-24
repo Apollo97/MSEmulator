@@ -46,8 +46,7 @@ class DamageNumberTextures {
 	 * @param {string} path
 	 */
 	async _load(path) {
-		const jsonText = await $get.data(path);
-		const _raw = JSON.parse(jsonText);
+		const _raw = await $get.data(path);
 		
 		Object.keys(_raw).forEach(key => {
 			let texture = new Sprite(_raw[key]);

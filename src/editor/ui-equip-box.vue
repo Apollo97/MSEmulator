@@ -618,7 +618,7 @@
 				let equip_list = [];
 
 				if (coloredPath != this.loaded_category || this.loaded_equip_list.length == 0) {
-					equip_list = JSON.parse(await $get(`/equips/${coloredPath}.json`));
+					equip_list = JSON.parse(await $get(`equips/${coloredPath}.json`));
 					if (!equip_list || !equip_list.length) {
 						alert("? " + coloredPath);
 						return;
@@ -627,7 +627,7 @@
 					await concat_external_resource(coloredPath, equip_list);
 
 					if (cateinfo.slot == "weapon") {
-						let cash_weapon = JSON.parse(await $get(`/equips/0170.json`));
+						let cash_weapon = JSON.parse(await $get(`equips/0170.json`));
 
 						let wt = prefix.slice(2, 4);
 						let va = cash_weapon.filter(a => {
@@ -738,7 +738,7 @@
 				if (item.icon && item.icon[""]) {
 					let src = item.icon[""];
 
-					if (src.startsWith("/images/")) {
+					if (src.startsWith("images/")) {
 						let sp = src.split("/");
 						let place = sp.splice(sp.length - 1, 1);
 

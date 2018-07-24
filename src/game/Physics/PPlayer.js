@@ -24,6 +24,8 @@ import { FilterHelper } from "./Filter.js";
 
 const DEGTORAD = Math.PI / 180;
 
+let b2Vec2_temp = new b2Vec2();
+
 /**
  * physics profile
  */
@@ -215,9 +217,6 @@ class PCharacterBase {
 		/** @type {LadderRope} */
 		this.ladder = null;
 
-		/** @type {b2Vec2} */
-		this._ladder_contact_point = null;
-
 
 		/** @type {number} */
 		this._walker_omega = 1;
@@ -340,19 +339,13 @@ class PCharacterBase {
 	/**
 	 * set ladder, not use
 	 * @param {LadderRope} ladder
-	 * @param {b2Vec2} ladderLocalPoint
 	 */
-	contactLadder(ladder, ladderLocalPoint) {
+	contactLadder(ladder) {
 		if (ladder) {
 			this.ladder = ladder;
-			this._ladder_contact_point = ladderLocalPoint;
-		}
-		else if (ladder || ladderLocalPoint) {
-			debugger;
 		}
 		else {
 			this.ladder = null;
-			this._ladder_contact_point = null;
 		}
 	}
 	leaveLadder() {
@@ -438,11 +431,6 @@ class PCharacterBase {
 			}
 		}
 		else {
-			//TODO: action="ladder": need better solution
-			if (this.chara && this.chara.renderer && "_$anim_spd" in this.state) {
-				this.chara.renderer.speed = this.state._$anim_spd;
-				delete this.state._$anim_spd;
-			}
 			if (this.ladder) {
 				//this.ladder = null;
 
@@ -571,9 +559,9 @@ class PCharacterBase {
 					return;
 				}
 			}
-			if (this.ladder && this._ladder_contact_point && (//TODO: need update this._ladder_contact_point
-				(keys.down && this.$foothold && this._ladder_contact_point.y <= 0) ||
-				(keys.up && !this.$foothold && this._ladder_contact_point.y > 0))
+			if (this.ladder && (
+				(keys.down && this.$foothold && this.ladder.body.GetLocalPoint(this.getPosition(), b2Vec2_temp).y <= 0) ||
+				(keys.up && !this.$foothold && this.ladder.body.GetLocalPoint(this.getPosition(), b2Vec2_temp).y > 0))
 			) {
 				this.state.ladder_move_dir = 0;//reset
 				this.useLadder(true);
@@ -1154,7 +1142,8 @@ class PCharacterBase {
 	 * @returns {number}
 	 */
 	getLayer() {
-		return this.$foothold ? this.$foothold.layer : (this.prev_$fh ? this.prev_$fh.layer : (this.leave_$fh ? this.leave_$fh.layer : 5));
+		let layer = this.$foothold ? this.$foothold.layer : (this.prev_$fh ? this.prev_$fh.layer : (this.leave_$fh ? this.leave_$fh.layer : 5));
+		return this.state.ladder ? (layer + 1) : layer;
 	}
 }
 

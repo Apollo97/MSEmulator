@@ -297,6 +297,8 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
+		const renderer = this.renderer;
+
 		this.chatCtrl.update(stamp);
 
 		this.activeSkills.forEach(skill => {
@@ -322,7 +324,7 @@ export class BaseSceneCharacter extends SceneObject {
 		this._player_control();
 
 		if ($gv.m_editor_mode) {
-			if (this.renderer.speed > 0 && this.$physics && this.enablePhysics) {
+			if (renderer.speed > 0 && this.$physics && this.enablePhysics) {
 				this._applyState({
 					front: this.$physics.state.front,
 				});
@@ -333,19 +335,29 @@ export class BaseSceneCharacter extends SceneObject {
 		}
 
 		if (this.$physics) {
-			if (this.renderer && this.enablePhysics) {
+			if (renderer && this.enablePhysics) {
 				const pos = this.$physics.getPosition();
 				const px = Math.trunc(pos.x * $gv.CANVAS_SCALE + 0.5);
 				const py = Math.trunc(pos.y * $gv.CANVAS_SCALE + 0.5);
 
-				this.renderer.x = px;
-				this.renderer.y = py;
+				//position
+				renderer.x = px;
+				renderer.y = py;
+				
+				//rotate
+				if (this.$physics.body.GetAngle() || this.$physics.body.GetAngularVelocity()) {
+					renderer.angle = this.$physics.body.GetAngle();
+				}
+				else {
+					renderer.angle = 0;
+				}
 
+				//layer
 				this.$layer = this.$physics.getLayer();
 			}
 		}
 
-		this.renderer.update(stamp);
+		renderer.update(stamp);
 	}
 
 	/**
@@ -373,7 +385,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {PPlayerState} player_state
 	 */
 	_applyState(player_state) {
-		const charaRenderer = this.renderer;
+		const renderer = this.renderer;
 		const pState = this.$physics.state;
 
 		// renderer: apply default action
@@ -382,54 +394,48 @@ export class BaseSceneCharacter extends SceneObject {
 			const enablePhysics = chara.enablePhysics;
 
 			if (front != null) {
-				charaRenderer.front = front;
+				renderer.front = front;
 			}
 
 			if (ladder) {
 				if (enablePhysics && this.$physics.ladder) {
 					if (this.$physics.ladder.isLadder()) {
-						charaRenderer.action = "ladder";
+						renderer.action = "ladder";
 					}
 					else {
-						charaRenderer.action = "rope";
+						renderer.action = "rope";
 					}
 
-					//TODO: action="ladder": need better solution
 					if (pState.ladder_move_dir) {
-						if (pState._$anim_spd == null && charaRenderer.speed) {
-							pState._$anim_spd = charaRenderer.speed;
+						if (chara.renderer.actani.isEnd()) {
+							chara.renderer.actani.reset();
+							renderer.actani.loop = false;
 						}
-						charaRenderer.speed = 1;
 					}
 					else {
-						charaRenderer.speed = 0;
+						renderer.actani._is_end = true;
 					}
-					charaRenderer.actani._is_end = true;
 				}
 			}
 			else if (jump) {
-				charaRenderer.action = "jump";
+				renderer.action = "jump";
+				renderer.actani.loop = false;
 			}
 			else if (walk) {
-				charaRenderer.action = "walk1";
+				renderer.action = "walk1";
+				renderer.actani.loop = true;
 			}
 			else if (prone) {
-				charaRenderer.action = "prone";
+				renderer.action = "prone";
+				renderer.actani.loop = false;
 			}
 			else if (fly) {
-				charaRenderer.action = "fly";
+				renderer.action = "fly";
+				renderer.actani.loop = true;
 			}
 			else {
-				charaRenderer.action = "stand1";
-			}
-
-			if (enablePhysics) {
-				if (this.$physics.body.GetAngle() || this.$physics.body.GetAngularVelocity()) {
-					charaRenderer.angle = this.$physics.body.GetAngle();
-				}
-				else {
-					charaRenderer.angle = 0;
-				}
+				renderer.action = "stand1";
+				renderer.actani.loop = true;
 			}
 
 			//TODO: keyboard: emotion key
@@ -442,11 +448,9 @@ export class BaseSceneCharacter extends SceneObject {
 						"oops"
 					];
 					let e = a[i % a.length];
-					charaRenderer.emotion = e;
+					renderer.emotion = e;
 				}
 			}
-
-			charaRenderer.actani.loop = true;
 		}
 	}
 

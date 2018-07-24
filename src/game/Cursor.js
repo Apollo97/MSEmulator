@@ -36,7 +36,7 @@ export class CursorAnimationData {
 	 * @returns {Promise<number>} - index
 	 */
 	async addFrameFromUrl(url) {
-		let raw = JSON.parse(await $get.data(url));
+		let raw = await $get.data(url);
 		return this.addFrame("/images" + url, raw.origin.x, raw.origin.y, raw.delay);
 	}
 	/**
@@ -65,7 +65,7 @@ export class CursorAnimationData {
 		return i;
 	}
 	async load(url) {
-		let raw = JSON.parse(await $get.data(url));
+		let raw = await $get.data(url);
 
 		for (let i = 0, frame = raw[i]; frame; ++i, frame = raw[i]) {
 			let img = {};

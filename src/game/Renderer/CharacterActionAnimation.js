@@ -176,7 +176,7 @@ export class ActionAnimation {
 
 	static async Init() {
 		/** @type {{[action:string]:ActionAnimationFrameData[]}} */
-		let aadef = JSON.parse(await $get.data(ActionAnimation._base_path));
+		let aadef = await $get.data(ActionAnimation._base_path);
 
 		delete aadef['info'];
 

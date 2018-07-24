@@ -193,7 +193,7 @@ export async function $createItem(itemId, ...props) {
 
 	url = ItemCategoryInfo.getDataPath(itemId);
 
-	let itemPrototype = JSON.parse(await $get.data(url));// raw
+	let itemPrototype = await $get.data(url);// raw
 	if (!itemPrototype) {
 		console.warn("item not exist: " + itemId);
 		return null;

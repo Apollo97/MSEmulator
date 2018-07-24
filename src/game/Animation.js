@@ -96,7 +96,7 @@ export class AnimationBase extends IAnimation {
 	 */
 	async load() {
 		//if (!this._raw) {
-		//	this._raw = JSON.parse(await $get.data(this._url));
+		//	this._raw = await $get.data(this._url);
 		//}
 
 		for (let i = 0; i in this._raw; ++i) {

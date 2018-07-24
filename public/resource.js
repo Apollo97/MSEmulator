@@ -156,7 +156,7 @@ export class ItemCategoryInfo {
 			return null;
 		}
 		let url = `/String/Eqp.img/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
-		let data = JSON.parse(await $get.data(url));
+		let data = await $get.data(url);
 		return data;
 	}
 
@@ -212,7 +212,7 @@ export class ItemCategoryInfo {
 	 * @returns {boolean}
 	 */
 	static isItem(id) {
-		let type = Math.trunc(id / 1000000);//id.startsWidth("00");
+		let type = Math.trunc(id / 1000000);//id.startsWith("00");
 		return type != 0;
 	}
 
@@ -365,14 +365,20 @@ ItemCategoryInfo._categoryList = (function (info_map) {
 	return list;
 })(ItemCategoryInfo._info);
 
-
 export class ResourceManager {
 	static isEquipExist(id, cateInfo) {
 		const dp = cateInfo.listPath;
 		const es = ResourceManager.equip_map[dp];
 		return !es || es.has(id);
 	}
-
+	
+	/**
+	 * @param {string} url
+	 */
+	static async loadArchive(url) {
+		ResourceManager.archive = JSON.parse(await ResourceManager.get(url));
+	}
+	
 	/**
 	 * @param {string} url
 	 */
@@ -388,7 +394,7 @@ export class ResourceManager {
 					ResourceManager.failed_urls.push(url);
 					debugger;
 					//resolve(null);
-					reject("404/500: " + url);
+					reject(this.status + ": " + url);
 				}
 				else if (this.status == 200) {
 					resolve(this.responseText);
@@ -402,35 +408,139 @@ export class ResourceManager {
 				debugger;
 				// XMLHttpRequest 超时。在此做某事。
 				//resolve(null);
-				reject("404/500: " + url);
+				reject("timeout: " + url);
+			};
+
+			xhr.onabort = function (e) {
+				reject("abort: " + url);
 			};
 
 			xhr.send();
 		});
 	}
 }
+ResourceManager.root_path = "/";
+
 ResourceManager.failed_urls = [];
+
+ResourceManager.archive = {};
+
+const url_startsWith_protocol = RegExp.prototype.test.bind(/^http[s]*\:\/\//);
+function setValueByUrl(url, value) {
+	if (url_startsWith_protocol(url)) {
+		return;
+	}
+	else if (ResourceManager.root_path != "" && url.startsWith(ResourceManager.root_path)) {
+		let path = url.slice(ResourceManager.root_path.length);
+		setValue(ResourceManager.archive, path, value);
+	}
+	else {
+		setValue(ResourceManager.archive, url, value);
+	}
+}
+function getValueFromArchiveByUrl(url, value) {
+	if (url_startsWith_protocol(url)) {
+		return undefined;
+	}
+	else if (ResourceManager.root_path != "" && url.startsWith(ResourceManager.root_path)) {
+		let path = url.slice(ResourceManager.root_path.length);
+		return getValue(ResourceManager.archive, path);
+	}
+	else {
+		return getValue(ResourceManager.archive, url);
+	}
+}
+
+function setValue(obj, path, value) {
+	let ps = path.split("/");
+	let i, target = obj, lastIndex = ps.length - 1;
+	for (i = 0; i < lastIndex; ++i) {
+		let key = ps[i];
+		if (target[key] == null) {
+			target[key] = {};
+		}
+		target = target[key];
+	}
+	target[ps[lastIndex]] = value;
+
+	return obj;
+}
+function getValue(obj, path) {
+	let ps = path.split("/");
+	let i, target = obj, lastIndex = ps.length - 1;
+	for (i = 0; i < lastIndex; ++i) {
+		let key = ps[i];
+		if (target[key]) {
+				target = target[key];
+		}
+	}
+	return target[ps[lastIndex]];
+}
 
 /**
  * @param {string} url
  * @returns {Promise<any>}
  */
-let $get = function (url) {
+export let $get = function $get(url) {
 	return ResourceManager.get(url);
 }
 /**
- * @param {string} url
+ * @param {string} path
  * @returns {Promise<any>}
  */
-$get.pack = function (url) {
-	return ResourceManager.get(`/pack${url}`);
+$get.pack = async function $get_pack(path) {
+	const url = `${ResourceManager.root_path}pack${path}`;
+	let obj = getValueFromArchiveByUrl(url);
+	if (obj) {
+		return obj;
+	}
+	else {
+		let jsonText = await ResourceManager.get(url);
+		obj = JSON.parse(jsonText);
+		setValueByUrl(url, obj);
+		return obj;
+	}
 }
 /**
- * @param {string} url
+ * @param {string} path
  * @returns {Promise<any>}
  */
-$get.data = function (url) {
-	return ResourceManager.get(`/data${url}`);
+$get.data = async function $get_data(path) {
+	const url = `${ResourceManager.root_path}data${path}`;
+	let obj = getValueFromArchiveByUrl(url);
+	if (obj) {
+		return obj;
+	}
+	else {
+		let jsonText = await ResourceManager.get(url);
+		obj = JSON.parse(jsonText);
+		setValueByUrl(url, obj);
+		return obj;
+	}
+}
+/**
+ * @param {string} path
+ * @returns {Promise<any>}
+ */
+$get.list = async function $get_list(path) {
+	const url = `${ResourceManager.root_path}ls${path}`;
+	let obj = getValueFromArchiveByUrl(url);
+	if (obj) {
+		return obj;
+	}
+	else {
+		let jsonText = await ResourceManager.get(url);
+		obj = JSON.parse(jsonText);
+		setValueByUrl(url, obj);
+		return obj;
+	}
+}
+/**
+ * @param {string} path
+ * @returns {Promise<any>}
+ */
+$get.imageUrl = function $get_imagesUrl(path) {
+	return `${ResourceManager.root_path}images${path}`;
 }
 window.$get = $get;
 

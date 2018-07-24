@@ -28,7 +28,7 @@ export class ChatBalloon {
 		const _d_path = [this.constructor._base_path, style].join("/");
 		const _i_path = "/images" + _d_path;
 
-		this._raw = JSON.parse(await $get.data(_d_path));
+		this._raw = await $get.data(_d_path);
 
 		this.nw = new Sprite(this._raw.nw);
 		this.nw._url = _i_path + "/nw";
@@ -533,7 +533,7 @@ class ItemEffect {
 			let itemEffectList = ItemEffect._list;
 
 			/** @type {string[]} */
-			let raw = JSON.parse(await $get("/ls/Effect/ItemEff.img/"));
+			let raw = $get.list("/Effect/ItemEff.img/");
 
 			itemEffectList.clear();
 
@@ -573,7 +573,7 @@ class ItemEffect {
 			return null;
 		}
 
-		let raw = JSON.parse(await $get.data(url));
+		let raw = await $get.data(url);
 		if (raw) {
 			return await this._load(equipID, url, raw);
 		}
@@ -992,10 +992,9 @@ class CharacterEquipBase extends ICharacterEquip {
 
 		if (cateInfo.path) {
 			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
-				let ss = JSON.parse(data);
-				if (ss) {
-					this.name = ss.name;
-					this.desc = ss.desc;
+				if (data) {
+					this.name = data.name;
+					this.desc = data.desc;
 				}
 			}, reason => {
 				this.name = "[" + id + "]";
@@ -1013,7 +1012,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		let raw;
 
 		if (ResourceManager.isEquipExist(id, cateInfo)) {
-			raw = JSON.parse(await $get.data(url));
+			raw = await $get.data(url);
 		}
 		if (!raw && load_extern_item_data) {
 			raw = await load_extern_item_data(id);
@@ -2844,12 +2843,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			ItemEffect.Init(),
 			ActionAnimation.Init(),//action definition
 		]);
-
-		let _zMap = JSON.parse(result[0]);
+		
 		zMap = {};
-		Object.keys(_zMap).reverse().forEach((k, i) => zMap[k] = i + 1);
+		Object.keys(result[0]).reverse().forEach((k, i) => zMap[k] = i + 1);
 
-		sMap = JSON.parse(result[1]);
+		sMap = result[1];
 	}
 
 	load() {

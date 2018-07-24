@@ -38,7 +38,7 @@ let SSAnim = (function () {
 		}
 		
 		async load(url) {
-			let rawData = JSON.parse(await $get.pack(url));
+			let rawData = await $get.pack(url);
 			let fname;
 			
 			for (let file in rawData) {
@@ -255,8 +255,10 @@ let SSAnim = (function () {
 			return this.spine_pose.getTime();
 		}
 		set anim_time(value) {
-			this.spine_pose.setTime(value);
-			this.spine_pose_next.setTime(value);
+			if (this.spine_pose) {
+				this.spine_pose.setTime(value);
+				this.spine_pose_next.setTime(value);
+			}
 		}
 		
 		getAnimKeysCount(){

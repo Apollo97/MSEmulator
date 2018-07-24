@@ -123,11 +123,8 @@ export class LadderRope extends MapLadderRope {
 			return;
 		}
 
-		if (!targetPlayer.state.ladder) {// is not use ladder
-			const foot = targetPlayer.foot_walk.GetPosition();
-			const relativePoint = this.body.GetLocalPoint(foot, new b2Vec2());
-
-			targetPlayer.contactLadder(this, relativePoint);
+		if (!targetPlayer.state.ladder) {
+			targetPlayer.contactLadder(this);
 		}
 	}
 

@@ -92,7 +92,7 @@
 				//window.alert(msg);
 			},
 			loadData: async function () {
-				this.raw = JSON.parse(await $get.data("/UI/UIWindow4.img/Equip"));
+				this.raw = await $get.data("/UI/UIWindow4.img/Equip");
 				this.slot_imgWidth = this.raw.Equip.Slots[1].__w;
 				this.slot_imgHeight = this.raw.Equip.Slots[1].__h;
 

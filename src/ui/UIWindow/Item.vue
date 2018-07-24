@@ -149,7 +149,7 @@
 		},
 		methods: {
 			async loadData() {
-				this.raw = JSON.parse(await $get.data("/UI/UIWindow2.img/Item"));
+				this.raw = await $get.data("/UI/UIWindow2.img/Item");
 
 				if (this.isCollapsed) {
 					this.wndStyle["width"] = this.raw.backgrnd.__w + "px";

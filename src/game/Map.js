@@ -31,6 +31,8 @@ const map_sprite = {
 
 window.$map_sprite = map_sprite;
 
+$gv.allQuest = {};
+
 async function map_load_package(cat, pack) {
 	if (!cat || !pack) {
 		debugger;
@@ -38,7 +40,7 @@ async function map_load_package(cat, pack) {
 	if (!map_sprite[cat][pack]) {
 		let url = `/Map/${cat}/${pack}.img/`;
 		
-		map_sprite[cat][pack] = JSON.parse(await $get.data(url));
+		map_sprite[cat][pack] = await $get.data(url);
 
 		if (map_sprite[cat][pack] == null) {
 			console.warn("Empty package: " + url);
@@ -153,6 +155,7 @@ class MapObjectBase {
 		}
 		this._raw = _raw;
 
+
 		/** @type {MapTexture[]} */
 		this.textures = [];
 
@@ -164,6 +167,17 @@ class MapObjectBase {
 
 		/** @type {number} timeElapsed_in_ms:float */
 		this.delta = 0;
+
+
+		/** @type {{[questId:string]: number}} */
+		this.quest = _raw.quest;
+
+		for (let qid in _raw.quest) {
+			if (!$gv.allQuest[qid]) {
+				$gv.allQuest[qid] = new Set();
+			}
+			$gv.allQuest[qid].add(_raw.quest[qid]);
+		}
 
 		
 		this._load_object_info();
@@ -578,7 +592,7 @@ class MapObject extends MapObjectBase {
 		let path = ["/Map", "Obj", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i], null_url, texture0);
-		texture._url = "/images" + path;
+		texture._url = $get.imageUrl(path);
 
 		return texture;
 	}
@@ -734,6 +748,7 @@ class MapObjectSkeletalAnim extends MapObject {
 			this.ssanim.update(stamp);
 		}
 	}
+
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {Vec2} center
@@ -743,17 +758,17 @@ class MapObjectSkeletalAnim extends MapObject {
 		if ($gv.m_display_skeletal_anim) {
 			const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
 			const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
-			
+
 			renderer.ctx.setTransform(1, 0, 0, -1, x, y);
-					
+
 			if (this.ssanim) {
 				this.ssanim.render();
 			}
 			if (this.display_aabb) {
 				const ctx = renderer.ctx;
-			
+
 				renderer.ctx.setTransform(1, 0, 0, 1, Math.trunc(-$gv.m_viewRect.x + 0.5), Math.trunc(-$gv.m_viewRect.y + 0.5));
-			
+
 				ctx.beginPath();
 				ctx.rect(this.x - this.ssanim.width * 0.5, this.y - this.ssanim.height, this.ssanim.width, this.ssanim.height);
 				ctx.fillStyle = "rgba(20,255,20,0.5)";
@@ -772,7 +787,7 @@ class MapTile extends MapObject {
 		let texture = new MapTexture(this._texture_raw);
 
 		this.textures[0] = texture;
-		this.textures[0]._url = ["/images", "Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
+		this.textures[0]._url = $get.imageUrl(["/Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/"));
 
 		this.__calc_aabb();
 	}
@@ -922,7 +937,7 @@ class MapPortal extends MapObject {
 	}
 	
 	static async Init() {
-		let _raw = JSON.parse(await $get.pack("/Map/MapHelper.img/portal/editor"));
+		let _raw = await $get.pack("/Map/MapHelper.img/portal/editor");
 		
 		let portals = [];
 		
@@ -1035,7 +1050,7 @@ class MapBack extends MapBackBase {
 		}
 
 		this.textures[0] = new MapTexture(this._texture_raw);
-		this.textures[0]._url = "/images" + path;
+		this.textures[0]._url = $get.imageUrl(path);
 	}
 	
 	get _texture_base_path() {
@@ -1075,7 +1090,7 @@ class MapBackAnimation extends MapBackBase {
 		let path = ["/Map", "Back", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i]);
-		texture._url = "/images" + path;
+		texture._url = $get.imageUrl(path);
 
 		return texture;
 	}
@@ -1140,6 +1155,7 @@ class MapBackSkeletalAnim extends MapBackBase {
 			this.ssanim.update(stamp);
 		}
 	}
+
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {Vec2} center
@@ -1150,9 +1166,9 @@ class MapBackSkeletalAnim extends MapBackBase {
 			if (this.ssanim) {
 				const x = Math.trunc((-$gv.m_viewRect.x + 0.5) + this.x);
 				const y = Math.trunc((-$gv.m_viewRect.y + 0.5) + this.y);
-				
+
 				renderer.ctx.setTransform(1, 0, 0, -1, x, y);
-				
+
 				this.ssanim.render();
 			}
 		}
@@ -1876,6 +1892,9 @@ export class SceneMap {
 		/** @type {Rectangle} */
 		this.mapBound = null;
 
+		/** @type {{[questId:string]: number}} */
+		this.quest = {};
+
 		/** @type {string} */
 		this._url = null;//data url //debug
 
@@ -1892,7 +1911,7 @@ export class SceneMap {
 		let $_mapString = null;
 		let $mapString = {};
 
-		$_mapString = JSON.parse(await $get.data("/String/Map.img/"));
+		$_mapString = await $get.data("/String/Map.img/");
 
 		for (let i in $_mapString) {
 			for (let j in $_mapString[i]) {
@@ -1910,6 +1929,20 @@ export class SceneMap {
 			this._Init(),
 			MapPortal.Init(),
 		]);
+	}
+
+	/**
+	 * @param {{[questId:string]: number}} quest
+	 */
+	isActivated(quest) {
+		if (quest) {
+			for (let id in quest) {
+				if (this.quest[id] != quest[id]) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 	
 	get $map_sprite() {
@@ -2198,7 +2231,7 @@ export class SceneMap {
 		}
 		const url = this._get_map_data_url(map_id);
 
-		let raw = JSON.parse(await $get.data(url));
+		let raw = await $get.data(url);
 		if (!raw) {
 			alert("map not exit");
 			debugger;
@@ -2207,7 +2240,7 @@ export class SceneMap {
 		if (raw.info && raw.info.link) {
 			const url2 = this._get_map_data_url(raw.info.link);
 				
-			raw = JSON.parse(await $get.data(url2));
+			raw = await $get.data(url2);
 			if (!raw) {
 				alert("map-link not exit");
 				debugger;
@@ -2230,6 +2263,8 @@ export class SceneMap {
 		const map_id = this.map_id;
 
 		this.$loading_status = "loading";
+
+		$gv.allQuest = {};
 		
 		this.controller.stop = true;//begin load
 		
@@ -2284,7 +2319,7 @@ export class SceneMap {
 			this.onload.call(this);//history.pushState
 		}
 
-		console.log("completed scene_map.load");
+		console.log("End scene_map.load");
 	}
 	_script() {
 		switch (this.map_id) {
@@ -2506,8 +2541,10 @@ export class SceneMap {
 		
 		for (let i = 0; i < this.frontground.length; ++i) {
 			let back = this.frontground[i];
-			back.update(this.stamp);
-			back.draw(renderer, center, viewRect);
+			if (this.isActivated(back.quest)) {
+				back.update(this.stamp);
+				back.draw(renderer, center, viewRect);
+			}
 		}
 	}
 
@@ -2524,8 +2561,10 @@ export class SceneMap {
 		const objs = this.layeredObject[layerIndex];
 		for (let j = 0; j < objs.length; ++j) {
 			let obj = objs[j];
-			obj.update(this.stamp);
-			obj.draw(renderer, center, viewRect);
+			if (this.isActivated(obj.quest)) {
+				obj.update(this.stamp);
+				obj.draw(renderer, center, viewRect);
+			}
 		}
 	}
 	
@@ -2542,8 +2581,10 @@ export class SceneMap {
 		const tiles = this.layeredTile[layerIndex];
 		for (let j = 0; j < tiles.length; ++j) {
 			let tile = tiles[j];
-			tile.update(this.stamp);
-			tile.draw(renderer, center, viewRect);
+			if (this.isActivated(tile.quest)) {
+				tile.update(this.stamp);
+				tile.draw(renderer, center, viewRect);
+			}
 		}
 	}
 
@@ -2559,8 +2600,10 @@ export class SceneMap {
 		
 		for (let i = 0; i < this.background.length; ++i) {
 			let back = this.background[i];
-			back.update(this.stamp);
-			back.draw(renderer, center, viewRect);
+			if (this.isActivated(back.quest)) {
+				back.update(this.stamp);
+				back.draw(renderer, center, viewRect);
+			}
 		}
 	}
 	
@@ -2577,8 +2620,10 @@ export class SceneMap {
 		
 		for (let i = 0; i < this.particleList.length; ++i) {
 			let particle = this.particleList[i];
-			particle.update(this.stamp);
-			particle.draw(renderer, center, viewRect);
+			if (this.isActivated(particle.quest)) {
+				particle.update(this.stamp);
+				particle.draw(renderer, center, viewRect);
+			}
 		}
 	}
 }

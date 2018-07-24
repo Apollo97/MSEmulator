@@ -485,7 +485,7 @@ class SkillAnimationBase {
 
 		const url = `${this.constructor._base_path}/${jobID}.img/skill/${skillId}`;
 
-		const raw = JSON.parse(await $get.pack(url));
+		const raw = await $get.pack(url);
 		if (!raw) {
 			alert("SkillAnimationBase");
 			return;

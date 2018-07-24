@@ -57,7 +57,7 @@
 					const task = $get.pack(path);
 
 					context.commit("_waitTask", { task: task });
-					const data = JSON.parse(await task);
+					const data = await task;
 					context.commit("_doneTask", { task: task });
 
 					context.commit("_load", {

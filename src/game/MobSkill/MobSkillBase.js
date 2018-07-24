@@ -142,7 +142,7 @@ export class MobSkillBase {
 		if (!this._raw && !this._url) {
 			this._url = [this._base_path, level].join("/");
 			
-			this._raw = JSON.parse(await $get.data(this._url));
+			this._raw = await $get.data(this._url);
 		}
 		
 		for (let name of this._anima_name_list) {

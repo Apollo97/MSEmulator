@@ -188,7 +188,7 @@ class SpineBinaryReader {
 	}
 	
 	export() {
-		let obj = JSON.parse(JSON.stringify({//clone
+		let obj = Object.assign({}, {//clone
 			skeleton: this.skeleton,
 			bones: this.bones,
 			slots: this.slots,
@@ -198,7 +198,7 @@ class SpineBinaryReader {
 			skins: this.skins,
 			//events: this.events,
 			animations: this.animations,
-		}));
+		});
 		obj.skeleton.spine = "3.1.05";
 		obj.skeleton.images = "./";
 		if (obj.skins) {
