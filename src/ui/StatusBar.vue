@@ -2,32 +2,32 @@
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
 		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
-			<dir-root p="UI/StatusBar3.img">
+			<gui-root p="UI/StatusBar3.img">
 				<!-- begin bottomUI -->
-				<dir p="mainBar">
+				<gui p="mainBar">
 					<div style="position: absolute; bottom: 0; width: 100%;">
 						<!-- begin EXPBar -->
-						<dir ref="expBar" p="EXPBar" style="position: absolute; bottom: 0;">
-							<dir :p="String(system.resolution.x)">
-								<dir-texture p="layer:back" style="position: relative; top: 0;"></dir-texture>
-								<dir-frame p="layer:gauge" style="position: absolute; top: 0;">
+						<gui ref="expBar" p="EXPBar" style="position: absolute; bottom: 0;">
+							<gui :p="String(system.resolution.x)">
+								<gui-texture p="layer:back" style="position: relative; top: 0;"></gui-texture>
+								<gui-frame p="layer:gauge" style="position: absolute; top: 0;">
 									<template slot-scope="{img, path}">
 										<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getExpPercentS()}% 0%, ${stat.getExpPercentS()}% 100%, 0% 100%)`}" />
 										<div :style="{ position:'absolute', height:'100%', top:'0', left:stat.getExpPercentS()+'%' }">
-											<dir-texture p="../../layer:effect" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></dir-texture>
+											<gui-texture p="../../layer:effect" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></gui-texture>
 										</div>
 									</template>
-								</dir-frame>
-								<dir-texture p="layer:cover" style="position: absolute; top: 0;"></dir-texture>
-							</dir>
-						</dir>
+								</gui-frame>
+								<gui-texture p="layer:cover" style="position: absolute; top: 0;"></gui-texture>
+							</gui>
+						</gui>
 						<!-- end EXPBar -->
 						<!-- begin status -->
-						<dir ref="status" p="status" style="position: relative; display: inline-block; padding-bottom: 10px;">
-							<dir-texture p="backgrnd" style="position: absolute;"></dir-texture>
+						<gui ref="status" p="status" style="position: relative; display: inline-block; padding-bottom: 10px;">
+							<gui-texture p="backgrnd" style="position: absolute;"></gui-texture>
 
-							<!--<dir-texture p="gauge/hp/layer:0" :style="{position:'absolute', width:Math.trunc(stat.hp*100/stat.mhp)+'%'}"></dir-texture>-->
-							<dir-frame p="gauge/hp/layer:0" style="position: absolute;">
+							<!--<gui-texture p="gauge/hp/layer:0" :style="{position:'absolute', width:Math.trunc(stat.hp*100/stat.mhp)+'%'}"></gui-texture>-->
+							<gui-frame p="gauge/hp/layer:0" style="position: absolute;">
 								<template slot-scope="{img, path}">
 									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getHpPercentS()}% 0%, ${stat.getHpPercentS()}% 100%, 0% 100%)`}" />
 									<div style="position: absolute; margin: auto; bottom: 2px;">
@@ -35,24 +35,24 @@
 											<tr>
 												<td style="width: 50%;">
 													<div style="float: right; display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(stat.hp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<gui-texture v-for="(i, k) in String(stat.hp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></gui-texture>
 													</div>
 												</td>
 												<td width="1">
-													<dir-texture p="../../number/%5c" style=""></dir-texture>
+													<gui-texture p="../../number/%5c" style=""></gui-texture>
 												</td>
 												<td style="width: 50%;">
 													<div style="display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(stat.mhp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<gui-texture v-for="(i, k) in String(stat.mhp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></gui-texture>
 													</div>
 												</td>
 											</tr>
 										</table>
 									</div>
 								</template>
-							</dir-frame>
+							</gui-frame>
 
-							<dir-frame p="gauge/mp/layer:0" style="position: absolute;">
+							<gui-frame p="gauge/mp/layer:0" style="position: absolute;">
 								<template slot-scope="{img, path}">
 									<img :data-src="path" :src='img' :style="{display: 'inline-block', 'clip-path': `polygon(0% 0%, ${stat.getMpPercentS()}% 0%, ${stat.getMpPercentS()}% 100%, 0% 100%)`}" />
 									<div style="position: absolute; margin: auto; bottom: 2px;">
@@ -60,90 +60,90 @@
 											<tr>
 												<td style="width: 50%;">
 													<div style="float: right; display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(stat.mp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<gui-texture v-for="(i, k) in String(stat.mp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></gui-texture>
 													</div>
 												</td>
 												<td width="1">
-													<dir-texture p="../../number/%5c" style=""></dir-texture>
+													<gui-texture p="../../number/%5c" style=""></gui-texture>
 												</td>
 												<td style="width: 50%;">
 													<div style="display: inline-flex;">
-														<dir-texture v-for="(i, k) in String(stat.mmp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></dir-texture>
+														<gui-texture v-for="(i, k) in String(stat.mmp)" :p="`../../number/${i}`" :key="k" style="flex: 1;"></gui-texture>
 													</div>
 												</td>
 											</tr>
 										</table>
 									</div>
 								</template>
-							</dir-frame>
+							</gui-frame>
 
-							<dir-texture p="layer:cover" style="position: relative;"></dir-texture>
+							<gui-texture p="layer:cover" style="position: relative;"></gui-texture>
 
-							<dir-texture p="layer:Lv" style="position: absolute; top: 0;">
+							<gui-texture p="layer:Lv" style="position: absolute; top: 0;">
 								<div style="display: inline-flex;">
-									<dir-texture v-for="(i, k) in String(stat.level)" :p="`../lvNumber/${i}`" :key="k" style="flex: 1;"></dir-texture>
+									<gui-texture v-for="(i, k) in String(stat.level)" :p="`../lvNumber/${i}`" :key="k" style="flex: 1;"></gui-texture>
 								</div>
 								<div class="text-fff-334" style="z-index: 20; margin-left: 19px; display:inline-block; transform: translateY(-2px);">
 									{{chara ? chara.id:""}}
 								</div>
-							</dir-texture>
-						</dir>
+							</gui-texture>
+						</gui>
 						<!-- end status -->
 						<!-- begin menu -->
-						<dir v-if="ui.quickSlotFold" ref="menu" p="menu" style="position: relative; display: inline-block; padding-bottom: 10px;">
-							<dir-button p="button:Menu" @click="trigger_editor_mode()" style="position: relative;"></dir-button>
-							<dir-button p="button:Setting" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></dir-button>
-							<dir-button p="button:Community" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></dir-button>
-							<dir-button p="button:Character" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></dir-button>
-							<dir-button p="button:Event" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></dir-button>
-							<dir-button p="button:CashShop" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></dir-button>
-						</dir>
+						<gui v-if="ui.quickSlotFold" ref="menu" p="menu" style="position: relative; display: inline-block; padding-bottom: 10px;">
+							<gui-button p="button:Menu" @click="trigger_editor_mode()" style="position: relative;"></gui-button>
+							<gui-button p="button:Setting" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></gui-button>
+							<gui-button p="button:Community" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></gui-button>
+							<gui-button p="button:Character" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></gui-button>
+							<gui-button p="button:Event" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></gui-button>
+							<gui-button p="button:CashShop" @click="trigger_editor_mode()" style="position: absolute; top: 0;"></gui-button>
+						</gui>
 						<!-- end menu -->
 						<!-- begin quickSlot -->
-						<dir p="quickSlot" :style="{ position:'absolute', bottom:0, 'padding-bottom':'13px', right:(ui.quickSlotFold?'-208px':'3px') }">
-							<dir-frame p="backgrnd" style="position: relative; left: 0; top: 0;">
+						<gui p="quickSlot" :style="{ position:'absolute', bottom:0, 'padding-bottom':'13px', right:(ui.quickSlotFold?'-208px':'3px') }">
+							<gui-frame p="backgrnd" style="position: relative; left: 0; top: 0;">
 								<template slot-scope="{img, path}">
 									<img :data-src="path" :src='img' :style="ui.quickSlotFold?{'clip-path': `polygon(0% 0%, ${350}px 0%, ${350}px 100%, 0% 100%)`}:{}" />
 								</template>
-							</dir-frame>
+							</gui-frame>
 
-							<dir-frame p="layer:cover" style="position: absolute; left: 0; top: 0;">
+							<gui-frame p="layer:cover" style="position: absolute; left: 0; top: 0;">
 								<template slot-scope="{img, path}">
 									<img :data-src="path" :src='img' :style="ui.quickSlotFold?{'clip-path': `polygon(0% 0%, ${350}px 0%, ${350}px 100%, 0% 100%)`}:{}" />
 								</template>
-							</dir-frame>
+							</gui-frame>
 
 							<template v-if="ui.quickSlotFold">
-								<dir-button p="button:Extend" @click="ui.quickSlotFold=false" style="position: absolute; left: 0; top: 0;"></dir-button>
+								<gui-button p="button:Extend" @click="ui.quickSlotFold=false" style="position: absolute; left: 0; top: 0;"></gui-button>
 							</template>
 							<template v-else>
-								<dir-button p="button:Fold" @click="ui.quickSlotFold=true" style="position: absolute; left: 0; top: 0;"></dir-button>
+								<gui-button p="button:Fold" @click="ui.quickSlotFold=true" style="position: absolute; left: 0; top: 0;"></gui-button>
 							</template>
-						</dir>
+						</gui>
 						<!-- end quickSlot -->
 					</div>
-				</dir>
-				<dir p="chat" style="position: absolute; left: 0; bottom: 0; padding-bottom: 13px;">
+				</gui>
+				<gui p="chat" style="position: absolute; left: 0; bottom: 0; padding-bottom: 13px;">
 					<div style="position: relative;">
-						<dir :p="ui.chat.size" style="position: absolute; width: 100%; height: 100%;">
+						<gui :p="ui.chat.size" style="position: absolute; width: 100%; height: 100%;">
 							<table class="table" style="position: absolute; left: 0; top: 0; height: 100%;">
 								<tr style="line-height: 0;">
 									<td>
-										<dir-texture p="top"></dir-texture>
+										<gui-texture p="top"></gui-texture>
 									</td>
 								</tr>
 								<tr style="height: 100%; line-height: 0;">
 									<td>
-										<dir-extend-bg p="center" style="height: 100%;"></dir-extend-bg>
+										<gui-extend-bg p="center" style="height: 100%;"></gui-extend-bg>
 									</td>
 								</tr>
 								<tr style="line-height: 0;">
 									<td>
-										<dir-texture p="bottom"></dir-texture>
+										<gui-texture p="bottom"></gui-texture>
 									</td>
 								</tr>
 							</table>
-						</dir>
+						</gui>
 						<table class="table" style="position: relative; top: -5px;">
 							<template v-if="ui.chat.size!='min'">
 								<tr v-for="ch in ui.chat.history" style="height: 1.2em; color: white; font-family: monospace;">
@@ -159,10 +159,10 @@
 							</template>
 							<tr>
 								<td style="width: 0; padding-right: 3px;">
-									<dir-button p="common/chatTarget/all" style="display: inline-block; margin-left: 5px;"></dir-button>
+									<gui-button p="common/chatTarget/all" style="display: inline-block; margin-left: 5px;"></gui-button>
 								</td>
 								<td style="width: 0; padding-right: 4px;">
-									<dir-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
+									<gui-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
 										<template slot-scope="{img, path, width}">
 											<div v-if="ui.chat.size!='min'" :data-src="path" :style="{ width:`${width}px`, background:`url(${img})` }">
 												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText(ui.chat.inputText.slice(0, 70))" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
@@ -171,17 +171,17 @@
 												<div v-if="ui.chat.history.length" style="position: absolute;">{{ui.chat.history[ui.chat.history.length-1].text}}</div>
 											</div>
 										</template>
-									</dir-frame>
+									</gui-frame>
 								</td>
 								<td v-if="ui.chat.size=='min'" style="width: 0; padding-right: 2px;">
-									<dir-button p="common/chatOpen" @click="ui.chat.size='max'" style="display: inline-block; position: relative; padding-left: 21px;"></dir-button>
+									<gui-button p="common/chatOpen" @click="ui.chat.size='max'" style="display: inline-block; position: relative; padding-left: 21px;"></gui-button>
 								</td>
 								<template v-else>
 									<td style="width: 0; padding-right: 5px;">
-										<dir-button p="common/chatClose" @click="ui.chat.size='min'" style="display: inline-block;"></dir-button>
+										<gui-button p="common/chatClose" @click="ui.chat.size='min'" style="display: inline-block;"></gui-button>
 									</td>
 									<td style="width: 0; padding-right: 5px;">
-										<dir-button p="common/BtChat" style="display: inline-block;"></dir-button>
+										<gui-button p="common/BtChat" style="display: inline-block;"></gui-button>
 									</td>
 								</template>
 							</tr>
@@ -189,9 +189,9 @@
 							</template>
 						</table>
 					</div>
-				</dir>
+				</gui>
 				<!-- end bottomUI -->
-			</dir-root>
+			</gui-root>
 		</div>
 	</div>
 </template>
@@ -323,7 +323,7 @@
 			},
 			myUpdate: function () {
 				this.$nextTick(async () => {
-					await this.$store.dispatch("waitAllLoaded");
+					//await this.$store.dispatch("waitAllLoaded");
 
 					this.updatePosition();
 

@@ -7,12 +7,12 @@
 					<td>
 						<template v-if="chara.speed">	
 							<button @click="pauseAnimation" title="pause animation">
-								<img src="/images/player_pause.png" alt="pause" />
+								<img src="images/player_pause.png" alt="pause" />
 							</button>
 						</template>
 						<template v-else="">
 							<button @click="pauseAnimation" title="play animation">
-								<img src="/images/player_play.png" alt="play" />
+								<img src="images/player_play.png" alt="play" />
 							</button>
 						</template>
 					</td>

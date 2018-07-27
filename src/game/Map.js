@@ -592,7 +592,7 @@ class MapObject extends MapObjectBase {
 		let path = ["/Map", "Obj", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i], null_url, texture0);
-		texture._url = $get.imageUrl(path);
+		texture._url = path;
 
 		return texture;
 	}
@@ -787,7 +787,7 @@ class MapTile extends MapObject {
 		let texture = new MapTexture(this._texture_raw);
 
 		this.textures[0] = texture;
-		this.textures[0]._url = $get.imageUrl(["/Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/"));
+		this.textures[0]._url = ["/Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
 
 		this.__calc_aabb();
 	}
@@ -937,7 +937,7 @@ class MapPortal extends MapObject {
 	}
 	
 	static async Init() {
-		let _raw = await $get.pack("/Map/MapHelper.img/portal/editor");
+		let _raw = Object.assign({}, await $get.pack("/Map/MapHelper.img/portal/editor"));
 		
 		let portals = [];
 		
@@ -1050,7 +1050,7 @@ class MapBack extends MapBackBase {
 		}
 
 		this.textures[0] = new MapTexture(this._texture_raw);
-		this.textures[0]._url = $get.imageUrl(path);
+		this.textures[0]._url = path;
 	}
 	
 	get _texture_base_path() {
@@ -1090,7 +1090,7 @@ class MapBackAnimation extends MapBackBase {
 		let path = ["/Map", "Back", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i]);
-		texture._url = $get.imageUrl(path);
+		texture._url = path;
 
 		return texture;
 	}

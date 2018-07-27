@@ -779,6 +779,7 @@ class SkillAnimationBase {
 
 class _SkillAnimation_Default extends SkillAnimationBase {
 	constructor() {
+		super();
 		throw new TypeError("constructor");
 	}
 
@@ -800,6 +801,7 @@ class _SkillAnimation_Default extends SkillAnimationBase {
 
 class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	constructor() {
+		super();
 		throw new TypeError("constructor");
 	}
 
@@ -925,6 +927,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 
 class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	constructor() {
+		super();
 		throw new TypeError("constructor");
 	}
 

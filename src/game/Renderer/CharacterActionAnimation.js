@@ -176,8 +176,10 @@ export class ActionAnimation {
 
 	static async Init() {
 		/** @type {{[action:string]:ActionAnimationFrameData[]}} */
-		let aadef = await $get.data(ActionAnimation._base_path);
+		let raw = await $get.data(ActionAnimation._base_path);
 
+		let aadef = Object.assign({}, raw);
+		
 		delete aadef['info'];
 
 		for (let actName in aadef) {

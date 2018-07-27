@@ -299,16 +299,22 @@ function WebServer(app) {
 						next();//no print err
 						return;
 					}
+					try {
+						let data = JSON.parse(buffer + "");
 
-					let data = JSON.parse(buffer + "");
+						let result = data;
+						paths = data_path.split("/");
+						for (let p of paths) {
+							if (!result[p]) {
+								throw new TypeError("file_path: " + file_path + ", data_path" + data_path + ", prop: " + p);
+							}
+						}
 
-					let result = data;
-					paths = data_path.split("/");
-					for (let p of paths) {
-						result = result[p];
+						res.json(result);
 					}
-
-					res.json(result);
+					catch (ex) {
+						console.error(ex);
+					}
 				});
 			}
 			return;
@@ -620,13 +626,13 @@ function DataServer(app) {
 		 * @param {string} data_path
 		 * @param {string} isObject to JSON
 		 */
-		let saveCacheFile = (loadFileTask, output_path, data_path, isObject) => { };
+		let saveCacheFile = (loadFileTask, output_path, data_path, isObject, extname) => { };
 
 		if (!process_argv["-no-cache"]) {
 			saveCacheFile = _saveCacheFile;
 		}
 
-		function _saveCacheFile(loadFileTask, output_path, data_path, isObject) {
+		function _saveCacheFile(loadFileTask, output_path, data_path, isObject, extname) {
 			loadFileTask.then(function (results) {
 				if (!results) {
 					return;
@@ -640,6 +646,13 @@ function DataServer(app) {
 				if (fs.existsSync(filePath)) {
 					return;
 				}
+				else if (extname) {
+					filePath = filePath + extname;
+					if (fs.existsSync(filePath)) {
+						return;
+					}
+				}
+
 				let dirArr = filePath.split(path.sep);
 
 				dirArr.pop();//remove file nmae
@@ -687,14 +700,14 @@ function DataServer(app) {
 				let task = _data_provider.getAsync("images", data_path);
 
 				sendFile(task, req, res, next);
-				saveCacheFile(task, "public/images", data_path, false);
+				saveCacheFile(task, "public/images", data_path, false, ".png");
 			}
 		});
 		a_pp.get(/\/_images\/.*/, function (req, res, next) {//gif
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURI(req.path);
 				let data_path = url.slice(9);
-				let task = _data_provider.getAsync("_images", data_path);
+				let task = _data_provider.getAsync("_images", data_path, ".gif");
 
 				sendFile(task, req, res, next);
 			}

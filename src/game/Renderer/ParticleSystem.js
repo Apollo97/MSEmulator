@@ -264,7 +264,7 @@ export class ParticleGroup extends _ParticleGroupData {
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${this.naturalWidth}" height="${this.naturalHeight}">
 	<defs>
 		<mask id="Mask">
-			<image xlink:href="${new URL("/images" + that._texture_base_path, window.location).href}"/>
+			<image xlink:href="${new URL("images" + that._texture_base_path, window.location).href}"/>
 		</mask>
 	</defs>
 	<g>
@@ -275,12 +275,12 @@ export class ParticleGroup extends _ParticleGroupData {
 					that.texture = texture;
 					resolve();
 				}
-				image.src = "/images" + that._texture_base_path;
+				image.src = "images" + that._texture_base_path;
 			});
 		}
 		else {
 			this.texture = new Sprite(data.texture);
-			this.texture._url = "/images" + this._texture_base_path;
+			this.texture._url = "images" + this._texture_base_path;
 		}
 	}
 	

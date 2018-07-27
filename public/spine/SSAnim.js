@@ -189,7 +189,7 @@ let SSAnim = (function () {
 							let dir_path = file_path.slice(0, file_path.lastIndexOf('/'));
 							that.atlas_data.pages.forEach(function(page) {
 								let image_key = page.name;
-								let image_url = "/images/" + dir_path + "/" + image_key;
+								let image_url = "images/" + dir_path + "/" + image_key;
 								//console.log("image_key: " + image_url);
 								counter_inc();
 								images[image_key] = loadImage(image_url, (function(page) {

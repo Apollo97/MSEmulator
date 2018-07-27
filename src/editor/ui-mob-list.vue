@@ -174,8 +174,10 @@
 				let smallTip = this.$root.$refs.smallTip;
 				
 				let desc = await MapLifeEntity.loadLifeDesc(m);
+
+				let _url = $get.imageUrl(`${type}/${m.id}.img/stand/0`);
 				
-				smallTip.html = ["<div>" + desc.name + "</div>" + `<img src="/images/${type}/${m.id}.img/stand/0" />`];
+				smallTip.html = ["<div>" + desc.name + "</div>" + `<img src="${_url}" />`];
 				
 				smallTip.show(function () {
 					smallTip.setPosition({

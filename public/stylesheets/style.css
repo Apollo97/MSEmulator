@@ -238,7 +238,7 @@ example_block_Cursor5 {
 
 ::-webkit-scrollbar-button {
     background-color: #efefef;
-    background-image: url("../images/ui-icons_222222_256x240.png");
+    background-image: url(/images/ui-icons_222222_256x240.png);
     /* background: red; */
 }
 ::-webkit-scrollbar-button:hover {

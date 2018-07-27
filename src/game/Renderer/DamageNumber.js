@@ -51,7 +51,7 @@ class DamageNumberTextures {
 		Object.keys(_raw).forEach(key => {
 			let texture = new Sprite(_raw[key]);
 
-			texture._url = "/images" + [path, key].join("/");
+			texture._url = [path, key].join("/");
 
 			this[key] = texture;
 		});

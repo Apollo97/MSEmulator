@@ -392,24 +392,10 @@
 				let img = e.currentTarget.querySelector("img");
 				if (img) {
 					if (img.src.startsWith("data:image/")) {
-						const prefix = this.selected_category;
-						const cateinfo = ItemCategoryInfo.get(prefix);
-						const path = cateinfo.path;
-						let url = `${window.location.origin}/images/Character/${path != "" ? (path + "/" + id) : id}.img/`;
-
-						if (path == "") {
-							return;
+						if (window.confirm("圖示可能不存在，確定要複製圖示位置？")) {
+							let url = ItemCategoryInfo.getIconRawUrl(id);
+							copyToClipboard(url);
 						}
-						if (path == "Face") {
-							url += "blink/0/face";
-						}
-						else if (path == "Hair") {
-							url += "stand1/0/hairOverHead";
-						}
-						else {
-							url += "info/iconRaw";
-						}
-						copyToClipboard(url);
 					}
 					else {
 						copyToClipboard(img.src);
@@ -725,7 +711,7 @@
 			},
 			__get_item_icon_url: function (index) {
 				let item = this.__get_item(index);
-				return item.icon && item.icon[""] ? item.icon[""] : "/images/warning.png";
+				return item.icon && item.icon[""] ? item.icon[""] : "images/warning.png";
 			},
 			__face_or_hair_img_onerror: async function (index) {
 				let item = this.__get_item(index);
@@ -756,7 +742,7 @@
 						}
 					}
 				}
-				item.icon[""] = "/images/warning.png";
+				item.icon[""] = "images/warning.png";
 			},
 			clickItem: function (e, num) {
 				if (this.selected_category == "0170") {

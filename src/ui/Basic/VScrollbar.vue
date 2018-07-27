@@ -8,23 +8,68 @@
 </usage>
 
 <template>
-	<div class="vscr-scrollbar" @mousewheel="_onmousewheel">
-		<button class="vscr-decrement"></button>
-		<button class="vscr-increment"></button>
-		<div ref="track" class="vscr-track" @mousedown="_onmousemove" @mousemove="_onmousemove">
-			<div :style="thumbStyle">
-				<button class="vscr-thumb"></button>
+	<gui-root p="UI/Basic.img/VScr9">
+		<gui :p="enabled?'enabled':'disabled'">
+			<div class="vscr-scrollbar" @mousewheel="_onmousewheel">
+				<vscr-button :enabled="enabled" sp="prev" class="vscr-decrement" @click="moveStep(-1)"></vscr-button>
+				<vscr-button :enabled="enabled" sp="next" class="vscr-increment" @click="moveStep(1)"></vscr-button>
+				<gui-extend-bg ref="track" p="base" class="vscr-track" @mousedown="_onmousemove" @mousemove="_onmousemove">
+					<div :style="thumbStyle">
+						<vscr-button :enabled="enabled" p="../../enabled" sp="thumb" class="vscr-thumb"></vscr-button>
+					</div>
+				</gui-extend-bg>
 			</div>
-		</div>
-	</div>
+		</gui>
+	</gui-root>
 </template>
 
 <script>
+	import Vue from "vue";
+
+	import BasicComponent from "../BasicComponent.vue";
+
 	const button_height = 12;
 	const thumb_height = 26;
 
+	let VScrButton = Vue.extend({
+		mixins: [BasicComponent.components["gui-button-s"], {
+			props: ["sp"],
+			data: function () {
+				return {
+					m_state: "normal",
+					stateMap: {
+						normal: "0",
+						mouseOver: "1",
+						pressed: "2",
+					},
+				}
+			},
+			computed: {
+				bp: function () {
+					if (this.enabled) {
+						return this.sp + this.stateMap[this.m_state];
+					}
+					else {
+						return this.sp;
+					}
+				}
+			},
+		}]
+	});
+
 	export default {
-		props: ["target", "step"],
+		props: {
+			target: {
+			},
+			step: {
+				type: Number,
+				default: 1,
+			},
+			enabled: {
+				type: Boolean,
+				default: true,
+			},
+		},
 		data: function () {
 			return {
 				thumbStyle: {
@@ -39,7 +84,7 @@
 		},
 		computed: {
 			maxHeight: function () {
-				return this.$refs.track.offsetHeight;
+				return this.$refs.track.$el.offsetHeight;
 			},
 			thumbY: {
 				get: function () {
@@ -82,6 +127,15 @@
 				this.thumbY = y;
 				this._scrollTo(y);
 			},
+			moveStep: function (vector_y) {//click button
+				if (this.step) {
+					let roll = vector_y * this.step;
+
+					//this.thumbY += roll;//this.thumbY += ??
+					this._scroll(roll);
+					this._onscroll();
+				}
+			},
 			_onmousemove: function (event) {//drag
 				if (event.buttons == 1) {
 					let y = this._getMousePosY(event);
@@ -95,7 +149,7 @@
 				if (this._track_mouse_listener) {
 					return;
 				}
-				this._track_mouse_listener = (function (event) {
+				this._track_mouse_listener = event => {
 					if (event.buttons == 1) {
 						this._onmousemove(event);
 					}
@@ -103,7 +157,7 @@
 						window.removeEventListener("mousemove", this._track_mouse_listener);
 						this._track_mouse_listener = null;
 					}
-				}).bind(this);
+				};
 				window.addEventListener("mousemove", this._track_mouse_listener);
 			},
 			_onmousewheel: function (event) {
@@ -121,7 +175,7 @@
 			},
 			_scroll: function (addY) {
 				const tElem = this.target;
-				y = tElem.scrollTop + addY;
+				let y = tElem.scrollTop + addY;
 				tElem.scrollTo(0, y);
 			},
 			_scrollTo: function (thumbY) {
@@ -172,8 +226,10 @@
 				this._bindScrollEvent();
 			},
 		},
-		//componeents: {
-		//}
+		mixins: [BasicComponent],
+		components: {
+			"vscr-button": VScrButton,
+		}
 	};
 </script>
 
@@ -206,16 +262,11 @@
 
 	.vscr-track {
 		position: absolute;
-		left: 0;
+		left: 0px;
 		top: 12px;
 		width: 11px;
 		height: calc(100% - 24px);
-		background: url(/images/UI/Basic.img/VScr9/enabled/base);
 	}
-
-		.vscr-track:window-inactive {
-			background: url(/images/UI/Basic.img/VScr9/disabled/base);
-		}
 
 	.vscr-thumb {
 		outline: none;
@@ -223,62 +274,28 @@
 		padding: 0;
 		width: 11px;
 		height: 26px;
-		background: url(/images/UI/Basic.img/VScr9/enabled/thumb0) no-repeat;
 	}
-
-		.vscr-thumb:hover {
-			background: url(/images/UI/Basic.img/VScr9/enabled/thumb1) no-repeat;
-		}
-
-		.vscr-thumb:active {
-			background: url(/images/UI/Basic.img/VScr9/enabled/thumb2) no-repeat;
-		}
 
 	.vscr-decrement {
 		outline: none;
 		border: none;
 		padding: 0;
 		position: absolute;
-		left: 0;
-		top: 0;
+		left: 0px !important;
+		top: 0px !important;
 		width: 11px;
 		height: 12px;
-		background: url(/images/UI/Basic.img/VScr9/enabled/prev0);
 	}
-
-		.vscr-decrement:hover {
-			background: url(/images/UI/Basic.img/VScr9/enabled/prev1);
-		}
-
-		.vscr-decrement:active {
-			background: url(/images/UI/Basic.img/VScr9/enabled/prev2);
-		}
-
-		.vscr-decrement:window-inactive {
-			background: url(/images/UI/Basic.img/VScr9/disabled/prev);
-		}
 
 	.vscr-increment {
 		outline: none;
 		border: none;
 		padding: 0;
 		position: absolute;
-		left: 0;
-		bottom: 0;
+		left: 0px !important;
+		top: unset !important;
+		bottom: 0px !important;
 		width: 11px;
 		height: 12px;
-		background: url(/images/UI/Basic.img/VScr9/enabled/next0);
 	}
-
-		.vscr-increment:hover {
-			background: url(/images/UI/Basic.img/VScr9/enabled/next1);
-		}
-
-		.vscr-increment:active {
-			background: url(/images/UI/Basic.img/VScr9/enabled/next2);
-		}
-
-		.vscr-increment:window-inactive {
-			background: url(/images/UI/Basic.img/VScr9/disabled/next);
-		}
 </style>

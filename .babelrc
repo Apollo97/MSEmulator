@@ -1,4 +1,0 @@
-{
-  "presets": [ "env", "es2015", "stage-3", "es2017" ],
-  "plugins": [ "transform-remove-strict-mode" ]
-}

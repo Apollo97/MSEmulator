@@ -104,7 +104,7 @@ export class AnimationBase extends IAnimation {
 
 			let texture = new Sprite(this._raw[i]);
 
-			texture._url = "/images" + url;
+			texture._url = url;
 
 			this.textures[i] = texture;
 		}

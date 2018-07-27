@@ -94,7 +94,7 @@
 		},
 		methods: {
 			get_ft_src: function (ft) {
-				return ft._url;l//ft.texture.src;
+				return ft.texture.src;
 			},
 			get_ft_style: function (ft) {
 				let style = {

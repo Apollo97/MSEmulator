@@ -3,44 +3,45 @@
 </template>
 
 <script>
-
 	import Vue from "vue";
 	import Vuex from "vuex";
 
-	Vue.config.productionTip = false;
-
-	Vue.use(Vuex);
-
-	//global var
 	var store = new Vuex.Store({
 		state: {
 			root: {},
-			d: 0,
 			loadingTasks: [],
 		},
 		mutations: {
-			_load: function (state, payload) {
+			_beforeLoad: function (state, payload) {
+				if (payload && payload.task) {
+					state.loadingTasks.push(payload.task);
+				}
+			},
+			_onload: function (state, payload) {
+				let i = state.loadingTasks.indexOf(payload.task);
+				if (i >= 0) {
+					state.loadingTasks.splice(i, 1);
+				}
 				const dp = payload.path.split("/");
 				if (dp) {
 					let i = 0, d = state.root;
 					for (; i < dp.length - 1; ++i) {
 						let p = dp[i];
-						d = Vue.set(d, p, {});
+						d = Vue.set(d, p, d[p] || {});
 					}
-					Vue.set(d, dp[i], payload.data);
-					//resolve(data);
-				}
-			},
-			_waitTask: function (state, payload) {
-				if (payload && payload.task) {
-					state.loadingTasks.push(payload.task);
-				}
-			},
-			_doneTask: function (state, payload) {
-				if (payload && payload.task) {
-					let i = state.loadingTasks.indexOf(payload.task);
-					if (i >= 0) {
-						state.loadingTasks.splice(i, 1);
+					
+					//Vue.set(d, dp[i], payload.data);
+					
+					let value = payload.data;
+					
+					let origin_value = d[dp[i]];
+					if (origin_value && typeof origin_value == "object") {
+						for (let key in value) {
+							Vue.set(origin_value, key, value[key] || origin_value[key]);
+						}
+					}
+					else if (typeof value != "undefined") {
+						Vue.set(d, dp[i], payload.data);
 					}
 				}
 			},
@@ -48,62 +49,39 @@
 		actions: {
 			waitAllLoaded: async function (context, payload) {
 				await Promise.all(context.state.loadingTasks);
-
 				context.state.loadingTasks = [];
 			},
 			loadData: async function (context, payload) {
-				//return new Promise(async function (resolve, reject) {
-					const path = payload.path.endsWith(".img") ? (payload.path + "/") : payload.path;
-					const task = $get.pack(path);
+				let task = $get.pack(payload.path);
 
-					context.commit("_waitTask", { task: task });
-					const data = await task;
-					context.commit("_doneTask", { task: task });
+				context.commit("_beforeLoad", { task: task });
 
-					context.commit("_load", {
-						path: payload.path,
-						data: data,
-					});
-				//});
+				let data = await task;
 
-				return context.dispatch("_get_data", payload);
+				context.commit("_onload", {
+					path: payload.path,
+					task: task,
+					data: data,
+				});
 			},
-			_get_data: function (context, payload) {
-				const dp = payload.path.split("/");
-				let data = context.state.root;
-				for (let p of dp) {
-					if (p in data) {
-						data = data[p];
-						if (!data) {
-							debugger
-							return {};
-						}
-					}
-					else {
-						return {};
-					}
-				}
-				return data;
-			},
-		},
+			getData: function (context, payload) {
+				return $get.packSync(payload.path) || {};
+			}
+		}
 	});
 
 	//Folder
-	let Dir = {
-		template: "<div :data-p='p'><slot/></div>",
+	let Gui = {
+		template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot/></div>",
 		store: store,
 		props: ["p"],
+		//data: function () {
+		//	return {
+		//	};
+		//},
 		computed: {
 			path: function () {
-				let ds = [];
-				for (let parent = this.$parent; parent; parent = parent.$parent) {
-					const path = parent.path;
-					if (path) {
-						ds.unshift(path);
-						break;
-					}
-				}
-				ds.push(this.p);
+				let ds = this._getPathArray();
 
 				try {
 					return decodeURI(new URL(ds.join("/"), window.location).pathname);
@@ -114,6 +92,12 @@
 				}
 			},
 			_path: function () {
+				let ds = this._getPathArray();
+				return new URL(ds.join("/"), window.location).pathname;
+			},
+		},
+		methods: {
+			_getPathArray: function () {
 				let ds = [];
 				for (let parent = this.$parent; parent; parent = parent.$parent) {
 					const path = parent.path;
@@ -122,12 +106,11 @@
 						break;
 					}
 				}
-				ds.push(this.p);
-
-				return new URL(ds.join("/"), window.location).pathname;
+				if (this.p && this.p != ".") {
+					ds.push(this.p);
+				}
+				return ds;
 			},
-		},
-		methods: {
 			getData: function () {
 				const dp = this.path.split("/");
 				let data = this.$store.state.root;
@@ -144,30 +127,43 @@
 					}
 				}
 				return data;
+				
+				//return $get.packSync(this.path) || {};
+			},
+			mouseenter: function ($event) {
+				this.$emit("mouseenter", $event);
+			},
+			mouseleave: function ($event) {
+				this.$emit("mouseleave", $event);
+			},
+			mousedown: function ($event) {
+				this.$emit("mousedown", $event);
+			},
+			mouseup: function ($event) {
+				this.$emit("mouseup", $event);
+			},
+			mousemove: function ($event) {
+				this.$emit("mouseup", $event);
+			},
+			click: function ($event) {
+				this.$emit("click", $event);
 			},
 		},
 	};
 
-	let DirRoot = Vue.extend({
-		mixins: [Dir, {
-			created: async function () {
-				const vm = this;
-				let data = this.getData();
-				if (!Object.keys(data).length) {
-					data = await this.$store.dispatch("loadData", {
-						path: this.path,
-					});
-					vm.$nextTick(function () {
-						vm.$forceUpdate();
-					})
-				}
+	let GuiRoot = Vue.extend({
+		mixins: [Gui, {
+			created: function () {
+				this.$store.dispatch("loadData", {
+					path: this.path,
+				});
 			}
 		}]
 	});
 
-	let DirView = Vue.extend({
-		name: "dir-view",// v-if='!collapsed'
-		template: "<table class='view' ><tr><td :title='`(object)`+propName' :rowspan='entries.length+1'><div class='view-s'><button @click='collapsed=!collapsed'><span v-if='collapsed'>-</span><span v-else>+</span></button><span style='padding: 0 4px;'>{{propName}}</span></div></td><td></td></tr><tr v-if='collapsed' v-for='(d, i) in entries'><template v-if='d[0]==``'><td title='(image)'>(image)</td><td><img :src='d[1]'/></td></template><td v-else-if='typeof d[1] == `object`'><dir-view :p='encodeURI(d[0])' /></td><template v-else><td title='(property)'>{{d[0]}}</td><td :title='`(${typeof d[1]})`'>{{d[1]}}</td></template></tr></table>",
+	let GuiView = Vue.extend({
+		name: "gui-view",// v-if='!collapsed'
+		template: "<table class='view' ><tr><td :title='`(object)`+propName' :rowspan='entries.length+1'><div class='view-s'><button @click='collapsed=!collapsed'><span v-if='collapsed'>-</span><span v-else>+</span></button><span style='padding: 0 4px;'>{{propName}}</span></div></td><td></td></tr><tr v-if='collapsed' v-for='(d, i) in entries'><template v-if='d[0]==``'><td title='(image)'>(image)</td><td><img :src='d[1]'/></td></template><td v-else-if='typeof d[1] == `object`'><gui-view :p='encodeURI(d[0])' /></td><template v-else><td title='(property)'>{{d[0]}}</td><td :title='`(${typeof d[1]})`'>{{d[1]}}</td></template></tr></table>",
 		data: function () {
 			return {
 				collapsed: false,
@@ -183,26 +179,25 @@
 				return Object.entries(this.getData());
 			}
 		},
-		mixins: [Dir],
+		mixins: [Gui],
 	});
 	
-	let _DirTexture = {
+	let _GuiTexture = {
 		template: "<div :data-p='p' :style='style_frame'><div :style='style'><img :data-src='img_path' :src='img' :style='img_style' /><slot /></div></div>",
-		props: ["p"],
 		data: function () {
 			return {
 			}
 		},
 		computed: {
 			img_path: function () {
-				return "/images" + this._path;
+				return $get.imageUrl(this._path);
 			},
 			data_path: function () {
-				return "/data" + this._path;
+				return "data" + this._path;
 			},
 			style_frame: function () {
 				let s = {
-					zIndex: this.z,
+					zIndex: this.z,//??
 				};
 				const x = -this.origin.x, y = -this.origin.y;
 				s.marginLeft = x + "px";
@@ -228,7 +223,7 @@
 			},
 			img: function () {
 				let data = this.texture;
-				return data[""] ? data[""] : "/images/warning.png";
+				return data[""] ? data[""] : "images/warning.png";
 			},
 			width: function () {
 				let data = this.texture;
@@ -248,41 +243,111 @@
 			}
 		},
 	};
-	let DirTexture = Vue.extend({
-		mixins: [Dir, _DirTexture]
+	let GuiTexture = Vue.extend({
+		mixins: [Gui, _GuiTexture]
 	});
-	let DirExtendBg = Vue.extend({
-		mixins: [DirTexture, {
-			template: "<div :data-src='img_path' :style='{ background:`url(${img})` }'><slot /></div>",
+	let GuiTextureS = Vue.extend({
+		mixins: [Gui, _GuiTexture, {
+			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			computed: {
+				img_style: function () {
+					const x = -this.origin.x, y = -this.origin.y;
+					return {
+						background: `url(${this.img}) no-repeat`,
+						position: "absolute",
+						left: x + "px",
+						top: y + "px",
+						width: this.width + "px",
+						height: this.height + "px",
+					};
+				},
+			},
 		}]
 	});
-	let DirInput = Vue.extend({
-		mixins: [DirTexture, {
+	let GuiBackground = Vue.extend({
+		mixins: [GuiTexture, {
+			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='{ background:`url(${img}) no-repeat` }'><slot /></div>",
+		}]
+	});
+	let GuiExtendBg = Vue.extend({
+		mixins: [GuiTexture, {
+			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='{ background:`url(${img})` }'><slot /></div>",
+		}]
+	});
+	let GuiInput = Vue.extend({
+		mixins: [GuiTexture, {
 			template: "<div :style='{ background:`url(${img})` }'><input :data-src='img_path' style='border: none; outline: none; background: transparent;' /><slot /></div>",
 		}]
 	});
 
-	let DirFrame = Vue.extend({
-		mixins: [DirTexture, {
+	let GuiFrame = Vue.extend({
+		mixins: [GuiTexture, {
 			template: "<div :data-p='p' :style='style_frame'><div :style='style'><slot :path='img_path' :img='img' :width='width' :height='height' /></div></div>",
 		}]
 	});
+	let GuiFrameS = Vue.extend({
+		mixins: [GuiTextureS, {
+			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			computed: {
+				img_style: function () {
+					const x = -this.origin.x, y = -this.origin.y;
+					return {
+						position: "absolute",
+						left: x + "px",
+						top: y + "px",
+						width: this.width + "px",
+						height: this.height + "px",
+					};
+				},
+			},
+		}]
+	});
 
-	let DirButton = Vue.extend({
-		mixins: [Dir, {
-			template: "<div @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @click='click($event)' :data-p='p'><dir-texture :p='bp' style='display: inline-block;'></dir-texture></div>",
-			props: [
-				"disabled"
-			],
+	let GuiButton = Vue.extend({
+		mixins: [Gui, {
+			template: "<div @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :data-p='p'><gui-texture :p='bp' style='display: inline-block;'></gui-texture></div>",
+			props: {
+				enabled: {
+					type: Boolean,
+					default: true,
+				}
+			},
 			data: function () {
 				return {
-					state: "normal",
+					m_state: "normal",
 					aniFrame: 0,
+					stateMap: {
+						normal: "normal",
+						pressed: "pressed",
+						disabled: "disabled",
+						mouseOver: "mouseOver"
+					},
 				}
 			},
 			computed: {
+				state: {
+					get: function () {
+						return this.m_state;
+					},
+					set: function (value) {
+						if (this.enabled) {
+							let newImg = this.stateMap[value];
+							if (newImg) {
+								this.m_state = value;
+							}
+						}
+						else {
+							this.m_state = "disabled";
+						}
+					}
+				},
 				bp: function () {
-					return this.state + "/" + this.aniFrame;
+					if (this.enabled) {
+						return this.stateMap[this.m_state] + "/" + this.aniFrame;
+					}
+					else {
+						return this.stateMap.disabled + "/" + this.aniFrame;
+					}
 				}
 			},
 			methods: {
@@ -315,11 +380,19 @@
 				}
 			},
 			components: {
-				"dir-texture": DirTexture,
+				"gui-texture": GuiTexture,
 			}
 		}]
 	});
-	DirButton.states = ["normal", "pressed", "disabled", "mouseOver"];
+
+	let GuiButtonS = Vue.extend({
+		mixins: [GuiButton, {
+			template: "<gui-texture-s :p='bp' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @click='click($event)'></gui-texture-s>",
+			components: {
+				"gui-texture-s": GuiTextureS,
+			}
+		}]
+	});
 
 	let Center = {
 		template: '<div class="c2 center_frame"><div class="c3 center"><slot/></div></div>'
@@ -331,15 +404,19 @@
 	export default {
 		store: store,
 		components: {
-			"dir": Dir,
-			"dir-root": DirRoot,
-			//"dir-view": DirView,
-			//"dir-path": DirPath,
-			"dir-texture": DirTexture,
-			"dir-extend-bg": DirExtendBg,
-			"dir-frame": DirFrame,
-			"dir-button": DirButton,
-			"dir-input": DirInput,
+			"gui": Gui,
+			"gui-root": GuiRoot,
+			//"gui-view": GuiView,
+			//"gui-path": GuiPath,
+			"gui-texture": GuiTexture,
+			"gui-texture-s": GuiTextureS,
+			"gui-background": GuiBackground,
+			"gui-extend-bg": GuiExtendBg,
+			"gui-frame": GuiFrame,
+			"gui-frame-s": GuiFrameS,
+			"gui-button": GuiButton,
+			"gui-button-s": GuiButtonS,
+			"gui-input": GuiInput,
 			"center": Center,
 			"centerHr": CenterHr,
 		}

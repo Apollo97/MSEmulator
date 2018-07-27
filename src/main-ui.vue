@@ -46,7 +46,8 @@
 </template>
 
 <script>
-	import Vue from 'vue';
+	import Vue from "vue";
+	import Vuex from "vuex";
 	
 	import StatusBar from "./ui/StatusBar.vue";
 	import UIWindowEquip from "./ui/UIWindow/Equip.vue";
@@ -58,6 +59,12 @@
 	import Editor from "./editor/editor.vue";
 
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../public/resource.js';
+
+
+	Vue.config.productionTip = false;
+
+	Vue.use(Vuex);
+
 
 	function findDirective(vnode, name, argument) {
 		return vnode.data.directives.filter(function (binding) {

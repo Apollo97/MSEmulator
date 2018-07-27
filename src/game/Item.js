@@ -80,6 +80,10 @@ export class ItemBase {
 			}
 		});
 
+		if (!this._raw.info) {
+			debugger;
+		}
+
 		this._raw.info.id = itemId;
 		this._raw.info.name = "<loading>";
 		this._raw.info.desc = "<loading>";

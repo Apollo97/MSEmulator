@@ -26,9 +26,11 @@ export class ChatBalloon {
 	 */
 	async load(style) {
 		const _d_path = [this.constructor._base_path, style].join("/");
-		const _i_path = "/images" + _d_path;
-
-		this._raw = await $get.data(_d_path);
+		const _i_path = _d_path;
+		
+		Object.defineProperty(this, "_raw", {
+			value: await $get.data(_d_path),
+		});
 
 		this.nw = new Sprite(this._raw.nw);
 		this.nw._url = _i_path + "/nw";
@@ -473,8 +475,11 @@ class HairFragmentTexture extends FragmentTexture {
 class ItemEffectAnimation extends Animation {
 	constructor(raw, url) {
 		super(raw, url);
+		
+		Object.defineProperty(this, "_raw", {
+			value: raw,
+		});
 
-		this._raw = raw;
 		this._url = this._url;
 
 		this.__getAttr("z", -1);
@@ -619,7 +624,9 @@ class ItemEffect {
 			debugger;
 		}
 		this._url = url;
-		this._raw = raw;
+		Object.defineProperty(this, "_raw", {
+			value: raw,
+		});
 
 		this.__construct();
 	}
@@ -1023,7 +1030,9 @@ class CharacterEquipBase extends ICharacterEquip {
 		}
 
 		this._url = url;
-		this._raw = raw;
+		Object.defineProperty(this, "_raw", {
+			value: raw,
+		});
 
 		let textures = {};
 
@@ -1109,7 +1118,7 @@ class CharacterEquipBase extends ICharacterEquip {
 				let ft;
 				if (raw[""] == "") {
 					ft = new FragmentTextureType(raw);
-					ft._url = "/images" + path;
+					ft._url = path;
 					textures[place] = ft
 				}
 				else if (typeof raw[""] == 'string' && raw[""].startsWith("data:image/")) {
@@ -1119,7 +1128,7 @@ class CharacterEquipBase extends ICharacterEquip {
 				}
 				else if (place == "hairShade") {
 					ft = new FragmentTextureType(raw[0]);
-					ft._url = "/images" + path + "/0";
+					ft._url = path + "/0";
 					textures[place] = ft;
 				}
 				if (ft) {
@@ -1225,26 +1234,16 @@ class CharacterEquipBase extends ICharacterEquip {
 
 	/**
 	 * get icon url
+	 * @see {@link ItemCategoryInfo.getIconUrl}
 	 * @returns {string}
 	 */
 	getIconUrl() {
-		const type = ItemCategoryInfo.get(this.id).slot;
-		switch (type) {
-			case "head":
-				return "/images" + this._url + "stand1/0/head";
-			case "body":
-				return "/images" + this._url + "stand1/0/body";
-			case "hair":
-				return "/images" + this._url + "stand1/0/hair";
-			case "face":
-				return "/images" + this._url + "blink/0/face";
-			default:
-				return "/images" + this._url + "info/icon";
-		}
+		const type = ItemCategoryInfo.getIconUrl(this.id);
 	}
 
 	/**
 	 * get iconRaw url
+	 * @see {@link ItemCategoryInfo.getIconRawUrl}
 	 * @returns {string}
 	 */
 	getIconRawUrl() {
@@ -1304,22 +1303,6 @@ class CharacterEquip extends CharacterEquipBase {
 		return 120;
 	}
 
-	/**
-	 * get icon url
-	 * @returns {string}
-	 */
-	getIconUrl() {
-		return "/images" + this._url + "info/icon";
-	}
-
-	/**
-	 * get iconRaw url
-	 * @returns {string}
-	 */
-	getIconRawUrl() {
-		return "/images" + this._url + "info/iconRaw";
-	}
-
 	get fragmentConstructor() {
 		return CharacterBodyFragment;
 	}
@@ -1337,22 +1320,6 @@ class CharacterEquipBody extends CharacterEquip {
 	//getFrameCount(chara) {
 	//	return this.fragments.body.textures[chara.action].length;
 	//}
-	
-	/**
-	 * get icon url
-	 * @returns {string}
-	 */
-	getIconUrl() {
-		return "/images" + this._url + "stand1/0/body";
-	}
-
-	/**
-	 * get iconRaw url
-	 * @returns {string}
-	 */
-	getIconRawUrl() {
-		return "/images" + this._url + "stand1/0/body";
-	}
 }
 
 class CharacterEquipCashWeapon extends CharacterEquip {
@@ -1461,44 +1428,11 @@ class CharacterEquipHead extends CharacterEquip {
 			delete this.fragments.highlefEar;
 		}
 	}
-
-
-	/**
-	 * get icon url
-	 * @returns {string}
-	 */
-	getIconUrl() {
-		return "/images" + this._url + "stand1/0/head";
-	}
-
-	/**
-	 * get iconRaw url
-	 * @returns {string}
-	 */
-	getIconRawUrl() {
-		return "/images" + this._url + "stand1/0/head";
-	}
 }
 
 class CharacterEquipHair extends CharacterEquip {
 	constructor() {
 		super();
-	}
-
-	/**
-	 * get icon url
-	 * @returns {string}
-	 */
-	getIconUrl() {
-		return "/images" + this._url + "stand1/0/hair";
-	}
-
-	/**
-	 * get iconRaw url
-	 * @returns {string}
-	 */
-	getIconRawUrl() {
-		return "/images" + this._url + "stand1/0/hair";
 	}
 
 	get FragmentTextureType() {
@@ -1554,22 +1488,6 @@ class CharacterEquipFaceAcc extends CharacterEquipBase {
 class CharacterEquipFace extends CharacterEquipFaceAcc {
 	constructor() {
 		super();
-	}
-
-	/**
-	 * get icon url
-	 * @returns {string}
-	 */
-	getIconUrl() {
-		return "/images" + this._url + "blink/0/face";
-	}
-
-	/**
-	 * get iconRaw url
-	 * @returns {string}
-	 */
-	getIconRawUrl() {
-		return "/images" + this._url + "blink/0/face";
 	}
 }
 

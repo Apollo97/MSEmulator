@@ -2,36 +2,38 @@
 	<window-base>
 		<template v-if="raw" slot="content">
 			<div :style="wndStyle">
-				<!--begin back-->
-				<template>
-					<div v-if="isCollapsed">
-						<img :style="{left: -raw.backgrnd.origin.x+'px', top: -raw.backgrnd.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/backgrnd" />
-						<img :style="{position: 'absolute', left: -raw.backgrnd2.origin.x+'px', top: -raw.backgrnd2.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/backgrnd2" />
-						<img :style="{position: 'absolute', left: -raw.backgrnd3.origin.x+'px', top: -raw.backgrnd3.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/backgrnd3" />
-						<div :style="{position: 'absolute', left: -raw.backgrnd.origin.x+'px', top: -raw.backgrnd.origin.y+'px', width: raw.backgrnd.__w+'px', height: raw.backgrnd.__h+'px'}" class="header"></div><!--draggable capsule-->
-						<div :style="{position: 'absolute', left: -raw.backgrnd2.origin.x+'px', top: -raw.backgrnd2.origin.y+'px', width: raw.backgrnd2.__w+'px', height: raw.backgrnd2.__h+'px'}"></div><!--not drag-->
-					</div>
-					<div v-else>
-						<img :style="{left: -raw.FullBackgrnd.origin.x+'px', top: -raw.FullBackgrnd.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/FullBackgrnd" />
-						<img :style="{position: 'absolute', left: -raw.FullBackgrnd2.origin.x+'px', top: -raw.FullBackgrnd2.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/FullBackgrnd2" />
-						<img :style="{position: 'absolute', left: -raw.FullBackgrnd3.origin.x+'px', top: -raw.FullBackgrnd3.origin.y+'px'}" src="/images/UI/UIWindow2.img/Item/FullBackgrnd3" />
-						<div :style="{position: 'absolute', left: -raw.FullBackgrnd.origin.x+'px', top: -raw.FullBackgrnd.origin.y+'px', width: raw.FullBackgrnd.__w+'px', height: raw.FullBackgrnd.__h+'px'}" class="header"></div><!--draggable capsule-->
-						<div :style="{position: 'absolute', left: -raw.FullBackgrnd2.origin.x+'px', top: -raw.FullBackgrnd2.origin.y+'px', width: raw.FullBackgrnd2.__w+'px', height: raw.FullBackgrnd2.__h+'px'}"></div><!--not drag-->
-					</div>
-				</template>
-				<!--end back-->
-				<!--begin tabs-->
-				<div>
-					<template v-if="typeList.indexOf(sType)>=0">
-						<img :style="{position: 'absolute', left: -raw.Tab.enabled[typeList.indexOf(sType)].origin.x+'px', top: -raw.Tab.enabled[typeList.indexOf(sType)].origin.y+'px'}" :src="'/images/UI/UIWindow2.img/Item/Tab/enabled/'+typeList.indexOf(sType)" />
+				<gui-root p="UI/UIWindow2.img/Item">
+					<!--begin back-->
+					<template>
+						<div v-if="isCollapsed">
+							<gui-texture-s p="backgrnd"></gui-texture-s>
+							<gui-texture-s p="backgrnd2"></gui-texture-s>
+							<gui-texture-s p="backgrnd3"></gui-texture-s>
+							<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+							<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
+						</div>
+						<div v-else>
+							<gui-texture-s p="FullBackgrnd"></gui-texture-s>
+							<gui-texture-s p="FullBackgrnd2"></gui-texture-s>
+							<gui-texture-s p="FullBackgrnd3"></gui-texture-s>
+							<gui-frame-s p="FullBackgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+							<gui-frame-s p="FullBackgrnd2"></gui-frame-s><!--not drag-->
+						</div>
 					</template>
-					<template v-for="(tab, idx) in raw.Tab.disabled">
-						<template v-if="typeList[idx]!=sType">
-							<img @click="sType=typeList[idx]" :style="{position: 'absolute', left: -tab.origin.x+'px', top: -tab.origin.y+'px'}" :src="'/images/UI/UIWindow2.img/Item/Tab/disabled/'+idx" class="ui-clickable" />
+					<!--end back-->
+					<!--begin tabs-->
+					<div>
+						<template v-if="typeList.indexOf(sType)>=0">
+							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
 						</template>
-					</template>
-				</div>
-				<!--end tabs-->
+						<template v-for="(tab, idx) in raw.Tab.disabled">
+							<template v-if="typeList[idx]!=sType">
+								<gui-texture-s :p="'Tab/disabled/'+idx" @click="sType=typeList[idx]" class="ui-clickable"></gui-texture-s>
+							</template>
+						</template>
+					</div>
+					<!--end tabs-->
+				</gui-root>
 
 				<div class="slots-viewport" :style="pageStyle">
 					<!-- viewport: 4 * 24 -->
@@ -67,14 +69,16 @@
 			</div>
 		</template>
 		<template slot="footer" v-if="is_show_menu">
-			<div @mouseout.self="closeMenu($event)"
-				 @contextmenu.prevent=""
-				 :style="menu_style" class="slot-menu"
-				 >
-				<img src="/images/UI/CashShop.img/CSLockerNew/Normal/backgrnd" />
-				<button class="Bt BtRebate" disabled></button>
-				<button class="Bt BtDelete" @click="removeItem"></button>
-			</div>
+			<gui-root p="UI/CashShop.img/CSLockerNew/Normal">
+				<div @mouseout.self="closeMenu($event)"
+					 @contextmenu.prevent=""
+					 :style="menu_style" class="slot-menu"
+					 >
+					<gui-texture p="backgrnd"></gui-texture>
+					<gui-button-s p="BtRebate" class="Bt BtRebate" :enabled="false"></gui-button-s>
+					<gui-button-s p="BtDelete" class="Bt BtDelete" @click="removeItem"></gui-button-s>
+				</div>
+			</gui-root>
 		</template>
 	</window-base>
 </template>
@@ -83,6 +87,7 @@
 	import { ItemCategoryInfo } from "../../../public/resource.js";
 	import { ItemBase, ItemSlot } from "../../game/Item.js";
 	import WindowBase from "./WindowBase.vue";
+	import BasicComponent from "../BasicComponent.vue";
 	import UISlotItem from "../Basic/UISlotItem.vue";
 	import UIVScrollbar from "../Basic/VScrollbar.vue";
 
@@ -149,7 +154,7 @@
 		},
 		methods: {
 			async loadData() {
-				this.raw = await $get.data("/UI/UIWindow2.img/Item");
+				this.raw = await $get.pack("/UI/UIWindow2.img/Item");
 
 				if (this.isCollapsed) {
 					this.wndStyle["width"] = this.raw.backgrnd.__w + "px";
@@ -237,6 +242,7 @@
 		mounted: function () {
 			this.loadData();
 		},
+		mixins: [BasicComponent],
 		components: {
 			"window-base": WindowBase,
 			"ui-slot-item": UISlotItem,
@@ -278,43 +284,17 @@
 
 	.BtRebate {
 		position: absolute;
-		left: 11px;
-		top: 8px;
+		left: 0px;
+		top: 0px;
 		width: 61px;
 		height: 16px;
-		background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/normal/0);
 	}
-
-		.BtRebate:hover {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/mouseOver/0);
-		}
-
-		.BtRebate:active {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/pressed/0);
-		}
-
-		.BtRebate:disabled {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtRebate/disabled/0);
-		}
 
 	.BtDelete {
 		position: absolute;
-		left: 11px;
-		top: 24px;
+		left: 0px;
+		top: 0px;
 		width: 61px;
 		height: 16px;
-		background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/normal/0);
 	}
-
-		.BtDelete:hover {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/mouseOver/0);
-		}
-
-		.BtDelete:active {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/pressed/0);
-		}
-
-		.BtDelete:disabled {
-			background: url(/images/UI/CashShop.img/CSLockerNew/Normal/BtDelete/disabled/0);
-		}
 </style>

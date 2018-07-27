@@ -579,7 +579,7 @@ export class WebGLRenderer extends IRenderer {
 		this._graph_rect._onload = function () {
 			this._matrix = this.matrix;
 		}
-		this._graph_rect._url = "/1x1.png";
+		this._graph_rect._url = "1x1.png";
 
 		this.bloomRenderer = new BloomRenderer();
 

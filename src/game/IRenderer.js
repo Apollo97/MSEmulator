@@ -116,13 +116,13 @@ export class ColorRGB {
 	 * @param {number} v The value
 	 */
 	fromHsv(h, s, v) {
-		var r, g, b;
+		let r, g, b;
 
-		var i = Math.floor(h * 6);
-		var f = h * 6 - i;
-		var p = v * (1 - s);
-		var q = v * (1 - f * s);
-		var t = v * (1 - (1 - f) * s);
+		let i = Math.floor(h * 6);
+		let f = h * 6 - i;
+		let p = v * (1 - s);
+		let q = v * (1 - f * s);
+		let t = v * (1 - (1 - f) * s);
 
 		switch (i % 6) {
 			case 0: r = v, g = t, b = p; break;
@@ -138,13 +138,13 @@ export class ColorRGB {
 		this.b = b * 255;
 	}
 	static fromHsv(h, s, v) {
-		var r, g, b;
+		let r, g, b;
 
-		var i = Math.floor(h * 6);
-		var f = h * 6 - i;
-		var p = v * (1 - s);
-		var q = v * (1 - f * s);
-		var t = v * (1 - (1 - f) * s);
+		let i = Math.floor(h * 6);
+		let f = h * 6 - i;
+		let p = v * (1 - s);
+		let q = v * (1 - f * s);
+		let t = v * (1 - (1 - f) * s);
 
 		switch (i % 6) {
 			case 0: r = v, g = t, b = p; break;
@@ -475,11 +475,10 @@ export class IGraph {
 		/** @type {function():void} */
 		//this._onload = null;
 
+		/** @type {string} */
+		this._url = "";
 		if (url) {
 			this.src = url;
-		}
-		else {
-			this._url = "";
 		}
 	}
 	_dispose() {
@@ -575,42 +574,52 @@ export class IGraph {
 			return false;
 		}
 
-		var image = new Image();
+		let image = new Image();
 
-		this.$promise = (function (that) {
-			return new Promise(function (resolve, reject) {
-				image.addEventListener("load", function (e) {
-					const engine = that._engine;
+		this.$promise = new Promise((resolve, reject) => {
+			const engine = this._engine;
+
+			image.addEventListener("load", e => {
+				if (!e.target.naturalWidth || !e.target.naturalHeight) {
+					debugger;
+				}
+
+				this.isLoaded = this._isLoaded;//end
+
+				delete this.width;
+				this.width = e.target.naturalWidth;
+
+				delete this.height;
+				this.height = e.target.naturalHeight;
+
+				delete this.texture;
+				this.texture = engine._handleImageLoaded(e.target, this);
 					
-					if (!e.target.naturalWidth || !e.target.naturalHeight) {
-						debugger;
-					}
+				delete this.$promise;
 
-					that.isLoaded = that._isLoaded;
+				resolve(this);
+			}, false);
 
-					delete that.width;
-					that.width = e.target.naturalWidth;
+			image.addEventListener("error", e => {
+				this.isLoaded = this._isLoaded;//no try again
 
-					delete that.height;
-					that.height = e.target.naturalHeight;
+				if (this._graph_rect) {
+					delete this.texture;
+					this.texture = this._graph_rect;
+				}
+				console.error("404: " + url);
 
-					delete that.texture;
-					that.texture = engine._handleImageLoaded(e.target, that);
-					
-					delete that.$promise;
-
-					resolve(that);
-				}, false);
-			});
-		})(this);
+				resolve(this);
+			}, false);
+		});
 
 		IGraph.$all_promise.push(this.$promise);
 
-		image.src = this._url;
+		image.src = $get.imageUrl(this._url);
 	}
 
 	static async waitAllLoaded(cbfunc) {
-		var tasks = IGraph.$all_promise;
+		let tasks = IGraph.$all_promise;
 		console.log("image loaded: " + IGraph.$all_promise.length);
 		IGraph.$all_promise = [];
 		await Promise.all(tasks);

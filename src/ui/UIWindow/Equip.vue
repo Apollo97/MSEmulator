@@ -3,28 +3,28 @@
 	<window-base>
 		<template v-if="raw" slot="content">
 			<div :style="wndStyle">
-				<img src="/images/UI/UIWindow4.img/Equip/backgrnd" />
-				<img :style="{position: 'absolute', left: -raw.backgrnd2.origin.x+'px', top: -raw.backgrnd2.origin.y+'px'}" src="/images/UI/UIWindow4.img/Equip/backgrnd2" />
-				<img :style="{position: 'absolute', left: -raw.tabbar.origin.x+'px', top: -raw.tabbar.origin.y+'px'}" src="/images/UI/UIWindow4.img/Equip/tabbar" />
+				<img src="images/UI/UIWindow4.img/Equip/backgrnd" />
+				<img :style="{position: 'absolute', left: -raw.backgrnd2.origin.x+'px', top: -raw.backgrnd2.origin.y+'px'}" src="images/UI/UIWindow4.img/Equip/backgrnd2" />
+				<img :style="{position: 'absolute', left: -raw.tabbar.origin.x+'px', top: -raw.tabbar.origin.y+'px'}" src="images/UI/UIWindow4.img/Equip/tabbar" />
 				<div :style="{position: 'absolute', left: 0, top: 0, width: raw.backgrnd.__w+'px', height: raw.backgrnd.__h+'px'}"></div><!--not drag-->
 				<div :style="{position: 'absolute', left: 0, top: 0, width: raw.backgrnd.__w+'px', height: '20px'}" class="header"></div><!--draggable capsule-->
 
 				<template v-if="typeList.indexOf(sType)>=0">
-					<img :style="{position: 'absolute', left: -raw.Tab.enabled[typeList.indexOf(sType)].origin.x+'px', top: -raw.Tab.enabled[typeList.indexOf(sType)].origin.y+'px'}" :src="'/images/UI/UIWindow4.img/Equip/Tab/enabled/'+typeList.indexOf(sType)" />
+					<img :style="{position: 'absolute', left: -raw.Tab.enabled[typeList.indexOf(sType)].origin.x+'px', top: -raw.Tab.enabled[typeList.indexOf(sType)].origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/Tab/enabled/'+typeList.indexOf(sType)" />
 				</template>
 				<template v-for="(tab, idx) in raw.Tab.disabled">
 					<template v-if="typeList[idx]!=sType">
-						<img @click="sType=typeList[idx]" :style="{position: 'absolute', left: -tab.origin.x+'px', top: -tab.origin.y+'px'}" :src="'/images/UI/UIWindow4.img/Equip/Tab/disabled/'+idx" class="ui-clickable" />
+						<img @click="sType=typeList[idx]" :style="{position: 'absolute', left: -tab.origin.x+'px', top: -tab.origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/Tab/disabled/'+idx" class="ui-clickable" />
 					</template>
 				</template>
 
 				<template v-if="sType">
-					<img :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px'}" :src="'/images/UI/UIWindow4.img/Equip/'+sType+'/backgrnd'" />
+					<img :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/'+sType+'/backgrnd'" />
 					<div :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px', width: raw[sType].backgrnd.__w+'px', height: raw[sType].backgrnd.__h+'px'}"></div><!--not drag-->
 					<template v-for="(obj, slot) in raw[sType].Slots">
 						<div :title="slot" @click="alert(slot)">
 							<img :style="{position: 'absolute', left: -obj.origin.x+'px', top: -obj.origin.y+'px'}"
-									:src="'/images/UI/UIWindow4.img/Equip/'+sType+'/Slots/'+slot"
+									:src="'images/UI/UIWindow4.img/Equip/'+sType+'/Slots/'+slot"
 									/>
 							<img :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
 									:src="getCharaEquipIconUrl(slotMap[sType][slot])"

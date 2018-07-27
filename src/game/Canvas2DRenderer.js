@@ -136,6 +136,9 @@ export class Engine extends IRenderer {
 			canvas.width = width;
 			canvas.height = height;
 		}
+
+		this._graph_rect = new this.Graph();
+		this._graph_rect._url = "/1x1.png";
 	}
 
 	/** @type {IGraph} */

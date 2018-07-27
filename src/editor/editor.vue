@@ -83,10 +83,10 @@
 						<div>
 							<span>{{charaList.length}} characters</span>
 							<div class="chara-ls-btn-group">
-								<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="/images/toolstrip_character.png" alt="Add new" /></button>
-								<button @click="addCloneChara" class="chara-ls-btn" title="Add clone"><img src="/images/toolstrip_duplicate.png" alt="Add clone" /></button>
+								<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="images/toolstrip_character.png" alt="Add new" /></button>
+								<button @click="addCloneChara" class="chara-ls-btn" title="Add clone"><img src="images/toolstrip_duplicate.png" alt="Add clone" /></button>
 								<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open" alt="📂"></span></button>
-								<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="/images/toolstrip_save_all.png" alt="Save all" /></button>
+								<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="images/toolstrip_save_all.png" alt="Save all" /></button>
 							</div>
 						</div>
 						<ui-sortable :items="charaList" @input="oninput_sort" class="ui-character-list">
@@ -545,16 +545,18 @@
 				},
 			}
 		},
-		computed: {
-			...Vuex.mapState({
+		computed: Object.assign(
+			Vuex.mapState({
 				charaList: "charaList",	// chara[]
 				selected: "selected",	// charaId
 				chara: "chara",			// current chara
 				progressValue: "progressValue",
 				progressMaximum: "progressMaximum",
 			}),
-			$gv: () => $gv,
-		},
+			{
+				$gv: () => $gv,
+			}
+		),
 		methods: {
 			scene_map: function () {
 				return window.scene_map;

@@ -28,12 +28,12 @@ let config = {
   ],
   module: {
     rules: [
-      {
+      /*{
         enforce: 'pre',
         loader: 'eslint-loader',
-        include: `${__dirname}/app`,
+        include: `${__dirname}/src`,
         exclude: /bundle\.js$/,
-      },
+      },*/
       {
         test: /\.vue$/,
         loader: 'vue-loader',
@@ -42,9 +42,9 @@ let config = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader']
       },
-	  {
-		test: /\.(png|jp(e*)g|svg)$/,  
-		use: [{
+      {
+        test: /\.(png|jp(e*)g|svg)$/,  
+        use: [{
           loader: 'url-loader',
           options: { 
             limit: 8000, // Convert images < 8kb to base64 strings
@@ -55,7 +55,7 @@ let config = {
     ],
   },
   resolve: {
-    // 設定後只需要寫 require('file') 而不用寫成 require('file.coffee')
+    // 設定後只需要寫 require('file') 而不用寫成 require('file.js')
     extensions: ['.js', '.json'] ,
     alias: {
       'vue$': 'vue/dist/vue.esm.js',
