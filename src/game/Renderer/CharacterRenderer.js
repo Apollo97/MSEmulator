@@ -1238,7 +1238,7 @@ class CharacterEquipBase extends ICharacterEquip {
 	 * @returns {string}
 	 */
 	getIconUrl() {
-		const type = ItemCategoryInfo.getIconUrl(this.id);
+		return ItemCategoryInfo.getIconUrl(this.id);
 	}
 
 	/**

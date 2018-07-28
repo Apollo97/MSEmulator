@@ -22,6 +22,7 @@
 				if (i >= 0) {
 					state.loadingTasks.splice(i, 1);
 				}
+				
 				const dp = payload.path.split("/");
 				if (dp) {
 					let i = 0, d = state.root;
@@ -63,10 +64,9 @@
 					task: task,
 					data: data,
 				});
+				
+				return data;
 			},
-			getData: function (context, payload) {
-				return $get.packSync(payload.path) || {};
-			}
 		}
 	});
 
@@ -95,6 +95,9 @@
 				let ds = this._getPathArray();
 				return new URL(ds.join("/"), window.location).pathname;
 			},
+			m_data: function () {
+				return this._getData();
+			},
 		},
 		methods: {
 			_getPathArray: function () {
@@ -111,24 +114,46 @@
 				}
 				return ds;
 			},
-			getData: function () {
-				const dp = this.path.split("/");
-				let data = this.$store.state.root;
-				for (let p of dp) {
-					if (p in data) {
-						data = data[p];
-						if (!data) {
-							debugger
-							return {};
+			_getData: function () {
+				/*if (1)*/ {
+					const dp = this.path.split("/");
+					let data = this.$store.state.root;
+					for (let p of dp) {
+						if (p in data) {
+							data = data[p];
+							if (!data) {
+								debugger
+								return undefined;
+							}
+						}
+						else {
+							return undefined;
+						}
+					}
+					return data;
+				}
+				/*
+				else {
+					let parent_data = this.$parent.getData();
+					if (parent_data != null && this.p) {
+						if (this.p == ".") {
+							return parent_data;
+						}
+						else if (this.p == "..") {
+							return this.$parent.$parent.getData();
+						}
+						else {
+							return parent_data[this.p];
 						}
 					}
 					else {
-						return {};
+						return undefined;
 					}
 				}
-				return data;
-				
-				//return $get.packSync(this.path) || {};
+				*/
+			},
+			getData: function () {
+				return this._getData() || {};
 			},
 			mouseenter: function ($event) {
 				this.$emit("mouseenter", $event);
@@ -153,8 +178,30 @@
 
 	let GuiRoot = Vue.extend({
 		mixins: [Gui, {
+		template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot v-if='m_data' /></div>",
+			methods: {
+				/*
+				getData: function () {
+					const dp = this.path.split("/");
+					let data = this.$store.state.root;
+					for (let p of dp) {
+						if (p in data) {
+							data = data[p];
+							if (!data) {
+								debugger
+								return {};
+							}
+						}
+						else {
+							return {};
+						}
+					}
+					return data;
+				}
+				*/
+			},
 			created: function () {
-				this.$store.dispatch("loadData", {
+				this._$promise = this.$store.dispatch("loadData", {
 					path: this.path,
 				});
 			}

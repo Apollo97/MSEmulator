@@ -1,8 +1,8 @@
 ﻿<template>
 	<window-base>
-		<template v-if="raw" slot="content">
+		<template slot="content">
 			<div :style="wndStyle">
-				<gui-root p="UI/UIWindow2.img/Item">
+				<gui-root ref="gui_root" p="UI/UIWindow2.img/Item">
 					<!--begin back-->
 					<template>
 						<div v-if="isCollapsed">
@@ -22,16 +22,16 @@
 					</template>
 					<!--end back-->
 					<!--begin tabs-->
-					<div>
+					<template v-if="guiData">
 						<template v-if="typeList.indexOf(sType)>=0">
 							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
 						</template>
-						<template v-for="(tab, idx) in raw.Tab.disabled">
+						<template v-for="(tab, idx) in guiData.Tab.disabled">
 							<template v-if="typeList[idx]!=sType">
 								<gui-texture-s :p="'Tab/disabled/'+idx" @click="sType=typeList[idx]" class="ui-clickable"></gui-texture-s>
 							</template>
 						</template>
-					</div>
+					</template>
 					<!--end tabs-->
 				</gui-root>
 
@@ -117,7 +117,7 @@
 		},
 		data: function () {
 			return {
-				raw: null,
+				guiData: null,
 				isCollapsed: true,
 				sType: 0,
 				typeList: [0, 1, 2, 3, 4],
@@ -153,18 +153,6 @@
 			},
 		},
 		methods: {
-			async loadData() {
-				this.raw = await $get.pack("/UI/UIWindow2.img/Item");
-
-				if (this.isCollapsed) {
-					this.wndStyle["width"] = this.raw.backgrnd.__w + "px";
-					this.wndStyle["height"] = this.raw.backgrnd.__h + "px";
-				}
-				else {
-					this.wndStyle["width"] = this.raw.FullBackgrnd.__w + "px";
-					this.wndStyle["height"] = this.raw.FullBackgrnd.__h + "px";
-				}
-			},
 			/**
 			 * @param {MouseEvent} event
 			 * @param {ItemSlot} itemSlot
@@ -239,15 +227,24 @@
 				return this.$emit('mouseleaveItem', ...arguments);
 			},
 		},
-		mounted: function () {
-			this.loadData();
+		mounted: async function () {
+			this.guiData = await this.$refs.gui_root._$promise;
+
+			if (this.isCollapsed) {
+				this.wndStyle["width"] = this.guiData.backgrnd.__w + "px";
+				this.wndStyle["height"] = this.guiData.backgrnd.__h + "px";
+			}
+			else {
+				this.wndStyle["width"] = this.guiData.FullBackgrnd.__w + "px";
+				this.wndStyle["height"] = this.guiData.FullBackgrnd.__h + "px";
+			}
 		},
-		mixins: [BasicComponent],
 		components: {
 			"window-base": WindowBase,
 			"ui-slot-item": UISlotItem,
 			"ui-v-scrollbar": UIVScrollbar,
-		}
+		},
+		mixins: [BasicComponent]
 	}
 </script>
 

@@ -538,7 +538,7 @@ $get.pack = async function $get_pack(path) {
  * @param {string} path
  * @returns {Promise<any>}
  */
-$get.packSync = function $get_pack(path) {
+$get.packSync = function $get_packSync(path) {
 	const url = `${$root_path}pack${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
@@ -567,7 +567,7 @@ $get.data = async function $get_data(path) {
  * @param {string} path
  * @returns {any}
  */
-$get.dataSync = function $get_data(path) {
+$get.dataSync = function $get_dataSync(path) {
 	const url = `${$root_path}data${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
@@ -596,7 +596,7 @@ $get.list = async function $get_list(path) {
  * @param {string} path
  * @returns {Promise<any>}
  */
-$get.listSync = function $get_list(path) {
+$get.listSync = function $get_listSync(path) {
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return Object.keys(obj);

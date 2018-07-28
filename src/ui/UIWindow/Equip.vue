@@ -1,42 +1,46 @@
 ﻿
 <template>
 	<window-base>
-		<template v-if="raw" slot="content">
+		<template slot="content">
 			<div :style="wndStyle">
-				<img src="images/UI/UIWindow4.img/Equip/backgrnd" />
-				<img :style="{position: 'absolute', left: -raw.backgrnd2.origin.x+'px', top: -raw.backgrnd2.origin.y+'px'}" src="images/UI/UIWindow4.img/Equip/backgrnd2" />
-				<img :style="{position: 'absolute', left: -raw.tabbar.origin.x+'px', top: -raw.tabbar.origin.y+'px'}" src="images/UI/UIWindow4.img/Equip/tabbar" />
-				<div :style="{position: 'absolute', left: 0, top: 0, width: raw.backgrnd.__w+'px', height: raw.backgrnd.__h+'px'}"></div><!--not drag-->
-				<div :style="{position: 'absolute', left: 0, top: 0, width: raw.backgrnd.__w+'px', height: '20px'}" class="header"></div><!--draggable capsule-->
+				<gui-root ref="gui_root" p="UI/UIWindow4.img/Equip">
+					<gui-texture-s p="backgrnd"></gui-texture-s>
+					<gui-texture-s p="backgrnd2"></gui-texture-s>
+					<gui-texture-s p="tabbar"></gui-texture-s>
+					<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+					<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
 
-				<template v-if="typeList.indexOf(sType)>=0">
-					<img :style="{position: 'absolute', left: -raw.Tab.enabled[typeList.indexOf(sType)].origin.x+'px', top: -raw.Tab.enabled[typeList.indexOf(sType)].origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/Tab/enabled/'+typeList.indexOf(sType)" />
-				</template>
-				<template v-for="(tab, idx) in raw.Tab.disabled">
-					<template v-if="typeList[idx]!=sType">
-						<img @click="sType=typeList[idx]" :style="{position: 'absolute', left: -tab.origin.x+'px', top: -tab.origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/Tab/disabled/'+idx" class="ui-clickable" />
-					</template>
-				</template>
+					<template v-if="guiData">
+						<!--begin tabs-->
+						<template v-if="typeList.indexOf(sType)>=0">
+							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
+						</template>
+						<template v-for="(tab, idx) in guiData.Tab.disabled">
+							<template v-if="typeList[idx]!=sType">
+								<gui-texture-s @click="sType=typeList[idx]" :p="'Tab/disabled/'+idx" class="ui-clickable"></gui-texture-s>
+							</template>
+						</template>
+						<!--end tabs-->
 
-				<template v-if="sType">
-					<img :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px'}" :src="'images/UI/UIWindow4.img/Equip/'+sType+'/backgrnd'" />
-					<div :style="{position: 'absolute', left: -raw[sType].backgrnd.origin.x+'px', top: -raw[sType].backgrnd.origin.y+'px', width: raw[sType].backgrnd.__w+'px', height: raw[sType].backgrnd.__h+'px'}"></div><!--not drag-->
-					<template v-for="(obj, slot) in raw[sType].Slots">
-						<div :title="slot" @click="alert(slot)">
-							<img :style="{position: 'absolute', left: -obj.origin.x+'px', top: -obj.origin.y+'px'}"
-									:src="'images/UI/UIWindow4.img/Equip/'+sType+'/Slots/'+slot"
-									/>
-							<img :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
-									:src="getCharaEquipIconUrl(slotMap[sType][slot])"
-									/>
-						</div>
+						<template v-if="sType">
+							<gui-texture-s :p="sType+'/backgrnd'"></gui-texture-s>
+							<template v-for="(obj, slot) in guiData[sType].Slots">
+								<div :title="slot" @click="alert(slot)">
+									<gui-texture-s :p="sType+'/Slots/'+slot"></gui-texture-s>
+									<img :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
+										:src="getCharaEquipIconUrl(slotMap[sType][slot])"
+										/>
+								</div>
+							</template>
+						</template>
 					</template>
-				</template>
-				<select v-model="sType" style="position: absolute; left: 1em; bottom: 1.5em;">
-					<option v-for="stype in typeList" :value="stype">
-						{{stype}}
-					</option>
-				</select>
+					
+					<select v-model="sType" style="position: absolute; left: 1em; bottom: 1.5em;">
+						<option v-for="stype in typeList" :value="stype">
+							{{stype}}
+						</option>
+					</select>
+				</gui-root>
 			</div>
 		</template>
 	</window-base>
@@ -45,6 +49,7 @@
 <script>
 	import { ItemCategoryInfo } from "../../../public/resource.js";
 	import WindowBase from "./WindowBase.vue";
+	import BasicComponent from "../BasicComponent.vue";
 
 	let slot_map = {
 		Equip: {
@@ -78,7 +83,7 @@
 		},
 		data: function () {
 			return {
-				raw: null,
+				guiData: null,
 				sType: "Equip",
 				wndStyle: {
 					width: 0,
@@ -90,14 +95,6 @@
 			alert: function (msg) {
 				debugger;
 				//window.alert(msg);
-			},
-			loadData: async function () {
-				this.raw = await $get.data("/UI/UIWindow4.img/Equip");
-				this.slot_imgWidth = this.raw.Equip.Slots[1].__w;
-				this.slot_imgHeight = this.raw.Equip.Slots[1].__h;
-
-				this.wndStyle["width"] = this.raw.backgrnd.__w + "px";
-				this.wndStyle["height"] = this.raw.backgrnd.__h + "px";
 			},
 			getCharaEquipIconPos: function(slot) {
 				if (this.chara && this.chara.renderer) {
@@ -126,8 +123,8 @@
 		computed: {
 			typeList: function () {
 				let list = [];
-				if (this.raw) {
-					for (let i in this.raw) {
+				if (this.guiData) {
+					for (let i in this.guiData) {
 						switch (i) {
 							case "Zero_Cash":
 								break;
@@ -158,13 +155,19 @@
 				},
 			},
 		},
-		mounted: function () {
-			this.loadData();
+		mounted: async function () {
+			this.guiData = await this.$refs.gui_root._$promise;
+			
+			this.slot_imgWidth = this.guiData.Equip.Slots[1].__w;
+			this.slot_imgHeight = this.guiData.Equip.Slots[1].__h;
+
+			this.wndStyle["width"] = this.guiData.backgrnd.__w + "px";
+			this.wndStyle["height"] = this.guiData.backgrnd.__h + "px";
 		},
 		components: {
 			"window-base": WindowBase,
-		}
-		//mixins: [],
+		},
+		mixins: [BasicComponent]
 	};
 /*
 cap = 1

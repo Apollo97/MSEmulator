@@ -175,7 +175,7 @@
 				
 				let desc = await MapLifeEntity.loadLifeDesc(m);
 
-				let _url = $get.imageUrl(`${type}/${m.id}.img/stand/0`);
+				let _url = $get.imageUrl(`/${type}/${m.id}.img/stand/0`);
 				
 				smallTip.html = ["<div>" + desc.name + "</div>" + `<img src="${_url}" />`];
 				

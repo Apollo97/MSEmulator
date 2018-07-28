@@ -1,24 +1,24 @@
 
 <template>
 	<ui-draggable :zIndex="zIndex" :position="position">
-		<gui-root p="UI/UIToolTip.img/Item/Frame2">
+		<gui-root ref="gui_root" p="UI/UIToolTip.img/Item/Frame2">
 			<div v-if="is_show" class="header frame" @mousedown.left="requireOrder($event)">
-				<div class="frame-warp">
+				<div v-if="guiData" class="frame-warp">
 					<table class="frame-inner">
 						<tr>
-							<td p="nw"></td>
-							<td p="n"></td>
-							<td p="ne"></td>
+							<td :style="_getImgStyle('nw',true,true,false)"></td>
+							<td :style="_getImgStyle('n',false,true,true)"></td>
+							<td :style="_getImgStyle('ne',true,true,false)"></td>
 						</tr>
 						<tr>
-							<td p="w"></td>
-							<td p="c"></td>
-							<td p="e"></td>
+							<td :style="_getImgStyle('w',true,false,true)"></td>
+							<td :style="_getImgStyle('c',false,false,true)"></td>
+							<td :style="_getImgStyle('e',true,false,true)"></td>
 						</tr>
 						<tr>
-							<td p="sw"></td>
-							<td p="s"></td>
-							<td p="se"></td>
+							<td :style="_getImgStyle('sw',true,true,false)"></td>
+							<td :style="_getImgStyle('s',false,true,true)"></td>
+							<td :style="_getImgStyle('se',true,true,false)"></td>
 						</tr>
 					</table>
 				</div>
@@ -37,15 +37,31 @@
 
 	import BasicComponent from "../BasicComponent.vue";
 	
+	
 	export default {
 		mixins: [UIDialog, BasicComponent],
 		data: function() {
 			return {
 				html: [],
 				is_show: false,
+				guiData: null,
 			};
 		},
 		methods: {
+			_getImgStyle: function (p, h, v, repeat) {
+				let src, img, data = this.guiData, s = {};
+				if (data && (img = data[p]) && (src = img[""])) {
+					if (h) {
+						s.width = img.__w + "px";
+					}
+					if (v) {
+						s.height = img.__h + "px";
+					}
+					s.background = `url(${src}) ${repeat ? "repeat" : "no-repeat"}`;
+					return s;
+				}
+				return s;
+			},
 			show: function (cbfunc) {
 				this.is_show = true;
 				if (cbfunc) {
@@ -87,8 +103,9 @@
 				}
 			},
 		},
-		mounted: function () {
+		mounted: async function () {
 			this.hide();
+			this.guiData = await this.$refs.gui_root._$promise;
 		},
 		components: {
 			"ui-draggable": UIDraggable,
