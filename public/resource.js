@@ -439,10 +439,64 @@ export class ResourceManager {
 }
 window.$ResourceManager = ResourceManager;
 
+/**
+ * @param {{}} obj
+ * @param {string} path
+ * @param {any} value
+ */
+function $setValue(obj, path, value) {
+	if (path.endsWith("/")) {
+		path = path.slice(0, path.length - 1);
+	}
+	let ps = path.split("/");
+	let i, target = obj, lastIndex = ps.length - 1;
+	for (i = 0; i < lastIndex; ++i) {
+		let key = ps[i];
+		if (target[key] == null) {
+			target[key] = {};
+		}
+		target = target[key];
+	}
+	let origin_value = target[ps[lastIndex]];
+	if (origin_value instanceof Promise) {
+		delete target[ps[lastIndex]];
+		target[ps[lastIndex]] = value;
+	}
+	else if (origin_value && typeof origin_value == "object") {
+		//if (value instanceof Promise) {
+		//	debugger;
+		//}
+		//else {
+			for (let key in value) {
+				origin_value[key] = value[key] || origin_value[key];
+			}
+		//}
+	}
+	else if (typeof value != "undefined") {
+		target[ps[lastIndex]] = value;
+	}
+}
+function $getValue(obj, path) {
+	if (path.endsWith("/")) {
+		path = path.slice(0, path.length - 1);
+	}
+	let ps = path.split("/");
+	let i, target = obj, lastIndex = ps.length - 1;
+	for (i = 0; i < lastIndex; ++i) {
+		let key = ps[i];
+		if (target[key]) {
+				target = target[key];
+		}
+		else {
+			return undefined;
+		}
+	}
+	return target[ps[lastIndex]];
+}
+
 const symbol_isPack = Symbol("$pack");
 
 const url_startsWith_protocol = RegExp.prototype.test.bind(/^([a-zA-Z^\:]+)(\:.*)$/);
-
 function _setValueByPath(path, value, is_pack) {
 	if (url_startsWith_protocol(path)) {
 		return;
@@ -474,40 +528,59 @@ function _getDataPathByUrl(path) {
 	return undefined;
 }
 
-function $setValue(obj, path, value) {
+/**
+ * @returns {Promise<any>|any}
+ */
+function $getValueAsync(obj, path) {
 	if (path.endsWith("/")) {
 		path = path.slice(0, path.length - 1);
 	}
-	let ps = path.split("/");
-	let i, target = obj, lastIndex = ps.length - 1;
-	for (i = 0; i < lastIndex; ++i) {
-		let key = ps[i];
-		if (target[key] == null) {
-			target[key] = {};
+	
+	// try get value sync
+	let value = $getValue(obj, path);
+	
+	// if value exist
+	if (value) {
+		if (value instanceof Promise) {
+			// ??
+			return new Promise(async function (resolve, reject) {
+				await value;
+				resolve(await $getValueAsync(obj, path));
+			});
 		}
-		target = target[key];
-	}
-	let origin_value = target[ps[lastIndex]];
-	if (origin_value && typeof origin_value == "object") {
-		for (let key in value) {
-			origin_value[key] = value[key] || origin_value[key];
-		}
-	}
-	else if (typeof value != "undefined") {
-		target[ps[lastIndex]] = value;
-	}
-	return target;
-}
-function $getValue(obj, path) {
-	let ps = path.split("/");
-	let i, target = obj, lastIndex = ps.length - 1;
-	for (i = 0; i < lastIndex; ++i) {
-		let key = ps[i];
-		if (target[key]) {
-				target = target[key];
+		else {
+			return value;
 		}
 	}
-	return target[ps[lastIndex]];
+	else {// if value not exist, try await parent node
+		let ps = path.split("/");
+		let i, target = obj, lastIndex = ps.length - 1;
+		for (i = 0; i < lastIndex; ++i) {
+			let key = ps[i];
+			if (target[key] instanceof Promise) {
+				return new Promise(async function (resolve, reject) {
+					await target[key];
+					resolve(await $getValueAsync(obj, path));
+				});
+			}
+			if (target[key]) {
+					target = target[key];
+			}
+			else {
+				return undefined;
+			}
+		}
+		let result = target[ps[lastIndex]];
+		if (result instanceof Promise) {
+			return new Promise(async function (resolve, reject) {
+				await result;
+				resolve(await $getValueAsync(obj, path));
+			});
+		}
+		else {
+			return result;
+		}
+	}
 }
 
 /**
@@ -522,23 +595,46 @@ export let $get = function $get(url) {
  * @returns {Promise<any>}
  */
 $get.pack = async function $get_pack(path) {
-	const url = `${ResourceManager.root_path}pack${path}`;
-	let obj = _getValueFromArchiveByPath(url);
-	if (obj) {
+	let _path = _getDataPathByUrl(path);
+	let obj;
+
+	if (_path) {
+		obj = $getValueAsync($archive, _path);
+	}
+
+	if (obj instanceof Promise) {
+		return await obj;
+	}
+	else if (obj && obj[symbol_isPack]) {
 		return obj;
 	}
 	else {
-		let jsonText = await ResourceManager.get(url);
-		obj = JSON.parse(jsonText);
-		_setValueByPath(path, obj, true);
-		return obj;
+		if (process.env.NODE_ENV !== 'production') {
+			if (obj && !obj[symbol_isPack]) {
+				throw new TypeError("data: " + path);
+			}
+		}
+		const url = `${$root_path}pack${path}`;
+
+		let task = (async function () {
+			let jsonText = await ResourceManager.get(url);
+
+			obj = JSON.parse(jsonText);
+
+			_setValueByPath(path, obj, true);
+
+			return obj;
+		})();
+		_setValueByPath(path, task, true);
+
+		return await task;
 	}
 }
 /**
  * @param {string} path
  * @returns {Promise<any>}
  */
-$get.packSync = function $get_packSync(path) {
+$get.packSync = function $get_pack(path) {
 	const url = `${$root_path}pack${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
@@ -551,23 +647,41 @@ $get.packSync = function $get_packSync(path) {
  * @returns {Promise<any>}
  */
 $get.data = async function $get_data(path) {
-	const url = `${ResourceManager.root_path}data${path}`;
-	let obj = _getValueFromArchiveByPath(url);
-	if (obj) {
+	let _path = _getDataPathByUrl(path);
+	let obj;
+
+	if (_path) {
+		obj = $getValueAsync($archive, _path);
+	}
+
+	if (obj instanceof Promise) {
+		return await obj;
+	}
+	else if (obj) {
 		return obj;
 	}
 	else {
-		let jsonText = await ResourceManager.get(url);
-		obj = JSON.parse(jsonText);
-		_setValueByPath(path, obj, false);
-		return obj;
+		const url = `${$root_path}data${path}`;
+
+		let task = (async function () {
+			let jsonText = await ResourceManager.get(url);
+
+			obj = JSON.parse(jsonText);
+
+			_setValueByPath(path, obj, false);
+
+			return obj;
+		})();
+		_setValueByPath(path, task, false);
+
+		return await task;
 	}
 }
 /**
  * @param {string} path
  * @returns {any}
  */
-$get.dataSync = function $get_dataSync(path) {
+$get.dataSync = function $get_data(path) {
 	const url = `${$root_path}data${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
@@ -580,23 +694,41 @@ $get.dataSync = function $get_dataSync(path) {
  * @returns {Promise<any>}
  */
 $get.list = async function $get_list(path) {
-	const url = `${ResourceManager.root_path}ls${path}`;
-	let obj = _getValueFromArchiveByPath(url);
-	if (obj) {
+	let _path = _getDataPathByUrl(path);
+	let obj;
+
+	if (_path) {
+		obj = $getValueAsync($archive, _path);
+	}
+
+	if (obj instanceof Promise) {
+		return await obj;
+	}
+	else if (obj) {
 		return obj;
 	}
 	else {
-		let jsonText = await ResourceManager.get(url);
-		obj = JSON.parse(jsonText);
-		_setValueByPath(path, obj, false);
-		return obj;
+		const url = `${$root_path}ls${path}`;
+
+		let task = (async function () {
+			let jsonText = await ResourceManager.get(url);
+
+			obj = JSON.parse(jsonText);
+
+			_setValueByPath(path, obj, false);
+
+			return obj;
+		})();
+		_setValueByPath(path, task, false);
+
+		return await task;
 	}
 }
 /**
  * @param {string} path
  * @returns {Promise<any>}
  */
-$get.listSync = function $get_listSync(path) {
+$get.listSync = function $get_list(path) {
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return Object.keys(obj);
