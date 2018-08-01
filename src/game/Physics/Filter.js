@@ -108,14 +108,14 @@ export class FilterHelper extends b2Filter {
 const filter_table = [
 /*                 default  body  foothold  foot  bullet  pvp_bullet  mob  mob_bullet  portal  ladder  map_obj  map_border */
 /* default */    [ 1,       1,    1,        1,    1,      1,          1,   1,          1,      1,      1,       1,     ],
-/* body */       [ 1,       0,    0,        0,    0,      1,          1,   1,          1,      1,      1,       1,     ],
+/* body */       [ 1,       0,    0,        0,    0,      1,          1,   1,          0,      1,      1,       1,     ],
 /* foothold */   [ 1,       0,    0,        1,    0,      0,          0,   0,          0,      0,      0,       0,     ],
-/* foot */       [ 1,       0,    1,        0,    0,      0,          0,   0,          0,      0,      0,       1,     ],
+/* foot */       [ 1,       0,    1,        0,    0,      0,          0,   0,          1,      0,      0,       1,     ],
 /* bullet */     [ 1,       0,    0,        0,    0,      0,          1,   0,          0,      0,      0,       0,     ],
 /* pvp_bullet */ [ 1,       1,    0,        0,    0,      0,          1,   0,          0,      0,      0,       0,     ],
 /* mob */        [ 1,       1,    0,        0,    1,      1,          0,   0,          0,      0,      0,       0,     ],
 /* mob_bullet */ [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
-/* portal */     [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
+/* portal */     [ 1,       0,    0,        1,    0,      0,          0,   0,          0,      0,      0,       0,     ],
 /* ladder */     [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
 /* map_obj */    [ 1,       1,    0,        0,    0,      0,          0,   0,          0,      0,      0,       0,     ],
 /* map_border */ [ 1,       1,    0,        1,    0,      0,          1,   0,          0,      0,      0,       0,     ],
@@ -148,24 +148,8 @@ const filter_table = [
 })();
 
 (function test() {
-	const s_default = FilterHelper.get("default");
-	if (!(s_default.categoryBits == 0b1 && s_default.maskBits == 0b11111111111111111111111111111111)) {
-		debugger;
-	}
-
-	const s_foothold = FilterHelper.get("foothold");
-	if (!(s_foothold.categoryBits == 0b100 && s_foothold.maskBits == 0b11111111111111111111000000001001)) {
-		debugger;
-	}
-
-	const s_foot = FilterHelper.get("foot");
-	if (!(s_foot.categoryBits == 0b1000 && s_foot.maskBits == 0b11111111111111111111100000000101)) {
-		debugger;
-	}
-
 	let contactFilter = new b2ContactFilter();
-
-
+	
 	function Fixture(filterName) {
 		return {
 			GetFilterData: () => FilterHelper.get(filterName),
@@ -175,7 +159,18 @@ const filter_table = [
 			} },
 		};
 	}
+
 	if (!contactFilter.ShouldCollide(Fixture("body"), Fixture("ladder"))) {
+		debugger;
+	}
+	if (!contactFilter.ShouldCollide(Fixture("ladder"), Fixture("body"))) {
+		debugger;
+	}
+
+	if (!contactFilter.ShouldCollide(Fixture("foot"), Fixture("portal"))) {
+		debugger;
+	}
+	if (!contactFilter.ShouldCollide(Fixture("portal"), Fixture("foot"))) {
 		debugger;
 	}
 })();

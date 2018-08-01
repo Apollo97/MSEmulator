@@ -179,6 +179,7 @@ class MapObjectBase {
 			$gv.allQuest[qid].add(_raw.quest[qid]);
 		}
 
+		this.update = this._update_and_preload;
 		
 		this._load_object_info();
 		this._load_back_info();
@@ -325,14 +326,57 @@ class MapObjectBase {
 
 	update(stamp) {
 		const fc = this.textures.length;
-		
+
 		if (fc > 1) {
 			this.time = this.time + stamp;
 
 			if (this.time > this.textures[this.frame].delay) {
-				this.frame = ++this.frame % fc;
+				this.frame = ++this.frame;
+
 				this.time = 0;
+
+				if (this.frame >= fc) {
+					this.frame = 0;
+				}
 			}
+			//this.frame = Math.trunc(this.time / 1000) % fc;
+		}
+
+		this.delta += stamp;
+
+		if ($gv.m_editor_mode && this.aabb) {
+			this.$editor_mouse();
+		}
+	}
+	_update_and_preload(stamp) {
+		const fc = this.textures.length;
+		
+		if (fc > 1) {
+			const texture = this.textures[this.frame];
+
+			this.time = this.time + stamp;
+			
+			if (!texture.isLoaded()) {
+				texture.__loadTexture();
+			}
+
+			if (this.time > texture.delay) {
+				this.frame = ++this.frame;
+
+				this.time = 0;
+
+				if (this.frame >= fc) {
+					this.frame = 0;
+
+					delete this.update;
+				}
+			}
+
+			const next_texture = this.textures[this.frame + 1];
+			if (next_texture && !next_texture.isLoaded()) {
+				next_texture.__loadTexture();
+			}
+
 			//this.frame = Math.trunc(this.time / 1000) % fc;
 		}
 		
@@ -427,7 +471,19 @@ class MapObjectBase {
 		}
 		
 		if (this.typeb != 0 || (!this.aabb || this.aabb.collide(viewRect))) {
-			this.textures[index_of_texture].draw(renderer, this.f, this.x + mx, this.y + my, this.time, this.delta);//MapleSceneTexture#draw
+			let texture = this.textures[index_of_texture];
+
+			if (index_of_texture && !texture.isLoaded()) {
+				// find loaded texture
+				for (let i = index_of_texture - 1; i >= 0; --i) {
+					texture = this.textures[index_of_texture];
+					if (texture.isLoaded()) {
+						break;
+					}
+				}
+			}
+			
+			texture.draw(renderer, this.f, this.x + mx, this.y + my, this.time, this.delta);//MapleSceneTexture#draw
 		}
 		
 		if ($gv.m_display_selected_object && $gv.m_editor_mode && this.aabb && this.display_aabb) {
@@ -483,7 +539,8 @@ class MapObjectBase {
 	 */
 	_draw(renderer, horizontal, vertical, mx, my, viewRect) {
 		let texture = this.textures[this.frame];
-		if (texture == null || !texture.isLoaded()) {
+		if (texture == null) {
+			debugger;
 			return;
 		}
 
@@ -819,11 +876,16 @@ class MapPortal extends MapObject {
 	constructor(_raw, mapRenderer) {
 		super(_raw);//load x, y
 		
-		/** @type {number} */
+		this.mapRenderer = mapRenderer;
+		
+		/** @type {number} - to mapId */
 		this.tm = null;
 		
-		/** @type {string} */
+		/** @type {string} - tn to pn */
 		this.tn = null;
+
+		/** @type {string} - pn to tn */
+		this.pn = null;
 		
 		/** @type {string} */
 		this.script = null;
@@ -831,29 +893,23 @@ class MapPortal extends MapObject {
 		/** @type {boolean} */
 		this.enable = null;
 		
-		this.mapRenderer = mapRenderer;
+		/** @type {"portalStart"|"portalContinue"|"portalExit"} */
+		this.state = null;
+
+		/** @type {number} */
+		this.skin = null;
 	}
 	
 	//sync
 	load() {
-		let index = this._get(0, "pt", Number);
-		
-		//MapObject::type
-		if (index in this._pts_game) {
-			this.type = "p";
-		}
-		else {
-			this.type = "q";
-		}
-		
 		this.tm	= this._get("", "tm", String).padStart(9, "0");//??
 		this.tn	= this._get("", "tn", String);//??
 		this.pn	= this._get("", "pn", String);//pt_go01 => goto portal_01
 		this.script	= this._get(null, "script", String);
 		
-		this.textures[0] = MapPortal._portals[index];
-		
 		this.enable = this.tm != "" && this.tm != "999999999";
+
+		this._loadTexture();
 	}
 	unload() {
 		if (this.body) {
@@ -868,10 +924,6 @@ class MapPortal extends MapObject {
 		}
 	}
 	
-	//sensor-fixture has no preSolve(contact, oldManifold, fa, fb)
-	beginContact(contact, fa, fb) {
-	}
-	
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {Vec2} center
@@ -881,91 +933,137 @@ class MapPortal extends MapObject {
 		if (this.enable) {
 			super.draw(renderer, center, viewRect);
 		}
-		else {//?? debug
-			renderer.pushGlobalAlpha();
-			renderer.globalAlpha = 0.5;
+		else if (this.__display_mode) {
 			super.draw(renderer, center, viewRect);
-			renderer.popGlobalAlpha();
+		}
+	}
+
+	_loadTexture() {
+		///** @type {number} */
+		//let type = this._raw.pt;
+		//
+		//let skins = this._loaded_portals[this.__display_mode][type];
+		//
+		//this.textures = skins.default || skins[0];
+
+		const _raw = MapPortal._portals_raw;
+
+		this.textures.length = 0;//clear
+
+		const type = MapPortal._type_map[this._raw.pt];
+		
+		if (this.__display_mode == "editor") {
+			let texture = new MapTexture(_raw.editor[type]);
+			texture._url = [this._texture_base_path, this.__display_mode, type].join("/");
+			this.textures[0] = texture;
+		}
+		else if (_raw.game[type]) {
+			let skin = this.skin != null ? this.skin : "default";
+			if (this.state) {
+				let textures = _raw.game[type][skin][this.state];
+				for (let i in textures) {
+					let texture = new MapTexture(textures[i]);
+					texture._url = [this._texture_base_path, this.__display_mode, type, skin, this.state, i].join("/");
+					this.textures.push(texture);
+				}
+			}
+			else {
+				let textures = _raw.game[type][skin];
+				for (let i in textures) {
+					let texture = new MapTexture(textures[i]);
+					texture._url = [this._texture_base_path, this.__display_mode, type, skin, i].join("/");
+					this.textures.push(texture);
+				}
+			}
+		}
+
+		//reset
+		this.delta = 0;
+		this.time = 0;
+		this.frame = 0;
+	}
+
+	get _texture_base_path() {
+		return "/Map/MapHelper.img/portal";
+	}
+	get _getTexturePath() {
+		if (this.__display_mode == "editor") {
+			return ["/Map/MapHelper.img/portal", this.__display_mode].join("/");
+		}
+		else {
+			return ["/Map/MapHelper.img/portal", this.__display_mode].join("/");
 		}
 	}
 	
 	/**
-	 * raw data
-	 * textures; info & data
-	 */
-	get _texture_raw() {
-		try {
-			return this._pts[this.type];
-		}
-		catch (ex) {
-			debugger;
-		}
-		return null;
-	}
-	
-	/**
-	 * @returns {string}
+	 * @returns {"editor"|"game"}
 	 */
 	get __display_mode() {
-		return "editor";
+		return $gv.m_editor_mode ? "editor" : "game";
 	}
-	
-	get _texture_base_path() {
-		return "/Map/MapHelper.img/portal/" + this.__display_mode;
-	}
-	
-	/**
-	 * @static
-	 * @returns {string[]}
-	 */
-	get _pts() {
-		return this["_pts_" + this.__display_mode];
-	}
-	
-	get _pts_game() {
-		return [ "pv", "ph", "psh" ];
 
-	}
-	
-	get _pts_editor() {
-		return [ "sp", "pi", "pv", "pc", "pg", "tp", "ps", "pgi", "psi", "pcs", "ph", "psh",			
-			"pci",//"pcj",//
-			"pcj",//"pci",//			
-			//"pci2",
-			"pcig", "pshg"
-		];
-	}
+	///**
+	// * @type {{editor:{[pt:number]:{[skin:number]:MapTexture}},game:{[pt:number]:{[skin:number]:MapTexture[],default:MapTexture[]}}}}
+	// */
+	//get _loaded_portals() {
+	//	return MapPortal._portals;
+	//}
 	
 	static async Init() {
-		let _raw = Object.assign({}, await $get.pack("/Map/MapHelper.img/portal/editor"));
-		
-		let portals = [];
-		
-		//sort
-		for (let i in this._pts) {
-			portals.push(_raw[i]);
-			delete _raw[i];
-		}
-		for (let i in _raw) {
-			portals.push(_raw[i]);
-			delete _raw[i];
-		}
-		
-		for (let i = 0; i < portals.length; ++i) {
-			let portal = portals[i];
-			portals[i] = new MapTexture(portal);
-		}
-		
-		MapPortal._portals = portals;
+		MapPortal._portals_raw = await $get.data("/Map/MapHelper.img/portal");
+
+		MapPortal._type_map = Object.keys(MapPortal._portals_raw.editor);
+
+		//let _raw = Object.assign({}, await $get.pack("/Map/MapHelper.img/portal"));
+
+		//let editor_portals = [];
+		//let game_portals = [];
+
+		//let types = Object.keys(_raw.editor);
+
+		//for (let type of types) {
+		//	let portal = _raw.editor[type];
+		//	let animation = [new MapTexture(portal)];
+		//	let skins = [animation];
+		//	editor_portals.push(skins);
+		//}
+
+		//for (let type of types) {
+		//	let portal = _raw.game[type];
+		//	if (portal) {
+		//		let skins = {};
+		//		for (let skinName in portal) {
+		//			let skin = portal[skinName];
+		//			let animation = [];
+		//			for (let frame in skin) {
+		//				let tex_raw = skin[frame];
+		//				if (tex_raw[""]) {
+		//					animation.push(new MapTexture(tex_raw));
+		//				}
+		//			}
+		//			skins[skinName] = animation;
+		//		}
+		//		game_portals.push(skins);
+		//	}
+		//}
+
+		//MapPortal._portals = {
+		//	editor: editor_portals,
+		//	game: game_portals
+		//};
 	}
 }
-MapPortal._portals = [];
-MapPortal._script = [];
+MapPortal._portals_raw = {};
+MapPortal._type_map = {};
+//MapPortal._portals = {};
+MapPortal._script = {};
 
 class MapPortalManager {
 	constructor() {
 		/** @type {MapPortal[]} */
 		this.portals = null;
+
+		this.__display_mode = this.__display_mode;
 	}
 	
 	async load(map_raw_data, mapRenderer) {
@@ -976,9 +1074,9 @@ class MapPortalManager {
 			
 			pt.load();//sync
 			
-			if (pt.enable) {
+			//if (pt.enable) {
 				mapRenderer.controller.createPortal(pt);//inject body
-			}
+			//}
 			
 			portals.push(pt);
 		}
@@ -995,9 +1093,20 @@ class MapPortalManager {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		for (let i = 0; i < this.portals.length; ++i) {
-			let portal = this.portals[i];
-			portal.update(stamp);
+		if (this.__display_mode != $gv.m_editor_mode) {
+			this.__display_mode = $gv.m_editor_mode;
+
+			for (let i = 0; i < this.portals.length; ++i) {
+				let portal = this.portals[i];
+				portal._loadTexture();
+				portal.update(stamp);
+			}
+		}
+		else {
+			for (let i = 0; i < this.portals.length; ++i) {
+				let portal = this.portals[i];
+				portal.update(stamp);
+			}
 		}
 	}
 	/**

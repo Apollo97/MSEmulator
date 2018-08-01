@@ -12,13 +12,13 @@
 
 					<template v-if="guiData">
 						<!--begin tabs-->
-						<template v-if="typeList.indexOf(sType)>=0">
-							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
-						</template>
 						<template v-for="(tab, idx) in guiData.Tab.disabled">
 							<template v-if="typeList[idx]!=sType">
 								<gui-texture-s @click="sType=typeList[idx]" :p="'Tab/disabled/'+idx" class="ui-clickable"></gui-texture-s>
 							</template>
+						</template>
+						<template v-if="typeList.indexOf(sType)>=0">
+							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
 						</template>
 						<!--end tabs-->
 
@@ -27,7 +27,7 @@
 							<template v-for="(obj, slot) in guiData[sType].Slots">
 								<div :title="slot" @click="alert(slot)">
 									<gui-texture-s :p="sType+'/Slots/'+slot"></gui-texture-s>
-									<img :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
+									<img v-if="slotMap[sType]" :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
 										:src="getCharaEquipIconUrl(slotMap[sType][slot])"
 										/>
 								</div>
@@ -50,6 +50,20 @@
 	import { ItemCategoryInfo } from "../../../public/resource.js";
 	import WindowBase from "./WindowBase.vue";
 	import BasicComponent from "../BasicComponent.vue";
+
+	/** @type {{[jobId:string]:string}} */
+	let job_special_tab_map = {
+	};
+
+	/** @type {{[jobId:string]:string}} */
+	let job_special_tab = [
+		"Dragon", "Mechanic", "Coordinate", "Haku"
+	];
+
+	/** @type {{[jobId:string]:string}} */
+	let job_special_cash_tab = [
+		"Zero_Cash", "Angel_Cash"
+	];
 
 	let slot_map = {
 		Equip: {
@@ -89,6 +103,7 @@
 					width: 0,
 					height: 0,
 				},
+				typeList: [],
 			};
 		},
 		methods: {
@@ -121,30 +136,6 @@
 			},
 		},
 		computed: {
-			typeList: function () {
-				let list = [];
-				if (this.guiData) {
-					for (let i in this.guiData) {
-						switch (i) {
-							case "Zero_Cash":
-								break;
-							case "Angel_Cash":
-								break;
-							case "totem":
-								break;
-							case "backgrnd":
-							case "backgrnd2":
-							case "tabbar":
-							case "Tab":
-								break;
-							default:
-								list.push(i);
-								break;
-						}
-					}
-				}
-				return list;
-			},
 			slotMap: {
 				get: function() {
 					return slot_map;
@@ -157,6 +148,28 @@
 		},
 		mounted: async function () {
 			this.guiData = await this.$refs.gui_root._$promise;
+
+			this.typeList.length = 0;
+			if (this.guiData) {
+				for (let i in this.guiData) {
+					switch (i) {
+						case "Zero_Cash":
+							break;
+						case "Angel_Cash":
+							break;
+						case "totem":
+							break;
+						case "backgrnd":
+						case "backgrnd2":
+						case "tabbar":
+						case "Tab":
+							break;
+						default:
+							this.typeList.push(i);
+							break;
+					}
+				}
+			}
 			
 			this.slot_imgWidth = this.guiData.Equip.Slots[1].__w;
 			this.slot_imgHeight = this.guiData.Equip.Slots[1].__h;

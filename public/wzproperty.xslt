@@ -151,7 +151,7 @@
   
   <xsl:template match="canvas/@url">
 	<xsl:attribute name="src">
-	  images/<xsl:value-of select="." />
+	  /images/<xsl:value-of select="." />
 	</xsl:attribute>
   </xsl:template>
 

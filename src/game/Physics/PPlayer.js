@@ -887,7 +887,7 @@ class PCharacterBase {
 		let target = fb.GetUserData();
 		if (target) {
 			switch (target.constructor.name) {
-				case "MapPortal":
+				case "MapPortal"://target.$type == "portal"
 					this._beginContactPortal(target);
 					break;
 			}

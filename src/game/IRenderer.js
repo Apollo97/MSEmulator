@@ -569,6 +569,9 @@ export class IGraph {
 	}
 
 	__loadTexture() {
+		if (this.$promise) {
+			return;
+		}
 		if (this._url == "") {
 			debugger;
 			return false;

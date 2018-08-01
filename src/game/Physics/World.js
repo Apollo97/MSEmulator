@@ -245,6 +245,7 @@ export class World extends b2World {
 		
 		fdef.isSensor = true;
 		fdef.shape = shape;
+		fdef.filter = FilterHelper.get("portal");
 		fdef.userData = portal;
 		fdef.$type = "portal";
 
