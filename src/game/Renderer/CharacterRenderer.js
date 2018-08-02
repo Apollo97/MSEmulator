@@ -33,34 +33,34 @@ export class ChatBalloon {
 		});
 
 		this.nw = new Sprite(this._raw.nw);
-		this.nw._url = _i_path + "/nw";
+		//this.nw._url = $2
 
 		this.n = new Sprite(this._raw.n);
-		this.n._url = _i_path + "/n";
+		//this.n._url = $2
 
 		this.ne = new Sprite(this._raw.ne);
-		this.ne._url = _i_path + "/ne";
+		//this.ne._url = $2
 
 		this.w = new Sprite(this._raw.w);
-		this.w._url = _i_path + "/w";
+		//this.w._url = $2
 
 		this.c = new Sprite(this._raw.c);
-		this.c._url = _i_path + "/c";
+		//this.c._url = $2
 
 		this.e = new Sprite(this._raw.e);
-		this.e._url = _i_path + "/e";
+		//this.e._url = $2
 
 		this.sw = new Sprite(this._raw.sw);
-		this.sw._url = _i_path + "/sw";
+		//this.sw._url = $2
 
 		this.s = new Sprite(this._raw.s);
-		this.s._url = _i_path + "/s";
+		//this.s._url = $2
 
 		this.se = new Sprite(this._raw.se);
-		this.se._url = _i_path + "/se";
+		//this.se._url = $2
 
 		this.arrow = new Sprite(this._raw.arrow);
-		this.arrow._url = _i_path + "/arrow";
+		//this.arrow._url = $2
 
 		//this._pat_c = ctx.createPattern(this.c, "repeat");
 
@@ -480,7 +480,7 @@ class ItemEffectAnimation extends Animation {
 			value: raw,
 		});
 
-		this._url = this._url;
+		//this._url = $2
 
 		this.__getAttr("z", -1);
 		this.__getAttr("pos", 1);
@@ -516,7 +516,7 @@ class ItemEffectAnimation extends Animation {
 //	/data/Effect/ItemEff.img/1102918
 class ItemEffect {
 	constructor() {
-		this._url = null;
+		//this._url = $2
 		this._raw = null;
 
 		/** @type {Object<string, ItemEffectAnimation>} */
@@ -623,7 +623,7 @@ class ItemEffect {
 		if (!raw) {
 			debugger;
 		}
-		this._url = url;
+		//this._url = $2
 		Object.defineProperty(this, "_raw", {
 			value: raw,
 		});
@@ -929,7 +929,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		this._raw = null;
 
 		/** @type {string} */
-		this._url = null;
+		//this._url = $2
 			
 		/** @type {ItemEffect} */
 		this.effect = null;
@@ -1029,7 +1029,7 @@ class CharacterEquipBase extends ICharacterEquip {
 			return false;
 		}
 
-		this._url = url;
+		//this._url = $2
 		Object.defineProperty(this, "_raw", {
 			value: raw,
 		});
@@ -1118,17 +1118,17 @@ class CharacterEquipBase extends ICharacterEquip {
 				let ft;
 				if (raw[""] == "") {
 					ft = new FragmentTextureType(raw);
-					ft._url = path;
+					//ft._url = $2
 					textures[place] = ft
 				}
-				else if (typeof raw[""] == 'string' && raw[""].startsWith("data:image/")) {
+				else if (typeof raw[""] == 'string') {
 					ft = new FragmentTextureType(raw);
-					ft._url = raw[""];
+					//ft._url = $2
 					textures[place] = ft;
 				}
 				else if (place == "hairShade") {
 					ft = new FragmentTextureType(raw[0]);
-					ft._url = path + "/0";
+					//ft._url = $2
 					textures[place] = ft;
 				}
 				if (ft) {
@@ -3149,7 +3149,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			if (!ft._url.startsWith("data:")) {
 				tasks.push((async function () {
 					ft.texture.$src = ft._url;
-					ft._url = await toDataURL(ft._url);
+					//ft._url = $2
 					return ft;
 				})());
 			}
@@ -3161,7 +3161,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
 						ft.texture.$src = ft._url;
-						ft.graph2._url = await toDataURL(src);
+						//ft.graph2._url = $2
 						return ft.graph2;
 					})());
 				}
@@ -3174,7 +3174,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
 						ft.texture.$src = ft._url;
-						ft.graph3._url = await toDataURL(src);
+						//ft.graph3._url = $2
 						return ft.graph3;
 					})());
 				}

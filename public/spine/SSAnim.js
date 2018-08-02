@@ -38,7 +38,7 @@ let SSAnim = (function () {
 		}
 		
 		async load(url) {
-			let rawData = await $get.pack(url);
+			let rawData = await $get.data(url);
 			let fname;
 			
 			for (let file in rawData) {
@@ -100,7 +100,7 @@ let SSAnim = (function () {
 					// load atlas page images
 					that.atlas_data.pages.forEach(function(page) {
 						let image_key = page.name;
-						let image_url = rawData[image_key][""];
+						let image_url = $get.imageUrl(rawData[image_key][""]);
 						counter_inc();
 						images[image_key] = loadImage(image_url, (function(page) {
 							return function(err, image) {

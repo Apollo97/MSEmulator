@@ -2,7 +2,7 @@
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
 		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
-			<gui-root p="UI/StatusBar3.img">
+			<gui-root p="UI/StatusBar3.img/">
 				<!-- begin bottomUI -->
 				<gui p="mainBar">
 					<div style="position: absolute; bottom: 0; width: 100%;">
@@ -125,7 +125,7 @@
 				</gui>
 				<gui p="chat" style="position: absolute; left: 0; bottom: 0; padding-bottom: 13px;">
 					<div style="position: relative;">
-						<gui :p="ui.chat.size" style="position: absolute; width: 100%; height: 100%;">
+						<gui v-if="ui.chat.size=='max'" p="ingame/view/max" style="position: absolute; width: 100%; height: 100%;">
 							<table class="table" style="position: absolute; left: 0; top: 0; height: 100%;">
 								<tr style="line-height: 0;">
 									<td>
@@ -145,49 +145,53 @@
 							</table>
 						</gui>
 						<table class="table" style="position: relative; top: -5px;">
-							<template v-if="ui.chat.size!='min'">
-								<tr v-for="ch in ui.chat.history" style="height: 1.2em; color: white; font-family: monospace;">
-									<td style="padding-left: 4px; padding-bottom: 0.2em;">
-										<div style="position: absolute;">{{ch.text}}</div>
+							<template v-if="ui.chat.size=='max'">
+								<tr v-for="ch in ui.chat.history">
+									<td>
+										<div class="chat-text">
+											<div>{{ch.text}}</div>
+										</div>
 									</td>
 								</tr>
-								<tr v-for="i in ui.chat.maxHistory - ui.chat.history.length" style="height: 1.2em; color: white; font-family: monospace;">
-									<td style="padding-left: 4px; padding-bottom: 0.2em;">
-										<div style="position: absolute;"></div>
+								<tr v-for="i in ui.chat.maxHistory - ui.chat.history.length">
+									<td>
+										<div class="chat-text">
+											<div></div>
+										</div>
 									</td>
 								</tr>
-							</template>
-							<tr>
-								<td style="width: 0; padding-right: 3px;">
-									<gui-button p="common/chatTarget/all" style="display: inline-block; margin-left: 5px;"></gui-button>
-								</td>
-								<td style="width: 0; padding-right: 4px;">
-									<gui-frame :p="ui.chat.size+'/chatEnter'" style="display: inline-block; font-family: monospace;">
-										<template slot-scope="{img, path, width}">
-											<div v-if="ui.chat.size!='min'" :data-src="path" :style="{ width:`${width}px`, background:`url(${img})` }">
-												<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText(ui.chat.inputText.slice(0, 70))" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
-											</div>
-											<div v-else :data-src="path" :style="{ width:`${width}px`, color: 'white' }">
-												<div v-if="ui.chat.history.length" style="position: absolute;">{{ui.chat.history[ui.chat.history.length-1].text}}</div>
-											</div>
-										</template>
-									</gui-frame>
-								</td>
-								<td v-if="ui.chat.size=='min'" style="width: 0; padding-right: 2px;">
-									<gui-button p="common/chatOpen" @click="ui.chat.size='max'" style="display: inline-block; position: relative; padding-left: 21px;"></gui-button>
-								</td>
-								<template v-else>
-									<td style="width: 0; padding-right: 5px;">
-										<gui-button p="common/chatClose" @click="ui.chat.size='min'" style="display: inline-block;"></gui-button>
-									</td>
-									<td style="width: 0; padding-right: 5px;">
-										<gui-button p="common/BtChat" style="display: inline-block;"></gui-button>
-									</td>
-								</template>
-							</tr>
-							<template>
 							</template>
 						</table>
+					</div>
+					<div style="position:relative;">
+						<div>
+							<gui p="ingame/input">
+								<gui-texture p="layer:backgrnd"></gui-texture>
+								<gui-frame p="layer:chatEnter" style="position: absolute; top: 0; display: inline-block; font-family: monospace;">
+									<template slot-scope="{img, path, width, height}">
+										<div v-if="ui.chat.size=='max'" :data-src="img" :style="{ width:`${width}px`, height:`${height}px`, background:`url(${img})` }">
+											<input type="text" v-model="ui.chat.inputText" @keydown.enter="enterChatText(ui.chat.inputText.slice(0, 70))" style="width: 100%; padding: 2px; padding-left: 5px; border: none; outline: none; color: white; background: transparent;" />
+										</div>
+										<div v-else :data-src="path">
+											<div v-if="ui.chat.history.length" class="chat-text" style="padding-top: 10px;">{{ui.chat.history[ui.chat.history.length-1].text}}</div>
+										</div>
+									</template>
+								</gui-frame>
+							</gui>
+							<div style="position: absolute; width: 100%; height: 100%; left: 4px; top: 0;">
+								<div style="width: 0px; margin-left: 4px; margin-top: 5px;">
+									<gui-button p="common/chatTarget/all"></gui-button>
+								</div>
+								<div style="position: absolute; right: 8px; top: 8px;">
+									<template v-if="ui.chat.size=='max'">
+										<gui-button p="ingame/view/btMin" @click="ui.chat.size='min'"></gui-button>
+									</template>
+									<template v-else>
+										<gui-button p="ingame/view/btMax" @click="ui.chat.size='max'"></gui-button>
+									</template>
+								</div>
+							</div>
+						</div>
 					</div>
 				</gui>
 				<!-- end bottomUI -->
@@ -433,6 +437,14 @@
 .view-s {
 	position: sticky;
 	top: 0px;
+}
+
+.chat-text {
+	padding-left: 4px;
+	padding-bottom: 0.2em;
+	height: 1.2em;
+	color: white;
+	font-family: monospace;
 }
 
 </style>

@@ -400,14 +400,23 @@ internal class DataProvider
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Plain().pod(prop);
+			string _path;
+			if (path.EndsWith("/"))
+			{
+				_path = path.Substring(0, path.Length - 1); ;
+			}
+			else
+			{
+				_path = path;
+			}
+			returns.data = new Inspector_Plain().pod(prop, _path);
 			return returns;
 		}
 		else if (pack != null)
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Plain().pod(pack);
+			returns.data = new Inspector_Plain().pod(pack, path);
 			return returns;
 		}
 
@@ -424,14 +433,14 @@ internal class DataProvider
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Base64().pod(prop);
+			returns.data = new Inspector_Base64().pod(prop, path);
 			return returns;
 		}
 		else if (pack != null)
 		{
 			Returns returns = new Returns();
 			returns.mime = "application/json; charset=utf-8";
-			returns.data = new Inspector_Base64().pod(pack);
+			returns.data = new Inspector_Base64().pod(pack, path);
 			return returns;
 		}
 
@@ -613,6 +622,40 @@ internal class Tools
 
 		return null;
 	}
+	public static string _get_canvas_link(wzproperty property)
+	{
+		return property.query(null as string, "source") ?? property.query(null as string, "_outlink") ?? property.query(null as string, "_inlink");
+	}
+	public static string get_canvas_path(wzproperty property, string path)
+	{
+		property = inspect_canvas(property);
+
+		if (null != property)
+		{
+			string link = _get_canvas_link(property);
+
+			if (null == link)
+			{
+				return path;
+			}
+			else
+			{
+				int index = link.IndexOf(".img/");
+
+				if (0 <= index)//outlink
+				{
+					return link;
+				}
+				else//inlinl
+				{
+					var result = path.Replace(property.absolute.Replace("\0", "/"), "/" + link);
+
+					return result;
+				}
+			}
+		}
+		return path;
+	}
 	public static wzproperty _inspect_canvas1(wzproperty property)
 	{
 		property = inspect_canvas(property);
@@ -620,7 +663,7 @@ internal class Tools
 		if (null != property)
 		{
 			wzproperty target;
-			string link = property.query(null as string, "source") ?? property.query(null as string, "_outlink") ?? property.query(null as string, "_inlink");
+			string link = _get_canvas_link(property);
 
 			if (null == link)
 			{
@@ -669,12 +712,12 @@ internal class ObjectInspectorBase
 	{
 	}
 
-	public virtual object inspect_image(Image image)
+	public virtual void inspect_image(wzproperty prop, string path, ICollection<KeyValuePair<string, object>> eoColl)
 	{
 		throw new System.NotImplementedException();
 	}
 
-	public virtual object inspect_sound(wzsound sound)
+	public virtual object inspect_sound(wzsound sound, string path)
 	{
 		throw new System.NotImplementedException();
 	}
@@ -684,35 +727,31 @@ internal class ObjectInspectorBase
 		return prop.absolute.Replace('\0', '/').Substring(1);
 	}
 
-	public object pod_property(wzproperty prop, int deep = Int32.MaxValue)
+	public object pod_property(wzproperty prop, string path)
 	{
-		if ((deep - 1) >= 0)
+		dynamic eo = new ExpandoObject();
+		var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
+
+		//foreach (var id in prop.identities)
+		//{
+		//	var i = prop[id];
+		foreach (var i in prop.values)
 		{
-			dynamic eo = new ExpandoObject();
-			var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
-
-			//foreach (var id in prop.identities)
-			//{
-			//	var i = prop[id];
-			foreach (var i in prop.values)
-			{
 #if !EQUIPLIST
-				if (i.identity.StartsWith("_"))
-				{
-					continue;
-				}
-#endif
-				var p = this.pod(i, deep - 1);
-
-				eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
+			if (i.identity.StartsWith("_"))
+			{
+				continue;
 			}
-			return eo;
+#endif
+			var propName = i.identity;
+			var p = this.pod(i, path + "/" + (propName == "\\" ? "%5c" : propName));
+
+			eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
 		}
-		else
-			return "...";
+		return eo;
 	}
 
-	public object pod(wzproperty prop, int deep = Int32.MaxValue)
+	public object pod(wzproperty prop, string path)
 	{
 		if (prop == null)
 		{
@@ -725,51 +764,48 @@ internal class ObjectInspectorBase
 			switch (type)
 			{
 				case 0: // "Shape2D#Convex2D"
-					return "{Shape2D#Convex2D}";            //return null;
+					return "{Shape2D#Convex2D}";
 				case 1: // Shape2D#Vector2D
-					return new vec2(prop.data as wzvector); //return (prop.data as wzvector).content;
+					return new vec2(prop.data as wzvector);
 				case 2: // Sound_DX8
 						//if (output_canvas)
 						//{
-					return this.inspect_sound(prop.data as wzsound);                     //return (data as wzsound).content;
-																						 //}
-																						 //else
-																						 //{
-																						 //	return null;
-																						 //}
+					return this.inspect_sound(prop.data as wzsound, path);
 				case 3: // "Property"
-					return this.pod_property(prop, deep);                  //return null;
+					return this.pod_property(prop, path);
 				case 4: // Canvas
 					{
-						dynamic eo = this.pod_property(prop, deep);                    //return (data as wzcanvas).content;
+						dynamic eo = this.pod_property(prop, path);
 						var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
 
-						var canvas = Tools.inspect_canvas1(prop);
-						if (canvas != null)
-						{
-							//if (output_canvas)
-							//{
-							object canvas_data;
-							canvas_data = this.inspect_image(canvas.image);
-							eoColl.Add(new KeyValuePair<string, object>("", canvas_data));
-							//}
-							//else
-							//{
-							//	eoColl.Add(new KeyValuePair<string, object>("", ""));
-							//}
-							eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
-							eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
-						}
-						else
-						{
-							eoColl.Add(new KeyValuePair<string, object>("__isEmpty", true));
-						}
+						this.inspect_image(prop, path, eoColl);
 
 						return eo;
 					}
 				case 5: // UOL
-					return this.pod((prop.data as wzuol).target, deep);
-					//return (prop.data as wzuol).link;//need inspect
+					{
+						var uol = prop.data as wzuol;
+						var target = uol.target;
+						string uol_link = path;
+						if (uol_link != null)
+						{
+							uol_link = uol_link.Substring(0, uol_link.LastIndexOf("/"));
+
+							foreach (string section in uol.link.Split('/'))
+							{
+								if (".." == section)
+								{
+									uol_link = uol_link.Substring(0, uol_link.LastIndexOf("/"));
+								}
+								else
+								{
+									uol_link = uol_link + "/" + section;
+								}
+							}
+						}
+						return this.pod(target, uol_link);
+						//return (prop.data as wzuol).link;//need inspect
+					}
 				case 6: // unnamed6, zmap.img
 					return prop.data + "";
 				//case 14: // 0x08
@@ -795,7 +831,7 @@ internal class ObjectInspectorBase
 		}
 		return "<unknow error>";
 	}
-	public object pod(wzpackage pack, int deep = Int32.MaxValue)
+	public object pod(wzpackage pack, string path)
 	{
 		if (pack == null)
 		{
@@ -803,24 +839,19 @@ internal class ObjectInspectorBase
 		}
 		try
 		{
-			if ((deep - 1) >= 0)
+			dynamic eo = new ExpandoObject();
+			var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
+
+			//foreach (var id in pack.identities)
+			//{
+			//	var i = pack[id];
+			foreach (var i in pack.values)
 			{
-				dynamic eo = new ExpandoObject();
-				var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
+				var p = this.pod(i, path + i.identity);
 
-				//foreach (var id in pack.identities)
-				//{
-				//	var i = pack[id];
-				foreach (var i in pack.values)
-				{
-					var p = this.pod(i, deep - 1);
-
-					eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
-				}
-				return eo;
+				eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
 			}
-			else
-				return "...";
+			return eo;
 		}
 		catch (Exception ex)
 		{
@@ -836,14 +867,28 @@ internal class Inspector_Plain : ObjectInspectorBase
 	{
 	}
 
-	public override object inspect_image(Image image)
+	public override void inspect_image(wzproperty prop, string path, ICollection<KeyValuePair<string, object>> eoColl)
 	{
-		return "";
+		var canvas = Tools.inspect_canvas1(prop);
+		if (canvas != null)
+		{
+			var _path = Tools.get_canvas_path(prop, path);
+			eoColl.Add(new KeyValuePair<string, object>("", "/" + _path));
+
+			//Console.WriteLine(_path);
+
+			eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
+			eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
+		}
+		else
+		{
+			eoColl.Add(new KeyValuePair<string, object>("__isEmpty", true));
+		}
 	}
 
-	public override object inspect_sound(wzsound sound)
+	public override object inspect_sound(wzsound sound, string path)
 	{
-		return "";
+		return path;
 	}
 }
 
@@ -853,30 +898,27 @@ internal class Inspector_Base64 : ObjectInspectorBase
 	{
 	}
 
-	public override object inspect_image(Image image)
+	public override void inspect_image(wzproperty prop, string path, ICollection<KeyValuePair<string, object>> eoColl)
 	{
-		return Tools.ImageToBase64PNG(image);
+		var canvas = Tools.inspect_canvas1(prop);
+		if (canvas != null)
+		{
+			eoColl.Add(new KeyValuePair<string, object>("", Tools.ImageToBase64PNG(canvas.image)));
+
+			eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
+			eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
+		}
+		else
+		{
+			eoColl.Add(new KeyValuePair<string, object>("__isEmpty", true));
+		}
 	}
 
-	public override object inspect_sound(wzsound sound)
+	public override object inspect_sound(wzsound sound, string path)
 	{
-		//this._inspect_sound_b(sound);
-		//throw new NotImplementedException();
 		return Tools.BinaryToBase64String(sound.data);
 	}
 }
-
-//internal class Inspector_Buffer : InspectorBase
-//{
-//	public override object inspect_image(Image image)
-//	{
-//		return ImageToBufferPNG(image);
-//	}
-//	public override object inspect_sound(wzsound sound)
-//	{
-//		return sound.wave ?? sound.data;
-//	}
-//}
 
 internal class POD_XML
 {

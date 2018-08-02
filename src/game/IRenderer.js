@@ -610,7 +610,7 @@ export class IGraph {
 					delete this.texture;
 					this.texture = this._graph_rect;
 				}
-				console.error("404: " + url);
+				console.error("404: " + image.src);
 
 				resolve(this);
 			}, false);

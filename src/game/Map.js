@@ -178,8 +178,6 @@ class MapObjectBase {
 			}
 			$gv.allQuest[qid].add(_raw.quest[qid]);
 		}
-
-		this.update = this._update_and_preload;
 		
 		this._load_object_info();
 		this._load_back_info();
@@ -583,6 +581,9 @@ class MapObjectBase {
 	 * @param {Rectangle} viewRect
 	 */
 	draw(renderer, center, viewRect) {
+		if (!this.textures.length) {
+			return;
+		}
 		let mrx = (this.rx + 100) * center.x / 100;
 		let mry = (this.ry + 100) * center.y / 100;
 
@@ -636,6 +637,8 @@ class MapObject extends MapObjectBase {
 				this.typeb = 2;
 			}
 		}
+
+		this.update = this._update_and_preload;
 	}
 
 	/**
@@ -673,7 +676,7 @@ class MapObject extends MapObjectBase {
 	}
 }
 
-class MapParticle extends MapObjectBase {
+class MapParticle extends MapObject {
 	constructor(_raw) {
 		super(_raw);
 		/** @type {ParticleGroup[]} */
@@ -839,6 +842,7 @@ class MapTile extends MapObject {
 	constructor(_raw, info) {
 		super(_raw);
 		this._info = info;
+		this.update = this._update_and_preload;
 	}
 	load() {
 		let texture = new MapTexture(this._texture_raw);
@@ -898,6 +902,8 @@ class MapPortal extends MapObject {
 
 		/** @type {number} */
 		this.skin = null;
+
+		this.update = this._update_and_preload;
 	}
 	
 	//sync
@@ -1013,44 +1019,6 @@ class MapPortal extends MapObject {
 		MapPortal._portals_raw = await $get.data("/Map/MapHelper.img/portal");
 
 		MapPortal._type_map = Object.keys(MapPortal._portals_raw.editor);
-
-		//let _raw = Object.assign({}, await $get.pack("/Map/MapHelper.img/portal"));
-
-		//let editor_portals = [];
-		//let game_portals = [];
-
-		//let types = Object.keys(_raw.editor);
-
-		//for (let type of types) {
-		//	let portal = _raw.editor[type];
-		//	let animation = [new MapTexture(portal)];
-		//	let skins = [animation];
-		//	editor_portals.push(skins);
-		//}
-
-		//for (let type of types) {
-		//	let portal = _raw.game[type];
-		//	if (portal) {
-		//		let skins = {};
-		//		for (let skinName in portal) {
-		//			let skin = portal[skinName];
-		//			let animation = [];
-		//			for (let frame in skin) {
-		//				let tex_raw = skin[frame];
-		//				if (tex_raw[""]) {
-		//					animation.push(new MapTexture(tex_raw));
-		//				}
-		//			}
-		//			skins[skinName] = animation;
-		//		}
-		//		game_portals.push(skins);
-		//	}
-		//}
-
-		//MapPortal._portals = {
-		//	editor: editor_portals,
-		//	game: game_portals
-		//};
 	}
 }
 MapPortal._portals_raw = {};
@@ -1148,18 +1116,22 @@ class MapBackBase extends MapObjectBase {
 class MapBack extends MapBackBase {
 	constructor(_raw) {
 		super(_raw);
+		this.update = this._update_and_preload;
 	}
 
 	load() {
 		let path = ["/Map", "Back", this._texture_base_path].join("/");
 
-		if (this._raw.bS == "") {
-			console.warn("?path: " + path);
-			return;
+		if (this._raw.bS) {
+			const raw = this._texture_raw;
+			if (raw) {
+				this.textures[0] = new MapTexture(this._texture_raw);
+				this.textures[0]._url = path;
+			}
 		}
-
-		this.textures[0] = new MapTexture(this._texture_raw);
-		this.textures[0]._url = path;
+		else {
+			console.warn("MapBack path ?: " + path);
+		}
 	}
 	
 	get _texture_base_path() {
@@ -1171,11 +1143,8 @@ class MapBack extends MapBackBase {
 	 * texture; info & data
 	 */
 	get _texture_raw() {
-		try {
+		if (this._raw.bS && this._raw.no) {
 			return map_sprite.Back[this._raw.bS]["back"][this._raw.no];
-		}
-		catch (ex) {
-			debugger;
 		}
 		return null;
 	}
@@ -1187,6 +1156,7 @@ class MapBack extends MapBackBase {
 class MapBackAnimation extends MapBackBase {
 	constructor(_raw) {
 		super(_raw);
+		this.update = this._update_and_preload;
 	}
 
 	/**
@@ -2101,7 +2071,7 @@ export class SceneMap {
 					}
 				}
 				else {
-					console.warn("map.back[" + i + "].bS = " + back._raw.bS);
+					console.warn("MapBack: map.back[" + i + "].bS = " + back._raw.bS);
 				}
 			}
 

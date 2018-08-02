@@ -42,11 +42,8 @@ export class SpriteBase extends Graph {
 	static isTexture(raw) {
 		if (raw) {
 			if (raw.hasOwnProperty("")) {
-				if (raw[""] == "") {
+				if (typeof raw[""] == 'string') {
 					return true;
-				}
-				else if (raw[""].startsWith("data:image/")) {
-					return 0;
 				}
 			}
 			else {

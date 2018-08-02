@@ -875,7 +875,9 @@
 	}
 
 	.ui-equip-box .pagination {
+		height: 2em;
 		overflow: auto;
+		font-size: initial;
 	}
 
 	.ui-equip-box .item-list {

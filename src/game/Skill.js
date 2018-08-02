@@ -485,7 +485,7 @@ class SkillAnimationBase {
 
 		const url = `${this.constructor._base_path}/${jobID}.img/skill/${skillId}`;
 
-		const raw = await $get.pack(url);
+		const raw = await $get.data(url);
 		if (!raw) {
 			alert("SkillAnimationBase");
 			return;
@@ -546,7 +546,7 @@ class SkillAnimationBase {
 			let effect = [];
 			for (let  i = 0; i in arr1d; ++i) {
 				let data = arr1d[i];
-				let tex = new Sprite(data);//image base64
+				let tex = new Sprite(data);
 				//tex._url = `${url}/${i}`;
 				effect[i] = tex;
 			}
@@ -561,7 +561,7 @@ class SkillAnimationBase {
 				hit[i] = [];
 				for (let  j = 0; j in group; ++j) {
 					let data = group[j];
-					let tex = new Sprite(data);//image base64
+					let tex = new Sprite(data);
 					//tex._url = `${url_i}/${j}`;
 					hit[i][j] = tex;
 				}

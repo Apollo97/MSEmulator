@@ -34,7 +34,7 @@ function main(firstInit) {
 		console.log("產生道具清單...");
 
 		let equipListTasks = [];
-		let settingList = getSettingList("./");
+		let settingList = getSettingList("./").reverse();
 
 		for (let i = 0; i < settingList.length; ++i) {
 			equipListTasks[i] = function () {
@@ -224,7 +224,7 @@ function WebServer(app) {
 		next();
 	});
 
-	app.use("/", express.static(path.join(__dirname, 'public')));
+	app.use("/", express.static(path.join(__dirname, 'public'), { redirect: false }));
 	
 	app.get(/.*\.zip\/.*/, get_unzip_handler("", path.join(__dirname, "public")));
 
@@ -653,7 +653,9 @@ function DataServer(app) {
 					}
 				}
 
-				let dirArr = filePath.split(path.sep);
+				let dirArr = filePath.split(path.sep).map(a => fixedEncodeURIComponent(a));
+
+				filePath = path.join(...dirArr);
 
 				dirArr.pop();//remove file nmae
 
@@ -903,6 +905,12 @@ function inspect_locale(obj) {
 	catch (ex) {
 		console.log(ex);
 	}
+}
+
+function fixedEncodeURIComponent(str) {
+	return encodeURIComponent(str).replace(/[!'()*]/g, function (c) {
+		return '%' + c.charCodeAt(0).toString(16);
+	});
 }
 
 /**

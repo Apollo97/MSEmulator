@@ -739,6 +739,32 @@ $get.listSync = function $get_listSync(path) {
  * @param {string} path
  * @returns {string}
  */
+$get.dataUrl = function $get_imagesUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("data")) {
+		return `${$root_path}data${path}`;
+	}
+	throw new Error("Not game data: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.packUrl = function $get_imagesUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("pack")) {
+		return `${$root_path}pack${path}`;
+	}
+	throw new Error("Not game pack: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
 $get.imageUrl = function $get_imagesUrl(path) {
 	if (url_startsWith_protocol(path)) {
 		return path;
@@ -746,7 +772,7 @@ $get.imageUrl = function $get_imagesUrl(path) {
 	else if (!path.startsWith("images")) {
 		return `${$root_path}images${path}`;
 	}
-	throw new Error("Not game resource: " + path);
+	throw new Error("Not game images: " + path);
 }
 window.$get = $get;
 
