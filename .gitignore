@@ -301,7 +301,6 @@ __pycache__/
 
 /test.js
 
-/public/*.bundle.js
 /public/log.html
 
 /public/_data
