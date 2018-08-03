@@ -229,7 +229,7 @@ function WebServer(app) {
 	app.get(/.*\.zip\/.*/, get_unzip_handler("", path.join(__dirname, "public")));
 
 	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path);
+		let url = decodeURIComponent(req.path);
 		let match = url.match(/\/(images\/.*)\.img\/.*/);
 		if (match.length == 2) {
 			let imgZipPath = path.join(__dirname, "public", match[1] + ".zip");
@@ -266,7 +266,7 @@ function WebServer(app) {
 
 	//default extname is .png
 	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
-		let url = decodeURI(req.path);
+		let url = decodeURIComponent(req.path);
 		let file_path = url + ".png";
 
 		res.sendFile(file_path, $sendFile_options, function (err) {
@@ -278,7 +278,7 @@ function WebServer(app) {
 	});
 
 	app.get(/\/(pack|data)\/.*\.img\/(.*)/, function (req, res, next) {
-		let url = decodeURI(req.path);
+		let url = decodeURIComponent(req.path);
 		let match = url.match(/\/(pack|data)\/(.*\.img)\/(.*)/);
 		if (match.length == 4) {
 			let file_path = match[1] + "/" + match[2];
@@ -324,7 +324,7 @@ function WebServer(app) {
 
 	function get_unzip_handler(url, filepath) {
 		return function unzip_handler(req, res, next) {
-			let match = decodeURI(req.path).match(url + "(.*\.zip)\/(.*)");
+			let match = decodeURIComponent(req.path).match(url + "(.*\.zip)\/(.*)");
 			if (match.length == 3) {
 				let zip = null;
 
@@ -544,12 +544,12 @@ function DataServer(app) {
 		}
 
 		a_pp.get(/\/echo\/.*/, function (req, res, next) {
-			let url = decodeURI(req.path.slice(6));
+			let url = decodeURIComponent(req.path.slice(6));
 			res.end(url);
 		});
 
 		a_pp.get(/\/echo-\/.*/, function (req, res, next) {
-			let url = decodeURI(req.path.slice(7));
+			let url = decodeURIComponent(req.path.slice(7));
 			res.end(`<script>${url}</script>`);
 		});
 
@@ -642,7 +642,16 @@ function DataServer(app) {
 					data_path = data_path.slice(0, data_path.length - 1);
 				}
 
-				let filePath = path.join(output_path, data_path);
+				/**
+				 *    ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\/.png"
+				 * to ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\%5C.png"
+				 */
+
+				let dirArr = [...output_path.split("/").map(a => fixedEncodeURIComponent(a)),
+					      ...data_path.split("/").map(a => fixedEncodeURIComponent(a))
+					];
+				let filePath = path.join(...dirArr);
+
 				if (fs.existsSync(filePath)) {
 					return;
 				}
@@ -652,10 +661,6 @@ function DataServer(app) {
 						return;
 					}
 				}
-
-				let dirArr = filePath.split(path.sep).map(a => fixedEncodeURIComponent(a));
-
-				filePath = path.join(...dirArr);
 
 				dirArr.pop();//remove file nmae
 
@@ -696,7 +701,7 @@ function DataServer(app) {
 
 		a_pp.get(/\/images\/.*/, function (req, res, next) {//png
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path.replace(/%25/g, "%"));
 
 				let data_path = url.slice(8);
 				let task = _data_provider.getAsync("images", data_path);
@@ -707,7 +712,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/_images\/.*/, function (req, res, next) {//gif
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(9);
 				let task = _data_provider.getAsync("_images", data_path, ".gif");
 
@@ -716,7 +721,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/sound\/.*/, function (req, res, next) {//wav/mp3
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(7);
 				let task = _data_provider.getAsync("sound", data_path);
 
@@ -726,7 +731,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/binary\/.*/, function (req, res, next) {
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(8);
 				let task = _data_provider.getAsync("binary", data_path);
 
@@ -736,7 +741,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/font\/.*/, function (req, res, next) {//font
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
 				let task = _data_provider.getAsync("font", data_path);
 
@@ -748,7 +753,7 @@ function DataServer(app) {
 
 		a_pp.get(/\/pack\/.*/, function (req, res, next) {//json: text + base64
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
 				let task = _data_provider.getAsync("pack", data_path);
 
@@ -758,7 +763,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/data\/.*/, function (req, res, next) {//json: text
 			if (_data_provider.isNeedResponse(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
 				let task = _data_provider.getAsync("data", data_path);
 
@@ -768,7 +773,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/ls\/.*/, function (req, res, next) {
 			if (_data_provider.checkDataSource(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(4);
 				let task = _data_provider.getAsync("ls", data_path);
 
@@ -777,7 +782,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/xml\/.*/, function (req, res, next) {
 			if (_data_provider.checkDataSource(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(5);
 				let task = _data_provider.getAsync("xml", data_path);
 
@@ -796,7 +801,7 @@ function DataServer(app) {
 		});
 		a_pp.get(/\/xml2\/.*/, function (req, res, next) {
 			if (_data_provider.checkDataSource(req, res, next)) {
-				let url = decodeURI(req.path);
+				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
 				let task = _data_provider.getAsync("xml2", data_path);
 				

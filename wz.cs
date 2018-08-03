@@ -743,8 +743,8 @@ internal class ObjectInspectorBase
 				continue;
 			}
 #endif
-			var propName = i.identity;
-			var p = this.pod(i, path + "/" + (propName == "\\" ? "%5c" : propName));
+			var propName = Uri.EscapeDataString(i.identity).Replace("\\", "%5C").Replace("%", "%25");
+			var p = this.pod(i, path + "/" + propName);
 
 			eoColl.Add(new KeyValuePair<string, object>(i.identity, p));
 		}

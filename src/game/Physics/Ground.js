@@ -11,7 +11,7 @@ import {
 import { Vec2, Rectangle } from "../math.js";
 
 import { World, GRAVITY } from "./World.js";
-import { FootholdChain, Foothold as _Foothold, FootholdChainChild, Foothold } from "./Foothold.js";
+import { FootholdChain, Foothold as _Foothold, FootholdChainChild} from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
 import { FilterHelper } from "./Filter.js";
