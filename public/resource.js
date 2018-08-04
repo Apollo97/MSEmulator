@@ -1,7 +1,5 @@
 ﻿
 
-const $root_path = "/";
-
 const $failed_urls = [];
 
 const $archive = {};
@@ -426,7 +424,7 @@ export class ResourceManager {
 	}
 
 	static get root_path() {
-		return $root_path;
+		return window.$ROOT_PATH;
 	}
 
 	static get archive() {
@@ -501,11 +499,11 @@ function _setValueByPath(path, value, is_pack) {
 	if (url_startsWith_protocol(path)) {
 		return;
 	}
-	else if ($root_path != "" && path.startsWith($root_path)) {
+	else if (window.$ROOT_PATH != "" && path.startsWith(window.$ROOT_PATH)) {
 		if (is_pack) {
 			value[symbol_isPack] = true;
 		}
-		path = path.slice($root_path.length);
+		path = path.slice(window.$ROOT_PATH.length);
 		return $setValue($archive, path, value);
 	}
 	else {
@@ -521,8 +519,8 @@ function _getValueFromArchiveByPath(path, value) {
 }
 function _getDataPathByUrl(path) {
 	if (!url_startsWith_protocol(path)) {
-		if ($root_path != "" && path.startsWith($root_path)) {
-			return path.slice($root_path.length);
+		if (window.$ROOT_PATH != "" && path.startsWith(window.$ROOT_PATH)) {
+			return path.slice(window.$ROOT_PATH.length);
 		}
 	}
 	return undefined;
@@ -614,7 +612,7 @@ $get.pack = async function $get_pack(path) {
 				throw new TypeError("data: " + path);
 			}
 		}
-		const url = `${$root_path}pack${path}`;
+		const url = `${window.$ROOT_PATH}pack${path}`;
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -635,7 +633,7 @@ $get.pack = async function $get_pack(path) {
  * @returns {Promise<any>}
  */
 $get.packSync = function get_packSync(path) {
-	const url = `${$root_path}pack${path}`;
+	const url = `${window.$ROOT_PATH}pack${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -661,7 +659,7 @@ $get.data = async function $get_data(path) {
 		return obj;
 	}
 	else {
-		const url = `${$root_path}data${path}`;
+		const url = `${window.$ROOT_PATH}data${path}`;
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -682,7 +680,7 @@ $get.data = async function $get_data(path) {
  * @returns {any}
  */
 $get.dataSync = function get_dataSync(path) {
-	const url = `${$root_path}data${path}`;
+	const url = `${window.$ROOT_PATH}data${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -708,7 +706,7 @@ $get.list = async function $get_list(path) {
 		return obj;
 	}
 	else {
-		const url = `${$root_path}ls${path}`;
+		const url = `${window.$ROOT_PATH}ls${path}`;
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -744,7 +742,7 @@ $get.dataUrl = function $get_imagesUrl(path) {
 		return path;
 	}
 	else if (!path.startsWith("data")) {
-		return `${$root_path}data${path}`;
+		return `${window.$ROOT_PATH}data${path}`;
 	}
 	throw new Error("Not game data: " + path);
 }
@@ -757,7 +755,7 @@ $get.packUrl = function $get_imagesUrl(path) {
 		return path;
 	}
 	else if (!path.startsWith("pack")) {
-		return `${$root_path}pack${path}`;
+		return `${window.$ROOT_PATH}pack${path}`;
 	}
 	throw new Error("Not game pack: " + path);
 }
@@ -770,7 +768,7 @@ $get.imageUrl = function $get_imagesUrl(path) {
 		return path;
 	}
 	else if (!path.startsWith("images")) {
-		return `${$root_path}images${path}`;
+		return `${window.$ROOT_PATH}images${path}`;
 	}
 	throw new Error("Not game images: " + path);
 }

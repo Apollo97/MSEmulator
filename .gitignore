@@ -301,6 +301,11 @@ __pycache__/
 
 /test.js
 
+/public/index.js
+/public/index.js.map
+/public/demo.js
+/public/demo.js.map
+
 /public/log.html
 
 /public/_data
@@ -310,7 +315,6 @@ __pycache__/
 /public/equips
 /public/_equips
 
-/public/images/smap.img
 /public/images/Character
 /public/images/Effect
 /public/images/Etc
@@ -324,4 +328,4 @@ __pycache__/
 /public/images/UI
 
 /public/pack
-/public/sound/Sound
+/public/sound/Sound*

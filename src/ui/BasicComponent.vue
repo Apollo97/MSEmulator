@@ -95,9 +95,6 @@
 				let ds = this._getPathArray();
 				return new URL(ds.join("/"), window.location).pathname;
 			},
-			m_data: function () {
-				return this._getData();
-			},
 		},
 		methods: {
 			_getPathArray: function () {
@@ -114,46 +111,54 @@
 				}
 				return ds;
 			},
-			_getData: function () {
-				/*if (1)*/ {
-					const dp = this.path.split("/");
-					let data = this.$store.state.root;
-					for (let p of dp) {
-						if (p in data) {
-							data = data[p];
-							if (!data) {
-								debugger
-								return undefined;
-							}
-						}
-						else {
+			getGuiParent: function () {
+				let parent;
+				for (parent = this.$parent; parent; parent = parent.$parent) {
+					if (parent.p != null || parent.m_data != null) {
+						return parent;
+					}
+				}
+			},
+			__getData: function () {
+				const dp = this.path.split("/");
+				let data = this.$store.state.root[""];
+				let objs = [];
+
+				for (let k in dp) {
+					const p = dp[k];
+					objs[k] = data;
+					if (p in data) {
+						data = data[p];
+						if (!data) {
+							debugger
 							return undefined;
 						}
 					}
-					return data;
 				}
-				/*
-				else {
-					let parent_data = this.$parent.getData();
-					if (parent_data != null && this.p) {
-						if (this.p == ".") {
-							return parent_data;
+				return data;
+			},
+			_getData: function (parent, prop) {
+				let parent_data = parent.getData();
+
+				return prop.split("/").reduce((obj, p) => {
+					if (obj != null && p) {
+						if (p == ".") {
+							return parent._getData(parent.getGuiParent(), parent.p);
 						}
-						else if (this.p == "..") {
-							return this.$parent.$parent.getData();
+						else if (p == "..") {
+							const pp = parent.getGuiParent();
+							return pp._getData(pp.getGuiParent(), pp.p);
 						}
 						else {
-							return parent_data[this.p];
+							return obj[p];
 						}
 					}
-					else {
-						return undefined;
-					}
-				}
-				*/
+				}, parent_data);
+				return undefined;
 			},
 			getData: function () {
-				return this._getData() || {};
+				//return this._getData(this.getGuiParent(), this.p) || {};
+				return this.__getData() || {};
 			},
 			mouseenter: function ($event) {
 				this.$emit("mouseenter", $event);
@@ -178,31 +183,24 @@
 
 	let GuiRoot = Vue.extend({
 		mixins: [Gui, {
-		template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot v-if='m_data' /></div>",
+			template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot v-if='m_data' /></div>",
+			data: function () {
+				return {
+					_$promise: null,
+					m_data: null,
+				};
+			},
 			methods: {
-				/*
 				getData: function () {
-					const dp = this.path.split("/");
-					let data = this.$store.state.root;
-					for (let p of dp) {
-						if (p in data) {
-							data = data[p];
-							if (!data) {
-								debugger
-								return {};
-							}
-						}
-						else {
-							return {};
-						}
-					}
-					return data;
+					return this.m_data;
 				}
-				*/
 			},
 			created: function () {
 				this._$promise = this.$store.dispatch("loadData", {
 					path: this.path,
+				});
+				this._$promise.then(data => {
+					this.m_data = data;
 				});
 			}
 		}]
@@ -465,7 +463,7 @@
 			"gui-button-s": GuiButtonS,
 			"gui-input": GuiInput,
 			"center": Center,
-			"centerHr": CenterHr,
+			"center-hr": CenterHr,
 		}
 	};
 
