@@ -35,7 +35,7 @@
 		</transition>
 
 		<div @contextmenu.prevent class="gui" style="z-index: 100; position: absolute; width: 0; height: 0;">
-			<ui-tool-tip :isShow="isShowEquipTip"
+			<ui-tool-tip v-if="isShowEquipTip" :isShow="isShowEquipTip"
 							:equip="equip"
 							:chara="chara"
 							:state="ItemTip_state"></ui-tool-tip>
@@ -178,6 +178,8 @@
 		store: Editor.store,
 		data: function () {
 			return {
+				$gv: window.$gv,
+
 				equip: null,
 				isShowEquipTip: true,
 				isShowUIEquipWnd: false,
@@ -192,8 +194,6 @@
 				//ui: {
 				//},
 
-				editor_mode: true,
-
 				onkeydown: null,
 			};
 		},
@@ -205,7 +205,15 @@
 				set: function () {
 					this.$forceUpdate();
 				}
-			}
+			},
+			editor_mode: {
+				get: function () {
+					return $gv.m_editor_mode;
+				},
+				set: function (value) {
+					$gv.m_editor_mode = value;
+				},
+			},
 		},
 		methods: {
 			showItemTip: function (_ref) {

@@ -430,11 +430,12 @@ class MapObjectBase {
 	
 	compute_rectangle(index) {
 		const texture = this.textures[index];
-		
-		const width = texture.width;
-		const height = texture.height;
+		if (texture) {
+			const width = texture.width;
+			const height = texture.height;
 
-		return new Rectangle(this.x - (this.f ? -texture.x + width : texture.x), this.y - texture.y, width, height);
+			return new Rectangle(this.x - (this.f ? -texture.x + width : texture.x), this.y - texture.y, width, height);
+		}
 	}
 	compute_max_rectangle() {
 		if (this.textures.length > 0) {
@@ -908,10 +909,10 @@ class MapPortal extends MapObject {
 	
 	//sync
 	load() {
-		this.tm	= this._get("", "tm", String).padStart(9, "0");//??
-		this.tn	= this._get("", "tn", String);//??
-		this.pn	= this._get("", "pn", String);//pt_go01 => goto portal_01
-		this.script	= this._get(null, "script", String);
+		this.tm = this._get("", "tm", String).padStart(9, "0");//??
+		this.tn = this._get("", "tn", String);//??
+		this.pn = this._get("", "pn", String);//pt_go01 => goto portal_01
+		this.script = this._get(null, "script", String);
 		
 		this.enable = this.tm != "" && this.tm != "999999999";
 
@@ -951,6 +952,14 @@ class MapPortal extends MapObject {
 		//let skins = this._loaded_portals[this.__display_mode][type];
 		//
 		//this.textures = skins.default || skins[0];
+
+		//MapObject::type
+		if (this.__display_mode == "game") {
+			this.type = "p";//??
+		}
+		else {
+			this.type = "q";//??
+		}
 
 		const _raw = MapPortal._portals_raw;
 
@@ -2463,11 +2472,11 @@ export class SceneMap {
 	 * load map from loaded data
 	 * @param {{info:{bgm:string}}} mapRawData
 	 */
-	_getBgmUrl(mapRawData) {
+	_getBgmPath(mapRawData) {
 		let bgmPath = mapRawData.info.bgm;
 		let i = bgmPath.indexOf("/"), path = bgmPath.slice(0, i) + ".img" + bgmPath.slice(i);
 		//let m = bgmPath.match(/([^\/]+)(\/.*)/), path = [m[1] + ".img", m[2]].join("/");
-		return path;
+		return ["", "Sound", path].join("/");
 	}
 
 	/**
@@ -2475,8 +2484,11 @@ export class SceneMap {
 	 * @param {{info:{bgm:string}}} mapRawData
 	 */
 	_loadBgm(mapRawData) {
-		this._bgm_url = this._getBgmUrl(mapRawData);
-		document.getElementById("bgm").innerHTML = `<source src="sound/Sound/${this._bgm_url}" type="audio/mpeg">`;
+		const path = this._getBgmPath(mapRawData);
+		this._bgm_path = path;
+
+		const url = $get.soundMp3Url(path);
+		document.getElementById("bgm").innerHTML = `<source src="${url}" type="audio/mpeg">`;
 	}
 
 	playBgm() {

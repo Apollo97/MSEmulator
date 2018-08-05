@@ -919,12 +919,17 @@ class PCharacterBase {
 	/** @param {MapPortal} portal */
 	_beginContactPortal(portal) {
 		this.portal = portal;
-		
-		if (portal.script) {
-			console.log("goto map: " + portal.getMap() + "; " + portal.script);
+
+		if (portal.enable) {
+			if (portal.script) {
+				console.log("goto map: " + portal.getMap() + "; " + portal.script);
+			}
+			else {
+				console.log("goto map: " + portal.getMap());
+			}
 		}
 		else {
-			console.log("goto map: " + portal.getMap());
+			console.log("contact portal: %o" + portal);
 		}
 	}
 	

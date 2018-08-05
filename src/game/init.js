@@ -16,23 +16,18 @@ class GlobalVar {
 		}
 
 		{
-			this.m_display_physics_debug = false;
-			this.m_display_debug_info = false;
+			this.m_editor_mode = false;
+
+			this.m_display_foothold = false;
+
+			this.m_display_selected_object = false;
+			this.m_selected_object = null;
+			this.m_hover_object = null;
 		}
 
 		{
-			this.input_keyDown = {};
-			this.input_keyUp = {};
-
-			this.mouse_move = 0;
-			this.mouse_x = 0;
-			this.mouse_y = 0;
-			this.mouse_dl = 0;
-			this.mouse_ul = 0;
-			this.mouse_dm = 0;
-			this.mouse_um = 0;
-			this.mouse_dr = 0;
-			this.mouse_ur = 0;
+			this.m_display_physics_debug = false;
+			this.m_display_debug_info = false;
 		}
 
 		{
@@ -63,13 +58,18 @@ class GlobalVar {
 		}
 
 		{
-			this.m_editor_mode = true;
+			this.input_keyDown = {};
+			this.input_keyUp = {};
 
-			this.m_display_foothold = false;
-
-			this.m_display_selected_object = false;
-			this.m_selected_object = null;
-			this.m_hover_object = null;
+			this.mouse_move = 0;
+			this.mouse_x = 0;
+			this.mouse_y = 0;
+			this.mouse_dl = 0;
+			this.mouse_ul = 0;
+			this.mouse_dm = 0;
+			this.mouse_um = 0;
+			this.mouse_dr = 0;
+			this.mouse_ur = 0;
 		}
 
 		{

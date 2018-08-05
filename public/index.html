@@ -264,6 +264,9 @@ if (window.require) {
 		<canvas id="glcanvas" class="Scene" width="800" height="600"></canvas>
 		<canvas id="glcanvas2" class="Scene" width="800" height="600" style="display: none;"></canvas>
 		<div id="Screenshot" class="Scene"></div>
+		<div style="display: none;">
+			<audio id="bgm" controls loop autoplay></audio>
+		</div>
 
 		<div id="vue" v-cloak></div>
 
@@ -282,9 +285,9 @@ if (window.require) {
 		<script src="//localhost:8787/socket.io/socket.io.js"></script>
 
 		<script>
-				window.DATA_VERSION = "1";
-				window.DATA_TAG = "build-in";
-				window.DATA_LAST_MODIFIED = (new Date(0)).toUTCString();
+			window.DATA_VERSION = "1";
+			window.DATA_TAG = "build-in";
+			window.DATA_LAST_MODIFIED = (new Date(0)).toUTCString();
 		</script>
 		<script src="version"></script>
 

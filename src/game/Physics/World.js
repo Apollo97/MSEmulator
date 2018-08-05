@@ -207,53 +207,55 @@ export class World extends b2World {
 	}
 	
 	createPortal(portal) {
-		let bdef = new b2BodyDef();
-		let fdef = new b2FixtureDef();
-		let shape;
-
-		fdef.filter.Copy(FilterHelper.get("portal"));
-
-		bdef.userData = portal;
-		bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
-		bdef.position.Set(
-			portal.x / $gv.CANVAS_SCALE,
-			portal.y / $gv.CANVAS_SCALE);
-
-		let body = this.CreateBody(bdef);
-		body.$type = "portal";
-		
 		const rect = portal.compute_rectangle(0);
-		const width = rect.width / 2 / $gv.CANVAS_SCALE * 0.4;
-		const height = rect.height / 2 / $gv.CANVAS_SCALE * 0.2;
-		
-		shape = new b2PolygonShape();
-		
-		if (window.MAP_PORTAL_FULL_SIZE) {
-			shape.SetAsBox(
-				rect.width / 2 / $gv.CANVAS_SCALE,
-				rect.height / 2 / $gv.CANVAS_SCALE,
-				new b2Vec2(-portal.textures[0].x / $gv.CANVAS_SCALE, -portal.textures[0].y / $gv.CANVAS_SCALE),
-				0);
-		}
-		else {
-			shape.SetAsBox(
-				width,
-				height,
-				new b2Vec2(0, -height),
-				0);
-		}
-		
-		fdef.isSensor = true;
-		fdef.shape = shape;
-		fdef.filter = FilterHelper.get("portal");
-		fdef.userData = portal;
-		fdef.$type = "portal";
+		if (rect) {
+			const width = rect.width / 2 / $gv.CANVAS_SCALE * 0.4;
+			const height = rect.height / 2 / $gv.CANVAS_SCALE * 0.2;
 
-		let fixture = body.CreateFixture(fdef);
-		
-		portal.body = body;
-		
-		return body;
+			let bdef = new b2BodyDef();
+			let fdef = new b2FixtureDef();
+			let shape;
+
+			fdef.filter.Copy(FilterHelper.get("portal"));
+
+			bdef.userData = portal;
+			bdef.type = b2BodyType.b2_staticBody;//b2_staticBody//b2_kinematicBody//b2_dynamicBody
+			bdef.position.Set(
+				portal.x / $gv.CANVAS_SCALE,
+				portal.y / $gv.CANVAS_SCALE);
+
+			let body = this.CreateBody(bdef);
+			body.$type = "portal";
+
+			shape = new b2PolygonShape();
+
+			if (window.MAP_PORTAL_FULL_SIZE) {
+				shape.SetAsBox(
+					rect.width / 2 / $gv.CANVAS_SCALE,
+					rect.height / 2 / $gv.CANVAS_SCALE,
+					new b2Vec2(-portal.textures[0].x / $gv.CANVAS_SCALE, -portal.textures[0].y / $gv.CANVAS_SCALE),
+					0);
+			}
+			else {
+				shape.SetAsBox(
+					width,
+					height,
+					new b2Vec2(0, -height),
+					0);
+			}
+
+			fdef.isSensor = true;
+			fdef.shape = shape;
+			fdef.filter = FilterHelper.get("portal");
+			fdef.userData = portal;
+			fdef.$type = "portal";
+
+			let fixture = body.CreateFixture(fdef);
+
+			portal.body = body;
+
+			return body;
+		}
 	}
 	
 	/**

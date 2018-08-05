@@ -8,9 +8,7 @@
 			</template>
 			<details open>
 				<summary>bgm</summary>
-				<div>
-					<audio id="bgm" controls loop> autoplay</audio>
-				</div>
+				<div ref="bgm_outer"></div>
 			</details>
 			<details open>
 				<summary>window</summary>
@@ -713,6 +711,11 @@
 			_save_as_png: function () {
 				this.chara.renderer._save_as_png(engine, this.chara.id);
 			},
+		},
+		mounted: function () {
+			let elem = document.getElementById("bgm");
+			
+			this.$refs.bgm_outer.appendChild(elem);
 		},
 		components: {
 			"ui-draggable": UIDraggable,

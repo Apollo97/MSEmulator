@@ -134,6 +134,8 @@
 									<div :style="{position: 'absolute', left: 0, top: 0, width:width+'px', height:height+'px'}">
 										<!-- begin size button -->
 										<gui p="../..">
+											<gui-button p="drag" style="position: absolute; left: 3px; top: 3px;"></gui-button>
+
 											<template v-if="ui.chat.size=='max'">
 												<gui-button p="btMin" @click="ui.chat.size='min'" style="position: absolute; right: 3px; top: 3px;"></gui-button>
 											</template>
@@ -322,6 +324,8 @@
 
 				//this.system.resolution.x = width;
 				this.system.resolution.y = height;
+
+				this.updatePosition();
 			},
 			updatePosition: function () {
 				if (this.$refs.status) {

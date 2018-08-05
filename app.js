@@ -17,6 +17,14 @@ let edge = null, CS_PROGRAM_REFERENCES = null;
 const process_argv = argv_parse(process.argv);
 const port = process_argv["--port"] || process_argv["-p"] || 80;
 
+const IMAGES_EXTNAME = ".png";
+const SOUND_WAV_EXTNAME = ".wav";
+const SOUND_MP3_EXTNAME = ".mp3";
+const DATA_EXTNAME = ".json";
+const PACK_EXTNAME = ".json";
+const LIST_EXTNAME = ".json";
+//const BINARY_EXTNAME = ".bin";
+
 if (!process_argv["--static"] && !process_argv["-s"]) {
 	edge = require('edge');
 
@@ -123,7 +131,7 @@ function sequenceTasks(tasks) {
 		results.push(value);
 		return results;
 	}
-	var pushValue = recordValue.bind(null, []);
+	let pushValue = recordValue.bind(null, []);
 	return tasks.reduce(function (promise, task) {
 		return promise.then(task).then(pushValue);
 	}, Promise.resolve());
@@ -161,13 +169,13 @@ function getSettingList(folderPath, cbfunc) {
 }
 
 function EquipList(iniFilePath) {
-	var sourceFile = [
+	let sourceFile = [
 		"#define EDGE_EQUIPLIST",
 		fs.readFileSync(path.join(__dirname, "wz.cs")),
 		fs.readFileSync(path.join(__dirname, "Tools", "EquipList", "Program.cs")),
 	].join("\n");
 	
-	var method = edge.func({
+	let method = edge.func({
 		source: sourceFile,
 		references: CS_PROGRAM_REFERENCES,
 	});
@@ -264,10 +272,23 @@ function WebServer(app) {
 		root: ROOT_PATH,
 	};
 
-	//default extname is .png
-	app.get(/\/images\/.*\.img\/.*/, function (req, res, next) {
+	// image default extname is .png
+	app.get(/\/images\/.*/, function (req, res, next) {
 		let url = decodeURIComponent(req.path);
-		let file_path = url + ".png";
+		let file_path = url + IMAGES_EXTNAME;
+
+		res.sendFile(file_path, $sendFile_options, function (err) {
+			if (err) {
+				next();//no print err
+				return;
+			}
+		});
+	});
+
+	// data default extname is .json
+	app.get(/\/(data|pack)\/.*/, function (req, res, next) {
+		let url = decodeURIComponent(req.path);
+		let file_path = url + ".json";
 
 		res.sendFile(file_path, $sendFile_options, function (err) {
 			if (err) {
@@ -621,82 +642,90 @@ function DataServer(app) {
 		}
 
 		/**
+		 * @param {{mime:string,data:Buffer}} results
+		 * @param {string} output_path
+		 * @param {string} data_path
+		 * @param {string} isObject to JSON
+		 */
+		function _saveCacheFile(results, output_path, data_path, isObject, extname) {
+			if (!results) {
+				return;
+			}
+
+			if (data_path.endsWith("/")) {
+				data_path = data_path.slice(0, data_path.length - 1);
+			}
+
+			/**
+			 *    ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\/.png"
+			 * to ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\%5C.png"
+			 */
+
+			let dirArr = [...output_path.split("/").map(a => fixedEncodeURIComponent(a)),
+			...data_path.split("/").map(a => fixedEncodeURIComponent(a))
+			];
+			let filePath = path.join(...dirArr);
+
+			if (fs.existsSync(filePath)) {
+				return;
+			}
+			else if (extname) {
+				filePath = filePath + extname;
+				if (fs.existsSync(filePath)) {
+					return;
+				}
+			}
+
+			dirArr.pop();//remove file nmae
+
+			dirArr.reduce((parentDir, childDir) => {
+				const curDir = path.resolve(".", parentDir, childDir);
+				try {
+					fs.mkdirSync(curDir);
+					//console.log(`Directory ${curDir} created!`);
+				}
+				catch (err) {
+					if (err.code !== 'EEXIST') {
+						throw err;
+					}
+					//console.log(`Directory ${curDir} already exists!`);
+				}
+
+				return curDir;
+			}, "");
+
+			let data = isObject ? JSON.stringify(results.data, null, "\t") : results.data;
+
+			fs.writeFile(filePath, data, function (err) {
+				if (err) {
+					let filePath = path.join(output_path, data_path);
+					console.log("no cache: ", filePath);
+					console.log("err: ");
+					console.log(JSON.stringify(err));
+
+					fs.writeFile("./public/log.html", "<div style='background:red;'>" + Date() + " false " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
+				}
+				else {
+					fs.writeFile("./public/log.html", "<div>" + Date() + " true " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
+				}
+			});
+		}
+
+		/**
 		 * @param {Promise<{mime:string,data:Buffer}>} loadFileTask
 		 * @param {string} output_path
 		 * @param {string} data_path
 		 * @param {string} isObject to JSON
 		 */
-		let saveCacheFile = (loadFileTask, output_path, data_path, isObject, extname) => { };
-
-		if (!process_argv["-no-cache"]) {
-			saveCacheFile = _saveCacheFile;
-		}
-
-		function _saveCacheFile(loadFileTask, output_path, data_path, isObject, extname) {
+		function saveCacheFile(loadFileTask, output_path, data_path, isObject, extname) {
 			loadFileTask.then(function (results) {
-				if (!results) {
-					return;
-				}
-
-				if (data_path.endsWith("/")) {
-					data_path = data_path.slice(0, data_path.length - 1);
-				}
-
-				/**
-				 *    ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\/.png"
-				 * to ".\public\images\UI\StatusBar3.img\mainBar\status\gauge\number\%5C.png"
-				 */
-
-				let dirArr = [...output_path.split("/").map(a => fixedEncodeURIComponent(a)),
-					      ...data_path.split("/").map(a => fixedEncodeURIComponent(a))
-					];
-				let filePath = path.join(...dirArr);
-
-				if (fs.existsSync(filePath)) {
-					return;
-				}
-				else if (extname) {
-					filePath = filePath + extname;
-					if (fs.existsSync(filePath)) {
-						return;
-					}
-				}
-
-				dirArr.pop();//remove file nmae
-
-				dirArr.reduce((parentDir, childDir) => {
-					const curDir = path.resolve(".", parentDir, childDir);
-					try {
-						fs.mkdirSync(curDir);
-						//console.log(`Directory ${curDir} created!`);
-					}
-					catch (err) {
-						if (err.code !== 'EEXIST') {
-							throw err;
-						}
-						//console.log(`Directory ${curDir} already exists!`);
-					}
-
-					return curDir;
-				}, "");
-
-				let data = isObject ? JSON.stringify(results.data, null, "\t") : results.data;
-
-				fs.writeFile(filePath, data, function (err) {
-					if (err) {
-						let filePath = path.join(output_path, data_path);
-						console.log("no cache: ", filePath);
-						console.log("err: ");
-						console.log(JSON.stringify(err));
-
-						fs.writeFile("./public/log.html", "<div style='background:red;'>" + Date() + " false " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
-					}
-					else {
-						fs.writeFile("./public/log.html", "<div>" + Date() + " true " + output_path + "/" + data_path + "</div>\n", { flag: "a" }, err => { });
-					}
-				});
+				_saveCacheFile(results, output_path, data_path, isObject, extname);
 			}, function (reason) {
 			});
+		}
+		if (process_argv["-no-cache"]) {
+			saveCacheFile = function () {
+			};
 		}
 
 		a_pp.get(/\/images\/.*/, function (req, res, next) {//png
@@ -704,17 +733,20 @@ function DataServer(app) {
 				let url = decodeURIComponent(req.path.replace(/%25/g, "%"));
 
 				let data_path = url.slice(8);
+				if (data_path.endsWith(IMAGES_EXTNAME)) {
+					data_path = data_path.slice(0, -IMAGES_EXTNAME.length);
+				}
 				let task = _data_provider.getAsync("images", data_path);
 
 				sendFile(task, req, res, next);
-				saveCacheFile(task, "public/images", data_path, false, ".png");
+				saveCacheFile(task, "public/images", data_path, false, IMAGES_EXTNAME);
 			}
 		});
 		a_pp.get(/\/_images\/.*/, function (req, res, next) {//gif
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(9);
-				let task = _data_provider.getAsync("_images", data_path, ".gif");
+				let task = _data_provider.getAsync("_images", data_path);
 
 				sendFile(task, req, res, next);
 			}
@@ -722,11 +754,27 @@ function DataServer(app) {
 		a_pp.get(/\/sound\/.*/, function (req, res, next) {//wav/mp3
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURIComponent(req.path);
+
 				let data_path = url.slice(7);
+				if (data_path.endsWith(SOUND_MP3_EXTNAME)) {
+					data_path = data_path.slice(0, -SOUND_MP3_EXTNAME.length);
+				}
+				else if (data_path.endsWith(SOUND_WAV_EXTNAME)) {
+					data_path = data_path.slice(0, -SOUND_WAV_EXTNAME.length);
+				}
 				let task = _data_provider.getAsync("sound", data_path);
 
 				sendFile(task, req, res, next);
-				saveCacheFile(task, "public/sound", data_path, false);
+				task.then(function (results) {
+					let extname;
+					if (results.mime == "audio/mp3") {
+						extname = SOUND_MP3_EXTNAME;
+					}
+					else if (results.mime == "audio/wav") {
+						extname = SOUND_WAV_EXTNAME;
+					}
+					_saveCacheFile(results, "public/sound", data_path, false, extname);
+				});
 			}
 		});
 		a_pp.get(/\/binary\/.*/, function (req, res, next) {
@@ -755,29 +803,39 @@ function DataServer(app) {
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
+				if (data_path.endsWith(PACK_EXTNAME)) {
+					data_path = data_path.slice(0, -PACK_EXTNAME.length);
+				}
 				let task = _data_provider.getAsync("pack", data_path);
 
 				sendJSON(task, req, res, next);
-				saveCacheFile(task, "public/pack", data_path, true);
+				saveCacheFile(task, "public/pack", data_path, true, PACK_EXTNAME);
 			}
 		});
 		a_pp.get(/\/data\/.*/, function (req, res, next) {//json: text
 			if (_data_provider.isNeedResponse(req, res, next)) {
 				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(6);
+				if (data_path.endsWith(DATA_EXTNAME)) {
+					data_path = data_path.slice(0, -DATA_EXTNAME.length);
+				}
 				let task = _data_provider.getAsync("data", data_path);
 
 				sendJSON(task, req, res, next);
-				saveCacheFile(task, "public/data", data_path, true);
+				saveCacheFile(task, "public/data", data_path, true, DATA_EXTNAME);
 			}
 		});
 		a_pp.get(/\/ls\/.*/, function (req, res, next) {
 			if (_data_provider.checkDataSource(req, res, next)) {
 				let url = decodeURIComponent(req.path);
 				let data_path = url.slice(4);
+				if (data_path.endsWith(LIST_EXTNAME)) {
+					data_path = data_path.slice(0, -LIST_EXTNAME.length);
+				}
 				let task = _data_provider.getAsync("ls", data_path);
 
 				sendJSON(task, req, res, next);
+				saveCacheFile(task, "public/ls", data_path, true, LIST_EXTNAME);
 			}
 		});
 		a_pp.get(/\/xml\/.*/, function (req, res, next) {

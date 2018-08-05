@@ -87,10 +87,6 @@ window.onkeydown = function (e) {
 	}
 	if (e.code == "F2") {
 		$gv.m_editor_mode = !$gv.m_editor_mode;
-
-		app.vue.editor_mode = $gv.m_editor_mode;
-
-		app.vue.$refs.statusBar.myUpdate();
 	}
 }
 

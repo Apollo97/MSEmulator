@@ -737,12 +737,12 @@ $get.listSync = function $get_listSync(path) {
  * @param {string} path
  * @returns {string}
  */
-$get.dataUrl = function $get_imagesUrl(path) {
+$get.dataUrl = function $get_dataUrl(path) {
 	if (url_startsWith_protocol(path)) {
 		return path;
 	}
 	else if (!path.startsWith("data")) {
-		return `${window.$ROOT_PATH}data${path}`;
+		return `${window.$ROOT_PATH}data${path}.json`;
 	}
 	throw new Error("Not game data: " + path);
 }
@@ -750,12 +750,12 @@ $get.dataUrl = function $get_imagesUrl(path) {
  * @param {string} path
  * @returns {string}
  */
-$get.packUrl = function $get_imagesUrl(path) {
+$get.packUrl = function $get_packUrl(path) {
 	if (url_startsWith_protocol(path)) {
 		return path;
 	}
 	else if (!path.startsWith("pack")) {
-		return `${window.$ROOT_PATH}pack${path}`;
+		return `${window.$ROOT_PATH}pack${path}.json`;
 	}
 	throw new Error("Not game pack: " + path);
 }
@@ -768,7 +768,33 @@ $get.imageUrl = function $get_imagesUrl(path) {
 		return path;
 	}
 	else if (!path.startsWith("images")) {
-		return `${window.$ROOT_PATH}images${path}`;
+		return `${window.$ROOT_PATH}images${path}.png`;
+	}
+	throw new Error("Not game images: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.soundMp3Url = function $get_soundMp3Url(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("sound")) {
+		return `${window.$ROOT_PATH}sound${path}.mp3`;
+	}
+	throw new Error("Not game images: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.soundWavUrl = function $get_soundWavUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("sound")) {
+		return `${window.$ROOT_PATH}sound${path}.wav`;
 	}
 	throw new Error("Not game images: " + path);
 }
