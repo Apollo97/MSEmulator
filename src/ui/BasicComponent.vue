@@ -82,11 +82,25 @@
 		computed: {
 			path: function () {
 				let ds = this._getPathArray();
-				return "/" + ds.join("/");
+				let i;
+				
+				ds = [].concat(...ds.map(a => a.split("/")));
+				while ((i = ds.indexOf("..")) > 0) {
+					ds.splice(i - 1, 2)
+				}
+				
+				return ds.join("/");
 			},
 			_path: function () {
 				let ds = this._getPathArray();
-				return "/" + ds.join("/");
+				let i;
+				
+				ds = [].concat(...ds.map(a => a.split("/")));
+				while ((i = ds.indexOf("..")) > 0) {
+					ds.splice(i - 1, 2)
+				}
+				
+				return ds.join("/");
 			},
 		},
 		methods: {
@@ -99,8 +113,10 @@
 						break;
 					}
 				}
-				if (this.p && this.p != ".") {
-					ds.push(this.p);
+				if (this.p) {
+					if (this.p != ".") {
+						ds.push(this.p);
+					}
 				}
 				return ds;
 			},
@@ -261,7 +277,7 @@
 			},
 			img: function () {
 				let data = this.texture;
-				return data[""] ? $get.imageUrl(data[""]) : "/warning.png";
+				return $get.imageUrl(data[""] ? data[""] : "/warning");
 			},
 			width: function () {
 				let data = this.texture;

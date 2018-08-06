@@ -1996,6 +1996,8 @@ export class SceneMap {
 		this.$promise = null;
 
 		this.$loading_status = "loading";
+		
+		this.onload = null;
 	}
 
 	static async _Init() {
@@ -2409,7 +2411,7 @@ export class SceneMap {
 		if (this.onload) {
 			this.onload.call(this);//history.pushState
 		}
-
+		
 		console.log("End scene_map.load");
 	}
 	_script() {
@@ -2428,10 +2430,10 @@ export class SceneMap {
 		this.unload();
 		this._load(this._raw);
 	}
-
+	
 	unload() {
 		this.$loading_status = "loading";
-
+		
 		for (let i = 0; i < this.background.length; ++i) {
 			this.background[i].unload();
 		}
@@ -2461,11 +2463,11 @@ export class SceneMap {
 		this.backTags = {};
 		
 		this.particleList = null;
-
+		
 		this.controller.unload();
 		this.lifeMgr.unload();
 		this.portalMgr.unload();
-
+		
 		map_sprite.Back = {};
 		map_sprite.Obj = {};
 		map_sprite.Tile = {};
@@ -2549,6 +2551,7 @@ export class SceneMap {
 		return ((!this.$load_tasks || !this.$load_tasks.length) && this._raw && !this.$loading_status);
 	}
 
+
 	/**
 	 * @param {number} stamp
 	 */
@@ -2571,7 +2574,38 @@ export class SceneMap {
 			debugger;
 		}
 	}
-
+	
+	/**
+	 * @param {SceneCharacter} chara
+	 */
+	_addChara(chara) {
+		try {
+			let player_spawns = this.portalMgr.portals.filter(a => a.pn == "sp");
+			let spawn = player_spawns[Math.trunc(Math.random() * 100) % player_spawns.length];
+			const $physics = chara.$physics;
+			const x = spawn.x / $gv.CANVAS_SCALE;
+			const y = spawn.y / $gv.CANVAS_SCALE;
+			$physics.setPosition(x, y);
+			$physics.body.SetAwake(true);
+		}
+		catch (ex) {
+			console.error(ex);
+		}
+	}
+	/**
+	 * @param {SceneCharacter} chara
+	 */
+	addChara(chara) {
+		if (this.$promise) {
+			this.$promise.then(() => {
+				this._addChara(chara);
+			});
+		}
+		else {
+			this._addChara(chara);
+		}
+	}
+	
 	/**
 	 * @param {IRenderer} renderer
 	 */

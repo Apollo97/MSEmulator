@@ -447,9 +447,21 @@
 					chara.renderer._setup_test();
 				}
 
-				return await context.dispatch('_addChara', {
+				let result = await context.dispatch('_addChara', {
 					chara: chara,
 				});
+				
+				try {
+					debugger
+					if (window.scene_map) {
+						window.scene_map.addChara(result);
+					}
+				}
+				catch (ex) {
+					console.error(ex);
+				}
+				
+				return result;
 			},
 			createChara: async function (context, payload) {
 				context.commit("increaseProgressMax", { amount: 2 });

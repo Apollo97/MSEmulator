@@ -2,7 +2,7 @@
 	<window-base>
 		<template slot="content">
 			<div :style="wndStyle">
-				<gui-root ref="gui_root" p="UI/UIWindow2/Item">
+				<gui-root ref="gui_root" p="/UI/UIWindow2/Item">
 					<!--begin back-->
 					<template>
 						<div v-if="isCollapsed">
@@ -69,7 +69,7 @@
 			</div>
 		</template>
 		<template slot="footer" v-if="is_show_menu">
-			<gui-root p="UI/CashShop/CSLockerNew/Normal">
+			<gui-root p="/UI/CashShop/CSLockerNew/Normal">
 				<div @mouseout.self="closeMenu($event)"
 					 @contextmenu.prevent=""
 					 :style="menu_style" class="slot-menu"

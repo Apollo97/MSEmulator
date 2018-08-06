@@ -8,7 +8,7 @@
 </usage>
 
 <template>
-	<gui-root p="UI/Basic/VScr9">
+	<gui-root p="/UI/Basic/VScr9">
 		<gui :p="enabled?'enabled':'disabled'">
 			<div class="vscr-scrollbar" @mousewheel="_onmousewheel">
 				<vscr-button :enabled="enabled" sp="prev" class="vscr-decrement" @click="moveStep(-1)"></vscr-button>

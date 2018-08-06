@@ -2,8 +2,8 @@
 <template>
 	<div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; user-select: none;">
 		<transition name="fade" style="position: absolute;">
-			<div ref="editor" v-show="editor_mode" class="scene-editor;">
-				<editor @hoverItem="showItemTip(...arguments);"
+			<div v-show="editor_mode" class="scene-editor;">
+				<editor ref="editor" @hoverItem="showItemTip(...arguments);"
 						@mouseleaveItem="hideItemTip(...arguments);">
 				</editor>
 			</div>
