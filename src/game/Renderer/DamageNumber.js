@@ -252,10 +252,10 @@ class DamageNumberRenderer {
 	}
 
 	get _default_base_path() {
-		return "/Effect/BasicEff.img/";
+		return "/Effect/BasicEff";
 	}
 	get _skin_base_path() {
-		return "/Effect/BasicEff.img/damageSkin/";
+		return "/Effect/BasicEff/damageSkin/";
 	}
 }
 DamageNumberRenderer.loaded_skin = loaded_skin;

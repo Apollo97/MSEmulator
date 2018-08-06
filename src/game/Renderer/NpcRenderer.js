@@ -37,7 +37,7 @@ export class NpcRenderer extends LifeRenderer {
 	}
 	
 	static _get_desc_base_path() {
-		return '/String/Npc.img';
+		return "/String/Npc";
 	}
 
 	static get _base_path() {

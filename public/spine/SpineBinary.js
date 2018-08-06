@@ -946,7 +946,7 @@ class SpineBinaryReader {
 	}
 }
 
-// getBinaryFile("/binary/Map/Effect3.img/BossLucid/Lucid/lusi").then(a=>{
+// getBinaryFile("/binary/Map/Effect3/BossLucid/Lucid/lusi").then(a=>{
 	// window._a = a;
 	// window.aaa = new SpineBinaryReader().fromBuffer(window._a);
 // });//SpineBinaryReader

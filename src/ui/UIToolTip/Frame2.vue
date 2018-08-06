@@ -1,7 +1,7 @@
 
 <template>
 	<ui-draggable :zIndex="zIndex" :position="position">
-		<gui-root ref="gui_root" p="UI/UIToolTip.img/Item/Frame2">
+		<gui-root ref="gui_root" p="UI/UIToolTip/Item/Frame2">
 			<div v-if="is_show" class="header frame" @mousedown.left="requireOrder($event)">
 				<div v-if="guiData" class="frame-warp">
 					<table class="frame-inner">

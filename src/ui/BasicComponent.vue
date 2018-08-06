@@ -268,7 +268,7 @@
 			},
 			img: function () {
 				let data = this.texture;
-				return $get.imageUrl(data[""] ? data[""] : "/warning.png");
+				return data[""] ? $get.imageUrl(data[""]) : "/warning.png";
 			},
 			width: function () {
 				let data = this.texture;

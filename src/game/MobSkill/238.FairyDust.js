@@ -91,7 +91,7 @@ export class FairyDust extends MobSkillBase {
 	}
 	
 	get _base_path() {
-		return "/Skill/MobSkill.img/238/level";
+		return "/Skill/MobSkill/238/level";
 	}
 }
 

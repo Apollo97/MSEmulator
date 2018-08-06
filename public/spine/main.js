@@ -163,7 +163,7 @@ main.start = function() {
 		});
 	//
 	
-	let textbox_path = add_textbox_control("path", "/Map/Effect3.img/BossLucid/Lucid", function (path, keydown) {
+	let textbox_path = add_textbox_control("path", "/Map/Effect3/BossLucid/Lucid", function (path, keydown) {
 		if (keydown == "Enter" || keydown == "NumpadEnter") {
 			reload();
 		}
@@ -285,37 +285,37 @@ main.start = function() {
 		let sp = 1;
 		
 		if (sp == 0) {
-			path = "/Map/Back/arcana1.img/spine/" + i;
+			path = "/Map/Back/arcana1/spine/" + i;
 			//fname = "skeleton";
 		}
 		else if (sp == 1) {
-			path = "/Map/Effect3.img/BossLucid/Lucid";
+			path = "/Map/Effect3/BossLucid/Lucid";
 			//fname = "lusi";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 2) {
-			path = "/Map/Obj/Lacheln.img/Boss/obj/9";
+			path = "/Map/Obj/Lacheln/Boss/obj/9";
 			//fname = "a_1";//002
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 3) {
-			path = "/Map/Obj/arcana.img/town/spine/0";
+			path = "/Map/Obj/arcana/town/spine/0";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 4) {
-			path = "/Map/Obj/arcana.img/town/spine/1";
+			path = "/Map/Obj/arcana/town/spine/1";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;
 		}
 		else if (sp == 5) {
-			path = "/Map/Back/Lacheln.img/spine/0";
+			path = "/Map/Back/Lacheln/spine/0";
 			tasks.push(ann.load(path));
 			ssanim.push(ann);
 			break;

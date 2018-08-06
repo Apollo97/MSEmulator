@@ -29,11 +29,11 @@ let chatBalloon = new ChatBalloon();
 window.chatBalloon = chatBalloon;
 
 Promise.all([
-	//$get.data("/Skill/MobSkill.img/238/level/4"),
+	//$get.data("/Skill/MobSkill/238/level/4"),
 	chatBalloon.load(136),
 ]).then(async function (_data) {
 	//let _raw = JSON.parse(_data);
-	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
+	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill/238/level/4/ball0");
 	if (window.anima) {
 		anima.is_loop = true;
 		anima.load();

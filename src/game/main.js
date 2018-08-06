@@ -47,11 +47,11 @@ window.addEventListener("popstate", function (e) {
 function createCursor_clickable() {
 	let data = new CursorAnimationData();
 
-	let task1 = data.addFrameFromUrl("/UI/Basic.img/Cursor/0/0").then(function (i) {
+	let task1 = data.addFrameFromUrl("/UI/Basic/Cursor/0/0").then(function (i) {
 		data.frames[i].delay = 200;
 	});
 
-	let task2 = data.addFrameFromUrl("/UI/Basic.img/Cursor/12/0").then(function (i) {
+	let task2 = data.addFrameFromUrl("/UI/Basic/Cursor/12/0").then(function (i) {
 		data.frames[i].delay = 200;
 	});
 
@@ -262,7 +262,14 @@ export class Game {
 			else {
 				let params = _parseUrlParameter();
 
-				let map_id = params["map"] || "000000000";//450003000
+				let map_id;
+				if (process.env.NODE_ENV === 'production') {
+					map_id = params["map"] || window.DEFAULT_MAP_ID;
+				}
+				else {
+					map_id = params["map"] || "000000000";//450003000
+				}
+
 				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
 
 				GameStateManager.PopState({

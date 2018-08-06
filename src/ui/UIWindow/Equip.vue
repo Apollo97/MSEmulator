@@ -3,7 +3,7 @@
 	<window-base>
 		<template slot="content">
 			<div :style="wndStyle">
-				<gui-root ref="gui_root" p="UI/UIWindow4.img/Equip">
+				<gui-root ref="gui_root" p="UI/UIWindow4/Equip">
 					<gui-texture-s p="backgrnd"></gui-texture-s>
 					<gui-texture-s p="backgrnd2"></gui-texture-s>
 					<gui-texture-s p="tabbar"></gui-texture-s>

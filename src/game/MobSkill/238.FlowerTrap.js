@@ -83,7 +83,7 @@ export class FlowerTrap extends MobSkillBase {
 	
 	/** @returns {string} */
 	get _base_path() {
-		return "/Skill/MobSkill.img/238/level";
+		return "/Skill/MobSkill/238/level";
 	}
 }
 

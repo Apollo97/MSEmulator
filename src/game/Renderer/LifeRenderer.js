@@ -64,7 +64,7 @@ export class LifeRenderer /*extends SceneObject*/ {
 		let tasks = [];
 		let that = this;
 		this.id = id;//"8880140";//"8880141";//"8880150";//"8880151";
-		this._url = [this.constructor._base_path, this.id + ".img/"].join("/");
+		this._url = [this.constructor._base_path, this.id].join("/");
 		
 		if (!this.constructor._desc[id]) {
 			let task = this.constructor.loadDescription(id);
@@ -100,7 +100,7 @@ export class LifeRenderer /*extends SceneObject*/ {
 					break;
 				}
 
-				action = new Animation(this._raw[name], this._url + name);
+				action = new Animation(this._raw[name], [this._url, name].join("/"));
 				action.is_loop = false;
 				
 				tasks.push(action.load());

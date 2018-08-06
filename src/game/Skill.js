@@ -43,7 +43,7 @@ let jump2_info = {
 };
 
 /**
- * 23121000(伊修塔爾之環): localhost/xml2/Skill/2312.img/skill/23121000
+ * 23121000(伊修塔爾之環): localhost/xml2/Skill/2312/skill/23121000
  */
 let rapid_attack_info = {
 	type: 2,
@@ -483,7 +483,7 @@ class SkillAnimationBase {
 	async _load(skillId) {
 		const jobID = /^(\d+)\d{4}$/.exec(skillId)[1];
 
-		const url = `${this.constructor._base_path}/${jobID}.img/skill/${skillId}`;
+		const url = `${this.constructor._base_path}/${jobID}/skill/${skillId}`;
 
 		const raw = await $get.data(url);
 		if (!raw) {

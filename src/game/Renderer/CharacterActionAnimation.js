@@ -198,7 +198,7 @@ export class ActionAnimation {
 	}
 
 	static get _base_path() {
-		return "/Character/00002000.img/";
+		return "/Character/00002000";
 	}
 }
 /**

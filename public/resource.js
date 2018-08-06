@@ -110,7 +110,7 @@ export class ItemCategoryInfo {
 		}
 
 		if (id[0] == '0') {
-			return info.dataDir + id + ".img/";
+			return info.dataDir + id + "/";
 		}
 		else {
 			//TODO: get item data path
@@ -129,7 +129,7 @@ export class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == '0') {
-			return $get.imageUrl(info.dataDir + id + ".img/" + info.iconRawPath);
+			return $get.imageUrl(info.dataDir + id + "/" + info.iconRawPath);
 		}
 	}
 
@@ -144,7 +144,7 @@ export class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == '0') {
-			return $get.imageUrl(info.dataDir + id + ".img/" + info.iconPath);
+			return $get.imageUrl(info.dataDir + id + "/" + info.iconPath);
 		}
 	}
 
@@ -159,7 +159,7 @@ export class ItemCategoryInfo {
 		if (!info) {
 			return null;
 		}
-		let url = `/String/Eqp.img/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
+		let url = `/String/Eqp/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
 		let data = await $get.data(url);
 		return data;
 	}
@@ -612,7 +612,7 @@ $get.pack = async function $get_pack(path) {
 				throw new TypeError("data: " + path);
 			}
 		}
-		const url = `${window.$ROOT_PATH}pack${path}`;
+		const url = $get.packUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -633,7 +633,6 @@ $get.pack = async function $get_pack(path) {
  * @returns {Promise<any>}
  */
 $get.packSync = function get_packSync(path) {
-	const url = `${window.$ROOT_PATH}pack${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -659,7 +658,7 @@ $get.data = async function $get_data(path) {
 		return obj;
 	}
 	else {
-		const url = `${window.$ROOT_PATH}data${path}`;
+		const url = $get.dataUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -680,7 +679,6 @@ $get.data = async function $get_data(path) {
  * @returns {any}
  */
 $get.dataSync = function get_dataSync(path) {
-	const url = `${window.$ROOT_PATH}data${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -706,7 +704,7 @@ $get.list = async function $get_list(path) {
 		return obj;
 	}
 	else {
-		const url = `${window.$ROOT_PATH}ls${path}`;
+		const url = $get.listUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -733,6 +731,7 @@ $get.listSync = function $get_listSync(path) {
 	}
 	return undefined;
 }
+
 /**
  * @param {string} path
  * @returns {string}
@@ -759,6 +758,15 @@ $get.packUrl = function $get_packUrl(path) {
 	}
 	throw new Error("Not game pack: " + path);
 }
+$get.listUrl = function $get_listUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("ls")) {
+		return `${window.$ROOT_PATH}ls${path}.json`;
+	}
+	throw new Error(path);
+}
 /**
  * @param {string} path
  * @returns {string}
@@ -783,7 +791,7 @@ $get.soundMp3Url = function $get_soundMp3Url(path) {
 	else if (!path.startsWith("sound")) {
 		return `${window.$ROOT_PATH}sound${path}.mp3`;
 	}
-	throw new Error("Not game images: " + path);
+	throw new Error("Not game sound: " + path);
 }
 /**
  * @param {string} path
@@ -796,7 +804,7 @@ $get.soundWavUrl = function $get_soundWavUrl(path) {
 	else if (!path.startsWith("sound")) {
 		return `${window.$ROOT_PATH}sound${path}.wav`;
 	}
-	throw new Error("Not game images: " + path);
+	throw new Error("Not game sound: " + path);
 }
 window.$get = $get;
 

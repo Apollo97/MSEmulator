@@ -181,14 +181,67 @@ internal class DataSource
 	}
 	public static void get_data(string link, out wzpackage outPack, out wzproperty outProp)
 	{
+		_get_data(link, out outPack, out outProp);
+
+		if (outProp != null && outProp.type == 5)// UOL
+		{
+			outProp = (outProp.data as wzuol).target;
+		}
+	}
+	private static void _get_data(string link, out wzpackage outPack, out wzproperty outProp)
+	{
 		try
 		{
-			DataSource._get_data(link, out outPack, out outProp);
-			if (outPack == null && outProp == null)
+			string[] sections = link.Split('/');
+
+			wzpackage pack = DataSource.packages[sections[0]];
+			wzproperty prop = null;
+
+			// find archive
+
+			if (pack != null)
 			{
-				throw new Exception();
+				_get_data(sections, ref pack, ref prop);
 			}
-			return;
+			if (pack == null && prop == null)
+			{
+				var name = sections[0];
+
+				for (int i = 1; i <= 2; ++i)
+				{
+					if ((pack = DataSource.packages[name + (i + 1)]) != null)
+					{
+						_get_data(sections, ref pack, ref prop);
+						if (pack != null || prop != null)
+						{
+							outPack = pack;
+							outProp = prop;
+							return;
+						}
+					}
+					if ((pack = DataSource.packages[name + i.ToString("000")]) != null)
+					{
+						_get_data(sections, ref pack, ref prop);
+						if (pack != null || prop != null)
+						{
+							outPack = pack;
+							outProp = prop;
+							return;
+						}
+					}
+				}
+			}
+			else
+			{
+				outPack = pack;
+				outProp = prop;
+				return;
+			}
+
+			outPack = null;
+			outProp = null;
+
+			throw new Exception("Not found package or property: " + link);
 		}
 		catch (Exception ex)
 		{
@@ -201,136 +254,71 @@ internal class DataSource
 			return;
 		}
 	}
-
-	protected static void _get_data(string link, out wzpackage outPack, out wzproperty outProp)
+	private static void _get_data(string[] sections, ref wzpackage outPack, ref wzproperty outProp)
 	{
-		int index = link.IndexOf(".img/");
+		// find package
 
-		if (0 <= index)
+		int index = 1;
+		if (sections.Length != 1)
 		{
-			int i2 = link.IndexOf("/");
-			string archiveName = link.Substring(0, i2);
-			string[] names = { archiveName, archiveName + "2", archiveName + "001" };
-			string aName = "";
-
-			i2 += 1;
-
-			for (int nameIndex = 0; nameIndex <  names.Length; ++nameIndex)
+			for (; index < sections.Length; ++index)
 			{
-				try
+				var section = sections[index];
+
+				if (outPack.identities.Contains(section))
 				{
-					aName = names[nameIndex];
-
-					wzpackage pack;
-
-					if ((index - i2 + 4) > 0)
-					{
-						pack = DataSource.packages[aName][link.Substring(i2, index - i2 + 4).Split('/')];
-					}
-					else
-					{
-						pack = DataSource.packages[aName];
-					}
-
-
-					if (!link.EndsWith(".img/"))
-					{
-						outProp = DataSource._get_property(pack.root[""], link.Substring(index + 5).Split('/'), 0);
-						outPack = null;
-						if (outProp != null)
-						{
-							return;
-						}
-						//return MInspect.packages[link.Substring(0, index - i2 + 4).Split('/')].root[""][link.Substring(index + 5).Split('/')];
-					}
-					else
-					{
-						try
-						{
-							outProp = pack.root[""];
-							outPack = null;
-							if (outProp != null)
-							{
-								return;
-							}
-						}
-						catch (Exception)//no found property
-						{
-							try
-							{
-								outProp = null;
-								outPack = pack;
-								if (outPack != null)
-								{
-									return;
-								}
-							}
-							catch (Exception)
-							{
-							}
-						}
-					}
+					outPack = outPack.values[outPack.identities.IndexOf(section)];
 				}
-				catch (Exception)
-				{// find next archive
+				else if (outPack.root != null && (outProp = outPack.root[""]) != null)
+				{
+					outPack = null;
+					break;
 				}
+				else
+				{
+					outPack = null;
+					outProp = null;
+					return;
+				}
+			}
+		}
+
+		// find property
+
+		if (outProp == null)
+		{
+			if (outPack.root != null && (outProp = outPack.root[""]) != null)
+			{
+				outPack = null;
+				return;
 			}
 		}
 		else
 		{
+			for (; index < sections.Length; ++index)
+			{
+				var section = sections[index];
+
+				if (outProp.identities.Contains(section))
+				{
+					outProp = outProp.values[outProp.identities.IndexOf(section)];
+				}
+				else
+				{
+					outPack = null;
+					outProp = null;
+					return;
+				}
+			}
+		}
+
+		if (index < sections.Length)
+		{
+			outPack = null;
 			outProp = null;
-			outPack = DataSource.packages[link.Split('/')];
 			return;
 		}
-
-		outPack = null;
-		outProp = null;
 	}
-
-	protected static wzproperty _get_property(wzproperty property, string[] link, int step)
-	{
-		if (link.Length == step)
-		{
-			return property;
-		}
-
-		var name = link[step];
-
-		var sub_property = property[name];
-
-		if (property.type == 5)// UOL
-		{
-			return DataSource._get_property((property.data as wzuol).target, link, step);
-		}
-		if (sub_property != null)
-		{
-			return DataSource._get_property(sub_property, link, step + 1);
-		}
-
-		return null;
-	}
-	//protected static wzproperty get_property(string link)
-	//{
-	//	int index = link.IndexOf(".img/");
-	//	if (!(0 <= index && !link.EndsWith(".img/")))
-	//	{
-	//		return null;
-	//	}
-	//
-	//	var package = MInspect.packages[link.Substring(0, index + 4).Split('/')];
-	//	if (package == null)
-	//	{
-	//		return null;
-	//	}
-	//
-	//	var root = package.root[""];
-	//	if (root == null)
-	//	{
-	//		return null;
-	//	}
-	//
-	//	return MInspect._get_property(root, link.Substring(index + 5).Split('/'), 0);
-	//}
 
 	DataSource()
 	{
@@ -352,7 +340,7 @@ internal class DataProvider
 
 		var package = DataSource.packages;
 
-		zorders = (null == package) ? new List<string>() : new List<string>(package["zmap.img"].root[""].identities);
+		zorders = (null == package) ? new List<string>() : new List<string>(package["zmap"].root[""].identities);
 
 		zorders.Reverse();
 
@@ -622,17 +610,13 @@ internal class Tools
 
 		return null;
 	}
-	public static string _get_canvas_link(wzproperty property)
-	{
-		return property.query(null as string, "source") ?? property.query(null as string, "_outlink") ?? property.query(null as string, "_inlink");
-	}
 	public static string get_canvas_path(wzproperty property, string path)
 	{
 		property = inspect_canvas(property);
 
 		if (null != property)
 		{
-			string link = _get_canvas_link(property);
+			string link = property.query(null as string, "source") ?? property.query(null as string, "_outlink") ?? property.query(null as string, "_inlink");
 
 			if (null == link)
 			{
@@ -644,9 +628,9 @@ internal class Tools
 
 				if (0 <= index)//outlink
 				{
-					return link;
+					return link.Substring(0, index) + link.Substring(index + 4);
 				}
-				else//inlinl
+				else if (path != null)//inlink
 				{
 					var result = path.Replace(property.absolute.Replace("\0", "/"), "/" + link);
 
@@ -663,7 +647,7 @@ internal class Tools
 		if (null != property)
 		{
 			wzproperty target;
-			string link = _get_canvas_link(property);
+			string link = property.query(null as string, "source") ?? property.query(null as string, "_outlink") ?? property.query(null as string, "_inlink");
 
 			if (null == link)
 			{
@@ -674,7 +658,10 @@ internal class Tools
 				int index = link.IndexOf(".img/");
 
 				if (0 <= index)
+				{
+					link = link.Substring(0, index) + link.Substring(index + 4);
 					DataSource.get_data(link, out target);
+				}
 				else
 					target = property.root[link.Split('/')];
 
@@ -806,7 +793,7 @@ internal class ObjectInspectorBase
 						return this.pod(target, uol_link);
 						//return (prop.data as wzuol).link;//need inspect
 					}
-				case 6: // unnamed6, zmap.img
+				case 6: // unnamed6, zmap
 					return prop.data + "";
 				//case 14: // 0x08
 				//	return prop.data;//trim_content(data + "");
@@ -931,13 +918,19 @@ internal class POD_XML
 
 	protected string _toXML(string link)
 	{
-		var pak = this._getPropertyByLink(link);
+		this.imgPath = link + "/";
+
+		var paths = link.Split('/');
+		var name = paths[paths.Length - 1];
+
+		wzproperty prop;
+		DataSource.get_data(link, out prop);
 
 		try
 		{
-			if (pak != null)
+			if (prop != null)
 			{
-				return this._wzimgToXML((string)pak[0], (wzproperty)pak[1]);
+				return this._wzimgToXML(name, prop);
 			}
 		}
 		catch (Exception ex)
@@ -984,61 +977,6 @@ internal class POD_XML
 		return sb.ToString();
 	}
 
-	protected object[] _getPropertyByLink(string link)
-	{
-		string name = null;
-		wzproperty prop = null;
-
-		try
-		{
-			if (link.EndsWith(".img"))
-			{
-				this.imgPath = link + "/";
-
-				var paths = link.Split('/');
-				name = paths[paths.Length - 1];
-				prop = DataSource.packages[paths].root[""];
-
-				return new object[] {
-					name, prop
-				};
-			}
-			else if (link.EndsWith(".img/"))
-			{
-				this.imgPath = link;
-
-				var paths = link.Substring(0, link.Length - 1).Split('/');
-				name = paths[paths.Length - 1];
-				prop = DataSource.packages[paths].root[""];
-
-				return new object[] {
-					name, prop
-				};
-			}
-			else
-			{
-				var index = link.IndexOf(".img/");
-				var ns = link.Split('/');
-				if (index >= 0 && (index + 5) < link.Length)
-				{
-					this.imgPath = link.Substring(0, index + 5);
-
-					DataSource.get_data(link, out prop);
-
-					return new object[] {
-						ns[ns.Length - 1], prop
-					};
-				}
-			}
-			System.Windows.Forms.MessageBox.Show(link);
-		}
-		catch (Exception ex)
-		{
-			System.Windows.Forms.MessageBox.Show(ex.Message + "\n\t" + ex.StackTrace);
-		}
-		return null;
-	}
-
 	protected StringBuilder enum_property(wzproperty prop)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -1082,7 +1020,7 @@ internal class POD_XML
 				case 5: // UOL
 					sb.Append(this.pod(name, (prop.data as wzuol).target));     //return (prop.data as wzuol).link;//need inspect
 					break;
-				case 6: // unnamed6, zmap.img
+				case 6: // unnamed6, zmap
 					sb.Append("<" + "unnamed6" + " name=\"" + name + "\" value=\"" + (prop.data + "") + "\"/>");
 					break;
 				case 0x02 + 6: goto case 0x0b + 6;//int16
@@ -1180,6 +1118,9 @@ internal class POD_s_XML : POD_XML
 		var canvas = Tools.inspect_canvas1(prop);
 		if (canvas != null)
 		{
+			var path = this.imgPath + prop.absolute.Replace('\0', '/').Substring(1);
+			var _path = Tools.get_canvas_path(prop, path);
+
 			sb.Append("<canvas name=\"");
 			sb.Append(name);
 			sb.Append("\" width=\"");
@@ -1187,7 +1128,7 @@ internal class POD_s_XML : POD_XML
 			sb.Append("\" height=\"");
 			sb.Append(canvas.height);
 			sb.Append("\" url=\"");
-			sb.Append(this.imgPath + prop.absolute.Replace('\0', '/').Substring(1));
+			sb.Append(_path);
 			sb.Append("\">");
 			sb.Append(this.enum_property(prop));
 			sb.Append("</canvas>");

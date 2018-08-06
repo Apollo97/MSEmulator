@@ -38,7 +38,7 @@ async function map_load_package(cat, pack) {
 		debugger;
 	}
 	if (!map_sprite[cat][pack]) {
-		let url = `/Map/${cat}/${pack}.img/`;
+		let url = `/Map/${cat}/${pack}`;
 		
 		map_sprite[cat][pack] = await $get.data(url);
 
@@ -659,7 +659,7 @@ class MapObject extends MapObjectBase {
 	}
 
 	get _texture_base_path() {
-		return [this._raw.oS + ".img", this._raw.l0, this._raw.l1, this._raw.l2].join("/");
+		return [this._raw.oS, this._raw.l0, this._raw.l1, this._raw.l2].join("/");
 	}
 
 	/**
@@ -763,7 +763,7 @@ class MapObjectSkeletalAnim extends MapObject {
 	get _folder() {
 		const raw = this._raw;
 		//["Obj"	 ][obj.oS][obj.l0][obj.l1][obj.l2][0    ][""]
-		return `/Map/Obj/${raw.oS}.img/${raw.l0}/${raw.l1}/${raw.l2}`;
+		return `/Map/Obj/${raw.oS}/${raw.l0}/${raw.l1}/${raw.l2}`;
 	}
 	async load() {
 		if (SSAnim) {
@@ -849,7 +849,7 @@ class MapTile extends MapObject {
 		let texture = new MapTexture(this._texture_raw);
 
 		this.textures[0] = texture;
-		this.textures[0]._url = ["/Map", "Tile", this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
+		this.textures[0]._url = ["/Map", "Tile", this._info.tS, this._raw.u, this._raw.no].join("/");
 
 		this.__calc_aabb();
 	}
@@ -869,13 +869,13 @@ class MapTile extends MapObject {
 	}
 	
 	get _texture_base_path() {
-		return [this._info.tS + ".img", this._raw.u, this._raw.no].join("/");
+		return [this._info.tS, this._raw.u, this._raw.no].join("/");
 	}
 }
 
 /**
  * MapEditor: Map Portal
- * Map graph (struct): "Map/Map/Graph.img/"
+ * Map graph (struct): "Map/Map/Graph/"
  */
 class MapPortal extends MapObject {
 	constructor(_raw, mapRenderer) {
@@ -974,19 +974,22 @@ class MapPortal extends MapObject {
 		}
 		else if (_raw.game[type]) {
 			let skin = this.skin != null ? this.skin : "default";
-			if (this.state) {
-				let textures = _raw.game[type][skin][this.state];
-				for (let i in textures) {
-					let texture = new MapTexture(textures[i]);
-					texture._url = [this._texture_base_path, this.__display_mode, type, skin, this.state, i].join("/");
-					this.textures.push(texture);
-				}
-			}
-			else {
+			if ("0" in _raw.game[type][skin]) {//is animation frames
 				let textures = _raw.game[type][skin];
 				for (let i in textures) {
 					let texture = new MapTexture(textures[i]);
 					texture._url = [this._texture_base_path, this.__display_mode, type, skin, i].join("/");
+					this.textures.push(texture);
+				}
+			}
+			else {
+				//TODO: need default state
+				this.state = Object.keys(_raw.game[type][skin])[0];
+
+				let textures = _raw.game[type][skin][this.state];
+				for (let i in textures) {
+					let texture = new MapTexture(textures[i]);
+					texture._url = [this._texture_base_path, this.__display_mode, type, skin, this.state, i].join("/");
 					this.textures.push(texture);
 				}
 			}
@@ -999,14 +1002,14 @@ class MapPortal extends MapObject {
 	}
 
 	get _texture_base_path() {
-		return "/Map/MapHelper.img/portal";
+		return "/Map/MapHelper/portal";
 	}
 	get _getTexturePath() {
 		if (this.__display_mode == "editor") {
-			return ["/Map/MapHelper.img/portal", this.__display_mode].join("/");
+			return ["/Map/MapHelper/portal", this.__display_mode].join("/");
 		}
 		else {
-			return ["/Map/MapHelper.img/portal", this.__display_mode].join("/");
+			return ["/Map/MapHelper/portal", this.__display_mode].join("/");
 		}
 	}
 	
@@ -1025,7 +1028,7 @@ class MapPortal extends MapObject {
 	//}
 	
 	static async Init() {
-		MapPortal._portals_raw = await $get.data("/Map/MapHelper.img/portal");
+		MapPortal._portals_raw = await $get.data("/Map/MapHelper/portal");
 
 		MapPortal._type_map = Object.keys(MapPortal._portals_raw.editor);
 	}
@@ -1144,7 +1147,7 @@ class MapBack extends MapBackBase {
 	}
 	
 	get _texture_base_path() {
-		return [this._raw.bS + ".img", "back", this._raw.no].join("/");
+		return [this._raw.bS, "back", this._raw.no].join("/");
 	}
 
 	/**
@@ -1184,7 +1187,7 @@ class MapBackAnimation extends MapBackBase {
 	}
 	
 	get _texture_base_path() {
-		return [this._raw.bS + ".img", "ani", this._raw.no].join("/");
+		return [this._raw.bS, "ani", this._raw.no].join("/");
 	}
 
 	/**
@@ -1213,7 +1216,7 @@ class MapBackSkeletalAnim extends MapBackBase {
 	get _folder() {
 		const ob = this._raw;
 		//["Back"  ][obj.bS]["ani" ][obj.no][0    ][""]
-		return `/Map/Back/${ob.bS}.img/spine/${ob.no}`;
+		return `/Map/Back/${ob.bS}/spine/${ob.no}`;
 	}
 	async load() {
 		if (SSAnim) {
@@ -1999,7 +2002,7 @@ export class SceneMap {
 		let $_mapString = null;
 		let $mapString = {};
 
-		$_mapString = await $get.data("/String/Map.img/");
+		$_mapString = await $get.data("/String/Map");
 
 		for (let i in $_mapString) {
 			for (let j in $_mapString[i]) {
@@ -2301,7 +2304,7 @@ export class SceneMap {
 	}
 	
 	_get_map_data_url(map_id) {
-		return `/Map/Map/Map${map_id.slice(0, 1)}/${map_id}.img/`;
+		return `/Map/Map/Map${map_id.slice(0, 1)}/${map_id}`;
 	}
 
 	/**
@@ -2414,8 +2417,8 @@ export class SceneMap {
 			case "450004150":
 			case "450004450":
 			case "450004750":
-				this.lifeMgr.spawnMob("8880166", 1000, 47, false, 0);//from /Etc/BossLucid.img/
-				this.lifeMgr.spawnMob("8880140", 1000, 47, false, 0);//from /Etc/BossLucid.img/
+				this.lifeMgr.spawnMob("8880166", 1000, 47, false, 0);//from /Etc/BossLucid
+				this.lifeMgr.spawnMob("8880140", 1000, 47, false, 0);//from /Etc/BossLucid
 				//this.lifeMgr.spawnMob("8880176", 1000, 47, false, 0);
 				//this.lifeMgr.spawnMob("8880141", 1000, 47, false, 0);
 				break;
@@ -2474,8 +2477,8 @@ export class SceneMap {
 	 */
 	_getBgmPath(mapRawData) {
 		let bgmPath = mapRawData.info.bgm;
-		let i = bgmPath.indexOf("/"), path = bgmPath.slice(0, i) + ".img" + bgmPath.slice(i);
-		//let m = bgmPath.match(/([^\/]+)(\/.*)/), path = [m[1] + ".img", m[2]].join("/");
+		let i = bgmPath.indexOf("/"), path = bgmPath.slice(0, i) + bgmPath.slice(i);
+		//let m = bgmPath.match(/([^\/]+)(\/.*)/), path = [m[1], m[2]].join("/");
 		return ["", "Sound", path].join("/");
 	}
 

@@ -340,7 +340,7 @@ export class ParticleGroup extends _ParticleGroupData {
 	}
 	
 	get _particle_path() {
-		return ["/Effect/particle.img", this.particleName].join("/");
+		return ["/Effect/particle", this.particleName].join("/");
 	}
 	get _texture_base_path() {
 		return [this._particle_path, "texture"].join("/");

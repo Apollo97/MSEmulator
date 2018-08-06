@@ -74,19 +74,19 @@
 					<div class="c2" style="position: relative; width: 100%; height: 85px;">
 						<div style="float: left; position: relative; width: 12px; height: 100%;"></div>
 						<div style="float: left; position: relative; width: 83px; height: 100%;">
-							<texture style="position: absolute; top: 2px;" src="images/UI/UIToolTip.img/Item/ItemIcon/base"></texture>
+							<texture style="position: absolute; top: 2px;" src="images/UI/UIToolTip/Item/ItemIcon/base"></texture>
 							<div v-if="hasPotential()">
 								<!--淺在-Level-->
-								<texture style="position: absolute; left: 2px; top: 4px;" :src="`images/UI/UIToolTip.img/Item/ItemIcon/${equip.potential_level}`"></texture>
+								<texture style="position: absolute; left: 2px; top: 4px;" :src="`images/UI/UIToolTip/Item/ItemIcon/${equip.potential_level}`"></texture>
 							</div>
 							<img v-if="'icon' in equip" :src="equip.icon['']" @load="onload_icon($event)" class="UIToolTip equip-icon"></img>
-							<texture style="position: absolute; left: 8px; top: 10px;" src="images/UI/UIToolTip.img/Item/ItemIcon/cover"></texture>
+							<texture style="position: absolute; left: 8px; top: 10px;" src="images/UI/UIToolTip/Item/ItemIcon/cover"></texture>
 						</div>
 						<div style="float: left; position: relative; top: 1px; width: 160px; height: 100%;">
 							<div class="c1" style="position: relative; width: 155px; height: 50px;">
 								<div style="position: relative; float: right;">攻擊力增加量</div>
 								<div class="UIToolTip attack-digit" style="clear: right;">
-									<texture src="images/UI/UIToolTip.img/Item/Equip/Summary/incline/0"></texture>
+									<texture src="images/UI/UIToolTip/Item/Equip/Summary/incline/0"></texture>
 								</div>
 							</div>
 							<div class="UIToolTip attrLeft" style="float: left; width: 50%;">
@@ -114,22 +114,22 @@
 					<!--Job-info-->
 					<div class="c1 UIToolTip req-job" style="position: relative; width: 100%; height: 30px;">
 						<div style="position: relative; left: 13px;">
-							<texture src="images/UI/UIToolTip.img/Item/Equip/Job/normal"></texture>
-							<texture v-if="equip.reqJob < 0" :src="`images/UI/UIToolTip.img/Item/Equip/Job/enable/0`" origin="-"></texture>
+							<texture src="images/UI/UIToolTip/Item/Equip/Job/normal"></texture>
+							<texture v-if="equip.reqJob < 0" :src="`images/UI/UIToolTip/Item/Equip/Job/enable/0`" origin="-"></texture>
 							<div v-else-if="equip.reqJob == 0 || equip.reqJob == null">
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/0" origin="-"></texture>
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/1" origin="-"></texture>
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/2" origin="-"></texture>
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/3" origin="-"></texture>
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/4" origin="-"></texture>
-								<texture src="images/UI/UIToolTip.img/Item/Equip/Job/enable/5" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/0" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/1" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/2" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/3" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/4" origin="-"></texture>
+								<texture src="images/UI/UIToolTip/Item/Equip/Job/enable/5" origin="-"></texture>
 							</div>
 							<div v-else>
-								<texture v-if="equip.reqJob &  1" :src="`images/UI/UIToolTip.img/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/1`" origin="-"></texture>
-								<texture v-if="equip.reqJob &  2" :src="`images/UI/UIToolTip.img/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/2`" origin="-"></texture>
-								<texture v-if="equip.reqJob &  4" :src="`images/UI/UIToolTip.img/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/3`" origin="-"></texture>
-								<texture v-if="equip.reqJob &  8" :src="`images/UI/UIToolTip.img/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/4`" origin="-"></texture>
-								<texture v-if="equip.reqJob & 16" :src="`images/UI/UIToolTip.img/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/5`" origin="-"></texture>
+								<texture v-if="equip.reqJob &  1" :src="`images/UI/UIToolTip/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/1`" origin="-"></texture>
+								<texture v-if="equip.reqJob &  2" :src="`images/UI/UIToolTip/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/2`" origin="-"></texture>
+								<texture v-if="equip.reqJob &  4" :src="`images/UI/UIToolTip/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/3`" origin="-"></texture>
+								<texture v-if="equip.reqJob &  8" :src="`images/UI/UIToolTip/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/4`" origin="-"></texture>
+								<texture v-if="equip.reqJob & 16" :src="`images/UI/UIToolTip/Item/Equip/Job/${(canUseEquip() ? 'enable' : 'disable')}/5`" origin="-"></texture>
 							</div>
 						</div>
 						<div v-if="'reqSpecJob' in equip">
@@ -476,7 +476,7 @@
 					}, [
 						createElement("texture", {
 							attrs: {
-								src: `images/UI/UIToolTip.img/Item/Equip/${ EquipReq.prototype.getReqState.call(this)}/req${ attrName }`
+								src: `images/UI/UIToolTip/Item/Equip/${ EquipReq.prototype.getReqState.call(this)}/req${ attrName }`
 							}
 						}),
 						createElement("div", {
@@ -484,17 +484,17 @@
 						}, [
 							createElement("texture", {
 								attrs: {
-									src: `images/UI/UIToolTip.img/Item/Equip/${state}/${digit[0]}`
+									src: `images/UI/UIToolTip/Item/Equip/${state}/${digit[0]}`
 								}
 							}),
 							createElement("texture", {
 								attrs: {
-									src: `images/UI/UIToolTip.img/Item/Equip/${ state }/${ digit[1] }`
+									src: `images/UI/UIToolTip/Item/Equip/${ state }/${ digit[1] }`
 								}
 							}),
 							createElement("texture", {
 								attrs: {
-									src: `images/UI/UIToolTip.img/Item/Equip/${ state }/${ digit[2] }`
+									src: `images/UI/UIToolTip/Item/Equip/${ state }/${ digit[2] }`
 								}
 							})
 						])
@@ -527,7 +527,7 @@
 		}
 		data() {
 			return {
-				imgUrl: "images/UI/UIToolTip.img/Item/Equip/"
+				imgUrl: "images/UI/UIToolTip/Item/Equip/"
 			}
 		}
 	}
@@ -688,29 +688,29 @@
 	.UIToolTip.border-head {
 		width: 261px;
 		height: 13px;
-		background: url(/images/UI/UIToolTip.img/Item/Frame/top);
+		background: url(/images/UI/UIToolTip/Item/Frame/top);
 	}
 	.UIToolTip.border-left {
 		width: 13px;
 		height: 3px;
 		background-repeat: repeat-y;
-		background: url(/images/UI/UIToolTip.img/Item/Frame2/w);
+		background: url(/images/UI/UIToolTip/Item/Frame2/w);
 	}
 	.UIToolTip.container {
 		width: 235px;
 		height: auto;
-		background: url(/images/UI/UIToolTip.img/Item/Frame2/c);
+		background: url(/images/UI/UIToolTip/Item/Frame2/c);
 	}
 	.UIToolTip.border-right {
 		width: 13px;
 		height: 3px;
 		background-repeat: repeat-y;
-		background: url(/images/UI/UIToolTip.img/Item/Frame2/e);
+		background: url(/images/UI/UIToolTip/Item/Frame2/e);
 	}
 	.UIToolTip.border-foot {
 		width: 261px;
 		height: 13px;
-		background: url(/images/UI/UIToolTip.img/Item/Frame/bottom);
+		background: url(/images/UI/UIToolTip/Item/Frame/bottom);
 	}
 	.UIToolTip.Item-Frame-cover {
 		position: absolute;
@@ -718,7 +718,7 @@
 		left: 3px;
 		width: 100%;
 		height: 100%;
-		background: url(/images/UI/UIToolTip.img/Item/Frame/cover);
+		background: url(/images/UI/UIToolTip/Item/Frame/cover);
 		background-repeat: no-repeat;
 	}
 
@@ -736,7 +736,7 @@
 		letter-spacing: -0px;
 	}
 	.UIToolTip.dotline {
-		background: url(/images/UI/UIToolTip.img/Item/Frame/dotline);
+		background: url(/images/UI/UIToolTip/Item/Frame/dotline);
 		background-repeat: no-repeat;
 	}
 	.UIToolTip.attack-digit {

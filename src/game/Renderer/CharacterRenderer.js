@@ -143,7 +143,7 @@ export class ChatBalloon {
 	}
 
 	static get _base_path() {
-		return "/UI/ChatBalloon.img";
+		return "/UI/ChatBalloon";
 	}
 
 	//static get DEBUG() {
@@ -158,7 +158,7 @@ window.$images_ChatBalloon = ChatBalloon.cache;
 
 /**
  * 00026623.blink[1].brow has bug
- * 'Weapon/01702694.img' is Longcoat(islot)
+ * 'Weapon/01702694' is Longcoat(islot)
  * how to use cash-weapon (ex: 01702504|0152)
  */
 
@@ -513,7 +513,7 @@ class ItemEffectAnimation extends Animation {
 	}
 }
 
-//	/data/Effect/ItemEff.img/1102918
+//	/data/Effect/ItemEff/1102918
 class ItemEffect {
 	constructor() {
 		//this._url = $2
@@ -538,7 +538,7 @@ class ItemEffect {
 			let itemEffectList = ItemEffect._list;
 
 			/** @type {string[]} */
-			let raw = $get.list("/Effect/ItemEff.img/");
+			let raw = $get.list("/Effect/ItemEff");
 
 			itemEffectList.clear();
 
@@ -569,7 +569,7 @@ class ItemEffect {
 	 */
 	async load(equipID) {
 		const id = Number(equipID);
-		const url = `/Effect/ItemEff.img/${id}/effect`;
+		const url = `/Effect/ItemEff/${id}/effect`;
 
 		if (!ItemEffect._list.has(id)) {
 			//if (!confirm("Try load: " + url)) {
@@ -998,7 +998,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		promise_raw = this.__load(url, id, cateInfo);
 
 		if (cateInfo.path) {
-			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
+			promise_name = $get.data(`/String/Eqp/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
 				if (data) {
 					this.name = data.name;
 					this.desc = data.desc;
@@ -1637,7 +1637,7 @@ class CharacterSlots {
 		const cateInfo = ItemCategoryInfo.get(id);
 
 		if (cateInfo) {
-			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}.img/`;
+			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}`;
 			const use_category = undefined;
 
 			let hair = new CharacterEquipHair();
@@ -1811,7 +1811,7 @@ class CharacterSlots {
 		const cateInfo = ItemCategoryInfo.get(id);
 
 		if (cateInfo) {
-			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}.img/`;
+			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}`;
 			/** @type {CharacterEquipBase} */
 			let item;
 
@@ -2756,8 +2756,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 	static async Init() {
 		let result = await Promise.all([
-			$get.data("/zmap.img/"),
-			$get.data("/smap.img/"),
+			$get.data("/zmap"),
+			$get.data("/smap"),
 			ItemEffect.Init(),
 			ActionAnimation.Init(),//action definition
 		]);

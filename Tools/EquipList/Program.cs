@@ -43,6 +43,11 @@ namespace EquipList
 			DataSource.Init(setting);
 
 			var data_extracter = new DataExtracter("");
+
+			//var aaa = DataProvider.get_data_by_path("Map/Map/Map0/000000000");
+			DataProvider.get_identities("Map/Obj/GachaponHousingTW");
+
+			return;
 			
 			try
 			{
@@ -93,7 +98,7 @@ internal class DataExtracter
 		{
 			this.chara = DataSource.packages["Character"];
 
-			this.equip_names = DataSource.packages["String", "Eqp.img"].root[""]["Eqp"];
+			this.equip_names = DataSource.packages["String", "Eqp"].root[""]["Eqp"];
 		}
 	}
 
@@ -330,17 +335,15 @@ internal class DataExtracter
 		IEnumerable<string> _identities =
 			from identity in this.chara[category].identities
 			where identity.StartsWith(id_prefix)
-			let id = identity.Replace(".img", "")
-			select id;
+			select identity;
 
 		SortedSet<string> new_identities = new SortedSet<string>(_identities, this.Comparer);
 		var identities = new SortedSet<string>(new_identities);
 		identities.UnionWith(existItems.Keys);
 
-		foreach (var id in identities)
+		foreach (var identity in identities)
 		{
-			var identity = id + ".img";
-			var id32 = this.parse_id(id);
+			var id32 = this.parse_id(identity);
 			if (id32 < 0)
 			{
 				continue;
@@ -349,10 +352,10 @@ internal class DataExtracter
 			var name = this.get_equip_name(category, id32);
 			var desc = this.get_equip_desc(category, id32);
 
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[id];
+				var data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -364,7 +367,7 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(id) && data.__v != DataSource.tag_version))
+				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
 				{
 					data.__modified = DataSource.tag_version;
 				}
@@ -376,7 +379,7 @@ internal class DataExtracter
 				var info = pack["info"];
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				if (desc != null)
 					data.desc = desc;
@@ -419,17 +422,15 @@ internal class DataExtracter
 		IEnumerable<string> _identities =
 			from identity in this.chara[category].identities
 			where identity.StartsWith(id_prefix)
-			let id = identity.Replace(".img", "")
-			select id;
+			select identity;
 
 		SortedSet<string> new_identities = new SortedSet<string>(_identities);
 		var identities = new SortedSet<string>(new_identities);
 		identities.UnionWith(existItems.Keys);
 
-		foreach (var id in identities)
+		foreach (var identity in identities)
 		{
-			var identity = id + ".img";
-			var id32 = this.parse_id(id);
+			var id32 = this.parse_id(identity);
 			if (id32 < 0)
 			{
 				continue;
@@ -438,10 +439,10 @@ internal class DataExtracter
 			var name = this.get_equip_name(category, id32);
 			var desc = this.get_equip_desc(category, id32);
 
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[id];
+				var data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -453,7 +454,7 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(id) && data.__v != DataSource.tag_version))
+				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
 				{
 					data.__modified = DataSource.tag_version;
 				}
@@ -465,7 +466,7 @@ internal class DataExtracter
 				var info = pack["info"];
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				if (desc != null)
 					data.desc = desc;
@@ -504,7 +505,7 @@ internal class DataExtracter
 
 			if (style != null && !new_identities.Contains(style))
 			{
-				new_identities.Add(style.Replace(".img", ""));
+				new_identities.Add(style);
 			}
 		}
 		
@@ -513,8 +514,7 @@ internal class DataExtracter
 
 		foreach (var identity in identities)
 		{
-			var id = identity.Replace(".img", "");
-			var id32 = this.parse_id(id);
+			var id32 = this.parse_id(identity);
 			if (id32 < 0)
 			{
 				continue;
@@ -522,11 +522,11 @@ internal class DataExtracter
 
 			var name = this.get_equip_name("Face", id32);
 
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[id];
+				var data = existItems[identity];
 
-				if (name != data.name || (new_identities.Contains(id) && data.__v != DataSource.tag_version))
+				if (name != data.name || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
 				{
 					data.name = name;
 					data.__modified = DataSource.tag_version;
@@ -540,7 +540,7 @@ internal class DataExtracter
 				var icon = pack["blink", "0", "face"];
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				try
@@ -573,7 +573,7 @@ internal class DataExtracter
 			var style = this.get_colored_hair_style(i, this.hairColor);
 			if (style != null && !new_identities.Contains(style))
 			{
-				new_identities.Add(style.Replace(".img", ""));
+				new_identities.Add(style);
 			}
 		}
 
@@ -582,8 +582,7 @@ internal class DataExtracter
 
 		foreach (string identity in identities)
 		{
-			var id = identity.Replace(".img", "");
-			var id32 = this.parse_id(id);
+			var id32 = this.parse_id(identity);
 			if (id32 < 0)
 			{
 				continue;
@@ -592,14 +591,14 @@ internal class DataExtracter
 			var name = this.get_equip_name("Hair", id32);
 
 			//#if MY_DEBUG
-			//			string _identity = "00033426.img";//has no place: hair
+			//			string _identity = "00033426";//has no place: hair
 			//#endif
 
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[id];
+				var data = existItems[identity];
 
-				if (name != data.name || (new_identities.Contains(id) && data.__v != DataSource.tag_version))
+				if (name != data.name || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
 				{
 					data.name = name;
 					data.__modified = DataSource.tag_version;
@@ -613,7 +612,7 @@ internal class DataExtracter
 				var icon = pack["stand1", "0", "hairOverHead"] ?? pack["stand1", "0", "hair"];
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				try
@@ -642,21 +641,19 @@ internal class DataExtracter
 
 		IEnumerable<string> _heads =
 			from identity in this.chara.identities
-			where identity.StartsWith("0001") && identity.EndsWith(".img")
-			let id = identity.Replace(".img", "")
-			select id;
+			where identity.StartsWith("0001")
+			select identity;
 
 		SortedSet<string> new_identities = new SortedSet<string>(_heads, this.Comparer);
 		var identities = new SortedSet<string>(new_identities);
 		identities.UnionWith(existItems.Keys);
 
-		foreach (var id in identities)
+		foreach (var identity in identities)
 		{
-			var identity = id + ".img";
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[id];
-				if (identities.Contains(id))
+				var data = existItems[identity];
+				if (identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
@@ -667,10 +664,10 @@ internal class DataExtracter
 				var pack = this.chara[identity].root[""];
 				var info = pack["info"];
 				var icon = pack["stand1", "0", "head"];
-				var name = "[" + id + "]";
+				var name = "[" + identity + "]";
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				if (icon["_hash"] != null)
@@ -693,27 +690,25 @@ internal class DataExtracter
 	{
 		var items = new ArrayList();
 
-		//pack://Character/00002001.img
-		//info://Character/00002001.img/info
-		//img://Character/00002001.img/stand1/0/body
+		//pack://Character/00002001
+		//info://Character/00002001/info
+		//img://Character/00002001/stand1/0/body
 
 		IEnumerable<string> _bodies =
 			from identity in this.chara.identities
-			where identity.StartsWith("0000") && identity.EndsWith(".img")
-			let id = identity.Replace(".img", "")
-			select id;
+			where identity.StartsWith("0000")
+			select identity;
 
 		SortedSet<string> new_identities = new SortedSet<string>(_bodies, this.Comparer);
 		var identities = new SortedSet<string>(new_identities);
 		identities.UnionWith(existItems.Keys);
 
-		foreach (var id in identities)
+		foreach (var identity in identities)
 		{
-			var identity = id + ".img";
-			if (existItems.ContainsKey(id))
+			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[id];
-				if (identities.Contains(id))
+				var data = existItems[identity];
+				if (identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
@@ -724,10 +719,10 @@ internal class DataExtracter
 				var pack = this.chara[identity].root[""];
 				var info = pack["info"];
 				var icon = pack["stand1", "0", "body"];
-				var name = "[" + id + "]";
+				var name = "[" + identity + "]";
 
 				dynamic data = this.inspectProperty(info);
-				data.id = id;
+				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				if (icon["_hash"] != null)
@@ -751,8 +746,7 @@ internal class DataExtracter
 	static int parse_img_id(string id_string)
 	{
 		int outputId;
-		string inputId = id_string.Replace(".img", "");
-		var result = Int32.TryParse(inputId, out outputId);
+		var result = Int32.TryParse(id_string, out outputId);
 		if (result) {
 			return outputId;
 		}
@@ -788,7 +782,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 3 - 4] = (char)('0' + i);//00012<3>45.img
+					p[style.Length - 3 - 4] = (char)('0' + i);//00012<3>45
 				}
 			}
 			if (this.chara["Face"][s] != null)
@@ -816,7 +810,7 @@ internal class DataExtracter
 		{
 			fixed (char* p = s)
 			{
-				p[style.Length - 3 - 4] = (char)('0' + color % 9);//00012<3>45.img
+				p[style.Length - 3 - 4] = (char)('0' + color % 9);//00012<3>45
 			}
 		}
 		if (this.chara["Face"][s] != null)
@@ -839,7 +833,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 1 - 4] = (char)('0' + i);//0001234<5>.img
+					p[style.Length - 1 - 4] = (char)('0' + i);//0001234<5>
 				}
 			}
 			if (this.chara["Hair"][s] != null)
@@ -869,7 +863,7 @@ internal class DataExtracter
 			{
 				fixed (char* p = s)
 				{
-					p[style.Length - 1 - 4] = (char)('0' + color % 8);//0001234<5>.img
+					p[style.Length - 1 - 4] = (char)('0' + color % 8);//0001234<5>
 				}
 			}
 			if (this.chara["Hair"][s] != null)

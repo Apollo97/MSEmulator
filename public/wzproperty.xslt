@@ -150,9 +150,7 @@
   </xsl:template>
   
   <xsl:template match="canvas/@url">
-	<xsl:attribute name="src">
-	  /images/<xsl:value-of select="." />
-	</xsl:attribute>
+	<xsl:attribute name="src">/images/<xsl:value-of select="." />.png</xsl:attribute>
   </xsl:template>
 
 </xsl:stylesheet>

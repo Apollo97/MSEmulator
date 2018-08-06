@@ -97,7 +97,7 @@ export class MobRenderer extends LifeRenderer {
 	}
 	
 	static _get_desc_base_path() {
-		return '/String/Mob.img';
+		return "/String/Mob";
 	}
 
 	static get _base_path() {

@@ -251,6 +251,11 @@ internal class wzarchive
 				default: return null;
 			}
 
+			if (identity.EndsWith(".img"))
+			{
+				identity = identity.Substring(0, identity.Length - 4);
+			}
+
 			host.append(identity, new wzpackage(identity, type, reader.unpack<int>(), reader.unpack<int>(), header.compute_offset(), host, reader));
 		}
 

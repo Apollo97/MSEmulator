@@ -11229,8 +11229,7 @@ module.exports = function (method, arg) {
 
 
 /***/ }),
-/* 27 */,
-/* 28 */
+/* 27 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -11420,6 +11419,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
+/* 28 */,
 /* 29 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -13465,7 +13465,7 @@ class ItemCategoryInfo {
 		}
 
 		if (id[0] == '0') {
-			return info.dataDir + id + ".img/";
+			return info.dataDir + id + "/";
 		}
 		else {
 			//TODO: get item data path
@@ -13484,7 +13484,7 @@ class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == '0') {
-			return $get.imageUrl(info.dataDir + id + ".img/" + info.iconRawPath);
+			return $get.imageUrl(info.dataDir + id + "/" + info.iconRawPath);
 		}
 	}
 
@@ -13499,7 +13499,7 @@ class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == '0') {
-			return $get.imageUrl(info.dataDir + id + ".img/" + info.iconPath);
+			return $get.imageUrl(info.dataDir + id + "/" + info.iconPath);
 		}
 	}
 
@@ -13514,7 +13514,7 @@ class ItemCategoryInfo {
 		if (!info) {
 			return null;
 		}
-		let url = `/String/Eqp.img/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
+		let url = `/String/Eqp/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
 		let data = await $get.data(url);
 		return data;
 	}
@@ -13971,7 +13971,7 @@ $get.pack = async function $get_pack(path) {
 				throw new TypeError("data: " + path);
 			}
 		}
-		const url = `${window.$ROOT_PATH}pack${path}`;
+		const url = $get.packUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -13992,7 +13992,6 @@ $get.pack = async function $get_pack(path) {
  * @returns {Promise<any>}
  */
 $get.packSync = function get_packSync(path) {
-	const url = `${window.$ROOT_PATH}pack${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -14018,7 +14017,7 @@ $get.data = async function $get_data(path) {
 		return obj;
 	}
 	else {
-		const url = `${window.$ROOT_PATH}data${path}`;
+		const url = $get.dataUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -14039,7 +14038,6 @@ $get.data = async function $get_data(path) {
  * @returns {any}
  */
 $get.dataSync = function get_dataSync(path) {
-	const url = `${window.$ROOT_PATH}data${path}`;
 	let obj = _getValueFromArchiveByPath(path);
 	if (obj) {
 		return obj;
@@ -14065,7 +14063,7 @@ $get.list = async function $get_list(path) {
 		return obj;
 	}
 	else {
-		const url = `${window.$ROOT_PATH}ls${path}`;
+		const url = $get.listUrl(path);
 
 		let task = (async function () {
 			let jsonText = await ResourceManager.get(url);
@@ -14092,16 +14090,17 @@ $get.listSync = function $get_listSync(path) {
 	}
 	return undefined;
 }
+
 /**
  * @param {string} path
  * @returns {string}
  */
-$get.dataUrl = function $get_imagesUrl(path) {
+$get.dataUrl = function $get_dataUrl(path) {
 	if (url_startsWith_protocol(path)) {
 		return path;
 	}
 	else if (!path.startsWith("data")) {
-		return `${window.$ROOT_PATH}data${path}`;
+		return `${window.$ROOT_PATH}data${path}.json`;
 	}
 	throw new Error("Not game data: " + path);
 }
@@ -14109,14 +14108,23 @@ $get.dataUrl = function $get_imagesUrl(path) {
  * @param {string} path
  * @returns {string}
  */
-$get.packUrl = function $get_imagesUrl(path) {
+$get.packUrl = function $get_packUrl(path) {
 	if (url_startsWith_protocol(path)) {
 		return path;
 	}
 	else if (!path.startsWith("pack")) {
-		return `${window.$ROOT_PATH}pack${path}`;
+		return `${window.$ROOT_PATH}pack${path}.json`;
 	}
 	throw new Error("Not game pack: " + path);
+}
+$get.listUrl = function $get_listUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("ls")) {
+		return `${window.$ROOT_PATH}ls${path}.json`;
+	}
+	throw new Error(path);
 }
 /**
  * @param {string} path
@@ -14127,9 +14135,35 @@ $get.imageUrl = function $get_imagesUrl(path) {
 		return path;
 	}
 	else if (!path.startsWith("images")) {
-		return `${window.$ROOT_PATH}images${path}`;
+		return `${window.$ROOT_PATH}images${path}.png`;
 	}
 	throw new Error("Not game images: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.soundMp3Url = function $get_soundMp3Url(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("sound")) {
+		return `${window.$ROOT_PATH}sound${path}.mp3`;
+	}
+	throw new Error("Not game sound: " + path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.soundWavUrl = function $get_soundWavUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("sound")) {
+		return `${window.$ROOT_PATH}sound${path}.wav`;
+	}
+	throw new Error("Not game sound: " + path);
 }
 window.$get = $get;
 
@@ -14532,7 +14566,7 @@ window.load_extern_item_data = async function (id) {
 	return raw;
 }
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
 
 /***/ }),
 /* 54 */,
@@ -17167,7 +17201,7 @@ var index_esm = {
 
 /* harmony default export */ __webpack_exports__["a"] = (index_esm);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
 
 /***/ }),
 /* 84 */
@@ -28876,7 +28910,7 @@ Vue.compile = compileToFunctions;
 
 /* harmony default export */ __webpack_exports__["a"] = (Vue);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28), __webpack_require__(61), __webpack_require__(387).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27), __webpack_require__(61), __webpack_require__(387).setImmediate))
 
 /***/ }),
 /* 87 */,
@@ -36140,7 +36174,7 @@ class ChatBalloon {
 	}
 
 	static get _base_path() {
-		return "/UI/ChatBalloon.img";
+		return "/UI/ChatBalloon";
 	}
 
 	//static get DEBUG() {
@@ -36157,7 +36191,7 @@ window.$images_ChatBalloon = ChatBalloon.cache;
 
 /**
  * 00026623.blink[1].brow has bug
- * 'Weapon/01702694.img' is Longcoat(islot)
+ * 'Weapon/01702694' is Longcoat(islot)
  * how to use cash-weapon (ex: 01702504|0152)
  */
 
@@ -36512,7 +36546,7 @@ class ItemEffectAnimation extends __WEBPACK_IMPORTED_MODULE_2__Animation__["a" /
 	}
 }
 
-//	/data/Effect/ItemEff.img/1102918
+//	/data/Effect/ItemEff/1102918
 class ItemEffect {
 	constructor() {
 		//this._url = $2
@@ -36537,7 +36571,7 @@ class ItemEffect {
 			let itemEffectList = ItemEffect._list;
 
 			/** @type {string[]} */
-			let raw = $get.list("/Effect/ItemEff.img/");
+			let raw = $get.list("/Effect/ItemEff");
 
 			itemEffectList.clear();
 
@@ -36568,7 +36602,7 @@ class ItemEffect {
 	 */
 	async load(equipID) {
 		const id = Number(equipID);
-		const url = `/Effect/ItemEff.img/${id}/effect`;
+		const url = `/Effect/ItemEff/${id}/effect`;
 
 		if (!ItemEffect._list.has(id)) {
 			//if (!confirm("Try load: " + url)) {
@@ -36997,7 +37031,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		promise_raw = this.__load(url, id, cateInfo);
 
 		if (cateInfo.path) {
-			promise_name = $get.data(`/String/Eqp.img/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
+			promise_name = $get.data(`/String/Eqp/Eqp/${cateInfo.path}/${Number(id)}`).then(data => {
 				if (data) {
 					this.name = data.name;
 					this.desc = data.desc;
@@ -37636,7 +37670,7 @@ class CharacterSlots {
 		const cateInfo = __WEBPACK_IMPORTED_MODULE_0__public_resource_js__["c" /* ItemCategoryInfo */].get(id);
 
 		if (cateInfo) {
-			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}.img/`;
+			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}`;
 			const use_category = undefined;
 
 			let hair = new CharacterEquipHair();
@@ -37810,7 +37844,7 @@ class CharacterSlots {
 		const cateInfo = __WEBPACK_IMPORTED_MODULE_0__public_resource_js__["c" /* ItemCategoryInfo */].get(id);
 
 		if (cateInfo) {
-			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}.img/`;
+			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}`;
 			/** @type {CharacterEquipBase} */
 			let item;
 
@@ -38757,8 +38791,8 @@ class CharacterRenderer extends CharacterAnimationBase {
 
 	static async Init() {
 		let result = await Promise.all([
-			$get.data("/zmap.img/"),
-			$get.data("/smap.img/"),
+			$get.data("/zmap"),
+			$get.data("/smap"),
 			ItemEffect.Init(),
 			__WEBPACK_IMPORTED_MODULE_7__CharacterActionAnimation_js__["a" /* ActionAnimation */].Init(),//action definition
 		]);
@@ -39235,7 +39269,7 @@ function toDataURL(url) {
 	});
 }
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
 
 /***/ }),
 /* 175 */,
@@ -39265,23 +39299,18 @@ class GlobalVar {
 		}
 
 		{
-			this.m_display_physics_debug = false;
-			this.m_display_debug_info = false;
+			this.m_editor_mode = false;
+
+			this.m_display_foothold = false;
+
+			this.m_display_selected_object = false;
+			this.m_selected_object = null;
+			this.m_hover_object = null;
 		}
 
 		{
-			this.input_keyDown = {};
-			this.input_keyUp = {};
-
-			this.mouse_move = 0;
-			this.mouse_x = 0;
-			this.mouse_y = 0;
-			this.mouse_dl = 0;
-			this.mouse_ul = 0;
-			this.mouse_dm = 0;
-			this.mouse_um = 0;
-			this.mouse_dr = 0;
-			this.mouse_ur = 0;
+			this.m_display_physics_debug = false;
+			this.m_display_debug_info = false;
 		}
 
 		{
@@ -39312,13 +39341,18 @@ class GlobalVar {
 		}
 
 		{
-			this.m_editor_mode = true;
+			this.input_keyDown = {};
+			this.input_keyUp = {};
 
-			this.m_display_foothold = false;
-
-			this.m_display_selected_object = false;
-			this.m_selected_object = null;
-			this.m_hover_object = null;
+			this.mouse_move = 0;
+			this.mouse_x = 0;
+			this.mouse_y = 0;
+			this.mouse_dl = 0;
+			this.mouse_ul = 0;
+			this.mouse_dm = 0;
+			this.mouse_um = 0;
+			this.mouse_dr = 0;
+			this.mouse_ur = 0;
 		}
 
 		{
@@ -39601,7 +39635,7 @@ class ActionAnimation {
 	}
 
 	static get _base_path() {
-		return "/Character/00002000.img/";
+		return "/Character/00002000";
 	}
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = ActionAnimation;
@@ -45183,7 +45217,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61), __webpack_require__(28)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61), __webpack_require__(27)))
 
 /***/ }),
 /* 389 */
@@ -51870,7 +51904,7 @@ class Engine extends __WEBPACK_IMPORTED_MODULE_2__IRenderer_js__["c" /* IRendere
 
 
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
 
 /***/ }),
 /* 418 */
@@ -54702,11 +54736,11 @@ let chatBalloon = new __WEBPACK_IMPORTED_MODULE_4__Renderer_CharacterRenderer_js
 window.chatBalloon = chatBalloon;
 
 Promise.all([
-	//$get.data("/Skill/MobSkill.img/238/level/4"),
+	//$get.data("/Skill/MobSkill/238/level/4"),
 	chatBalloon.load(136),
 ]).then(async function (_data) {
 	//let _raw = JSON.parse(_data);
-	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill.img/238/level/4/ball0");
+	//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill/238/level/4/ball0");
 	if (window.anima) {
 		anima.is_loop = true;
 		anima.load();

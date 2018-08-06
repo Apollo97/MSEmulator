@@ -2,7 +2,7 @@
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
 		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
-			<gui-root p="UI/StatusBar3.img/">
+			<gui-root p="UI/StatusBar3">
 				<!-- begin bottomUI -->
 				<gui p="mainBar">
 					<div style="position: absolute; bottom: 0; width: 100%;">
@@ -134,9 +134,8 @@
 									<div :style="{position: 'absolute', left: 0, top: 0, width:width+'px', height:height+'px'}">
 										<!-- begin size button -->
 										<gui p="../..">
-											<gui-button p="drag" style="position: absolute; left: 3px; top: 3px;"></gui-button>
-
 											<template v-if="ui.chat.size=='max'">
+												<gui-button p="drag" style="position: absolute; left: 3px; top: 3px;"></gui-button>
 												<gui-button p="btMin" @click="ui.chat.size='min'" style="position: absolute; right: 3px; top: 3px;"></gui-button>
 											</template>
 										</gui>
@@ -180,6 +179,7 @@
 								</template>
 							</gui-frame>
 							<div v-if="ui.chat.size!='max' && ui.chat.history.length > 0" style="position: absolute; left: 0; top: 8px;">
+								<gui-button p="ingame/view/drag" style="display: block; position: relative; left: 3px; top: 3px;"></gui-button>
 								<div class="chat-text">{{ui.chat.history[ui.chat.history.length - 1].text}}</div>
 							</div>
 							<!-- end char bg -->

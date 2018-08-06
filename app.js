@@ -60,10 +60,10 @@ function main(firstInit) {
 		app = DataServer(app);
 	}
 	else {
-		app.get('/version', function (req, res, next) {
+		app.get('/version.js', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${"1"};`,
-				`window.DATA_TAG="${"server"}";`,
+				`window.DATA_TAG="static-server";`,
 				`window.DATA_LAST_MODIFIED="${(new Date(0)).toUTCString()}";`,
 			].join("\n");
 
@@ -574,7 +574,7 @@ function DataServer(app) {
 			res.end(`<script>${url}</script>`);
 		});
 
-		a_pp.get('/version', function (req, res, next) {
+		a_pp.get('/version.js', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${_data_provider.version};`,
 				`window.DATA_TAG="${_data_provider.setting.tag}";`,
@@ -908,7 +908,7 @@ function DataServer(app) {
 		});
 		
 		a_pp.get("/favicon.ico", function (req, res, next) {
-			const data_path = "Character/Weapon/01572003.img/info/iconRaw";
+			const data_path = "Character/Weapon/01572003/info/iconRaw";
 			
 			let task = _data_provider.getAsync("images", data_path);
 			
