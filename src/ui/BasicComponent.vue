@@ -82,11 +82,11 @@
 		computed: {
 			path: function () {
 				let ds = this._getPathArray();
-				return ds.join("/");
+				return "/" + ds.join("/");
 			},
 			_path: function () {
 				let ds = this._getPathArray();
-				return ds.join("/");
+				return "/" + ds.join("/");
 			},
 		},
 		methods: {
