@@ -262,13 +262,7 @@ export class Game {
 			else {
 				let params = _parseUrlParameter();
 
-				let map_id;
-				if (process.env.NODE_ENV === 'production') {
-					map_id = params["map"] || window.DEFAULT_MAP_ID;
-				}
-				else {
-					map_id = params["map"] || "000000000";//450003000
-				}
+				let map_id = params["map"] || window.DEFAULT_MAP_ID;//000000000//450003000
 
 				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
 

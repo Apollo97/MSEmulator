@@ -11229,7 +11229,8 @@ module.exports = function (method, arg) {
 
 
 /***/ }),
-/* 27 */
+/* 27 */,
+/* 28 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -11419,7 +11420,6 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 28 */,
 /* 29 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -14566,7 +14566,7 @@ window.load_extern_item_data = async function (id) {
 	return raw;
 }
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
 
 /***/ }),
 /* 54 */,
@@ -17201,7 +17201,7 @@ var index_esm = {
 
 /* harmony default export */ __webpack_exports__["a"] = (index_esm);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
 
 /***/ }),
 /* 84 */
@@ -28910,7 +28910,7 @@ Vue.compile = compileToFunctions;
 
 /* harmony default export */ __webpack_exports__["a"] = (Vue);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27), __webpack_require__(61), __webpack_require__(387).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28), __webpack_require__(61), __webpack_require__(387).setImmediate))
 
 /***/ }),
 /* 87 */,
@@ -39269,7 +39269,7 @@ function toDataURL(url) {
 	});
 }
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
 
 /***/ }),
 /* 175 */,
@@ -45217,7 +45217,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61), __webpack_require__(27)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61), __webpack_require__(28)))
 
 /***/ }),
 /* 389 */
@@ -51904,7 +51904,7 @@ class Engine extends __WEBPACK_IMPORTED_MODULE_2__IRenderer_js__["c" /* IRendere
 
 
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(27)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(28)))
 
 /***/ }),
 /* 418 */

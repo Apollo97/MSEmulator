@@ -82,18 +82,11 @@
 		computed: {
 			path: function () {
 				let ds = this._getPathArray();
-
-				try {
-					return decodeURI(new URL(ds.join("/"), window.location).pathname);
-				}
-				catch (ex) {
-					debugger
-					return new URL(ds.join("/"), window.location).pathname;
-				}
+				return ds.join("/");
 			},
 			_path: function () {
 				let ds = this._getPathArray();
-				return new URL(ds.join("/"), window.location).pathname;
+				return ds.join("/");
 			},
 		},
 		methods: {
