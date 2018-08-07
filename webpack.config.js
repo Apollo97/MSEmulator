@@ -1,5 +1,6 @@
 ﻿const webpack = require('webpack');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 let config;
 
@@ -20,9 +21,7 @@ if (process.env.NODE_ENV === 'production') {
 			filename: '[name].js',
 			publicPath: '/'
 		},
-		plugins: [
-			//new UglifyJsPlugin(),
-		],
+		mode: 'production',
 		module: {
 			rules: [
 				/*{
@@ -40,12 +39,15 @@ if (process.env.NODE_ENV === 'production') {
 				  }
 				},*/
 				{
-					test: /\.vue$/,
-					loader: 'vue-loader',
+					test: /\.css$/,
+					use: [
+						'vue-style-loader',
+						'css-loader'
+					],
 				},
 				{
-					test: /\.css$/,
-					use: ['style-loader', 'css-loader']
+					test: /\.vue$/,
+					loader: 'vue-loader'
 				},
 				{
 					test: /\.(png|jp(e*)g|svg)$/,
@@ -59,11 +61,15 @@ if (process.env.NODE_ENV === 'production') {
 				}
 			],
 		},
+		plugins: [
+			//new UglifyJsPlugin(),
+			new VueLoaderPlugin(),
+		],
 		resolve: {
 			// 設定後只需要寫 require('file') 而不用寫成 require('file.js')
-			extensions: ['.js', '.json'],
+			extensions: ['.js', '.json', '.vue'],
 			alias: {
-				'vue$': 'vue/dist/vue.esm.js',
+				'vue$': 'vue/dist/vue.min.js',
 			}
 		},
 		devtool: 'source-map'
@@ -90,20 +96,19 @@ else {
 			filename: '[name].js',
 			publicPath: '/'
 		},
-		plugins: [
-			// 使用 Hot Module Replacement 外掛
-			new webpack.optimize.OccurrenceOrderPlugin(),
-			new webpack.HotModuleReplacementPlugin(),
-		],
+		mode: 'development',
 		module: {
 			rules: [
 				{
-					test: /\.vue$/,
-					loader: 'vue-loader',
+					test: /\.css$/,
+					use: [
+						'vue-style-loader',
+						'css-loader'
+					],
 				},
 				{
-					test: /\.css$/,
-					use: ['style-loader', 'css-loader']
+					test: /\.vue$/,
+					loader: 'vue-loader'
 				},
 				{
 					test: /\.(png|jp(e*)g|svg)$/,
@@ -117,9 +122,15 @@ else {
 				}
 			],
 		},
+		plugins: [
+			new VueLoaderPlugin(),
+			// 使用 Hot Module Replacement 外掛
+			new webpack.optimize.OccurrenceOrderPlugin(),
+			new webpack.HotModuleReplacementPlugin(),
+		],
 		resolve: {
 			// 設定後只需要寫 require('file') 而不用寫成 require('file.js')
-			extensions: ['.js', '.json'],
+			extensions: ['.js', '.json', '.vue'],
 			alias: {
 				'vue$': 'vue/dist/vue.esm.js',
 			}

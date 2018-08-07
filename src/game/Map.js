@@ -2489,11 +2489,25 @@ export class SceneMap {
 	 * @param {{info:{bgm:string}}} mapRawData
 	 */
 	_loadBgm(mapRawData) {
-		const path = this._getBgmPath(mapRawData);
-		this._bgm_path = path;
+		const elem_bgm = document.getElementById("bgm");
+		if (elem_bgm) {
+			const path = this._getBgmPath(mapRawData);
+			this._bgm_path = path;
 
-		const url = $get.soundMp3Url(path);
-		document.getElementById("bgm").innerHTML = `<source src="${url}" type="audio/mpeg">`;
+			const url = $get.soundMp3Url(path);
+			
+			elem_bgm.innerHTML = `<source src="${url}" type="audio/mpeg">`;
+			
+			if (process.env.NODE_ENV === 'production') {
+				elem_bgm.autoplay = true;
+			}
+			else {
+				elem_bgm.autoplay = false;
+			}
+		}
+		else {
+			console.error(new TypeError("#bgm"));
+		}
 	}
 
 	playBgm() {

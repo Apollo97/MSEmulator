@@ -56,7 +56,12 @@ class GlobalVar {
 			//this.m_display_mob_effect = true;
 			//this.m_display_mob_etc = true;
 		}
-
+		
+		{
+			this.ChatBalloon_default_style = 0;
+			this.ChatBalloon_DisplayDuration = 5000;
+		}
+		
 		{
 			this.input_keyDown = {};
 			this.input_keyUp = {};

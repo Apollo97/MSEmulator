@@ -452,7 +452,6 @@
 				});
 				
 				try {
-					debugger
 					if (window.scene_map) {
 						window.scene_map.addChara(result);
 					}

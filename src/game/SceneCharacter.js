@@ -4,7 +4,8 @@ import { ItemCategoryInfo } from '../../public/resource.js';
 import { IRenderer } from './IRenderer.js';
 
 import { SceneObject } from "./SceneObject.js";
-import { CharacterRenderer, ChatBalloon } from "./Renderer/CharacterRenderer.js";
+import { CharacterRenderer } from "./Renderer/CharacterRenderer.js";
+import { ChatBalloon } from "./Renderer/ChatBalloon.js";
 import { PPlayer, PPlayerState } from "./Physics/PPlayer.js";
 
 import { $createItem, ItemEquip, ItemSlot, ItemBase } from "./Item.js";
@@ -53,7 +54,6 @@ class TimeElapsed {
 window.$addItem_repeatEquip = false;
 
 window.$Character_ChatBalloon_DisplayDuration = 5000;
-window.$Character_ChatBalloon_Style = 0;
 
 class ChatController {
 	constructor() {
@@ -86,7 +86,7 @@ class ChatController {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		const $displayDuration = this.constructor.displayDuration;
+		const $displayDuration = this.displayDuration;
 
 		if (this.elapsed > $displayDuration) {
 			this.isDisplay = false;
@@ -102,7 +102,7 @@ class ChatController {
 	 */
 	async draw(renderer, chara) {
 		if (this._isDisplay) {
-			const style = this.style || window.$Character_ChatBalloon_Style;
+			const style = this.style || $gv.ChatBalloon_default_style;
 
 			/** @type {ChatBalloon} */
 			let cb = ChatBalloon.cache[style];
@@ -111,7 +111,7 @@ class ChatController {
 				await cb.load(style);
 			}
 
-			const $colon = this.constructor.colon;
+			const $colon = this.colon;
 			const crr = chara.renderer;
 			const boundBox = crr._boundBox;
 
@@ -131,14 +131,14 @@ class ChatController {
 	}
 
 	/** @type {" : "} */
-	static get colon() {
+	get colon() {
 		return " : ";
 	}
-	static get $maxLength() {
+	get $maxLength() {
 		return 70;
 	}
-	static get displayDuration() {
-		return window.$Character_ChatBalloon_DisplayDuration;
+	get displayDuration() {
+		return $gv.ChatBalloon_DisplayDuration;
 	}
 }
 

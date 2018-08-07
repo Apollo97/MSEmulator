@@ -6,7 +6,8 @@ import { IGraph, IRenderer } from './IRenderer.js';
 
 import { engine, Graph } from './Engine.js';
 
-import { CharacterRenderer, ChatBalloon } from './Renderer/CharacterRenderer.js';
+import { CharacterRenderer } from './Renderer/CharacterRenderer.js';
+import { ChatBalloon } from './Renderer/ChatBalloon.js';
 import { Animation } from './Animation.js';
 
 window.m_is_run = true;

@@ -110,7 +110,7 @@ export class ItemCategoryInfo {
 		}
 
 		if (id[0] == '0') {
-			return info.dataDir + id + "/";
+			return info.dataDir + id;
 		}
 		else {
 			//TODO: get item data path
@@ -806,6 +806,18 @@ $get.soundWavUrl = function $get_soundWavUrl(path) {
 	}
 	throw new Error("Not game sound: " + path);
 }
+
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.assetUrl = function $get_assetUrl(path) {
+	return `${window.$ROOT_PATH}${path}`;
+}
+$get.asset = function $get_asset(path) {
+	return $get($get.assetUrl(path));
+}
+
 window.$get = $get;
 
 
