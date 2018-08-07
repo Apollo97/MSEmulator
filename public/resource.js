@@ -974,19 +974,19 @@ export class CharacterRenderConfig {
 }
 
 var _external_data = {
-	"RequiredJobs": [
+	"requiredJobs": [
 		"Beginner"
 	],
-	"RequiredLevel": 0,
-	"IsCash": true,
-	"Name": "Blue Beanie",
-	"Desc": null,
-	"Id": 1000000,
-	"RequiredGender": 0,
-	"TypeInfo": {
-		"OverallCategory": "Equip",
-		"Category": "Armor",
-		"SubCategory": "Hat"
+	"requiredLevel": 0,
+	"isCash": true,
+	"name": "Blue Beanie",
+	"desc": null,
+	"id": 1000000,
+	"requiredGender": 0,
+	"typeInfo": {
+		"overallCategory": "Equip",
+		"category": "Armor",
+		"subCategory": "Hat"
 	}
 };
 
@@ -1054,7 +1054,7 @@ async function load_external_resource(url) {
 	let raw;
 
 	try {
-		raw = ResourceManager._external_raw = JSON.parse(await $get("/equip"));
+		raw = ResourceManager._external_raw = JSON.parse(await $get.asset("equip.json"));
 		if (!raw) {
 			debugger;
 			throw Error("'/equip' is empty");
@@ -1069,16 +1069,16 @@ async function load_external_resource(url) {
 	}
 	
 	for (let i = 0; i < raw.length; ++i) {
+		const item = raw[i];
+		const id = String(item.id).padStart(8, "0");
+		
 		try {
-			let item = raw[i];
-			let id = String(item.Id).padStart(8, "0");
-
-			if (!(item.TypeInfo && ItemTypeInfo[item.TypeInfo.OverallCategory])) {
+			if (!(item.typeInfo && ItemTypeInfo[item.typeInfo.overallCategory])) {
 				continue;
 			}
 
-			let clz = item.TypeInfo.OverallCategory.toLowerCase();
-			let cate = ItemTypeInfo[item.TypeInfo.OverallCategory][item.TypeInfo.SubCategory];
+			let clz = item.typeInfo.overallCategory.toLowerCase();
+			let cate = ItemTypeInfo[item.typeInfo.overallCategory][item.typeInfo.subCategory];
 			if (!cate) {
 				continue;
 			}
@@ -1091,11 +1091,11 @@ async function load_external_resource(url) {
 
 			let it = {
 				id: id,
-				name: item.Name,
-				desc: item.Desc,
-				cash: item.IsCash ? 1 : 0,
+				name: item.name,
+				desc: item.desc,
+				cash: item.isCash ? 1 : 0,
 				icon: {
-					"": `//labs.maplestory.io/api/gms/latest/item/${item.Id}/icon`,
+					"": `//labs.maplestory.io/api/gms/latest/item/${item.id}/icon`,
 				},
 			};
 
