@@ -16,7 +16,7 @@ export class FootholdChain {
 	constructor(id) {
 		this.id = id;
 
-		/** @type {Foothold[]} */
+		/** @type {FootholdSingle[]} */
 		this.footholds = [];
 
 		this.bound = new Rectangle();
@@ -25,8 +25,8 @@ export class FootholdChain {
 	}
 	
 	/**
-	 * @param {Foothold} head - foothold chain head
-	 * @param {Foothold[]} map_footholds - map footholds
+	 * @param {FootholdSingle} head - foothold chain head
+	 * @param {FootholdSingle[]} map_footholds - map footholds
 	 * @param {function} type - foothold constructor
 	 */
 	init(head, map_footholds, type) {
@@ -55,7 +55,7 @@ export class FootholdChain {
 
 		this.FootholdType = type;
 
-		if (type == Foothold) {
+		if (type == FootholdSingle) {
 			this.footholds.forEach((fh, childIndex) => {
 				fh.init(this, childIndex);
 			});
@@ -81,7 +81,7 @@ export class FootholdChain {
 	}
 }
 
-export class Foothold {
+export class FootholdSingle {
 	/**
 	 * @param {object} _raw
 	 * @param {number} index
@@ -216,12 +216,12 @@ export class Foothold {
 		return this.body.GetLocalVector(worldVector, out);
 	}
 
-	/** @type {Foothold} */
+	/** @type {FootholdSingle} */
 	get next_fh() {
 		const footholds = this.body.m_world.ground.footholds;
 		return footholds[this.next];
 	}
-	/** @type {Foothold} */
+	/** @type {FootholdSingle} */
 	get prev_fh() {
 		const footholds = this.body.m_world.ground.footholds;
 		return footholds[this.prev];
@@ -365,7 +365,7 @@ export class Foothold {
 	}
 }
 
-export class FootholdChainChild extends Foothold {
+export class FootholdChainChild extends FootholdSingle {
 	constructor(_raw, index, layerIndex, groupIndex) {
 		super(_raw, index, layerIndex, groupIndex);
 

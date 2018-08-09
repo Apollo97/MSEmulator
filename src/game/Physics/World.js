@@ -397,7 +397,7 @@ export class World extends b2World {
 		// Query the world for overlapping shapes.
 		this.QueryAABB(function (fixture) {
 			let body = fixture.GetBody();
-			//if (body.GetType() == b2BodyType.b2_dynamicBody) {
+			if (body.GetType() != b2BodyType.b2_staticBody) {
 				let inside = fixture.TestPoint(p);
 				if (inside) {
 					hit_fixture = fixture;
@@ -405,7 +405,7 @@ export class World extends b2World {
 					// We are done, terminate the query.
 					return false;
 				}
-			//}
+			}
 
 			// Continue the query.
 			return true;

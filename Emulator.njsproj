@@ -90,6 +90,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\Physics\World.js" />
     <Compile Include="src\game\Renderer\CharacterActionAnimation.js" />
     <Compile Include="src\game\Renderer\CharacterRenderer.js" />
+    <Compile Include="src\game\Renderer\ChatBalloon.js" />
     <Compile Include="src\game\Renderer\DamageNumber.js">
       <SubType>Code</SubType>
     </Compile>

@@ -429,12 +429,11 @@ export class Game {
 					$gv.m_viewRect.setCenter(px, py);
 				}
 			}
-			
+
+			if ($gv.m_editor_mode && this._isMapReady) {
+				this.moveViewport(false);
+			}
 			if ($gv.m_is_rendering_map && this._isMapReady) {
-				if ($gv.m_editor_mode) {
-					this.moveViewport(false);
-				}
-				
 				scene_map.beginRender(engine);
 				{					
 					scene_map.renderBackground(engine);

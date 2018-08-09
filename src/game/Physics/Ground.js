@@ -11,13 +11,13 @@ import {
 import { Vec2, Rectangle } from "../math.js";
 
 import { World, GRAVITY } from "./World.js";
-import { FootholdChain, Foothold as _Foothold, FootholdChainChild} from "./Foothold.js";
+import { FootholdChain, FootholdSingle, FootholdChainChild} from "./Foothold.js";
 
 import { PPlayer } from "./PPlayer.js";
 import { FilterHelper } from "./Filter.js";
 
 
-const Foothold = _Foothold;
+export const Foothold = FootholdSingle;
 //const Foothold = FootholdChainChild;
 
 
@@ -118,7 +118,7 @@ export class Ground {
 
 				chain.init(head, this.footholds, Foothold);
 
-				if (Foothold == _Foothold) {
+				if (Foothold == FootholdSingle) {
 					if (window.CREATE_SOLID_AND_EDGE_FOOTHOLD) {
 						this._create_foothold(world, chain, false);//edge
 						this._create_foothold(world, chain, true);//polygon
@@ -382,10 +382,6 @@ export class Ground {
 
 		/** @type {Foothold} */
 		const fh = this.getFootholdFromContact(childIndexA);
-		if (fh.is_wall && fb.$type == "pl_ft_walk") {
-			contact.SetFriction(0);
-			//return;
-		}
 		
 		/** @type {PPlayer} */
 		const player = fb.GetUserData();
@@ -403,13 +399,24 @@ export class Ground {
 		}
 
 		const $fh = player.$foothold;
+		const player_pos = player.getPosition();
+		const relative_position = fh.GetLocalPoint(player_pos, new b2Vec2());
+		const platformFaceY = b2_polygonRadius * 4;
 
 		if (fh.is_wall) {
-			if (player.prev_$fh.layer && player.prev_$fh.layer != fh.layer) {
+			contact.SetFriction(0);
+
+			if (player.prev_$fh &&
+				player.prev_$fh.chain != fh.chain &&
+				player.prev_$fh.layer != fh.layer
+			) {
 				contact.SetEnabled(false);
 				return;
 			}
-			else if (player.$foothold && player.$foothold.layer != fh.layer) {
+			if (player.$foothold &&
+				player.$foothold.chain != fh.chain &&
+				player.$foothold.layer != fh.layer
+			) {
 				contact.SetEnabled(false);
 				return;
 			}
@@ -470,51 +477,41 @@ export class Ground {
 			const relativeVel = fh.GetLocalVector(point, new b2Vec2());
 
 			{
-				let ppw = player.foot_walk.GetPosition();
-				//if (ppw.y > cpoint.y) {//TODO: ??
-				//	continue;
-				//}
-				let dist = b2Vec2.SubVV(cpoint, ppw, new b2Vec2());
+				let dist = b2Vec2.SubVV(cpoint, player_pos, new b2Vec2());
 				let length = dist.Length();
 
 				player._$footCFDist = length;
 				player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
 
 				if (fh.is_wall) {
-					const relPPoint = fh.GetLocalPoint(ppw, new b2Vec2());
 					const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
-					if (-relPPoint.y > foot_width) {
+					if (-relative_position.y > foot_width) {
 						normal_contact(cpoint);
 						return;
 					}
 					continue;
 				}
 
-				if (player.$foothold && player.$foothold != fh) {
-					if (player._$footCFSub > b2_polygonRadius) {
-						player.leave_$fh = fh;
-						continue;
-					}
-				}
+				//if (player.$foothold && player.$foothold != fh) {
+				//	if (player._$footCFSub > b2_polygonRadius) {
+				//		player.leave_$fh = fh;
+				//		continue;
+				//	}
+				//}
 			}
 
 			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
-				//player._foothold = fh;
-				if (playerBody.$type == "pl_ft_walk") {
+				if (relative_position.y <= platformFaceY) {
+					//player._foothold = fh;
 					if (player._which_foothold_contact(fh, cpoint)) {
 						normal_contact(cpoint);
 						return;
 					}
-					continue;
 				}
-				normal_contact(cpoint);
-				return;//nothing: not target, normal contact ground
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
 				//borderline case, moving only slightly out of platform
-				const relativePoint = fh.GetLocalPoint(cpoint, new b2Vec2());
-				const platformFaceY = b2_polygonRadius;//shape is edge
-				if (relativePoint.y <= platformFaceY) {
+				if (relative_position.y <= platformFaceY) {
 					//player._foothold = fh;
 					if (player._which_foothold_contact(fh, cpoint)) {
 						if (player.$foothold && player.$foothold.id != fh.id) {
@@ -531,7 +528,9 @@ export class Ground {
 		//no points are moving into platform, contact should not be solid
 		contact.SetEnabled(false);
 
-		/** @param {b2Vec2} cpoint */
+		/**
+		 * @param {b2Vec2} cpoint
+		 */
 		function normal_contact(cpoint) {
 			let ccc = $fh && (
 				fh.is_wall ||
@@ -594,22 +593,61 @@ export class Ground {
 
 		/** @type {Foothold} */
 		const fh = this.getFootholdFromContact(childIndexA);
+
+		if (player._foot_contact_list.length) {
+			player._foot_contact_list.forEach((fc, i) => {
+				if (fc.foothold == fh) {
+					player._foot_contact_list.splice(i, 1);
+				}
+			});
+		}
 		
-		if (fh == player._$fallEdge) {
+		if (player._$fallEdge && fh == player._$fallEdge) {
 			player._$fallEdge = null;
 		}
-		else if (fh == player._foothold) {
-			player._foothold = null;
-			player._foot_at = null;
-		}
-		//else if (fh.id == player._foothold.id) {
-		//	player._foothold = null;
-		//	player._foot_at = null;
-		//}
+		else if (player._foothold && fh == player._foothold) {
+			if (player._foot_contact_list.length) {
+				player.prev_$fh = player.$foothold;
 
-		if (player.$foothold && fh == player.$foothold) {//正常離開地面
-			player.prev_$fh = player.$foothold;
-			player.$foothold = player._foothold;//contact other foothold
+				let max = player._foot_contact_list.pop();
+				player.$foothold = max.foothold;
+				player._foothold = max.foothold;
+				player._foot_at = max.position;
+				player._foothold_priority = max.priority;
+				console.log("end contact: contact old foothold: fh == player._foothold");
+			}
+			else {
+				player._foothold = null;//正常離開地面
+				player._foot_at = null;
+				player.prev_$fh = null;
+				//console.log("end contact: 正常離開地面: fh == player._foothold");
+			}
+		}
+		else if (player.$foothold && fh == player.$foothold) {
+			if (player._foot_contact_list.length) {
+				player.prev_$fh = player.$foothold;
+
+				let max = player._foot_contact_list.pop();
+				player.$foothold = max.foothold;
+				player._foothold = max.foothold;
+				player._foot_at = max.position;
+				player._foothold_priority = max.priority;
+				console.log("end contact: contact old foothold: fh == player.$foothold");
+			}
+			else {//afterStep
+				if (player._foothold) {
+					player.prev_$fh = player.$foothold;
+
+					player.$foothold = player._foothold;
+					console.log("end contact: contact other foothold");
+				}
+				else {
+					player.$foothold = null;//正常離開地面
+					player._foot_at = null;
+					player.prev_$fh = null;
+					//console.info("end contact: 正常離開地面: fh == player.$foothold");
+				}
+			}
 		}
 		if (player.leave_$fh && player.leave_$fh == fh) {
 			player.leave_$fh = null;

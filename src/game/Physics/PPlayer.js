@@ -10,7 +10,7 @@ import {
 	b2Contact,
 } from "./Physics.js";
 
-import { Foothold } from "./Foothold.js";
+import { Foothold } from "./Ground.js";
 
 import { World } from "./World.js";
 
@@ -181,34 +181,35 @@ class PCharacterBase {
 		/** @type {b2Joint|b2RevoluteJoint} */
 		this.walker = null;
 
-
-		/** @type {Foothold} - in World::Setp */
-		this._foothold = null;
-
 		/** @type {Foothold} */
 		this.$foothold = null;
 
 		/**
-		 * where foothold chara dropDown
+		 * this.$foothold old value
 		 * @type {Foothold}
 		 */
 		this.prev_$fh = null;
 
-		/** @type {b2Vec2} - contact foothold point */
-		this._foot_at = new b2Vec2();
-
-		/** @type {FootContact[]} - 沒用 */
-		this._foot_contact_list = [];
-
-		/** @type {number} */
-		this._foothold_priority = 0;
-
 		/**
 		 * no contact leave_$fh
+		 * where foothold chara dropDown
 		 * @type {Foothold}
 		 */
 		this.leave_$fh = null;
+
+
+		/** @type {Foothold} - in World::Setp */
+		this._foothold = null;
+
+		/** @type {b2Vec2} - contact foothold point */
+		this._foot_at = new b2Vec2();
+
+		/** @type {number} */
+		this._foothold_priority = 0;
 		
+		/** @type {FootContact[]} */
+		this._foot_contact_list = [];
+
 
 		/** @type {MapPortal} */
 		this.portal = null;
@@ -456,6 +457,13 @@ class PCharacterBase {
 		}
 	}
 
+	remove_sticky() {
+		if (this.$sticky_pj) {
+			this.body.m_world.DestroyJoint(this.$sticky_pj);
+			this.$sticky_pj = null;
+		}
+	}
+
 	actionJump() {
 		this.state._begin_jump = true;
 		++this.state.jump_count;
@@ -597,6 +605,8 @@ class PCharacterBase {
 				this.walker.SetMotorSpeed(-wheel_sp);
 				this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
 				//this.walker.EnableMotor(true);//power on
+
+				this.remove_sticky();
 			}
 			else if (keys.right && !keys.left) {
 				this.state.walk = true;
@@ -604,6 +614,8 @@ class PCharacterBase {
 				this.walker.SetMotorSpeed(wheel_sp);
 				this.walker.SetMaxMotorTorque(MOVEMENT_POWER);
 				//this.walker.EnableMotor(true);//power on
+
+				this.remove_sticky();
 			}
 			else {
 				this.state.walk = false;
@@ -625,9 +637,14 @@ class PCharacterBase {
 				}
 				this.walker.SetMaxMotorTorque(MOVEMENT_STOP_POWER);
 				//this.walker.EnableMotor(false);//power off
+
+				if (this.state.止滑) {
+					this.sticky(this.getPosition());
+				}
 			}
 
 			if (keys.jump && this._isCanJump()) {
+				this.remove_sticky();
 				this.actionJump();
 			}
 		}
@@ -827,10 +844,12 @@ class PCharacterBase {
 	
 	/**
 	 * destroy this
-	 * @param {World} world
 	 * @returns {void}
 	 */
-	_destroy(world) {
+	_destroy() {
+		/** @type {World} world */
+		const world = this.body.m_world;
+
 		if (this.body) {
 			world.DestroyBody(this.body);
 			this.body = null;
@@ -929,7 +948,7 @@ class PCharacterBase {
 			}
 		}
 		else {
-			console.log("contact portal: %o" + portal);
+			console.log("contact portal: %o", portal);
 		}
 	}
 	
@@ -950,24 +969,58 @@ class PCharacterBase {
 		if (foothold.is_wall) {
 			return 0;
 		}
-		if (this.$foothold != foothold && !this.state.dropDown) {
+		if (this.$foothold && this.$foothold != foothold && !this.state.dropDown) {
 			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
 			// 忽略連續 foothold 重疊的點
 			if (this._foot_at && foot_at.y < this._foot_at.y) {
-				if (this.$foothold) {
-					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
-						(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
-					}
-					else {
-						return 1;
-					}
+				if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
+					(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
 				}
 				else {
-					return 2;
+					return 1;
 				}
 			}
 		}
-		return 3;
+		//新的接觸
+		return 2;
+	}
+
+	/**
+	 * @param {b2Vec2} anchor
+	 */
+	sticky(anchor) {
+		/** @type {World} */
+		const world = this.body.m_world;
+
+		world.onceUnlock(() => {
+			if (this.$sticky_pj) {
+				return;
+
+				world.DestroyJoint(this.$sticky_pj);
+			}
+
+			//this.setPosition(anchor.x, anchor.y);
+
+			let pjd = new b2PrismaticJointDef();
+			pjd.Initialize(world.mapBound_body, this.body, anchor, new b2Vec2(0, 1));
+			if (0) {
+				pjd.bodyA = world.mapBound_body;
+				pjd.bodyB = this.foot_walk;//this.body;
+				//pjd.localAnchorA.Set(0, 0);
+				//pjd.localAnchorB.Set(0, 0);
+				pjd.localAxisA.Set(0, 1);
+				//pjd.referenceAngle = 0;
+			}
+			pjd.lowerTranslation = 0;
+			pjd.upperTranslation = 0;
+			pjd.enableLimit = true;
+			pjd.maxMotorForce = this._getMass() * 1000;
+
+			/** @type {b2PrismaticJoint} */
+			let pj = world.CreateJoint(pjd);
+
+			this.$sticky_pj = pj;
+		});
 	}
 
 	/**
@@ -986,11 +1039,13 @@ class PCharacterBase {
 				this._foothold = foothold;
 				this._foot_at = foot_at.Clone();
 				this._foothold_priority = priority;
+				//this.sticky(foot_at);
 				return true;
 			}
 			else {
 				let foot_contact = new FootContact(foothold, foot_at, priority);
 				this._foot_contact_list.push(foot_contact);
+				this._foot_contact_list.sort((a, b) => a.priority - b.priority);
 			}
 		}
 		return false;
@@ -1039,10 +1094,6 @@ class PCharacterBase {
 		this.state._drop = false;
 		this._foothold = null;
 		this._foot_at = null;
-
-		if (this._foot_contact_list.length) {
-			this._foot_contact_list.length = 0;
-		}
 
 		// apply state
 		if (this.state.ladder) {
@@ -1110,11 +1161,11 @@ class PCharacterBase {
 		}
 		else {
 			if (!this.state.dropDown) {
-				if (this._foothold) {
-					this.$foothold = this._foothold;
+				if (this.body.m_awakeFlag && this.foot_walk.m_awakeFlag) {
+					this.$foothold = this._foothold;//set or clear
 				}
-				else if (this._foot_contact_list.length) {//目前沒用，永遠不會被執行 ??
-					let max = this._foot_contact_list.reduce((max, a) => a.priority > max.priority ? a:max, { priority: 0 });
+				if (!this._foothold && this._foot_contact_list.length) {//目前沒用，永遠不會被執行 ??
+					let max = this._foot_contact_list.pop();
 					this.$foothold = max.foothold;
 					this._foothold = max.foothold;
 					this._foot_at = max.position;
@@ -1122,6 +1173,9 @@ class PCharacterBase {
 				}
 			}
 			if (this.$foothold) {
+				//this.body.SetAwake(false);
+				//this.foot_walk.SetAwake(false);
+
 				this.state.jump = false;
 				this.state.jump_count = 0;
 				if (this.$foothold == this._foothold) {
@@ -1130,6 +1184,8 @@ class PCharacterBase {
 				}
 			}
 			else {
+				this._foot_contact_list.length = 0;
+
 				this.state.jump = true;
 				this.state._begin_jump = false;
 				
@@ -1277,9 +1333,31 @@ class PCharacter extends PCharacterBase {
 	}
 }
 
+if (module.hot) {
+	/** @type {PPlayer[]} */
+	var PPlayer_instance_list = window.PPlayer_instance_list || [];
+
+	if (PPlayer_instance_list) {
+		for (let pl of PPlayer_instance_list) {
+			pl.__proto__ = PPlayer.prototype;
+		}
+	}
+}
+
 export class PPlayer extends PCharacter {
 	constructor() {
 		super(...arguments);
+
+		if (module.hot) {
+			PPlayer_instance_list.push(this);
+
+			const super_destroy = super._destroy;
+
+			this._destroy = function () {
+				super_destroy();
+				PPlayer_instance_list.splice(PPlayer_instance_list.indexOf(this), 1);
+			}
+		}
 	}
 
 	/**
@@ -1295,7 +1373,7 @@ export class PPlayer extends PCharacter {
 		window.SCREEN_PRINTLN(() => "_drop", () => this.state._drop);
 		window.SCREEN_PRINTLN(() => "ddrop", () => this.state.dropDown);
 		window.SCREEN_PRINTLN(() => "$fh", () => this.$foothold ? this.$foothold.id : null);
-		window.SCREEN_PRINTLN(() => "$fh->c", () => this.$foothold ? this.$foothold.chain : null);
+		window.SCREEN_PRINTLN(() => "$fh->c", () => this.$foothold ? this.$foothold.chain.id : null);
 		window.SCREEN_PRINTLN(() => "_fh", () => this._foothold ? this._foothold.id : null);
 		window.SCREEN_PRINTLN(() => "p$fh", () => this.prev_$fh ? this.prev_$fh.id : null);
 		window.SCREEN_PRINTLN(() => "leave_$fh", () => this.leave_$fh ? this.leave_$fh.id : null);
@@ -1305,7 +1383,7 @@ export class PPlayer extends PCharacter {
 		window.SCREEN_PRINTLN(() => "vel.x", () => (this.body.m_linearVelocity.x * $gv.CANVAS_SCALE).toFixed(0));
 		window.SCREEN_PRINTLN(() => "vel.y", () => (this.body.m_linearVelocity.y * $gv.CANVAS_SCALE).toFixed(0));
 	}
-	
+
 	/**
 	 * before world::step
 	 * @param {number} stamp
@@ -1343,12 +1421,34 @@ export class PPlayer extends PCharacter {
 	}
 }
 
+if (module.hot) {
+	/** @type {PRemoteCharacter[]} */
+	var PRemoteCharacter_instance_list = window.PRemoteCharacter_instance_list || [];
+
+	if (PRemoteCharacter_instance_list) {
+		for (let pl of PRemoteCharacter_instance_list) {
+			pl.__proto__ = PRemoteCharacter.prototype;
+		}
+	}
+}
+
 export class PRemoteCharacter extends PCharacter {
 	constructor() {
 		super(...arguments);
 
 		/** @type {b2MouseJoint} */
 		this._anchor = null;
+
+		if (module.hot) {
+			PRemoteCharacter_instance_list.push(this);
+
+			const super_destroy = super._destroy;
+
+			this._destroy = function () {
+				super_destroy();
+				PRemoteCharacter_instance_list.splice(PRemoteCharacter_instance_list.indexOf(this), 1);
+			}
+		}
 	}
 
 	/**
@@ -1378,4 +1478,8 @@ export class PRemoteCharacter extends PCharacter {
 		//	super.moveTo(moveElem);
 		//}
 	}
+}
+
+if (module.hot) {
+	module.hot.accept();
 }

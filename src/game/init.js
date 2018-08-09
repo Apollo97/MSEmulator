@@ -16,7 +16,12 @@ class GlobalVar {
 		}
 
 		{
-			this.m_editor_mode = false;
+			if (process.env.NODE_ENV === 'production') {
+				this.m_editor_mode = false;
+			}
+			else {
+				this.m_editor_mode = true;
+			}
 
 			this.m_display_foothold = false;
 
