@@ -10,7 +10,7 @@ import { $RequestPacket_SelectChara, $ResponsePacket_SelectChara,
 		 $Packet_CharacterMove,
 		} from "../Common/Packet";//debug
 
-import gApp from "../app.js";//debug
+import { app as gApp } from "../index.js";//debug
 
 //(function (window) {
 //	let elemSc = document.getElementById("io");

@@ -10,8 +10,7 @@ import {
 	b2ParticleSystemDef, b2ParticleSystem, b2ParticleFlag, b2ParticleGroupDef
 } from "./Physics.js";
 
-import DebugDraw from "./DebugDraw";
-
+import DebugDraw from "./DebugDraw.js";
 import { Ground } from "./Ground.js";
 import { LadderRope, MapLadderRopeLoader } from "./LadderRope.js";
 import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
@@ -87,7 +86,8 @@ export class World extends b2World {
 	constructor() {
 		super(GRAVITY);
 
-		this.m_debugDraw = new DebugDraw(/*renderer_ctx2d*/);
+		/** @type {DebugDraw} */
+		this.m_debugDraw = $gv.m_debugDraw;
 		this.SetDebugDraw(this.m_debugDraw);
 
 		this.SetContactListener(new ContactListener());
@@ -499,7 +499,7 @@ export class World extends b2World {
 		const player = window.chara ? window.chara.$physics : this.player;
 
 		if ($gv.m_display_physics_debug) {
-			const settings = this.m_debugDraw.m_settings;
+			const debugDraw = this.m_debugDraw;
 			this.m_debugDraw.m_ctx = ctx;
 
 			const w = ctx.canvas.width;
@@ -507,12 +507,12 @@ export class World extends b2World {
 
 			ctx.save();
 			
-			ctx.scale(settings.canvasScale, settings.canvasScale);
-			ctx.lineWidth /= settings.canvasScale;
+			ctx.scale(debugDraw.canvasScale, debugDraw.canvasScale);
+			ctx.lineWidth /= debugDraw.canvasScale;
 
 			// apply camera
-			ctx.scale(settings.viewZoom, settings.viewZoom);
-			ctx.lineWidth /= settings.viewZoom;
+			ctx.scale(debugDraw.viewZoom, debugDraw.viewZoom);
+			ctx.lineWidth /= debugDraw.viewZoom;
 
 			this.DrawDebugData();
 
@@ -521,7 +521,7 @@ export class World extends b2World {
 				const pos = player.getPosition();
 				ctx.fillStyle = "#F00A";
 				
-				//test settings.canvasScale
+				//test debugDraw.canvasScale
 				if (player.state.front > 0) {
 					ctx.fillRect(pos.x, pos.y, 1, 1);
 				}

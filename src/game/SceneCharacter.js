@@ -53,8 +53,6 @@ class TimeElapsed {
 
 window.$addItem_repeatEquip = false;
 
-window.$Character_ChatBalloon_DisplayDuration = 5000;
-
 class ChatController {
 	constructor() {
 		/** @type {number} */
@@ -138,7 +136,7 @@ class ChatController {
 		return 70;
 	}
 	get displayDuration() {
-		return $gv.ChatBalloon_DisplayDuration;
+		return $gv.ChatBalloon_display_duration;
 	}
 }
 

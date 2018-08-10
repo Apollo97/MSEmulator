@@ -20,7 +20,7 @@ import { Client } from "../Client/Client.js";
 
 
 import { SceneCharacter } from "./SceneCharacter.js";//debug
-import gApp from "../app.js";//debug
+import { app as gApp } from "../index.js";//debug
 
 
 window.SCREEN_PRINTLN = function (getText, getValue) {

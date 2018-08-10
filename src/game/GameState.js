@@ -4,7 +4,7 @@ import { SceneCharacter } from "./SceneCharacter.js";
 
 import { Client } from "../Client/Client.js";//debug
 
-import gApp from "../app.js";//debug
+import { app as gApp } from "../index.js";//debug
 
 
 export class GameState {

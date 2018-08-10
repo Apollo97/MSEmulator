@@ -25,29 +25,29 @@
 				<p>
 					<div>
 						<label>
-							Map <input @keydown.enter="$gv.scene_map.load($event.target.value.padStart(9, '0'))" />
+							Map <input @keydown.enter="gv.scene_map.load($event.target.value.padStart(9, '0'))" />
 						</label>
 					</div>
 					<div>
 						<fieldset>
 							<legend>map</legend>
-							<label><input type="checkbox" v-model="$gv.m_is_rendering_map" />Map</label>
-							<label><input type="checkbox" v-model="$gv.m_display_back" />back</label>
-							<label><input type="checkbox" v-model="$gv.m_display_front" />front</label>
-							<label><input type="checkbox" v-model="$gv.m_display_mapobj" />object</label>
-							<label><input type="checkbox" v-model="$gv.m_display_maptile" />tile</label>
-							<label><input type="checkbox" v-model="$gv.m_display_portal" />portal</label>
+							<label><input type="checkbox" v-model="gv.m_is_rendering_map" />Map</label>
+							<label><input type="checkbox" v-model="gv.m_display_back" />back</label>
+							<label><input type="checkbox" v-model="gv.m_display_front" />front</label>
+							<label><input type="checkbox" v-model="gv.m_display_mapobj" />object</label>
+							<label><input type="checkbox" v-model="gv.m_display_maptile" />tile</label>
+							<label><input type="checkbox" v-model="gv.m_display_portal" />portal</label>
 						</fieldset>
 						<fieldset>
 							<legend>map</legend>
-							<label><input type="checkbox" v-model="$gv.m_display_particle_system" />particle system</label>
-							<label><input type="checkbox" v-model="$gv.m_display_skeletal_anim" />skeletal animation</label>
+							<label><input type="checkbox" v-model="gv.m_display_particle_system" />particle system</label>
+							<label><input type="checkbox" v-model="gv.m_display_skeletal_anim" />skeletal animation</label>
 						</fieldset>
 						<fieldset>
 							<legend>life</legend>
-							<label><input type="checkbox" v-model="$gv.m_display_life" />life</label>
-							<label><input type="checkbox" v-model="$gv.m_display_player" />player</label>
-							<label><input type="checkbox" v-model="$gv.m_display_other_player" />other player</label>
+							<label><input type="checkbox" v-model="gv.m_display_life" />life</label>
+							<label><input type="checkbox" v-model="gv.m_display_player" />player</label>
+							<label><input type="checkbox" v-model="gv.m_display_other_player" />other player</label>
 						</fieldset>
 					</div>
 				</p>
@@ -55,15 +55,22 @@
 			<details>
 				<summary>editor</summary>
 				<p>
-					<label><input type="checkbox" v-model="$gv.m_display_foothold" /> foothold</label>
-					<label><input type="checkbox" v-model="$gv.m_display_selected_object" /> selected object</label>
+					<label><input type="checkbox" v-model="gv.m_display_foothold" /> foothold</label>
+					<label><input type="checkbox" v-model="gv.m_display_selected_object" /> selected object</label>
 				</p>
 			</details>
 			<details>
 				<summary>debug</summary>
 				<p>
-					<label><input type="checkbox" v-model="$gv.m_display_physics_debug" /> physics debug</label>
-					<label><input type="checkbox" v-model="$gv.m_display_debug_info" /> debug info</label>
+					<div><label><input type="checkbox" v-model="gv.m_display_debug_info" /> debug info</label></div>
+
+					<div><label><input type="checkbox" v-model="gv.m_display_physics_debug" /> physics debug</label></div>
+					<div v-for="flagName in debugDraw.flagNames">
+						<label><input type="checkbox" v-model.number="debugDraw[flagName]" /> {{flagName.slice(5)}}</label>
+					</div>
+					<div>
+						<label>axis length <input type="number" v-model="debugDraw.axis_length" step="0.1" /></label>
+					</div>
 				</p>
 			</details>
 		</ui-dialog>
@@ -552,6 +559,9 @@
 						pos: { x: 0 * scr_rat_x, y: 100 * scr_rat_y },
 					},
 				},
+
+				gv: $gv,
+				debugDraw: $gv.m_debugDraw,
 			}
 		},
 		computed: Object.assign(
@@ -563,7 +573,6 @@
 				progressMaximum: "progressMaximum",
 			}),
 			{
-				$gv: () => $gv,
 			}
 		),
 		methods: {

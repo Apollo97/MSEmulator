@@ -5,8 +5,9 @@ import { } from '../../public/resource.js';
 import { IGraph } from "./IRenderer.js";
 import { engine } from './Engine.js';
 import { Vec2, Rectangle } from './math.js';
+import DebugDraw from './Physics/DebugDraw.js';
 
-class GlobalVar {
+export class GlobalVar {
 	constructor() {
 		this.m_is_run = true;
 		{
@@ -18,12 +19,22 @@ class GlobalVar {
 		{
 			if (process.env.NODE_ENV === 'production') {
 				this.m_editor_mode = false;
+
+				this.m_display_foothold = false;
+
+				this.m_display_physics_debug = false;
+				this.m_display_debug_info = false;
 			}
 			else {
 				this.m_editor_mode = true;
-			}
 
-			this.m_display_foothold = false;
+				this.m_display_foothold = true;
+
+				this.m_display_physics_debug = true;
+				this.m_display_debug_info = true;
+
+				this.m_debugDraw = new DebugDraw(/*renderer_ctx2d*/);
+			}
 
 			this.m_display_selected_object = false;
 			this.m_selected_object = null;
@@ -31,14 +42,14 @@ class GlobalVar {
 		}
 
 		{
-			this.m_display_physics_debug = false;
-			this.m_display_debug_info = false;
-		}
-
-		{
 			this.m_viewRect = new Rectangle(0, -768 / 2, 1366, 768);
 
-			this.m_is_rendering_map = true;
+			if (process.env.NODE_ENV === 'production') {
+				this.m_is_rendering_map = true;
+			}
+			else {
+				this.m_is_rendering_map = false;
+			}
 
 			this.m_display_back = true;
 			this.m_display_front = true;
@@ -64,7 +75,7 @@ class GlobalVar {
 		
 		{
 			this.ChatBalloon_default_style = 0;
-			this.ChatBalloon_DisplayDuration = 5000;
+			this.ChatBalloon_display_duration = 5000;
 		}
 		
 		{

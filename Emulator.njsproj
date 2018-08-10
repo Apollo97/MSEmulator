@@ -39,7 +39,6 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="public\spine\spine.js" />
     <Compile Include="public\spine\SpineBinary.js" />
     <Compile Include="public\spine\SSAnim.js" />
-    <Compile Include="src\app.js" />
     <Compile Include="src\Client\Client.js">
       <SubType>Code</SubType>
     </Compile>

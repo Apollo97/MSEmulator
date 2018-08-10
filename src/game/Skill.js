@@ -940,9 +940,14 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 
 	jump2() {
 		const crr = this._crr;
-		const body = this._owner_player.$physics.body;
+		//const body = this._owner_player.$physics.body;
+		const foot_walk = this._owner_player.$physics.foot_walk;
 
-		body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+		const pos = this._owner_player.$physics.getPosition();
+		console.log("pos: { x: %o, y: %o }", pos.x, pos.y);
+
+		//body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+		foot_walk.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
 
 		this._addDefaultEffect();
 	}

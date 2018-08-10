@@ -403,65 +403,6 @@ export class Ground {
 		const relative_position = fh.GetLocalPoint(player_pos, new b2Vec2());
 		const platformFaceY = b2_polygonRadius * 4;
 
-		if (fh.is_wall) {
-			contact.SetFriction(0);
-
-			if (player.prev_$fh &&
-				player.prev_$fh.chain != fh.chain &&
-				player.prev_$fh.layer != fh.layer
-			) {
-				contact.SetEnabled(false);
-				return;
-			}
-			if (player.$foothold &&
-				player.$foothold.chain != fh.chain &&
-				player.$foothold.layer != fh.layer
-			) {
-				contact.SetEnabled(false);
-				return;
-			}
-		}
-
-		if (player.state.dropDown && player.leave_$fh != null) {
-			//HACK: ?? foothold edge
-			if (player.leave_$fh == player.$foothold && player.$foothold != fh) {
-				contact.SetEnabled(false);
-				return;
-			}
-			if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
-				player.leave_$fh.id != fh.id &&
-				player.leave_$fh.chain.id != fh.chain.id &&
-				(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
-				(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
-			) {
-				numPoints = contact.GetManifold().pointCount;
-				worldManifold = new b2WorldManifold();
-				contact.GetWorldManifold(worldManifold);
-
-				for (let i = 0; i < numPoints; ++i) {
-					const foot = player.foot_walk.GetPosition();
-					const cpoint = worldManifold.points[i];
-					if (cpoint.y > foot.y) {
-						player.leave_$fh = null;
-						player.state.dropDown = false;
-						//break;
-					}
-				}
-			}
-			else {
-				contact.SetEnabled(false);
-				return;
-			}
-		}
-		else {
-			player.state.dropDown = false;
-		}
-
-		if (player.leave_$fh && player.leave_$fh == fh) {
-			contact.SetEnabled(false);
-			return;
-		}
-
 		if (numPoints == null) {
 			numPoints = contact.GetManifold().pointCount;
 			worldManifold = new b2WorldManifold();
@@ -501,12 +442,14 @@ export class Ground {
 			}
 
 			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
-				if (relative_position.y <= platformFaceY) {
-					//player._foothold = fh;
-					if (player._which_foothold_contact(fh, cpoint)) {
-						normal_contact(cpoint);
-						return;
-					}
+				//player._foothold = fh;
+				if (player._which_foothold_contact(fh, cpoint)) {
+					normal_contact(cpoint);
+					return;
+				}
+				else {
+					normal_contact(cpoint);
+					return;//not primary, normal contact 
 				}
 			}
 			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
@@ -519,8 +462,10 @@ export class Ground {
 						normal_contact(cpoint);
 						return;//contact point is less than 5cm inside front face of platfrom
 					}
-					normal_contact(cpoint);
-					return;//not primary, normal contact 
+					else {
+						normal_contact(cpoint);
+						return;//not primary, normal contact
+					}
 				}
 			}
 		}
@@ -532,6 +477,56 @@ export class Ground {
 		 * @param {b2Vec2} cpoint
 		 */
 		function normal_contact(cpoint) {
+			if (fh.is_wall) {
+				contact.SetFriction(0);
+
+				if (player.prev_$fh &&
+					player.prev_$fh.chain != fh.chain &&
+					player.prev_$fh.layer != fh.layer
+				) {
+					contact.SetEnabled(false);
+					return;
+				}
+				if (player.$foothold &&
+					player.$foothold.chain != fh.chain &&
+					player.$foothold.layer != fh.layer
+				) {
+					contact.SetEnabled(false);
+					return;
+				}
+			}
+
+			if (player.state.dropDown && player.leave_$fh != null) {
+				//HACK: ?? foothold edge
+				if (player.leave_$fh == player.$foothold && player.$foothold != fh) {
+					contact.SetEnabled(false);
+					return;
+				}
+				if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
+					player.leave_$fh.id != fh.id &&
+					player.leave_$fh.chain.id != fh.chain.id &&
+					(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
+					(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
+				) {
+					if (cpoint.y > foot.y) {
+						player.leave_$fh = null;
+						player.state.dropDown = false;
+					}
+				}
+				else {
+					contact.SetEnabled(false);
+					return;
+				}
+			}
+			else {
+				player.state.dropDown = false;
+			}
+
+			if (player.leave_$fh && player.leave_$fh == fh) {
+				contact.SetEnabled(false);
+				return;
+			}
+
 			let ccc = $fh && (
 				fh.is_wall ||
 				(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||
@@ -614,7 +609,7 @@ export class Ground {
 				player._foothold = max.foothold;
 				player._foot_at = max.position;
 				player._foothold_priority = max.priority;
-				console.log("end contact: contact old foothold: fh == player._foothold");
+				//console.log("end contact: contact old foothold: fh == player._foothold");
 			}
 			else {
 				player._foothold = null;//正常離開地面
@@ -632,14 +627,14 @@ export class Ground {
 				player._foothold = max.foothold;
 				player._foot_at = max.position;
 				player._foothold_priority = max.priority;
-				console.log("end contact: contact old foothold: fh == player.$foothold");
+				//console.log("end contact: contact old foothold: fh == player.$foothold");
 			}
 			else {//afterStep
 				if (player._foothold) {
 					player.prev_$fh = player.$foothold;
 
 					player.$foothold = player._foothold;
-					console.log("end contact: contact other foothold");
+					//console.log("end contact: contact other foothold");
 				}
 				else {
 					player.$foothold = null;//正常離開地面
