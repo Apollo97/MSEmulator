@@ -399,9 +399,11 @@ export class Ground {
 		}
 
 		const $fh = player.$foothold;
-		const player_pos = player.getPosition();
+		const player_pos = player.foot_walk.GetWorldCenter();//player.getPosition();
 		const relative_position = fh.GetLocalPoint(player_pos, new b2Vec2());
-		const platformFaceY = b2_polygonRadius * 4;
+		const platformFaceY = b2_polygonRadius * 2;
+
+		const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
 
 		if (numPoints == null) {
 			numPoints = contact.GetManifold().pointCount;
@@ -416,56 +418,45 @@ export class Ground {
 			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
 			const point = new b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
 			const relativeVel = fh.GetLocalVector(point, new b2Vec2());
-
-			{
-				let dist = b2Vec2.SubVV(cpoint, player_pos, new b2Vec2());
-				let length = dist.Length();
-
-				player._$footCFDist = length;
-				player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
-
-				if (fh.is_wall) {
-					const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
-					if (-relative_position.y > foot_width) {
+			
+			//let dist = b2Vec2.SubVV(cpoint, player_pos, new b2Vec2());
+			//let length = dist.Length();
+			//
+			//player._$footCFDist = length;
+			//player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
+			//
+			//if (player.$foothold && player.$foothold != fh) {
+			//	if (player._$footCFSub > b2_polygonRadius) {
+			//		player.leave_$fh = fh;
+			//		continue;
+			//	}
+			//}
+			
+			if (relative_position.y <= -foot_width) {
+				if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
+					//player._foothold = fh;
+					if (fh.is_wall || player._which_foothold_contact(fh, cpoint)) {
 						normal_contact(cpoint);
 						return;
 					}
-					continue;
+					//else {
+					//	normal_contact(cpoint);
+					//	return;//not primary, normal contact 
+					//}
 				}
-
-				//if (player.$foothold && player.$foothold != fh) {
-				//	if (player._$footCFSub > b2_polygonRadius) {
-				//		player.leave_$fh = fh;
-				//		continue;
-				//	}
-				//}
-			}
-
-			if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
-				//player._foothold = fh;
-				if (player._which_foothold_contact(fh, cpoint)) {
-					normal_contact(cpoint);
-					return;
-				}
-				else {
-					normal_contact(cpoint);
-					return;//not primary, normal contact 
-				}
-			}
-			else if (relativeVel.y > -1) { //if moving slower than 1 m/s
-				//borderline case, moving only slightly out of platform
-				if (relative_position.y <= platformFaceY) {
+				else if (relativeVel.y > -1) { //if moving slower than 1 m/s
+					//borderline case, moving only slightly out of platform
 					//player._foothold = fh;
-					if (player._which_foothold_contact(fh, cpoint)) {
+					if (fh.is_wall || player._which_foothold_contact(fh, cpoint)) {
 						if (player.$foothold && player.$foothold.id != fh.id) {
 						}
 						normal_contact(cpoint);
 						return;//contact point is less than 5cm inside front face of platfrom
 					}
-					else {
-						normal_contact(cpoint);
-						return;//not primary, normal contact
-					}
+					//else {
+					//	normal_contact(cpoint);
+					//	return;//not primary, normal contact
+					//}
 				}
 			}
 		}
@@ -508,6 +499,7 @@ export class Ground {
 					(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
 					(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
 				) {
+					const foot = player.foot_walk.GetPosition();
 					if (cpoint.y > foot.y) {
 						player.leave_$fh = null;
 						player.state.dropDown = false;

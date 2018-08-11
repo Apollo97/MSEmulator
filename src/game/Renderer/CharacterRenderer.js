@@ -1,5 +1,5 @@
 ﻿
-import { CharacterRenderConfig, ItemCategoryInfo, ResourceManager } from '../../../public/resource.js';
+import { CharacterRenderConfig, ItemCategoryInfo, ResourceManager } from '../../../public/javascripts/resource.js';
 import { AddInitTask } from "../../init.js";
 import { Animation } from "../Animation";
 import { engine } from '../Engine.js';
@@ -337,7 +337,7 @@ class ItemEffectAnimation extends Animation {
 			value: raw,
 		});
 
-		//this._url = $2
+		//this._url = this._url;
 
 		this.__getAttr("z", -1);
 		this.__getAttr("pos", 1);
@@ -373,10 +373,10 @@ class ItemEffectAnimation extends Animation {
 //	/data/Effect/ItemEff/1102918
 class ItemEffect {
 	constructor() {
-		//this._url = $2
+		this._url = null;
 		this._raw = null;
 
-		/** @type {Object<string, ItemEffectAnimation>} */
+		/** @type {{[animationName:string]:ItemEffectAnimation}} */
 		this.animation = {};
 
 		this.action = null;
@@ -480,7 +480,7 @@ class ItemEffect {
 		if (!raw) {
 			debugger;
 		}
-		//this._url = $2
+		//this._url = url;
 		Object.defineProperty(this, "_raw", {
 			value: raw,
 		});
@@ -786,7 +786,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		this._raw = null;
 
 		/** @type {string} */
-		//this._url = $2
+		//this._url = null;
 			
 		/** @type {ItemEffect} */
 		this.effect = null;
@@ -875,18 +875,27 @@ class CharacterEquipBase extends ICharacterEquip {
 	async __load(url, id, cateInfo) {
 		let raw;
 
-		if (ResourceManager.isEquipExist(id, cateInfo)) {
-			raw = await $get.data(url);
+		try {
+			if (ResourceManager.isEquipExist(id, cateInfo)) {
+				raw = await $get.data(url);
+			}
 		}
-		if (!raw && load_extern_item_data) {
-			raw = await load_extern_item_data(id);
+		catch (ex) {
 		}
-		if (!raw) {
-			debugger;
-			return false;
+		
+		try {
+			if (!raw && load_extern_item_data) {
+				raw = await load_extern_item_data(id);
+			}
+		}
+		catch (ex) {
+			if (!raw) {
+				debugger;
+				return false;
+			}
 		}
 
-		//this._url = $2
+		//this._url = url;
 		Object.defineProperty(this, "_raw", {
 			value: raw,
 		});
@@ -974,18 +983,18 @@ class CharacterEquipBase extends ICharacterEquip {
 				const FragmentTextureType = this.FragmentTextureType;
 				let ft;
 				if (raw[""] == "") {
-					ft = new FragmentTextureType(raw);
-					//ft._url = $2
+					ft._url = path;
+					//ft._url = path;
 					textures[place] = ft
 				}
 				else if (typeof raw[""] == 'string') {
 					ft = new FragmentTextureType(raw);
-					//ft._url = $2
+					//ft._url = raw[""];
 					textures[place] = ft;
 				}
 				else if (place == "hairShade") {
 					ft = new FragmentTextureType(raw[0]);
-					//ft._url = $2
+					//ft._url = path + "/0";
 					textures[place] = ft;
 				}
 				if (ft) {
@@ -3006,7 +3015,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			if (!ft._url.startsWith("data:")) {
 				tasks.push((async function () {
 					ft.texture.$src = ft._url;
-					//ft._url = $2
+					ft._url = await toDataURL(ft._url);
 					return ft;
 				})());
 			}
@@ -3018,7 +3027,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
 						ft.texture.$src = ft._url;
-						//ft.graph2._url = $2
+						ft.graph2._url = await toDataURL(src);
 						return ft.graph2;
 					})());
 				}
@@ -3031,7 +3040,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
 						ft.texture.$src = ft._url;
-						//ft.graph3._url = $2
+						ft.graph3._url = await toDataURL(src);
 						return ft.graph3;
 					})());
 				}

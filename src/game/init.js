@@ -1,6 +1,6 @@
 ﻿
 
-import { } from '../../public/resource.js';
+import { } from '../../public/javascripts/resource.js';
 
 import { IGraph } from "./IRenderer.js";
 import { engine } from './Engine.js';
@@ -23,7 +23,6 @@ export class GlobalVar {
 				this.m_display_foothold = false;
 
 				this.m_display_physics_debug = false;
-				this.m_display_debug_info = false;
 			}
 			else {
 				this.m_editor_mode = true;
@@ -31,10 +30,10 @@ export class GlobalVar {
 				this.m_display_foothold = true;
 
 				this.m_display_physics_debug = true;
-				this.m_display_debug_info = true;
-
-				this.m_debugDraw = new DebugDraw(/*renderer_ctx2d*/);
 			}
+			this.m_display_debug_info = false;
+
+			this.m_debugDraw = new DebugDraw(/*renderer_ctx2d*/);
 
 			this.m_display_selected_object = false;
 			this.m_selected_object = null;

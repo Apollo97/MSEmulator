@@ -560,7 +560,6 @@ class PCharacterBase {
 
 			if (this.portal && keys.up) {
 				//TODO: enter portal key: keys.enterPortal
-				debugger;
 				let portal = this.portal;
 				if (this._usePortal(portal)) {
 					this.portal = null;//使用完畢
@@ -903,11 +902,11 @@ class PCharacterBase {
 		if (this._ignoreSelfContact(contact, fa, fb)) {
 			return;
 		}
-		let target = fb.GetUserData();
-		if (target) {
-			switch (target.constructor.name) {
-				case "MapPortal"://target.$type == "portal"
-					this._beginContactPortal(target);
+		let targetBody = fb.m_body;
+		if (targetBody) {
+			switch (targetBody.$type) {
+				case "portal":
+					this._beginContactPortal(fb.m_userData);
 					break;
 			}
 		}
@@ -916,11 +915,11 @@ class PCharacterBase {
 		if (this._ignoreSelfContact(contact, fa, fb)) {
 			return;
 		}
-		let target = fb.GetUserData();
-		if (target) {
-			switch (target.constructor.name) {
-				case "MapPortal":
-					this._endContactPortal(target);
+		let targetBody = fb.m_body;
+		if (targetBody) {
+			switch (targetBody.$type) {
+				case "portal":
+					this._endContactPortal(fb.m_userData);
 					break;
 			}
 		}
@@ -969,20 +968,50 @@ class PCharacterBase {
 		if (foothold.is_wall) {
 			return 0;
 		}
-		if (this.$foothold && this.$foothold != foothold && !this.state.dropDown) {
-			// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
-			// 忽略連續 foothold 重疊的點
-			if (this._foot_at && foot_at.y < this._foot_at.y) {
-				if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
-					(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
-				}
-				else {
-					return 1;
+		if (this.$foothold && this.$foothold.chain != foothold.chain) {
+			if (this.$foothold != foothold && !this.state.dropDown) {
+				// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
+				// 忽略連續 foothold 重疊的點
+				if (this._foot_at && foot_at.y < this._foot_at.y) {
+					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
+						(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
+					}
+					else {
+						return 1;
+					}
 				}
 			}
 		}
 		//新的接觸
 		return 2;
+	}
+
+	/**
+	 * 決定接觸哪一個foothold，忽略牆壁
+	 * if foothold is wall then return true
+	 * @param {Foothold} foothold
+	 * @param {b2Vec2} foot_at
+	 */
+	_which_foothold_contact(foothold, foot_at) {
+		if (foothold.is_wall) {
+			return true;
+		}
+		let priority = this.__priority_foothold_contact(foothold, foot_at);
+		if (priority > 0) {
+			if (!this._foothold_priority || priority >= this._foothold_priority) {
+				this._foothold = foothold;
+				this._foot_at = foot_at.Clone();
+				this._foothold_priority = priority;
+				//this.sticky(foot_at);
+				return true;
+			}
+			else {
+				let foot_contact = new FootContact(foothold, foot_at, priority);
+				this._foot_contact_list.push(foot_contact);
+				this._foot_contact_list.sort((a, b) => a.priority - b.priority);
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1021,34 +1050,6 @@ class PCharacterBase {
 
 			this.$sticky_pj = pj;
 		});
-	}
-
-	/**
-	 * 決定接觸哪一個foothold，忽略牆壁
-	 * if foothold is wall then return true
-	 * @param {Foothold} foothold
-	 * @param {b2Vec2} foot_at
-	 */
-	_which_foothold_contact(foothold, foot_at) {
-		if (foothold.is_wall) {
-			return true;
-		}
-		let priority = this.__priority_foothold_contact(foothold, foot_at);
-		if (priority > 0) {
-			if (!this._foothold_priority || priority >= this._foothold_priority) {
-				this._foothold = foothold;
-				this._foot_at = foot_at.Clone();
-				this._foothold_priority = priority;
-				//this.sticky(foot_at);
-				return true;
-			}
-			else {
-				let foot_contact = new FootContact(foothold, foot_at, priority);
-				this._foot_contact_list.push(foot_contact);
-				this._foot_contact_list.sort((a, b) => a.priority - b.priority);
-			}
-		}
-		return false;
 	}
 
 	/**

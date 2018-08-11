@@ -17,9 +17,9 @@ if (process.env.NODE_ENV === 'production') {
 			],
 		},
 		output: {
-			path: `${__dirname}/public`,
+			path: `${__dirname}/public/javascripts`,
 			filename: '[name].js',
-			publicPath: '/'
+			publicPath: 'javascripts/'
 		},
 		mode: 'production',
 		module: {
@@ -92,9 +92,9 @@ else {
 			],
 		},
 		output: {
-			path: `${__dirname}/public`,
+			path: `${__dirname}/public/javascripts`,
 			filename: '[name].js',
-			publicPath: '/'
+			publicPath: 'javascripts/'
 		},
 		mode: 'development',
 		module: {

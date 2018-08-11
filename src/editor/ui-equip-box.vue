@@ -193,7 +193,7 @@
 	import UIDialog from "../components/ui-dialog.vue";
 	import UIButtonGroup from '../components/ui-button-group.vue';
 
-	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from '../../public/resource.js';
+	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from '../../public/javascripts/resource.js';
 
 	function emSize(socpe) {
 		let scopeTest = document.createElement("div");
@@ -601,6 +601,7 @@
 
 				const coloredPath = listPath + this.__get_color();
 
+				/** @type {EquipInfo[]} */
 				let equip_list = [];
 
 				if (coloredPath != this.loaded_category || this.loaded_equip_list.length == 0) {
@@ -612,7 +613,7 @@
 
 					await concat_external_resource(coloredPath, equip_list);
 
-					if (cateinfo.slot == "weapon") {
+					if (cateinfo.slot == "weapon" && this.selected_category != "0170") {
 						let cash_weapon = JSON.parse(await $get.asset(`equips/0170.json`));
 
 						let wt = prefix.slice(2, 4);

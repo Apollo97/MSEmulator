@@ -194,7 +194,7 @@
 </template>
 
 <script>
-	import { ItemCategoryInfo } from "../../public/resource.js";
+	import { ItemCategoryInfo } from "../../public/javascripts/resource.js";
 
 	export default {
 		props: ["sceneChara"],

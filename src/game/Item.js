@@ -1,5 +1,5 @@
 ﻿
-import { ItemCategoryInfo } from "../../public/resource.js";
+import { ItemCategoryInfo } from "../../public/javascripts/resource.js";
 
 import { Sprite } from "./Sprite";
 

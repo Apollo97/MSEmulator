@@ -58,7 +58,7 @@
 
 	import Editor from "./editor/editor.vue";
 
-	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../public/resource.js';
+	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../public/javascripts/resource.js';
 
 
 	Vue.config.productionTip = false;

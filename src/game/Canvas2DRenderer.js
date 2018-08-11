@@ -138,7 +138,7 @@ export class Engine extends IRenderer {
 		}
 
 		this._graph_rect = new this.Graph();
-		this._graph_rect._url = "/1x1.png";
+		this._graph_rect._url = $get.imageUrl("/1x1");
 	}
 
 	/** @type {IGraph} */

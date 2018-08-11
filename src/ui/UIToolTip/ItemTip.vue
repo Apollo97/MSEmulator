@@ -289,7 +289,7 @@
 </template>
 
 <script>
-	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../../../public/resource.js';
+	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../../../public/javascripts/resource.js';
 
 	import { CharacterStat } from "../../Common/PlayerData.js";
 

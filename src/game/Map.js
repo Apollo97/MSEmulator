@@ -901,6 +901,9 @@ class MapPortal extends MapObject {
 		/** @type {"portalStart"|"portalContinue"|"portalExit"} */
 		this.state = null;
 
+		/** @type {["portalStart","portalContinue","portalExit"]} */
+		this.states = null;
+
 		/** @type {number} */
 		this.skin = null;
 
@@ -984,7 +987,8 @@ class MapPortal extends MapObject {
 			}
 			else {
 				//TODO: need default state
-				this.state = Object.keys(_raw.game[type][skin])[0];
+				this.states = Object.keys(_raw.game[type][skin]);
+				this.state = this.states[1 % this.states.length];
 
 				let textures = _raw.game[type][skin][this.state];
 				for (let i in textures) {

@@ -13,31 +13,41 @@ export class ChatBalloon {
 	 */
 	async load(style) {
 		const _d_path = [this.constructor._base_path, style].join("/");
-		const _i_path = _d_path;
+		//const _i_path = _d_path;
 		
 		Object.defineProperty(this, "_raw", {
 			value: await $get.data(_d_path),
 		});
 
 		this.nw = new Sprite(this._raw.nw);
+		//this.nw._url = _i_path + "/nw";
 
 		this.n = new Sprite(this._raw.n);
+		//this.n._url = _i_path + "/n";
 
 		this.ne = new Sprite(this._raw.ne);
+		//this.ne._url = _i_path + "/ne";
 
 		this.w = new Sprite(this._raw.w);
+		//this.w._url = _i_path + "/w";
 
 		this.c = new Sprite(this._raw.c);
+		//this.c._url = _i_path + "/c";
 
 		this.e = new Sprite(this._raw.e);
+		//this.e._url = _i_path + "/e";
 
 		this.sw = new Sprite(this._raw.sw);
+		//this.sw._url = _i_path + "/sw";
 
 		this.s = new Sprite(this._raw.s);
+		//this.s._url = _i_path + "/s";
 
 		this.se = new Sprite(this._raw.se);
+		//this.se._url = _i_path + "/se";
 
 		this.arrow = new Sprite(this._raw.arrow);
+		//this.arrow._url = _i_path + "/arrow";
 
 		//this._pat_c = ctx.createPattern(this.c, "repeat");
 

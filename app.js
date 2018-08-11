@@ -60,7 +60,7 @@ function main(firstInit) {
 		app = DataServer(app);
 	}
 	else {
-		app.get('/version.js', function (req, res, next) {
+		app.get('/javascripts/version.js', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${"1"};`,
 				`window.DATA_TAG="static-server";`,
@@ -214,8 +214,10 @@ function WebServer(app) {
 		const webpackHotMiddleware = require('webpack-hot-middleware');
 		const webpackConfig = require('./webpack.config');
 
+		console.log(webpackConfig.output.publicPath);
+
 		const compiler = webpack(webpackConfig);
-		app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: webpackConfig.output.publicPath }));
+		app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: "/" + webpackConfig.output.publicPath }));
 		app.use(webpackHotMiddleware(compiler));
 	}
 	
@@ -574,7 +576,7 @@ function DataServer(app) {
 			res.end(`<script>${url}</script>`);
 		});
 
-		a_pp.get('/version.js', function (req, res, next) {
+		a_pp.get('/javascripts/version.js', function (req, res, next) {
 			let js = [
 				`window.DATA_VERSION=${_data_provider.version};`,
 				`window.DATA_TAG="${_data_provider.setting.tag}";`,

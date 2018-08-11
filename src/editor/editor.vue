@@ -6,73 +6,78 @@
 			<template slot="header">
 				Menu
 			</template>
-			<details open>
-				<summary>bgm</summary>
-				<div ref="bgm_outer"></div>
-			</details>
-			<details open>
-				<summary>window</summary>
-				<p>
-					<div v-for="(wnd, key) in wnds" v-if="!wnd.name.startsWith('$')">
-						<label>
-							<input type="checkbox" v-model="wnd.visable" @click="$refs[key]?$refs[key].requireOrder($event):undefined" checked /> {{wnd.name}}
-						</label>
-					</div>
-				</p>
-			</details>
-			<details>
-				<summary>scene</summary>
-				<p>
-					<div>
-						<label>
-							Map <input @keydown.enter="gv.scene_map.load($event.target.value.padStart(9, '0'))" />
-						</label>
-					</div>
-					<div>
-						<fieldset>
-							<legend>map</legend>
-							<label><input type="checkbox" v-model="gv.m_is_rendering_map" />Map</label>
-							<label><input type="checkbox" v-model="gv.m_display_back" />back</label>
-							<label><input type="checkbox" v-model="gv.m_display_front" />front</label>
-							<label><input type="checkbox" v-model="gv.m_display_mapobj" />object</label>
-							<label><input type="checkbox" v-model="gv.m_display_maptile" />tile</label>
-							<label><input type="checkbox" v-model="gv.m_display_portal" />portal</label>
-						</fieldset>
-						<fieldset>
-							<legend>map</legend>
-							<label><input type="checkbox" v-model="gv.m_display_particle_system" />particle system</label>
-							<label><input type="checkbox" v-model="gv.m_display_skeletal_anim" />skeletal animation</label>
-						</fieldset>
-						<fieldset>
-							<legend>life</legend>
-							<label><input type="checkbox" v-model="gv.m_display_life" />life</label>
-							<label><input type="checkbox" v-model="gv.m_display_player" />player</label>
-							<label><input type="checkbox" v-model="gv.m_display_other_player" />other player</label>
-						</fieldset>
-					</div>
-				</p>
-			</details>
-			<details>
-				<summary>editor</summary>
-				<p>
-					<label><input type="checkbox" v-model="gv.m_display_foothold" /> foothold</label>
-					<label><input type="checkbox" v-model="gv.m_display_selected_object" /> selected object</label>
-				</p>
-			</details>
-			<details>
-				<summary>debug</summary>
-				<p>
-					<div><label><input type="checkbox" v-model="gv.m_display_debug_info" /> debug info</label></div>
+			<template>
+				<details open>
+					<summary>bgm</summary>
+					<div ref="bgm_outer"></div>
+				</details>
+				<details open>
+					<summary>window</summary>
+					<p>
+						<div v-for="(wnd, key) in wnds" v-if="!wnd.name.startsWith('$')">
+							<label>
+								<input type="checkbox" v-model="wnd.visable" @click="$refs[key]?$refs[key].requireOrder($event):undefined" checked /> {{wnd.name}}
+							</label>
+						</div>
+					</p>
+				</details>
+			</template>
+			<template>
+				<details>
+					<summary>scene</summary>
+					<p>
+						<div>
+							<label>
+								Map <input @keydown.enter="gv.scene_map.load($event.target.value.padStart(9, '0'))" />
+							</label>
+						</div>
+						<div>
+							<fieldset>
+								<legend>map</legend>
+								<label><input type="checkbox" v-model="gv.m_is_rendering_map" />Map</label>
+								<label><input type="checkbox" v-model="gv.m_display_back" />back</label>
+								<label><input type="checkbox" v-model="gv.m_display_front" />front</label>
+								<label><input type="checkbox" v-model="gv.m_display_mapobj" />object</label>
+								<label><input type="checkbox" v-model="gv.m_display_maptile" />tile</label>
+								<label><input type="checkbox" v-model="gv.m_display_portal" />portal</label>
+							</fieldset>
+							<fieldset>
+								<legend>map</legend>
+								<label><input type="checkbox" v-model="gv.m_display_particle_system" />particle system</label>
+								<label><input type="checkbox" v-model="gv.m_display_skeletal_anim" />skeletal animation</label>
+							</fieldset>
+							<fieldset>
+								<legend>life</legend>
+								<label><input type="checkbox" v-model="gv.m_display_life" />life</label>
+								<label><input type="checkbox" v-model="gv.m_display_player" />player</label>
+								<label><input type="checkbox" v-model="gv.m_display_other_player" />other player</label>
+							</fieldset>
+						</div>
+					</p>
+				</details>
+				<details>
+					<summary>editor</summary>
+					<p>
+						<label><input type="checkbox" v-model="gv.m_display_foothold" /> foothold</label>
+						<label><input type="checkbox" v-model="gv.m_display_selected_object" /> selected object</label>
+					</p>
+				</details>
+				<details>
+					<summary>debug</summary>
+					<p>
+						<div><label><input type="checkbox" v-model="gv.m_display_debug_info" /> debug info</label></div>
 
-					<div><label><input type="checkbox" v-model="gv.m_display_physics_debug" /> physics debug</label></div>
-					<div v-for="flagName in debugDraw.flagNames">
-						<label><input type="checkbox" v-model.number="debugDraw[flagName]" /> {{flagName.slice(5)}}</label>
-					</div>
-					<div>
-						<label>axis length <input type="number" v-model="debugDraw.axis_length" step="0.1" /></label>
-					</div>
-				</p>
-			</details>
+						<div><label><input type="checkbox" v-model="gv.m_display_physics_debug" /> physics debug</label></div>
+						
+						<div v-for="flagName in gv.m_debugDraw.flagNames">
+							<label><input type="checkbox" v-model.number="gv.m_debugDraw[flagName]" /> {{flagName.slice(5)}}</label>
+						</div>
+						<div>
+							<label>axis length <input type="number" v-model="gv.m_debugDraw.axis_length" step="0.1" /></label>
+						</div>
+					</p>
+				</details>
+			</template>
 		</ui-dialog>
 
 		<transition name="fade">
@@ -257,7 +262,7 @@
 
 	//import { GameStateManager } from '../game/GameState.js';
 
-	import { ItemCategoryInfo } from '../../public/resource.js';
+	import { ItemCategoryInfo } from '../../public/javascripts/resource.js';
 	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
 
 	import { engine } from '../game/Engine.js';
@@ -561,7 +566,6 @@
 				},
 
 				gv: $gv,
-				debugDraw: $gv.m_debugDraw,
 			}
 		},
 		computed: Object.assign(

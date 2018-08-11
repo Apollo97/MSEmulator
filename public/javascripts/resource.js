@@ -494,7 +494,7 @@ function $getValue(obj, path) {
 
 const symbol_isPack = Symbol("$pack");
 
-const url_startsWith_protocol = RegExp.prototype.test.bind(/^([a-zA-Z^\:]+)(\:.*)$/);
+const url_startsWith_protocol = RegExp.prototype.test.bind(/^(([a-zA-Z^\:]+)(\:.*)$|\/\/)/);
 function _setValueByPath(path, value, is_pack) {
 	if (url_startsWith_protocol(path)) {
 		return;
