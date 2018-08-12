@@ -149,7 +149,7 @@ export class FootholdSingle {
 	init(chain, childIndex, body_xf) {
 		let x1, y1, x2, y2;
 		
-		this.chain = this;
+		this.chain = chain;
 		this.childIndex = childIndex;
 
 		x1 = this.x1 / $gv.CANVAS_SCALE;

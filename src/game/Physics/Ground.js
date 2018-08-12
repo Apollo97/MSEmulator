@@ -18,7 +18,7 @@ import { FilterHelper } from "./Filter.js";
 
 
 export const Foothold = FootholdSingle;
-//const Foothold = FootholdChainChild;
+//export const Foothold = FootholdChainChild;
 
 
 /**
@@ -104,6 +104,7 @@ export class Ground {
 				/** @type {foothold} */
 				let head;
 
+				//find head
 				for (let fh = foothold; fh != null; fh = this.footholds[fh.prev]) {
 					if (fh.prev != null && fh.prev == foothold.id) {
 						head = fh;
@@ -388,22 +389,94 @@ export class Ground {
 		if (!player || !player.body || player.body.$type != "player") {
 			return;
 		}
+
 		if (player.state.ladder) {
 			contact.SetEnabled(false);
 			return;
 		}
-		
-		if (!contact.IsTouching()) {
-			debugger;
-			console.log("J: " + player.state.jump);
-		}
 
 		const $fh = player.$foothold;
 		const player_pos = player.foot_walk.GetWorldCenter();//player.getPosition();
-		const relative_position = fh.GetLocalPoint(player_pos, new b2Vec2());
-		const platformFaceY = b2_polygonRadius * 2;
 
-		const foot_width = player.chara_profile.foot_width - b2_polygonRadius;
+		if (fh.is_wall) {
+			contact.SetFriction(0);
+
+			const p$fh = player.prev_$fh;
+
+			if ((!$fh || $fh.chain != fh.chain) &&
+				p$fh &&
+				p$fh.chain != fh.chain &&
+				p$fh.layer != fh.layer
+			) {
+				contact.SetEnabled(false);
+				return;
+			}
+		}
+
+		if (player.state.dropDown && player.leave_$fh != null) {
+			//HACK: ?? foothold edge
+			if (player.leave_$fh == $fh && $fh != fh) {
+				contact.SetEnabled(false);
+				return;
+			}
+			if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
+				player.leave_$fh.id != fh.id &&
+				player.leave_$fh.chain.id != fh.chain.id &&
+				(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
+				(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
+			) {
+				const foot = player.foot_walk.GetWorldCenter();
+				numPoints = contact.GetManifold().pointCount;
+				worldManifold = new b2WorldManifold();
+				contact.GetWorldManifold(worldManifold);
+
+				//check if contact points are moving into platform
+				for (let i = 0; i < numPoints; ++i) {
+					const cpoint = worldManifold.points[i];
+					if (cpoint.y > foot.y) {
+						player.leave_$fh = null;
+						player.state.dropDown = false;
+					}
+				}
+			}
+			else {
+				contact.SetEnabled(false);
+				return;
+			}
+		}
+		else {
+			player.state.dropDown = false;
+		}
+
+		if (player.leave_$fh && player.leave_$fh == fh) {
+			contact.SetEnabled(false);
+			return;
+		}
+
+		let ccc = $fh && (
+			fh.is_wall ||
+			(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||
+			(fh != player._foothold && (fh.y1 > $fh.y1 || fh.y2 > $fh.y2))
+		);
+		if (ccc && $fh != fh && (!player._$fallEdge || player._$fallEdge != $fh)) {
+			if (fh.chain.id != $fh.chain.id &&
+				(!$fh.prev || $fh.y1 != fh.y2) &&
+				(!$fh.next || $fh.y2 != fh.y1)
+			) {
+				player.leave_$fh = fh;
+				contact.SetEnabled(false);
+				return;
+			}
+		}
+		if (player._$fallEdge && player._$fallEdge == fh) {
+			contact.SetEnabled(false);
+			return;
+		}
+
+		const relative_position = fh.GetLocalPoint(player_pos, new b2Vec2());
+		const platformFaceY = b2_polygonRadius;
+
+		const foot_width = player.chara_profile.foot_width;
 
 		if (numPoints == null) {
 			numPoints = contact.GetManifold().pointCount;
@@ -418,21 +491,11 @@ export class Ground {
 			const pointVelOther = playerBody.GetLinearVelocityFromWorldPoint(cpoint, new b2Vec2());
 			const point = new b2Vec2(pointVelOther.x - pointVelPlatform.x, pointVelOther.y - pointVelPlatform.y);
 			const relativeVel = fh.GetLocalVector(point, new b2Vec2());
-			
-			//let dist = b2Vec2.SubVV(cpoint, player_pos, new b2Vec2());
-			//let length = dist.Length();
-			//
-			//player._$footCFDist = length;
-			//player._$footCFSub = Math.abs(length - player.chara_profile.foot_width);
-			//
-			//if (player.$foothold && player.$foothold != fh) {
-			//	if (player._$footCFSub > b2_polygonRadius) {
-			//		player.leave_$fh = fh;
-			//		continue;
-			//	}
-			//}
-			
-			if (relative_position.y <= -foot_width) {
+			const relativePosition = fh.GetLocalPoint(cpoint, new b2Vec2());
+
+			if (relative_position.y <= -(foot_width - platformFaceY) ||
+				(cpoint.y > player_pos.y && relativePosition.y <= platformFaceY)
+			) {
 				if (relativeVel.y > 1) {//if moving down faster than 1 m/s, handle as before
 					//player._foothold = fh;
 					if (fh.is_wall || player._which_foothold_contact(fh, cpoint)) {
@@ -448,7 +511,7 @@ export class Ground {
 					//borderline case, moving only slightly out of platform
 					//player._foothold = fh;
 					if (fh.is_wall || player._which_foothold_contact(fh, cpoint)) {
-						if (player.$foothold && player.$foothold.id != fh.id) {
+						if ($fh && $fh.id != fh.id) {
 						}
 						normal_contact(cpoint);
 						return;//contact point is less than 5cm inside front face of platfrom
@@ -457,6 +520,21 @@ export class Ground {
 					//	normal_contact(cpoint);
 					//	return;//not primary, normal contact
 					//}
+				}
+				else if (fh.is_wall) {//contact wall's upper vertex
+					const py = player_pos.y * $gv.CANVAS_SCALE;
+					if (fh.y2 >= fh.y1) {
+						if (py <= fh.y1) {
+							normal_contact(cpoint);
+							return;
+						}
+					}
+					else {
+						if (py <= fh.y2) {
+							normal_contact(cpoint);
+							return;
+						}
+					}
 				}
 			}
 		}
@@ -468,99 +546,20 @@ export class Ground {
 		 * @param {b2Vec2} cpoint
 		 */
 		function normal_contact(cpoint) {
-			if (fh.is_wall) {
-				contact.SetFriction(0);
+			if ((fh.prev == null && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
+				(fh.next == null && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)
+			) {
+				player.state.jump = true;
 
-				if (player.prev_$fh &&
-					player.prev_$fh.chain != fh.chain &&
-					player.prev_$fh.layer != fh.layer
-				) {
-					contact.SetEnabled(false);
-					return;
-				}
-				if (player.$foothold &&
-					player.$foothold.chain != fh.chain &&
-					player.$foothold.layer != fh.layer
-				) {
-					contact.SetEnabled(false);
-					return;
-				}
-			}
+				player._$fallEdge = fh;
 
-			if (player.state.dropDown && player.leave_$fh != null) {
-				//HACK: ?? foothold edge
-				if (player.leave_$fh == player.$foothold && player.$foothold != fh) {
-					contact.SetEnabled(false);
-					return;
-				}
-				if (playerBody.$type == "pl_ft_walk" &&// player.leave_$fh &&
-					player.leave_$fh.id != fh.id &&
-					player.leave_$fh.chain.id != fh.chain.id &&
-					(player.leave_$fh.prev == null || player.leave_$fh.prev != fh.id) &&
-					(player.leave_$fh.next == null || player.leave_$fh.next != fh.id)
-				) {
-					const foot = player.foot_walk.GetPosition();
-					if (cpoint.y > foot.y) {
-						player.leave_$fh = null;
-						player.state.dropDown = false;
-					}
-				}
-				else {
-					contact.SetEnabled(false);
-					return;
-				}
-			}
-			else {
-				player.state.dropDown = false;
-			}
+				player._foothold = null;
+				player._foot_at = null;
+				//
+				player.$foothold = null;
 
-			if (player.leave_$fh && player.leave_$fh == fh) {
 				contact.SetEnabled(false);
 				return;
-			}
-
-			let ccc = $fh && (
-				fh.is_wall ||
-				(fh == player._foothold && (fh.y1 < $fh.y1 || fh.y2 < $fh.y2)) ||
-				(fh != player._foothold && (fh.y1 > $fh.y1 || fh.y2 > $fh.y2))
-			);
-			if (ccc && $fh != fh && (!player._$fallEdge || player._$fallEdge != $fh)) {
-				if (fh.chain.id != $fh.chain.id &&
-					(!$fh.prev || $fh.y1 != fh.y2) &&
-					(!$fh.next || $fh.y2 != fh.y1)
-				) {
-					player.leave_$fh = fh;
-					contact.SetEnabled(false);
-					return;
-				}
-			}
-			if (player._$fallEdge && player._$fallEdge == fh) {
-				contact.SetEnabled(false);
-				return;
-			}
-			{
-				if ((fh.prev == null && (cpoint.x * $gv.CANVAS_SCALE) < fh.x1) ||
-					(fh.next == null && (cpoint.x * $gv.CANVAS_SCALE) > fh.x2)
-				) {
-					player.state.jump = true;
-
-					player._$fallEdge = fh;
-
-					player._foothold = null;
-					player._foot_at = null;
-					//
-					player.$foothold = null;
-
-					contact.SetEnabled(false);
-					return;
-				}
-			}
-			{
-				//player._$fallEdge = null;//??
-
-				//if (fh._is_horizontal_floor && !player.state.dropDown) {//防止反彈
-				//	playerBody.ApplyForceToCenter(GRAVITY/*.Clone().SelfMul(10)*/);
-				//}
 			}
 		}
 	}
@@ -580,6 +579,8 @@ export class Ground {
 
 		/** @type {Foothold} */
 		const fh = this.getFootholdFromContact(childIndexA);
+
+		player.prev_$fh = fh;
 
 		if (player._foot_contact_list.length) {
 			player._foot_contact_list.forEach((fc, i) => {
@@ -606,7 +607,6 @@ export class Ground {
 			else {
 				player._foothold = null;//正常離開地面
 				player._foot_at = null;
-				player.prev_$fh = null;
 				//console.log("end contact: 正常離開地面: fh == player._foothold");
 			}
 		}
@@ -631,7 +631,6 @@ export class Ground {
 				else {
 					player.$foothold = null;//正常離開地面
 					player._foot_at = null;
-					player.prev_$fh = null;
 					//console.info("end contact: 正常離開地面: fh == player.$foothold");
 				}
 			}

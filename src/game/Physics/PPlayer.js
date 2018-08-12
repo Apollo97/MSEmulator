@@ -973,8 +973,9 @@ class PCharacterBase {
 				// 接觸多個 foothold 以 "下面" 的為主，上坡時以 "下(上)一個" 為主
 				// 忽略連續 foothold 重疊的點
 				if (this._foot_at && foot_at.y < this._foot_at.y) {
-					if ((this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1) ||
-						(this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2)) {
+					if ((!this.$foothold.prev || (this.$foothold.prev == foothold.id && foothold.y1 < this.$foothold.y1)) ||
+						(!this.$foothold.next || (this.$foothold.next == foothold.id && foothold.y2 < this.$foothold.y2))
+					) {
 					}
 					else {
 						return 1;
@@ -1006,6 +1007,13 @@ class PCharacterBase {
 				return true;
 			}
 			else {
+				for (let fc of this._foot_contact_list) {
+					if (foothold == fc.foothold) {
+						fc.priority = priority;
+						fc.position = foot_at;
+						return false;
+					}
+				}
 				let foot_contact = new FootContact(foothold, foot_at, priority);
 				this._foot_contact_list.push(foot_contact);
 				this._foot_contact_list.sort((a, b) => a.priority - b.priority);
