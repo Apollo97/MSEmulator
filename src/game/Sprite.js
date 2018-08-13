@@ -235,18 +235,41 @@ export class Sprite extends SpriteBase {
 		if (!this.isLoaded()) {
 			return;//sprite require property: width, height
 		}
-		/** @type {CanvasRenderingContext2D} */
-		const ctx = this._engine.ctx;
-
+		
+		const sw = Math.trunc(w / this.width) * this.width;
+		const sh = Math.trunc(h / this.height) * this.height;
+		
 		const left = x;
 		const top = y;
-		const right = x + w;
+		const right = x + sw;
 		const bottom = y + h;
 
-		for (let i = top; i < bottom; i += this.height) {
-			for (let j = left; j < right; j += this.width) {
-				this.draw2(j, i);
+		let i, j;
+
+		if (h >= this.height) {
+			for (i = top; i < bottom; i += this.height) {
+				if (w >= this.width) {
+					for (j = left; j < right; j += this.width) {
+						this.draw2(j, i);
+					}
+					let sx = w - sw;
+					if (sx > 0) {
+						this._engine._drawImage(this, 0, 0, sx, this.height, j - this.x, i - this.y, sx, this.height);
+					}
+				}
+				else {
+					this._engine._drawImage(this, 0, 0, w, this.height, left - this.x, i - this.y, w, this.height);
+				}
 			}
+			let sy = h - sh;
+			if (sy > 0) {
+				console.error(new Error("未完成"));
+				this._engine._drawImage(this, 0, 0, this.width, sy, left - this.x, i - this.y, this.width, sy);
+			}
+		}
+		else {
+			console.error(new Error("未完成"));
+			this._engine._drawImage(this, 0, 0, this.width, h, left - this.x, top - this.y, this.width, h);
 		}
 	}
 

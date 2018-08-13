@@ -740,3 +740,33 @@ export class Ground {
 
 Ground.Foothold = Foothold;
 
+/*
+map=100000000
+$$hhh = -1.5;
+clearInterval($$$si)
+$$$si = setInterval(() => {
+    chara.$physics.setPosition(113.96875, 7.84375 + $$hhh);
+	$$hhh += 0.005;//1 / $gv.CANVAS_SCALE;
+	$$hhh = $$hhh > 2 ? 0 : $$hhh;
+    chara.$physics.body.SetAwake(true);
+    setTimeout(() => {
+        chara.$physics.state.jump = true;
+        $gv.input_keyDown.f = 1;
+        setTimeout(() => {
+            $gv.input_keyDown.f = 0;
+            $gv.input_keyUp.f = 1;
+            setTimeout(() => {
+                $gv.input_keyUp.f = 0;
+            }, 50);
+        }, 50);
+    }, 140);
+}, 1000);
+
+*/
+
+/*
+map=100000000
+chara.$physics.setPosition(4583/32+3,364/32-3)
+chara.$physics.body.m_linearVelocity.Set(-22,15)
+
+*/

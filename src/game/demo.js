@@ -1,10 +1,34 @@
 
 
-if (module.hot) {
-	module.hot.accept(function () {
-		window.location.reload();
-	});
-}
+window.$angle = 0;
+window.$rota = 0;
+window.$flip = false;
+
+window.$x = 300;
+window.$y = 300;
+window.$text = "";
+window.$text2 = "";
+
+void function () {
+	window.oninput_text = function (e) {
+		window.$text = e.target.value;
+	};
+	window.oninput_text2 = function (e) {
+		window.$text2 = e.target.value;
+	};
+	let div = document.createElement("div");
+	div.innerHTML = `
+	<label>Text <input type="text" value="${window.$text}" oninput="oninput_text(event)" /></label>
+	<label>Name <input type="text" value="${window.$text2}" oninput="oninput_text2(event)" /></label>
+`;
+	div.style.display = "inline-block";
+	div.style.position = "sticky";
+	div.style.left = "1em";
+	div.style.top = "1em";
+	div.style.border = "1px solid black";
+	
+	document.body.append(div);
+}();
 
 void async function () {
 	await import('./init.js');
@@ -16,6 +40,7 @@ void async function () {
 
 	const { CharacterRenderer } = await import('./Renderer/CharacterRenderer.js');
 	const { ChatBalloon } = await import('./Renderer/ChatBalloon.js');
+	const { NameLabel } = await import('./Renderer/NameLabel.js');
 	const { Animation } = await import('./Animation.js');
 
 	window.m_is_run = true;
@@ -36,10 +61,14 @@ void async function () {
 
 	let chatBalloon = new ChatBalloon();
 	window.chatBalloon = chatBalloon;
+	
+	let nameLabel = new NameLabel();
+	window.nameLabel = nameLabel;
 
 	Promise.all([
 		//$get.data("/Skill/MobSkill/238/level/4"),
 		chatBalloon.load(136),
+		nameLabel.load("40"),
 	]).then(async function (_data) {
 		//let _raw = JSON.parse(_data);
 		//window.anima = new Animation(_raw["ball0"], "/Skill/MobSkill/238/level/4/ball0");
@@ -52,12 +81,6 @@ void async function () {
 			render(0);
 		}
 	});
-	window.$angle = 0;
-	window.$rota = 0;
-	window.$flip = false;
-
-	window.$x = 300;
-	window.$y = 300;
 
 	var animationRequestID = null;
 	var time0 = 0;
@@ -87,8 +110,10 @@ void async function () {
 		chatBalloon.draw(engine, window.$text || "123451234512345123451234512345123451234512345123451234512345123451234512345123451234", (window.$x || 0), (window.$y || 0), 84);
 		//ChatBalloon origin
 		engine.ctx.beginPath();
-		engine.ctx.fillStyle = "#FFF7";
+		engine.ctx.fillStyle = "#F007";
 		engine.ctx.fillRect((window.$x || 0), (window.$y || 0), 32, 32);
+		
+		nameLabel.draw(engine, window.$text2 || "Maple", (window.$x || 0), (window.$y || 0));
 
 		engine.loadIdentity();
 		engine.scale(1, (screen_size.y + 1) / screen_size.y);
@@ -255,4 +280,10 @@ void async function () {
 		}
 	}
 }()
+
+if (module.hot) {
+	module.hot.accept(function () {
+		window.location.reload();
+	});
+}
 

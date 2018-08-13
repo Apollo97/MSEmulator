@@ -1,6 +1,7 @@
 ﻿
 import { IRenderer } from './IRenderer.js';
-import { PPlayer } from './Physics/PPlayer';
+import { PPlayer } from './Physics/PPlayer.js';
+import { NameLabel } from './Renderer/NameLabel.js';
 
 /**
  * Game object
@@ -85,8 +86,25 @@ export class SceneObject {
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {string} name
+	 * @param {string} labelStyle
 	 */
-	__drawName(renderer, name) {
+	__drawName(renderer, name, labelStyle) {
+		if (labelStyle) {
+			let label = NameLabel.get(labelStyle);
+			if (label && !label.$promise) {
+				const crr = this.renderer;
+				label.draw(renderer, name, crr.x, crr.y);
+				return;
+			}
+		}
+		this.__drawName_default(renderer, name);
+	}
+	
+	/**
+	 * @param {IRenderer} renderer
+	 * @param {string} name
+	 */
+	__drawName_default(renderer, name) {
 		const ctx = renderer.ctx;
 		const crr = this.renderer;
 

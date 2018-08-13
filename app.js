@@ -53,6 +53,8 @@ function main(firstInit) {
 		sequenceTasks(equipListTasks).then(function () {
 			console.log("產生道具清單...完成");
 		});
+
+		return;
 	}
 	app = WebServer(app);
 
@@ -213,8 +215,6 @@ function WebServer(app) {
 		const webpackDevMiddleware = require('webpack-dev-middleware');
 		const webpackHotMiddleware = require('webpack-hot-middleware');
 		const webpackConfig = require('./webpack.config');
-
-		console.log(webpackConfig.output.publicPath);
 
 		const compiler = webpack(webpackConfig);
 		app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: "/" + webpackConfig.output.publicPath }));

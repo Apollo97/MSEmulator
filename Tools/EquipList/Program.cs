@@ -45,9 +45,9 @@ namespace EquipList
 			var data_extracter = new DataExtracter("");
 
 			//var aaa = DataProvider.get_data_by_path("Map/Map/Map0/000000000");
-			DataProvider.get_identities("Map/Obj/GachaponHousingTW");
+			//DataProvider.get_identities("Map/Obj/GachaponHousingTW");
 
-			return;
+			//return;
 			
 			try
 			{

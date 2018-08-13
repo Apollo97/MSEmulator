@@ -56,7 +56,7 @@ window.$addItem_repeatEquip = false;
 class ChatController {
 	constructor() {
 		/** @type {number} */
-		this.style = 0;
+		this.style = 212;
 
 		/** @type {string} */
 		this.text = "";
@@ -189,6 +189,9 @@ export class BaseSceneCharacter extends SceneObject {
 
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
+		
+		/** @type {string} */
+		this.labelStyle = "214";
 
 		/** @type {{move:$Packet_CharacterMove}} */
 		this.$inPacket = {};
@@ -363,7 +366,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 */
 	_$drawName(renderer) {
 		const name = this.id;
-		this.__drawName(renderer, name);
+		this.__drawName(renderer, name, this.labelStyle);
 	}
 	/**
 	 * @param {IRenderer} renderer
