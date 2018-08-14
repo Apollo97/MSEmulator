@@ -124,6 +124,6 @@ export class PanelRenderer {
 		this.s._drawPattern(cx + hwidth + arrow_hw + r_adj, bottom + height, hw_arrow_hw - r_adj, this.s.height);
 		this.se.draw2(cx + tw, bottom + height);
 
-		this.arrow.draw2i(cx - arrow_hw + hwidth, bottom + height);
+		this.arrow.draw2(cx - arrow_hw + hwidth, bottom + height);
 	}
 }

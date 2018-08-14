@@ -13,55 +13,63 @@ export class ChatBalloon {
 	 * @param {any} style
 	 */
 	async load(style) {
-		const path = [this._base_path, style].join("/");
+		if (style == null) {
+			throw new TypeError();
+		}
+		if (ChatBalloon.cache[style]) {
+			let cb = ChatBalloon.cache[style];
+			Object.assign(this, cb);
+		}
+		else {
+			const path = [this._base_path, style].join("/");
 
-		this.style = style;
-		
-		let promise = $get.data(path);
-		ChatBalloon.cache[style] = this;
-		this.$promise = promise;
-		
-		Object.defineProperty(this, "_raw", {
-			value: await promise,
-		});
+			this.style = style;
+			
+			let promise = $get.data(path);
+			ChatBalloon.cache[style] = this;
+			this.$promise = promise;
+			
+			Object.defineProperty(this, "_raw", {
+				value: await promise,
+			});
+			delete this.$promise;
 
-		this.color = (this._raw.clr == -1 || !this._raw.clr) ? ("white") : ("#" + (this._raw.clr >>> 0).toString(16));
+			this.color = (this._raw.clr == -1 || !this._raw.clr) ? ("white") : ("#" + (this._raw.clr >>> 0).toString(16));
 
-		this.nw = new Sprite(this._raw.nw);
-		//this.nw._url = path + "/nw";
+			this.nw = new Sprite(this._raw.nw);
+			//this.nw._url = path + "/nw";
 
-		this.n = new Sprite(this._raw.n);
-		//this.n._url = path + "/n";
+			this.n = new Sprite(this._raw.n);
+			//this.n._url = path + "/n";
 
-		this.ne = new Sprite(this._raw.ne);
-		//this.ne._url = path + "/ne";
+			this.ne = new Sprite(this._raw.ne);
+			//this.ne._url = path + "/ne";
 
-		this.w = new Sprite(this._raw.w);
-		//this.w._url = path + "/w";
+			this.w = new Sprite(this._raw.w);
+			//this.w._url = path + "/w";
 
-		this.c = new Sprite(this._raw.c);
-		//this.c._url = path + "/c";
+			this.c = new Sprite(this._raw.c);
+			//this.c._url = path + "/c";
 
-		this.e = new Sprite(this._raw.e);
-		//this.e._url = path + "/e";
+			this.e = new Sprite(this._raw.e);
+			//this.e._url = path + "/e";
 
-		this.sw = new Sprite(this._raw.sw);
-		//this.sw._url = path + "/sw";
+			this.sw = new Sprite(this._raw.sw);
+			//this.sw._url = path + "/sw";
 
-		this.s = new Sprite(this._raw.s);
-		//this.s._url = path + "/s";
+			this.s = new Sprite(this._raw.s);
+			//this.s._url = path + "/s";
 
-		this.se = new Sprite(this._raw.se);
-		//this.se._url = path + "/se";
+			this.se = new Sprite(this._raw.se);
+			//this.se._url = path + "/se";
 
-		this.arrow = new Sprite(this._raw.arrow);
-		//this.arrow._url = path + "/arrow";
+			this.arrow = new Sprite(this._raw.arrow);
+			//this.arrow._url = path + "/arrow";
 
-		//this._pat_c = ctx.createPattern(this.c, "repeat");
-		
-		delete this.$promise;
+			//this._pat_c = ctx.createPattern(this.c, "repeat");
+		}
 	}
-
+	
 	/*
 	1 12345 12345 1 : 5
 	2 12345 12345 12345
@@ -126,7 +134,7 @@ export class ChatBalloon {
 			this.s._drawPattern(x + hw + arrow_hw + r_adj, y + th, hw_arrow_hw - r_adj, this.s.height);//clip
 			this.se.draw2(x + tw, y + th);
 
-			this.arrow.draw2i(x - arrow_hw + hw, y + th);
+			this.arrow.draw2(x - arrow_hw + hw, y + th);
 		}
 
 		for (let i = 0, cy = y; i < lines.length; ++i, cy += LINE_HEIGHT) {

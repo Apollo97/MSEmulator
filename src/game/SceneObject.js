@@ -103,8 +103,10 @@ export class SceneObject {
 	/**
 	 * @param {IRenderer} renderer
 	 * @param {string} name
+	 * @param {string} color
+	 * @param {string} bgColor
 	 */
-	__drawName_default(renderer, name) {
+	__drawName_default(renderer, name, color="#FFF", bgColor="#000B") {
 		const ctx = renderer.ctx;
 		const crr = this.renderer;
 
@@ -126,8 +128,6 @@ export class SceneObject {
 		const bottom = y + r + h + r;
 		const _bottom = y + r + h;
 
-		ctx.fillStyle = "rgba(0,0,0,0.7)";
-		ctx.strokeStyle = "rgba(0,0,0,0.7)";
 		ctx.beginPath();
 		{
 			ctx.moveTo(left, top);
@@ -144,7 +144,10 @@ export class SceneObject {
 			ctx.lineTo(_left, _top);
 			ctx.arcTo(_left, top, left, top, r);
 		}
+		ctx.fillStyle = bgColor;
 		ctx.fill();
+		//ctx.strokeStyle = "#000F";
+		//ctx.stroke();
 
 		if (0) {//inner
 			ctx.fillStyle = "yellow";
@@ -163,8 +166,8 @@ export class SceneObject {
 			}
 			ctx.stroke();
 		}
-		ctx.fillStyle = "white";
-		ctx.strokeStyle = "white";
+		
+		ctx.fillStyle = color;
 		ctx.fillText(name, left, (top + bottom) * 0.5);
 	}
 }

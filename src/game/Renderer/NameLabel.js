@@ -28,20 +28,25 @@ export class NameLabel extends PanelRenderer {
 		if (style == null) {
 			throw new TypeError();
 		}
-		const path = [this._base_path, style].join("/");
-		
-		this.style = style;
-		
-		let promise = this._load(path);
-		NameLabel.cache[style] = this;
-		this.$promise = promise;
-		
-		await promise;
-		
-		this._load_center();
-		this._load_color("white");
-		
-		delete this.$promise;
+		if (NameLabel.cache[style]) {
+			let label = NameLabel.cache[style];
+			Object.assign(this, label);
+		}
+		else {
+			const path = [this._base_path, style].join("/");
+			
+			this.style = style;
+			
+			let promise = this._load(path);
+			NameLabel.cache[style] = this;
+			this.$promise = promise;
+			
+			await promise;
+			delete this.$promise;
+			
+			this._load_center();
+			this._load_color("white");
+		}
 	}
 	
 	/**
