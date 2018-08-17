@@ -32,6 +32,7 @@ if (!process_argv["--static"] && !process_argv["-s"]) {
 }
 
 let dataSource = null, dataTag = null;
+let noCache = process_argv["-no-cache"];
 
 main(process_argv["--init"]);
 
@@ -85,8 +86,8 @@ function main(firstInit) {
 
 		let repl_context = repl.start({ prompt: '> ' }).context;
 
-		Object.defineProperties(repl_context, {
-			dataSource: {
+		let properties = {
+			$dataSource: {
 				get: function () {
 					return dataSource;
 				},
@@ -94,14 +95,27 @@ function main(firstInit) {
 					dataSource = value;
 				}
 			},
-			dataTag: {
+			$dataTag: {
 				get: function () {
 					return dataTag;
 				},
 				set: function (value) {
 					dataTag = value;
 				}
+			},
+			$noCache: {
+				get: function () {
+					return noCache;
+				},
+				set: function (value) {
+					noCache = value;
+				}
 			}
+		};
+		Object.defineProperties(app, properties);
+		Object.defineProperties(repl_context, properties);
+		Object.defineProperty(repl_context, "app", {
+			value: app,
 		});
 	}
 }
@@ -209,7 +223,8 @@ function WebServer(app) {
 	}
 
 	if (!process_argv["-P"] && process.env.NODE_ENV !== 'production') {
-		console.log("use webpackHotMiddleware");
+		console.log("use webpack-dev-middleware");
+		console.log("use webpack-hot-middleware");
 
 		const webpack = require('webpack');
 		const webpackDevMiddleware = require('webpack-dev-middleware');
@@ -720,14 +735,13 @@ function DataServer(app) {
 		 * @param {string} isObject to JSON
 		 */
 		function saveCacheFile(loadFileTask, output_path, data_path, isObject, extname) {
+			if (noCache) {
+				return;
+			}
 			loadFileTask.then(function (results) {
 				_saveCacheFile(results, output_path, data_path, isObject, extname);
 			}, function (reason) {
 			});
-		}
-		if (process_argv["-no-cache"]) {
-			saveCacheFile = function () {
-			};
 		}
 
 		a_pp.get(/\/images\/.*/, function (req, res, next) {//png
@@ -766,17 +780,28 @@ function DataServer(app) {
 				}
 				let task = _data_provider.getAsync("sound", data_path);
 
-				sendFile(task, req, res, next);
+				//sendFile(task, req, res, next);
 				task.then(function (results) {
-					let extname;
-					if (results.mime == "audio/mp3") {
-						extname = SOUND_MP3_EXTNAME;
+					const mime = results.mime;
+					{
+						res.status(206);
+						res.end(results.data);
 					}
-					else if (results.mime == "audio/wav") {
-						extname = SOUND_WAV_EXTNAME;
+					{
+						let extname;
+						if (mime == "audio/mp3") {
+							extname = SOUND_MP3_EXTNAME;
+						}
+						else if (mime == "audio/wav") {
+							extname = SOUND_WAV_EXTNAME;
+						}
+						if (!noCache) {
+							_saveCacheFile(results, "public/sound", data_path, false, extname);
+						}
 					}
-					_saveCacheFile(results, "public/sound", data_path, false, extname);
-				});
+				}), function (reason) {
+					write_reason(res, reason);
+				};
 			}
 		});
 		a_pp.get(/\/binary\/.*/, function (req, res, next) {

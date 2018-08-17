@@ -85,7 +85,7 @@ export class NameLabel extends PanelRenderer {
 	
 	/**
 	 * @param {string} NameLabel
-	 * @returns {Promise<NameLabel>}
+	 * @returns {NameLabel}
 	 */
 	static get(labelStyle) {
 		let label = NameLabel.cache[labelStyle];
