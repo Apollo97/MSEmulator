@@ -71,7 +71,7 @@ export class ItemCategoryInfo {
 					iconPath = "blink/0/face";
 					iconRawPath = "blink/0/face";
 					break;
-				default://typeId: 0|1|2|3|4
+				default: // typeId: 0|1|2|3|4
 					iconPath = "info/icon";
 					iconRawPath = "info/iconRaw";
 			}
@@ -176,26 +176,35 @@ export class ItemCategoryInfo {
 			throw new TypeError();
 		}
 
-		if (id.length == 4) {
-			info = ItemCategoryInfo._info[id];
-			if (info) {
-				return info;
+		if (id[0] == "0") {
+			if (id.length == 4) {
+				info = ItemCategoryInfo._info[id];
+				if (info) {
+					return info;
+				}
 			}
-		}
-		else {
-			info = ItemCategoryInfo._info[id.slice(0, 4)];
-			if (info) {
-				return info;
+			else if (id.length == 6) {
+				info = ItemCategoryInfo._info[id];
+			}
+			else if (id.length == 3) {
+				info = ItemCategoryInfo._info[id];
 			}
 			else {
-				if (id.length == 6) {
-					info = ItemCategoryInfo._info[id];
+				info = ItemCategoryInfo._info[id.slice(0, 4)];
+				if (info) {
+					return info;
 				}
 				else {
 					info = ItemCategoryInfo._info[id.slice(0, 6)];
-				}
-				if (info) {
-					return info;
+					if (info) {
+						return info;
+					}
+					else {
+						info = ItemCategoryInfo._info[id.slice(0, 3)];//019
+						if (info) {
+							return info;
+						}
+					}
 				}
 			}
 		}
@@ -349,7 +358,9 @@ ItemCategoryInfo._info = {
 	"0157": new ItemCategoryInfo("0157", "Weapon", "璃", "weapon", "璃"),
 	"0158": new ItemCategoryInfo("0158", "Weapon", "重拳槍", "weapon", "重拳槍"),
 	"0170": new ItemCategoryInfo("0170", "Weapon", "0170", "weapon", "點裝武器"),
+	"019": new ItemCategoryInfo("019", "TamingMob", "騎寵", "tamingMob", "騎寵"),
 };
+//椅子
 ItemCategoryInfo._categoryList = (function (info_map) {
 	let list = [];
 	let set = new Set();

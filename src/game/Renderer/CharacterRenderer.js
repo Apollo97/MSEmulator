@@ -68,7 +68,7 @@ class FragmentTexture extends SpriteBase {
 		return zMap[this._raw.z] || 1;
 	}
 	set z(not_value) {
-		console.warn("Not implement");
+		console.error("Not implement");
 	}
 
 	/**
@@ -81,7 +81,7 @@ class FragmentTexture extends SpriteBase {
 	}
 	set order(not_value) {
 		debugger;
-		console.warn(new Error("Not implement").stack);
+		console.error(new TypeError("Not implement"));
 	}
 
 	/** @returns {Vec2} */
@@ -387,6 +387,8 @@ class ItemEffect {
 		this.z = -2;
 		this.action = 1;
 		this.actionExceptRotation = 0;
+		
+		this.enable = true;
 	}
 
 	static async Init() {
@@ -519,10 +521,9 @@ class CharacterFragmentBase {
 
 	/**
 	 * @param {Character} chara
-	 * @param {string} place
 	 * @returns {FragmentTexture}
 	 */
-	getTexture(chara, place) {
+	getTexture(chara) {
 		throw new Error("Not implement");
 	}
 }
@@ -1357,6 +1358,32 @@ class CharacterEquipFace extends CharacterEquipFaceAcc {
 	}
 }
 
+class CharacterTamingMob extends CharacterEquip {
+	constructor() {
+		super();
+	}
+	
+	/**
+	* @param {string} url
+	* @param {string} id
+	* @param {ItemCategoryInfo} cateInfo
+	* @param {void} use_category - no use
+	* @returns {Promise<boolean>} - true if item exist
+	*/
+	async load(url, id, cateInfo, use_category) {
+		this.id = id;
+		this.categoryInfo = cateInfo;
+		
+		let r = await this.__load(url, id, cateInfo);
+		
+		return r;
+	}
+	
+	get actionMap() {
+		return this._raw.characterAction;
+	}
+}
+
 ItemCategoryInfo._info['0000'].fragmentType = CharacterEquipBody;
 ItemCategoryInfo._info['0001'].fragmentType = CharacterEquipHead;	//	elfEar
 ItemCategoryInfo._info['0002'].fragmentType = CharacterEquipFace;	//	Face
@@ -1376,6 +1403,8 @@ ItemCategoryInfo._info['0109'].fragmentType = CharacterEquip;		//	Shield
 ItemCategoryInfo._info['0110'].fragmentType = CharacterEquip;		//	Cape
 
 ItemCategoryInfo._info['0170'].fragmentType = CharacterEquipCashWeapon;		//	cash-weapon
+
+ItemCategoryInfo._info['019'].fragmentType = CharacterTamingMob;
 
 class CharacterSlots {
 	constructor() {
@@ -1443,7 +1472,10 @@ class CharacterSlots {
 
 		/** @type {CharacterEquip} - 11 */
 		this.weapon = null;
-	
+		
+		/** @type {CharacterTamingMob} */
+		this.tamingMob = null;
+		
 		{
 			Object.defineProperty(this, "_ordered_slot", {
 				configurable: true,
@@ -1741,10 +1773,12 @@ class CharacterSlots {
 		else {
 			cateInfo = ItemCategoryInfo.get(id);
 		}
+		
+		const slotName = cateInfo.slot;
 
-		if (cateInfo.slot != "head" && cateInfo.slot != "body") {
-			if (this[cateInfo.slot] && this[cateInfo.slot].id == id) {
-				equip = this[cateInfo.slot];
+		if (slotName != "head" && slotName != "body") {
+			if (this[slotName] && this[slotName].id == id) {
+				equip = this[slotName];
 				for (let slot in equip.islot) {
 					let order = equip.islot[slot];
 					if (this._ordered_slot[order]) {
@@ -1752,6 +1786,7 @@ class CharacterSlots {
 					}
 					delete this._ordered_slot[order];
 				}
+				this[slotName] = null;
 				return true;
 			}
 		}
@@ -2124,6 +2159,15 @@ export class CharacterAnimationBase {
 		return this._action;
 	}
 	set action(act) {
+		if (this.slots.tamingMob) {
+			let _act = this.slots.tamingMob.actionMap[act];
+			if (_act) {
+				act = _act;
+			}
+			else {
+				throw new TypeError("no action");
+			}
+		}
 		if (this.actani._action != act && this.slots.body) {
 		//if (this._action != act && this.slots.body) {
 			//if (this.slots.body._action_list.indexOf(act) >= 0) {
@@ -2315,7 +2359,9 @@ export class CharacterAnimationBase {
 	/**
 	 * @param {number} stamp - 0 <= stamp < Infinity
 	 */
-	_update(stamp) {
+	_update(_stamp) {
+		let stamp = _stamp * this.getSpeed();
+		
 		if (this.actani) {
 			if (this.actani.isEnd() && this.actani.loop) {
 				this.actani.reset();
@@ -2327,11 +2373,11 @@ export class CharacterAnimationBase {
 			this.action_time += stamp;
 		}
 
-		this.emotion_time += stamp;
+		this.emotion_time += _stamp;
 
 		for (let i in this.slots) {
 			let equip = this.slots[i];
-			if (equip && equip.effect) {
+			if (equip && equip.effect && equip.effect.enable) {
 				equip.effect.update(stamp);
 			}
 		}
@@ -2340,13 +2386,11 @@ export class CharacterAnimationBase {
 	 * @param {any} number  0 < stamp * speed < Infinity
 	 */
 	update(stamp) {
-		stamp *= this.getSpeed();
-
 		this._update(stamp);
 	}
 
 	__forceUpdate(stamp) {
-		this._$dirty = -Math.random() + Math.random() * 3.1415926535897;
+		this._$dirty = Math.random();
 		this._update(stamp | 0);
 		this.__update_frag_list();
 	}
@@ -2426,6 +2470,56 @@ export class CharacterAnimationBase {
 		}
 		renderer.popMatrix();
 	}
+	__update_frag_list() {
+		this.__frag_list = [];
+		
+		/** @type {Array<CharacterEquipBase>[]} */
+		let slots = {};
+		
+		for (let i = 2; i <= 3; ++i) {
+			/** @type {CharacterEquipBase} */
+			let item = this.slots["_hair" + i];
+			
+			this.__add_equip_to_frag_list(slots, item);
+		}
+		for (let i in this.slots._ordered_slot) {
+			/** @type {CharacterEquipBase} */
+			let item = this.slots._ordered_slot[i];
+			
+			this.__add_equip_to_frag_list(slots, item);
+		}
+		
+		{//back
+			let is_back = false;
+			
+			for (let i in slots) {
+				/** @type {FragmentTexture[]} */
+				let fts = slots[i];
+				for (let j in fts) {
+					/** @type {FragmentTexture} */
+					let ft = fts[j];
+					if (is_back) {
+						if (ft._place.startsWith("face")) {
+							continue;
+						}
+					}
+					else if (ft._place.startsWith("backHair")) {
+						is_back = true;
+					}
+					this.__add_frag_to_list(ft);
+				}
+			}
+		}
+		
+		{
+			let ae = this.__frag_list[114];//HACK: Ae
+			if (ae) {
+				this.__frag_list.push(ae);
+			}
+		}
+
+		this._calcBoundBox();
+	}
 	/**
 	 * @param {Array<CharacterEquipBase>[]} slots
 	 * @param {CharacterEquipBase} item
@@ -2481,53 +2575,6 @@ export class CharacterAnimationBase {
 			}
 			//item.fragments[j].is_show = true;
 		}
-	}
-	__update_frag_list() {
-		this.__frag_list = [];
-
-		/** @type {Array<CharacterEquipBase>[]} */
-		let slots = {};
-
-		for (let i = 2; i <= 3; ++i) {
-			/** @type {CharacterEquipBase} */
-			let item = this.slots["_hair" + i];
-
-			this.__add_equip_to_frag_list(slots, item);
-		}
-		for (let i in this.slots._ordered_slot) {
-			/** @type {CharacterEquipBase} */
-			let item = this.slots._ordered_slot[i];
-
-			this.__add_equip_to_frag_list(slots, item);
-		}
-
-		let is_back = false;
-
-		for (let i in slots) {
-			/** @type {FragmentTexture[]} */
-			let fts = slots[i];
-			for (let j in fts) {
-				/** @type {FragmentTexture} */
-				let ft = fts[j];
-				if (is_back) {
-					if (ft._place.startsWith("face")) {
-						continue;
-					}
-				}
-				else if (ft._place.startsWith("backHair")) {
-					is_back = true;
-				}
-				this.__add_frag_to_list(ft);
-			}
-		}
-		{
-			let ae = this.__frag_list[114];//TODO: Ae
-			if (ae) {
-				this.__frag_list.push(ae);
-			}
-		}
-
-		this._calcBoundBox();
 	}
 	/** @param {FragmentTexture} ft */
 	__add_frag_to_list(ft) {
@@ -2714,18 +2761,26 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		const item_type = id[0];
 		switch (item_type) {
 			case "0"://equip
-				if (ItemCategoryInfo.isCashWeapon(id)) {
-					//this.$$changeLog.weaponType = ss[1];/??
-					this.$$changeLog.weapon = id;
+				{
+					if (ItemCategoryInfo.isCashWeapon(id)) {
+						//this.$$changeLog.weaponType = ss[1];/??
+						this.$$changeLog.weapon = id;
+					}
+					else {
+						this.$$changeLog.useEquip.push(id);
+					}
+					//
+					let task = this.slots._use(id, null, category);
+					this.__load_task.push(task);
+					await task;
+					
+					if (id.startsWith("019")) {
+						this.action = this.action;//force update action
+					}
+					
+					this.__update_frag_list();
+					this._calcBoundBox();
 				}
-				else {
-					this.$$changeLog.useEquip.push(id);
-				}
-				//
-				let task = this.slots._use(id, null, category);
-				this.__load_task.push(task);
-				await task;
-				this._calcBoundBox();
 		}
 	}
 
