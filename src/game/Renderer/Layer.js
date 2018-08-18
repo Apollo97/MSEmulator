@@ -1,11 +1,12 @@
 ﻿
 import { Animation } from "../Animation.js"
 import { IRenderer } from "../IRenderer.js";
+import { RenderingOption } from "./RenderingOption";
 
 /**
  * @interface
  */
-export class Drawable {
+export class LayerObject {
 	constructor() {
 		/** @type {number} = 0~1 */
 		this.opacity = 1;
@@ -15,6 +16,7 @@ export class Drawable {
 	}
 
 	isEnd() {
+		console.error("Not implement");
 	}
 
 	/**
@@ -26,22 +28,30 @@ export class Drawable {
 
 	/**
 	 * @param {IRenderer} renderer
+	 * @param {RenderingOption} option
 	 */
-	render(renderer) {
+	render(renderer, option) {
 		throw new Error();
 	}
 }
 
+/**
+ * @implements {LayerObject}
+ */
 export class Layer {
 	constructor() {
-		/** @type {Drawable[]} */
+		/** @type {LayerObject[]} */
 		this.objects = [];
-
-		this.opacity = 1;
+		
+		this.rendering_option = new RenderingOption();
 	}
 	
 	add(obj) {
 		this.objects.push(obj);
+	}
+	
+	clear() {
+		this.objects.length = 0;
 	}
 	
 	/**
@@ -49,6 +59,10 @@ export class Layer {
 	 */
 	update(stamp) {
 		this.objects = this.objects.filter(function (obj) {
+			if (!obj.isEnd || !obj.destroy) {
+				console.error("%o: %o", obj.constructor ? obj.constructor.name : (typeof obj), obj);
+				return false;
+			}
 			if (obj.isEnd()) {
 				obj.destroy();
 				return false;
@@ -62,17 +76,16 @@ export class Layer {
 	
 	/**
 	 * @param {IRenderer} renderer
+	 * @param {RenderingOption} option
 	 */
-	render(renderer) {
-		if (this.opacity > 0) {
-			const opacity = this.opacity;
-
+	render(renderer, option) {
+		const opt = this.rendering_option.mul(option);
+		
+		if (opt.opacity > 0) {
 			renderer.pushGlobalAlpha();
 
 			this.objects.forEach(function (obj) {
-				renderer.globalAlpha = obj.opacity * opacity;
-
-				obj.render(renderer);
+				obj.render(renderer, opt);
 			});
 
 			renderer.popGlobalAlpha();

@@ -1,7 +1,8 @@
 ﻿
 import { IRenderer } from "../IRenderer.js";
 import { Sprite } from "../Sprite.js";
-import { Drawable, Layer } from "./Layer.js";
+import { LayerObject, Layer } from "./Layer.js";
+import { RenderingOption } from "./RenderingOption.js";
 import { DamagePair, AttackInfo } from "../../Common/AttackInfo.js";
 
 // 123
@@ -263,7 +264,7 @@ DamageNumberRenderer.max_display_digit = Math.trunc(Math.log10(Number.MAX_SAFE_I
 DamageNumberRenderer.max_rand_y = 5;
 
 
-export class DamageNumber extends Drawable {
+export class DamageNumber extends LayerObject {
 	/**
 	 * @param {string} skin
 	 * @param {string} style
@@ -385,8 +386,10 @@ export class DamageNumber extends Drawable {
 
 	/**
 	 * @param {IRenderer} renderer
+	 * @param {RenderingOption} option
 	 */
-	render(renderer) {
+	render(renderer, option) {
+		renderer.globalAlpha = this.opacity * opt.opacity;
 		this.renderer.draw(renderer, this.damagePair.realDamage, this.damagePair.critical, this.x, this.y);
 	}
 }

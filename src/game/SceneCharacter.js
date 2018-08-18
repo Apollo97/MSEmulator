@@ -20,6 +20,8 @@ import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from '../ui/Basic/KeySlot
 
 import { SceneMap } from './Map.js';
 import { damageNumberLayer } from './Renderer/DamageNumber.js';
+import { Chair } from './Renderer/Chair.js';
+import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
 
 
 // SceneCharacter的更新流程
@@ -188,7 +190,10 @@ export class BaseSceneCharacter extends SceneObject {
 
 		/** @type {Map<string,SceneSkill>} */
 		this.activeSkills = new Map();
-
+		
+		/** @type {Chair} */
+		this.chair = null;
+		
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
 		
@@ -283,7 +288,67 @@ export class BaseSceneCharacter extends SceneObject {
 	 */
 	$moveItem(equipId, from, to) {
 	}
-
+	
+	/**
+	 * @param {string} chairId
+	 */
+	sitChair(chairId) {
+		if (!this.chair) {
+			this.chair = new Chair();
+			this.chair.init(this);
+			this.chair.load(chairId).then(() => {
+				this.chair.addToScene(sceneRenderer);
+				debugger;
+				{// Chair#update
+					const bodyRelMove = this.chair.bodyRelMove;
+					if (bodyRelMove) {
+						//this.renderer.tx = bodyRelMove.x;
+						//this.renderer.ty = bodyRelMove.y;
+						this.renderer.x += bodyRelMove.x;
+						this.renderer.y += bodyRelMove.y;
+					}
+					
+					if (this.chair._raw.info.sitAction) {
+						this.renderer.action = this.chair._raw.info.sitAction;
+					}
+					else {
+						this.renderer.action = "sit";
+					}
+					if (this.chair._raw.info.sitEmotion) {
+						this.renderer.emotion = window.character_emotion_list[this.chair._raw.info.sitEmotion];
+					}
+				}
+				
+				this.enablePhysics = false;
+				this.$physics.body.SetAwake(false);
+				this.$physics.foot_walk.SetAwake(false);
+			});
+		}
+		else {
+			debugger;
+		}
+	}
+	noSit() {
+		this.renderer.action = "stand1";
+		this.renderer.emotion = "blink";
+		
+		this.enablePhysics = true;
+		this.$physics.body.SetAwake(true);
+		this.$physics.foot_walk.SetAwake(true);
+		
+		{// Chair#update
+			//this.renderer.tx = 0;
+			//this.renderer.ty = 0;
+			const bodyRelMove = this.chair.bodyRelMove;
+			if (bodyRelMove) {
+				this.renderer.x -= bodyRelMove.x;
+				this.renderer.y -= bodyRelMove.y;
+			}
+		}
+		
+		this.chair = null;//TODO: remove chair
+	}
+	
 	/**
 	 * @param {string} skillId
 	 * @returns {SceneSkill]
@@ -612,7 +677,17 @@ export class SceneCharacter extends BaseSceneCharacter {
 					if (keyDown) {
 						/** @type {ActionSlot} */
 						const ck = keySlot.data;
-						ikey[ck.action] = keyDown;
+						if (this.chair) {
+							if (ck.action == "left" ||
+								ck.action == "right" ||
+								ck.action == "jump"
+							) {
+								this.noSit();
+							}
+						}
+						else {
+							ikey[ck.action] = keyDown;
+						}
 					}
 					break;
 				case "Item":
@@ -624,29 +699,31 @@ export class SceneCharacter extends BaseSceneCharacter {
 					break;
 			}
 		};
-		for (let keyName in key_map) {
-			/** @type {KeySlot} */
-			const keySlot = key_map[keyName];
-			if (!keySlot) {
-				debugger;
-				continue;
-			}
-			const keyDown = $gv.input_keyDown[keyName];
-			const keyUp = $gv.input_keyUp[keyName];
+		if (!this.chair) {
+			for (let keyName in key_map) {
+				/** @type {KeySlot} */
+				const keySlot = key_map[keyName];
+				if (!keySlot) {
+					debugger;
+					continue;
+				}
+				const keyDown = $gv.input_keyDown[keyName];
+				const keyUp = $gv.input_keyUp[keyName];
 
-			if (keySlot.type == "Skill") {
-				/** @type {SkillSlot} */
-				const sk = keySlot.data;
-				const skill_id = sk.skill_id;
-				let skill = this.activeSkills.get(skill_id);
-				if (keyDown && can_use_skill) {
-					skill = this.invokeSkill(sk.skill_id);
+				if (keySlot.type == "Skill") {
+					/** @type {SkillSlot} */
+					const sk = keySlot.data;
+					const skill_id = sk.skill_id;
+					let skill = this.activeSkills.get(skill_id);
+					if (keyDown && can_use_skill) {
+						skill = this.invokeSkill(sk.skill_id);
+					}
+					if (skill) {
+						skill.control(ikey, keyDown, keyUp);
+					}
 				}
-				if (skill) {
-					skill.control(ikey, keyDown, keyUp);
-				}
-			}
-		};
+			};
+		}
 
 		this.$physics.control(ikey);//apply action control
 	}

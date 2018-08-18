@@ -13,6 +13,7 @@ import { EffectManager } from "./Skill.js";
 import { } from "./MobSkill/238.FairyDust.js";
 
 import { damageNumberLayer } from "./Renderer/DamageNumber.js";
+import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
 
 import { Cursor, CursorAnimationData } from "./Cursor.js";
 
@@ -22,6 +23,8 @@ import { Client } from "../Client/Client.js";
 import { SceneCharacter } from "./SceneCharacter.js";//debug
 import { app as gApp } from "../index.js";//debug
 
+
+sceneRenderer.addLayerBack(12);
 
 window.SCREEN_PRINTLN = function (getText, getValue) {
 	if (arguments.length == 2) {
@@ -321,13 +324,17 @@ export class Game {
 				if (this.fps_arr.length) {
 					let sum = this.fps_arr.reduce(function (a, b) { return a + b; });
 					let avg = sum / this.fps_arr.length;
-
+					
+					$gv.FPS = avg;
+					
 					document.getElementById("FPS").innerHTML = avg.toFixed(2);
 				}
 				if (this.frame_s_arr.length) {
 					let sum = this.frame_s_arr.reduce(function (a, b) { return a + b; });
 					let avg = sum / this.frame_s_arr.length;
-
+					
+					$gv.frameCount = avg;
+					
 					document.getElementById("frame").innerHTML = avg.toFixed(2);
 				}
 
@@ -401,7 +408,9 @@ export class Game {
 				ch.$recMove();
 			}
 		}
-
+		
+		sceneRenderer.update(stamp);
+		
 		damageNumberLayer.update(stamp);
 	}
 	
@@ -411,7 +420,7 @@ export class Game {
 
 		/** @type {SceneCharacter[]} */
 		const charaList = this.charaList;
-
+		
 		engine.beginScene();
 		{
 			engine.loadIdentity();
@@ -435,7 +444,7 @@ export class Game {
 			}
 			if ($gv.m_is_rendering_map && this._isMapReady) {
 				scene_map.beginRender(engine);
-				{					
+				{
 					scene_map.renderBackground(engine);
 					//if ($gv.m_display_life && scene_map._raw.info.mirror_Bottom) {
 					//	engine.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -461,9 +470,9 @@ export class Game {
 									}
 								}
 							}
-
+							
 							scene_map.renderLife(engine, i);
-
+							
 							if ($gv.m_display_player && chara) {
 								if ((chara.$layer == null || chara.$layer == i) && chara.renderer) {
 									chara.render(engine);
@@ -471,18 +480,28 @@ export class Game {
 							}
 							
 							$gv.SceneObjectMgr.RenderLayer(engine, i);
+							//
+							sceneRenderer.renderLayer(engine, i);
 						}
 					}
 					scene_map.applyCamera(engine);
 					{
 						for (let i = scene_map.layeredObject.length; i < 12; ++i) {
 							$gv.SceneObjectMgr.RenderLayer(engine, i);
+							//
+							sceneRenderer.renderLayer(engine, i);
 						}
 					}
 				}
 				scene_map.endRender(engine);
 			}
 			else {
+				//TODO: layer
+				
+				for (let i = 0; i < sceneRenderer.layers.length; ++i) {
+					sceneRenderer.renderLayer(engine, i);
+				}
+				
 				if ($gv.m_display_other_player || $gv.m_display_player) {
 					scene_map.applyCamera(engine);
 					

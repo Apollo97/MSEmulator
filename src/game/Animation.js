@@ -9,8 +9,17 @@ window.m_draw_animation_texture_info = false;
 
 class IAnimation {
 	constructor(raw, url) {
-		this._raw = raw;
-		this._url = url;
+		this._raw = null;
+		this._url = null;
+		
+		Object.defineProperties(this, {
+			_raw: {
+				value: raw
+			},
+			_url: {
+				value: url
+			},
+		});
 
 		this.frame = 0;
 		this.time = 0;
@@ -27,7 +36,7 @@ class IAnimation {
 		/** @type {boolean} */
 		this.is_end = false;
 
-		if (!this._url) {
+		if (!raw && !this._url) {
 			debugger;
 		}
 	}
@@ -91,20 +100,17 @@ export class AnimationBase extends IAnimation {
 		super(raw, url);
 	}
 
-	/**
-	 * @returns {Promise<Sprite>}
-	 */
-	async load() {
-		//if (!this._raw) {
-		//	this._raw = await $get.data(this._url);
-		//}
+	load() {
+		if (!this._raw) {
+			//this._raw = await $get.data(this._url);
+		}
 
 		for (let i = 0; i in this._raw; ++i) {
-			let url = this._url + "/" + i;
+			//let url = this._url + "/" + i;
 
 			let texture = new Sprite(this._raw[i]);
 
-			texture._url = url;
+			//texture._url = url;
 
 			this.textures[i] = texture;
 		}

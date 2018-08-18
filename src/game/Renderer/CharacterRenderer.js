@@ -2266,7 +2266,7 @@ export class CharacterAnimationBase {
 		return this._emotion;
 	}
 	set emotion(emo) {
-		if (this._emotion != emo && this.slots.face && this.slots.face._action_list.indexOf(emo) >= 0) {
+		if (this._emotion != emo && this.slots.face && this.slots.face.fragments.face.textures[emo]) {
 			this._emotion = emo;
 			this._emotion_frame = 0;
 			this._emotion_time = 0;
