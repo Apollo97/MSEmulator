@@ -37,6 +37,9 @@ import { damageNumberLayer } from './Renderer/DamageNumber.js';
 // chara.renderer.update
 
 
+window.$addItem_repeatEquip = false;
+
+
 class TimeElapsed {
 	constructor() {
 		/** @type {Date} */
@@ -51,7 +54,6 @@ class TimeElapsed {
 	}
 }
 
-window.$addItem_repeatEquip = false;
 
 class ChatController {
 	constructor() {

@@ -1,8 +1,8 @@
 ﻿
-import { IRenderer } from "../IRenderer";
-import { Sprite } from "../Sprite";
-import { Drawable, Layer } from "./Layer";
-import { DamagePair, AttackInfo } from "../../Common/AttackInfo";
+import { IRenderer } from "../IRenderer.js";
+import { Sprite } from "../Sprite.js";
+import { Drawable, Layer } from "./Layer.js";
+import { DamagePair, AttackInfo } from "../../Common/AttackInfo.js";
 
 // 123
 // NoRed[1][1], NoRed[0][2], NoRed[0][3], ...

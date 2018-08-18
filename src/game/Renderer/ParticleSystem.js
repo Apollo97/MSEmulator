@@ -64,7 +64,7 @@ export class Particle {
 		this.scale = this.startScale;
 		this.color = new ColorRGB(255, 255, 255);
 	}
-
+	
 	/** @param {ParticleSystem} ps */
 	_initParam(ps) {
 		this.lifeMax = rand_r(ps.life, ps.lifeVar);
@@ -290,16 +290,17 @@ export class ParticleGroup extends _ParticleGroupData {
 			this.particles.push(new Particle(this));
 			this.time = 0;
 		}
-
-		for (let i = 0; i < this.particles.length; ++i) {
-			const particle = this.particles[i];
+		
+		this.particles = this.particles.filter(particle => {
 			if (particle.isEnd()) {
-				this.particles.splice(i, 1);
+				return false;
 			}
 			else {
 				particle.update(stamp);
+				return true;
 			}
-		}
+		});
+		
 		this.time += stamp;
 		this.delta += stamp;
 	}
@@ -324,13 +325,15 @@ export class ParticleGroup extends _ParticleGroupData {
 		
 		for (let i = 0; i < this.particles.length; ++i) {
 			const particle = this.particles[i];
-			const x = this.x + mx;
-			const y = this.y + my;
-			const hw = this.texture.width * particle.scale;
-			const hh = this.texture.height * particle.scale;
-			
-			if (!viewRect || viewRect.collide4f2(x + particle.startX + particle.pos.x, y + particle.startY + particle.pos.y, hw, hh)) {
-				particle.draw(renderer, this.texture, x, y);
+			if (!particle.isEnd()) {
+				const x = this.x + mx;
+				const y = this.y + my;
+				const hw = this.texture.width * particle.scale;
+				const hh = this.texture.height * particle.scale;
+				
+				if (!viewRect || viewRect.collide4f2(x + particle.startX + particle.pos.x, y + particle.startY + particle.pos.y, hw, hh)) {
+					particle.draw(renderer, this.texture, x, y);
+				}
 			}
 		}
 		

@@ -2712,7 +2712,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		const x = Math.trunc(this.x + this.tx);
 		const y = Math.trunc(this.y + this.ty);
 		
-		this._draw(renderer, x, y, this.angle, this.front >= 1);
+		this._draw(renderer, x, y, this.angle, this.front > 0);
 		
 		//this.tx = 0;//auto clear
 		//this.ty = 0;//auto clear
