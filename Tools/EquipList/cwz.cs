@@ -76,6 +76,8 @@ public class Startup
 				break;
 		}
 
+		System.Windows.Forms.MessageBox.Show("Task: " + (string)input.func + ": " + (string)input.args.path);
+
 		return null;
 	}
 }

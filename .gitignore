@@ -331,3 +331,4 @@ __pycache__/
 /public/pack
 /public/sound/Sound*
 /public/ls
+/.eslintrc

@@ -348,13 +348,20 @@
 		computed: {
 			DATA_TAG_VERSION: () => window.DATA_TAG + window.DATA_VERSION,
 			categoryGroupList: function () {
+				/** @type {ItemCategoryInfo[]} */
 				const cl = Object.values(ItemCategoryInfo._info);//ItemCategoryInfo._categoryList;
 				let ss = {};
 				let ks = {};
 
 				cl.forEach(cat => {
-					let _g = cat.slot.match(/^[0-9a-z]+/);
-					let group = _g ? _g[0].toLocaleLowerCase() : cat.slot;
+					let group;
+					if (cat.slot) {
+						let _g = cat.slot.match(/^[0-9a-z]+/);
+						group = _g ? _g[0].toLocaleLowerCase() : cat.slot;
+					}
+					else {
+						let group = cat.categoryName;
+					}
 					if (!ss[group]) {
 						ss[group] = [];
 					}

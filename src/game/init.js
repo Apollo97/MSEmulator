@@ -27,9 +27,9 @@ export class GlobalVar {
 			else {
 				this.m_editor_mode = true;
 
-				this.m_display_foothold = true;
+				this.m_display_foothold = false;
 
-				this.m_display_physics_debug = true;
+				this.m_display_physics_debug = false;
 			}
 			this.m_display_debug_info = false;
 
@@ -47,7 +47,7 @@ export class GlobalVar {
 				this.m_is_rendering_map = true;
 			}
 			else {
-				this.m_is_rendering_map = false;
+				this.m_is_rendering_map = true;
 			}
 
 			this.m_display_back = true;

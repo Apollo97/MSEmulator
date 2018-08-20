@@ -51,6 +51,16 @@ class $ItemRawData {
 //	}
 //}
 
+const SLOT_EQUIP = 0;
+const SLOT_COS = 1;
+const SLOT_ETC = 2;
+const SLOT_INS = 3;
+const SLOT_CASH = 4;
+
+const TYPE_TO_SLOT_MAP = [
+	undefined, SLOT_EQUIP, SLOT_COS, SLOT_INS, SLOT_ETC, SLOT_CASH
+];
+
 export class ItemBase {
 	/**
 	 * @param {string} itemId
@@ -79,49 +89,15 @@ export class ItemBase {
 				value: itemId
 			}
 		});
-
-		if (!this._raw.info) {
-			debugger;
-		}
-
-		this._raw.info.id = itemId;
-		this._raw.info.name = "<loading>";
-		this._raw.info.desc = "<loading>";
-		this._raw.info.__v = window.DATA_TAG + window.DATA_VERSION;
-
-		let isItem = ItemCategoryInfo.isItem(itemId);
-
-		if (!isItem) {
-			this._raw.info.icon = {};
-			this._raw.info.iconRaw = {};
-		}
-
-		this._raw.info.icon[""] = ItemCategoryInfo.getIconUrl(itemId);
-		this._raw.info.iconRaw[""] = ItemCategoryInfo.getIconRawUrl(itemId);
-
-		if (isItem) {
-			this._load();
-		}
-		else {
-			this._raw.info.name = itemId;
-			this._raw.info.desc = "<not item>";
-		}
 	}
 
-	/**
-	 * load name and desc
-	 */
-	async _load() {
-		let data = await ItemCategoryInfo.loadString(this.id);
-
-		this._raw.info.name = data.name;
-		this._raw.info.desc = data.desc;
+	getSlot() {
+		return TYPE_TO_SLOT_MAP[this.id[1]];
 	}
 }
 
 export class ItemEquip extends ItemBase {
 }
-ItemEquip.prototype.$test_proto_prop = 123;
 
 export class ItemConsume extends ItemBase {
 }
@@ -133,9 +109,18 @@ export class ItemInstall extends ItemBase {
 }
 
 export class ItemCash extends ItemBase {
+	getSlot() {
+		if (this.id == 7) {
+			return TYPE_TO_SLOT_MAP[this.id[0]];
+		}
+		else {
+			return TYPE_TO_SLOT_MAP[this.id[1]];
+		}
+	}
 }
 
 /**
+ * 自訂道具
  * @template T
  * @param {string} itemId
  * @param {...Partial<T>} props
@@ -148,7 +133,7 @@ function _createItemSync(itemId, ...props) {
 	}
 
 	/** @type {string} - 1 digit */
-	let typeId = itemId[0];
+	let typeId = itemId[1];
 
 	/** @type {ItemEquip | ItemConsume | ItemEtc | ItemInstall | ItemCash} */
 	let _itemType;
@@ -172,32 +157,58 @@ function _createItemSync(itemId, ...props) {
 }
 
 /**
+ * 載入道具
  * @template T
  * @param {string} itemId
  * @param {...Partial<T>} props
  * @returns {Promise<T>}
  */
 export async function $createItem(itemId, ...props) {
+	if (itemId.length == 7 && itemId[0] == 5) {
+		throw new Error("未完成 pet");
+	}
 	/** @type {string} - 1 digit */
-	let typeId = itemId[0];
-	/** @type {string} */
-	let url;
+	let typeId = itemId[1];
 
 	/** @type {ItemEquip | ItemConsume | ItemEtc | ItemInstall | ItemCash} */
 	let _itemType;
 
 	switch (typeId) {
-		case '0':
+		case "0":
+			if (!$gv.m_editor_mode) {
+				throw new Error("$gv.m_editor_mode: %o" + $gv.m_editor_mode);
+			}
+		case "1":
 			_itemType = ItemEquip;
 			break;
+		case "2":
+			console.error("未完成 ItemConsume");
+			_itemType = ItemConsume;
+			break;
+		case "3":
+			//TODO: ItemInstall
+			_itemType = ItemInstall;
+			break;
+		case "4":
+			console.error("未完成 ItemEtc");
+			_itemType = ItemEtc;
+			break;
+		case "5":
+			console.error("未完成 ItemCash");
+			_itemType = ItemCash;
+			break;
 		default:
-			throw new Error("未完成");
+			throw new Error("?? typeId: " + typeId);
 			return null;
 	}
 
-	url = ItemCategoryInfo.getDataPath(itemId);
-
-	let itemPrototype = await $get.data(url);// raw
+	let itemPrototype;
+	try {
+		itemPrototype = await ItemCategoryInfo.getItem(itemId);// raw
+	}
+	catch (ex) {
+		throw ex;
+	}
 	if (!itemPrototype) {
 		console.warn("item not exist: " + itemId);
 		return null;
@@ -207,6 +218,7 @@ export async function $createItem(itemId, ...props) {
 	let item = new _itemType(itemId, itemPrototype);
 
 	if (props && props.length) {
+		//TODO: deep copy
 		Object.assign(item, ...props);
 	}
 

@@ -954,7 +954,7 @@ function DataServer(app) {
 				dataProvider.init();
 
 				Server(app, dataProvider);
-				console.log(settingList[i] + "> complete");
+				console.log(settingList[i] + "> loaded");
 			}
 			catch (ex) {
 				console.log(settingList[i] + "> " + "err: " + ex.message);

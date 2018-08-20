@@ -249,7 +249,7 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 
 	/**
-	 * @param {$Packet_CharacterMove} move
+	 * @param {$Packet_CharacterMove} _move
 	 */
 	$move(_move) {
 		let move = _move || this.$inPacket.move;
@@ -282,7 +282,7 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 
 	/**
-	 * @param {number} itemSN
+	 * @param {number} equipId
 	 * @param {number} from
 	 * @param {number} to
 	 */
@@ -298,7 +298,6 @@ export class BaseSceneCharacter extends SceneObject {
 			this.chair.init(this);
 			this.chair.load(chairId).then(() => {
 				this.chair.addToScene(sceneRenderer);
-				debugger;
 				{// Chair#update
 					const bodyRelMove = this.chair.bodyRelMove;
 					if (bodyRelMove) {
@@ -325,13 +324,10 @@ export class BaseSceneCharacter extends SceneObject {
 			});
 		}
 		else {
-			debugger;
+			console.log("already sit");
 		}
 	}
 	noSit() {
-		this.renderer.action = "stand1";
-		this.renderer.emotion = "blink";
-		
 		this.enablePhysics = true;
 		this.$physics.body.SetAwake(true);
 		this.$physics.foot_walk.SetAwake(true);
@@ -344,6 +340,9 @@ export class BaseSceneCharacter extends SceneObject {
 				this.renderer.x -= bodyRelMove.x;
 				this.renderer.y -= bodyRelMove.y;
 			}
+
+			this.renderer.action = "stand1";
+			this.renderer.emotion = "blink";
 		}
 		
 		this.chair = null;//TODO: remove chair
@@ -351,7 +350,7 @@ export class BaseSceneCharacter extends SceneObject {
 	
 	/**
 	 * @param {string} skillId
-	 * @returns {SceneSkill]
+	 * @returns {SceneSkill}
 	 */
 	invokeSkill(skillId) {
 		let skill = new SceneSkill();
@@ -698,7 +697,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 					}
 					break;
 			}
-		};
+		}
 		if (!this.chair) {
 			for (let keyName in key_map) {
 				/** @type {KeySlot} */
@@ -722,7 +721,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 						skill.control(ikey, keyDown, keyUp);
 					}
 				}
-			};
+			}
 		}
 
 		this.$physics.control(ikey);//apply action control
@@ -745,26 +744,21 @@ export class SceneCharacter extends BaseSceneCharacter {
 
 			$createItem(itemId, props).then(item => {
 				this._addItem(item, amount);
+			}, function (err) {
+				console.warn(err);
 			});
 		}
 	}
 
 	/**
+	 * @template T
 	 * @param {T extends ItemBase ? T : never} itemData
 	 * @param {number} amount
 	 */
 	_addItem(itemData, amount) {
 		let SN = 123;
 		let itemId = itemData.id;
-		let slotType;
-		switch (itemId[0]) {
-			case '0':
-				slotType = 0;
-				break;
-			default:
-				console.info(`~give ${this.id}: ${itemId} * ${amount}`);
-				return false;
-		}
+		let slotType = itemData.getSlot();
 		for (let i = 0; i < this.items[slotType].length; ++i) {
 			if (this.items[slotType][i].isEmpty()) {
 				if (window.$addItem_repeatEquip) {
@@ -881,12 +875,22 @@ export class SceneCharacter extends BaseSceneCharacter {
 				else {
 					console.log(`使用道具：${itemId}。`);
 				}
-				update_renderer.call(this);
+				if (ItemCategoryInfo.isChair(itemId)) {
+					this.sitChair(itemId);
+				}
+				else {
+					update_renderer.call(this);
+				}
 			}
 			else {
 				if ($gv.m_editor_mode) {
 					this.addItem(itemId, 1);
-					update_renderer.call(this);
+					if (ItemCategoryInfo.isChair(itemId)) {
+						this.sitChair(itemId);
+					}
+					else {
+						update_renderer.call(this);
+					}
 				}
 				else {
 					console.log("無法使用不存在的道具。");

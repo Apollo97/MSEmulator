@@ -104,6 +104,10 @@ internal class DataExtracter
 
 	internal void extractAll(string path)
 	{
+		this.output_file(path + "/Chair.json", this.extract_chair, "Chair", "0301");
+		Console.WriteLine("extract Chair");
+		return;
+
 		this.output_file(path + "/body.json", this.extract_body);
 		Console.WriteLine("extract body");
 
@@ -396,6 +400,83 @@ internal class DataExtracter
 				catch(Exception ex)
 				{
 					System.Console.WriteLine("get cashWpn(" + identity + ") icon._hash " + ex.Message);
+				}
+				data.__v = DataSource.tag_version;
+				//
+				var dict = (IDictionary<string, object>)data;
+				dict.Remove("iconRaw");
+
+				items.Add(data);
+			}
+
+#if MY_DEBUG
+			break;
+#endif
+		}
+
+		return items;
+	}
+
+	object extract_chair(string category, string id_prefix, Dictionary<string, dynamic> existItems)
+	{
+		var ss_prop = DataSource.packages["String"]["Ins"].root[""];
+		var chairs = DataSource.packages["Item", "Install", "0301"].root[""];
+		var items = new ArrayList();
+
+		IEnumerable<string> _identities = chairs.identities;
+
+		SortedSet<string> new_identities = new SortedSet<string>(_identities);
+		var identities = new SortedSet<string>(new_identities);
+		identities.UnionWith(existItems.Keys);
+
+		foreach (var identity in identities)
+		{
+			var id32 = this.parse_id(identity);
+			if (id32 < 0)
+			{
+				continue;
+			}
+
+			var name = this.get_item_name(ss_prop, id32);
+			var desc = this.get_item_desc(ss_prop, id32);
+
+			if (existItems.ContainsKey(identity))
+			{
+				bool modified = false;
+				var data = existItems[identity];
+
+				if (name != data.name)
+				{
+					data.name = name;
+					modified = true;
+				}
+				if (desc != null && desc != data.desc)
+				{
+					data.desc = desc;
+					modified = true;
+				}
+				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+				{
+					data.__modified = DataSource.tag_version;
+				}
+				items.Add(data);
+			}
+			else
+			{
+				var info = chairs[identity]["info"];
+
+				dynamic data = this.inspectProperty(info);
+				data.id = identity;
+				data.name = name;
+				if (desc != null)
+					data.desc = desc;
+				//
+				try
+				{
+					data.__hash = data.icon._hash + "";
+				}
+				catch (Exception)
+				{
 				}
 				data.__v = DataSource.tag_version;
 				//
@@ -872,6 +953,40 @@ internal class DataExtracter
 			}
 		}
 #endif
+		return null;
+	}
+
+	string get_item_name(wzproperty ss_prop, int id)
+	{
+		try
+		{
+			var ns = ss_prop[id + ""];
+			if (ns != null)
+			{
+				return (string)ns["name"].data;
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine("ID: " + id + " : item is not exist");
+			Console.WriteLine(ex.StackTrace);
+		}
+		return "[" + id + "]";
+	}
+
+	string get_item_desc(wzproperty ss_prop, int id)
+	{
+		try
+		{
+			var ns = ss_prop[id + ""];
+			if (ns != null)
+			{
+				return (string)ns["desc"].data;
+			}
+		}
+		catch (Exception)
+		{
+		}
 		return null;
 	}
 

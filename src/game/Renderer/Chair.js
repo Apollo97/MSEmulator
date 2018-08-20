@@ -8,6 +8,7 @@ import { RenderingOption } from "./RenderingOption.js";
 import { CharacterRenderer } from "./CharacterRenderer.js";
 import { SceneCharacter } from "../SceneCharacter.js";
 import { Vec2 } from "../math.js";
+import { ItemCategoryInfo } from "../../../public/javascripts/resource.js";
 
 
 class _ChairInfo {
@@ -56,6 +57,9 @@ class ChairEffect extends Animation {
 		
 		this.z = raw.z;
 		this.pos = raw.pos;
+
+		/** @type {Vec2} */
+		this._offset = null;
 		
 		/** @type {Chair} */
 		this._host = null;
@@ -63,10 +67,11 @@ class ChairEffect extends Animation {
 	
 	/**
 	 * @param {Chair} host
-	 * @param {SceneCharacter} player
+	 * @param {Vec2} offset
 	 */
-	init(host, player) {
+	init(host, offset) {
 		this._host = host;
+		this._offset = offset;
 	}
 	
 	/** @override */
@@ -99,8 +104,12 @@ class ChairEffect extends Animation {
 		
 		//renderer.globalAlpha = this.opacity * option.opacity;
 		renderer.globalAlpha = option.opacity;
-		
-		if (this.pos == 1) {
+
+		if (this._offset) {
+			const offset = this._offset;
+			this.draw(renderer, x + offset.x, y + offset.y, 0, flip);
+		}
+		else if (this.pos == 1) {
 			const oy = -this.texture.height * 0.5;
 			this.draw(renderer, x, y + oy, 0, flip);
 		}
@@ -120,10 +129,12 @@ export class Chair {
 		
 		Object.defineProperties(this, {
 			_raw: {
-				writable: true,
+				configurable: true,
+				enumerable: false,
 			},
 			_player: {
-				writable: true,
+				configurable: true,
+				enumerable: false,
 			},
 		});
 		
@@ -143,34 +154,47 @@ export class Chair {
 	 * @param {SceneCharacter} player
 	 */
 	init(player) {
-		this._player = player;
+		Object.defineProperties(this, {
+			_player: {
+				value: player,
+			},
+		});
 	}
 	
 	/**
 	 * @param {string} id
 	 */
-	async load(id = "03010377") {
+	async load(id) {//"03010377"
 		if (!id.startsWith("0301")) {
 			throw new TypeError("Not chair");
 		}
 		this.id = id;
 		
-		const url = this._url;
-		
-		this.$promise = $get.data(url);
+		this.$promise = ItemCategoryInfo.getItem(id);
 		const raw = await this.$promise;
 		delete this.$promise;
-		
-		this._raw = raw;
-		debugger;
+
+		Object.defineProperties(this, {
+			_raw: {
+				value: raw,
+			},
+		});
+
+		let offset;
+
 		if (this._raw.info.bodyRelMove) {
 			this.bodyRelMove = new Vec2(this._raw.info.bodyRelMove.x, this._raw.info.bodyRelMove.y);
+		}
+		else if (raw.effect) {
+			//let w = raw.effect[0].__w;
+			let h = raw.effect[0].__h;
+			offset = new Vec2(0, -h * 1.5);
 		}
 		
 		for (let key in raw) {
 			if (key.startsWith("effect")) {
 				const eff = new ChairEffect(raw[key]);
-				eff.init(this);
+				eff.init(this, offset);
 				eff.load();//Animation#load => load texture
 				this.effects.push(eff);
 			}
@@ -191,12 +215,5 @@ export class Chair {
 	}
 	getIconRawUrl() {
 		return this._raw.info.iconRaw[""];
-	}
-	
-	get _url() {
-		return [this._base_path, this.id].join("/");
-	}
-	get _base_path() {
-		return "/Item/Install/0301";
 	}
 }

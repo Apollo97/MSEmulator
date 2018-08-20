@@ -1,5 +1,4 @@
 ﻿
-
 const $failed_urls = [];
 
 const $archive = {};
@@ -22,12 +21,10 @@ export class ItemCategoryInfo {
 	 * @param {boolean} isOnFace
 	 * @param {string} slot - property name
 	 * @param {string} categoryName
+	 * @param {string} type
+	 * @param {string} [stringPath]
 	 */
-	constructor(id_prefix, imgDir, listPath, slot, categoryName, type = "Equip") {
-		if (arguments.length !=5) {
-			alert("ItemCategoryInfo: " + [...arguments].join(","));
-			debugger;
-		}
+	constructor(id_prefix, imgDir, listPath, slot, categoryName, type, stringPath) {
 		this.id_prefix = id_prefix;
 
 		/** data path */
@@ -48,11 +45,13 @@ export class ItemCategoryInfo {
 		/** @type {string} */
 		this.dataDir = null;
 		/** @type {string} */
+		this.stringDir = null;
+		/** @type {string} */
 		this.iconPath = null;
 		/** @type {string} */
 		this.iconRawPath = null;
 		{
-			let dataDir, iconPath, iconRawPath;
+			let dataDir, stringDir, iconPath, iconRawPath;
 
 			switch (slot) {
 				case "head":
@@ -75,47 +74,126 @@ export class ItemCategoryInfo {
 					iconPath = "info/icon";
 					iconRawPath = "info/iconRaw";
 			}
-
-			if (type == "Equip") {
-				dataDir = `/Character/${imgDir + (imgDir ? "/" : "")}`;
+			
+			if (id_prefix == "5") {
+				dataDir = `/Item/${imgDir}/${id_prefix}/`;
+				stringDir = "/String/Pet/";
+				alert("Pet");
 			}
 			else {
-				//TODO: get item data dir
-				console.error("未完成");
+				switch (id_prefix[1]) {
+					case "0":
+						if (Math.trunc(id_prefix) <= 1) {
+							dataDir = "/Character/";
+							stringDir = null;
+							break;
+						}
+					case "1":
+						let s = imgDir + (imgDir ? "/" : "");
+						dataDir = "/Character/" + s;
+						stringDir = "/String/Eqp/Eqp/" + (stringPath || s);
+						break;
+					case "2":
+						dataDir = `/Item/${imgDir}/${id_prefix}/`;
+						stringDir = "/String/Consume/";
+						break;
+					case "3":
+						dataDir = `/Item/${imgDir}/${id_prefix}/`;
+						stringDir = "/String/Ins/";
+						break;
+					case "4":
+						dataDir = `/Item/${imgDir}/${id_prefix}/`;
+						stringDir = "/String/Etc/";
+						break;
+					case "5":
+						dataDir = `/Item/${imgDir}/${id_prefix}/`;
+						stringDir = "/String/Cash/";
+						break;
+					default:
+						throw new Error("unknow item type, param: %o", [id_prefix, imgDir, listPath, slot, categoryName, type]);
+				}
 			}
 
 			Object.defineProperties(this, {
-				'dataDir': {
+				"type": {
+					value: type,
+				},
+				"dataDir": {
 					value: dataDir,
 				},
-				'iconPath': {
+				"stringDir": {
+					value: stringDir,
+				},
+				"iconPath": {
 					value: iconPath,
 				},
-				'iconRawPath': {
+				"iconRawPath": {
 					value: iconRawPath,
 				},
 			});
 		}
 	}
-
+	
 	/**
-	 * @param {string} id
-	 * @returns {string|null}
+	 * load equip or item, name and desc
+	 * @param {string} itemId
+	 * @returns {{info:{icon:{[""]:string},iconRaw:{[""]:string}},name:string,desc:string,[prop:string]:any}}
 	 */
-	static getDataPath(id) {
+	static async getItem(itemId) {
 		/** @type {ItemCategoryInfo} */
-		const info = ItemCategoryInfo.get(id);
+		let info = ItemCategoryInfo.get(itemId);
 		if (!info) {
 			return null;
 		}
 
-		if (id[0] == '0') {
-			return info.dataDir + id;
+		let id = itemId.padStart(8, "0");
+		if (id[0] != "0") {
+			throw new Error("itemId: " + itemId);
 		}
-		else {
-			//TODO: get item data path
-			throw new Error("未完成");
+
+		let results;
+		try {
+			results = await Promise.all([
+				$get.data(info.dataDir + itemId),
+				info.stringDir ? $get.data(info.stringDir + Number(itemId)).then(
+					a => a, // have name or desc
+					() => { return { name: "<" + itemId + ">" }; } // no name and desc
+				) : { name: "<" + itemId + ">" } // no name and desc
+			]);
 		}
+		catch (ex) {
+			throw new ex;
+		}
+
+		let data = Object.assign(results[0], results[1]);
+		
+		data.id = itemId;
+
+		if (data.info) {
+			{//editor mode data
+				data.info.id = itemId;
+				data.info.name = data.name;
+				if (data.desc) {
+					data.info.desc = data.desc;
+				}
+				data.info.__v = window.DATA_TAG + window.DATA_VERSION;
+			}
+
+			if (!data.info.icon) {
+				data.info.icon = {};
+			}
+			if (!data.info.iconRaw) {
+				data.info.iconRaw = {};
+			}
+			if (!data.info.icon[""]) {
+				data.info.icon[""] = ItemCategoryInfo.getIconUrl(itemId);
+			}
+			if (data.info.iconRaw[""]) {
+				data.info.iconRaw[""] = ItemCategoryInfo.getIconRawUrl(itemId);
+			}
+		}
+
+		return data;
 	}
 
 	/**
@@ -128,7 +206,7 @@ export class ItemCategoryInfo {
 		if (!info) {
 			return null;
 		}
-		if (id[0] == '0') {
+		if (id[0] == "0") {
 			return $get.imageUrl(info.dataDir + id + "/" + info.iconRawPath);
 		}
 	}
@@ -143,25 +221,9 @@ export class ItemCategoryInfo {
 		if (!info) {
 			return null;
 		}
-		if (id[0] == '0') {
+		if (id[0] == "0") {
 			return $get.imageUrl(info.dataDir + id + "/" + info.iconPath);
 		}
-	}
-
-	/**
-	 * load name and desc
-	 * @param {string} id
-	 * @returns {{name:string,desc:string}}
-	 */
-	static async loadString(id) {
-		/** @type {ItemCategoryInfo} */
-		let info = ItemCategoryInfo.get(id);
-		if (!info) {
-			return null;
-		}
-		let url = `/String/Eqp/Eqp/${info.path + (info.path ? "/" : "")}${Number(id)}`;
-		let data = await $get.data(url);
-		return data;
 	}
 
 	/**
@@ -184,10 +246,10 @@ export class ItemCategoryInfo {
 				}
 			}
 			else if (id.length == 6) {
-				info = ItemCategoryInfo._info[id];
+				return ItemCategoryInfo._info[id];
 			}
 			else if (id.length == 3) {
-				info = ItemCategoryInfo._info[id];
+				return ItemCategoryInfo._info[id];
 			}
 			else {
 				info = ItemCategoryInfo._info[id.slice(0, 4)];
@@ -234,23 +296,42 @@ export class ItemCategoryInfo {
 	 * @returns {boolean}
 	 */
 	static isEquip(id) {
-		if (id == null || id == "") {
-			return null;
+		if (!id) {
+			throw TypeError();
 		}
 		let _id = Number(id);
+
+		if (!Number.isSafeInteger(_id)) {
+			throw TypeError();
+		}
 
 		//let cate = Number(id.length == 4 ? id : id.slice(0, 4));
 		//return (cate >= "0100" && cate < "0180");
 
-		let cate = Math.trunc(_id / 10000);
-		if (cate > 180 && cate < 2000) {
-			console.warn("?? equip: " + id);
-			debugger;
-		}
+		//let cate = Math.trunc(_id / 10000);
+		//if (cate >= 180 && cate < 2000) {
+		//	console.warn("?? equip: " + id);
+		//	debugger;
+		//}
 
 		let type = Math.trunc(_id / 1000000);
 
 		return type == 1;
+	}
+
+	static isChair(id) {
+		if (!id) {
+			throw TypeError();
+		}
+		let _id = Number(id);
+
+		if (!Number.isSafeInteger(_id)) {
+			throw TypeError();
+		}
+
+		let cate = Math.trunc(_id / 10000);
+
+		return cate == 301;//0301xxxx
 	}
 
 	/**
@@ -277,6 +358,7 @@ export class ItemCategoryInfo {
 		console.warn("getJobWeaponCategory: 未完成");
 	}
 }
+window.$ItemCategoryInfo = ItemCategoryInfo;
 ItemCategoryInfo.type = {
 	Equip: "Equip",
 	Consume: "Consume",
@@ -299,68 +381,70 @@ ItemCategoryInfo.typeId = {
 	Cash: 4,
 };
 ItemCategoryInfo._info = {
-	'0000': new ItemCategoryInfo("0000", "",			"body",				"body",			"<body>"),
-	'0001': new ItemCategoryInfo("0001", "",			"head",				"head",			"<head>"),
+	"0000": new ItemCategoryInfo("0000", "",			"body",				"body",			"<body>", "Equip"),
+	"0001": new ItemCategoryInfo("0001", "",			"head",				"head",			"<head>", "Equip"),
 
-	'0002': new ItemCategoryInfo("0002", "Face",		"Face",				"face",			"臉型"),
-	'0003': new ItemCategoryInfo("0003", "Hair",		"Hair",				"hair",			"髮型"),
-	'0004': new ItemCategoryInfo("0004", "Hair",		"Hair",				"hair",			"髮型"),
+	"0002": new ItemCategoryInfo("0002", "Face",		"Face",				"face",			"臉型", "Equip"),
+	"0003": new ItemCategoryInfo("0003", "Hair",		"Hair",				"hair",			"髮型", "Equip"),
+	"0004": new ItemCategoryInfo("0004", "Hair",		"Hair",				"hair",			"髮型", "Equip"),
 
-	'0100': new ItemCategoryInfo("0100", "Cap",			"Cap",				"cap",			"帽子"),
-	'0101': new ItemCategoryInfo("0101", "Accessory",	"accessoryFace",	"accessoryFace", "臉飾"),
-	'0102': new ItemCategoryInfo("0102", "Accessory",	"accessoryEyes",	"accessoryEyes", "眼飾"),
-	'0103': new ItemCategoryInfo("0103", "Accessory",	"accessoryEars",	"accessoryEars", "耳環"),
-	'0104': new ItemCategoryInfo("0104", "Coat",		"Coat",				"coat",			"上衣"),
-	'0105': new ItemCategoryInfo("0105", "Longcoat",	"Longcoat",			"longcoat",		"套服"),
-	'0106': new ItemCategoryInfo("0106", "Pants",		"Pants",			"pants",		"褲子"),
-	'0107': new ItemCategoryInfo("0107", "Shoes",		"Shoes",			"shoes",		"鞋子"),
-	'0108': new ItemCategoryInfo("0108", "Glove",		"Glove",			"glove",		"手套"),
-	'0109': new ItemCategoryInfo("0109", "Shield",		"Shield",			"shield",		"盾牌"),
-	'0110': new ItemCategoryInfo("0110", "Cape",		"Cape",				"cape",			"披風"),
+	"0100": new ItemCategoryInfo("0100", "Cap",			"Cap",				"cap",			"帽子", "Equip"),
+	"0101": new ItemCategoryInfo("0101", "Accessory",	"accessoryFace",	"accessoryFace", "臉飾", "Equip"),
+	"0102": new ItemCategoryInfo("0102", "Accessory",	"accessoryEyes",	"accessoryEyes", "眼飾", "Equip"),
+	"0103": new ItemCategoryInfo("0103", "Accessory",	"accessoryEars",	"accessoryEars", "耳環", "Equip"),
+	"0104": new ItemCategoryInfo("0104", "Coat",		"Coat",				"coat",			"上衣", "Equip"),
+	"0105": new ItemCategoryInfo("0105", "Longcoat",	"Longcoat",			"longcoat",		"套服", "Equip"),
+	"0106": new ItemCategoryInfo("0106", "Pants",		"Pants",			"pants",		"褲子", "Equip"),
+	"0107": new ItemCategoryInfo("0107", "Shoes",		"Shoes",			"shoes",		"鞋子", "Equip"),
+	"0108": new ItemCategoryInfo("0108", "Glove",		"Glove",			"glove",		"手套", "Equip"),
+	"0109": new ItemCategoryInfo("0109", "Shield",		"Shield",			"shield",		"盾牌", "Equip"),
+	"0110": new ItemCategoryInfo("0110", "Cape",		"Cape",				"cape",			"披風", "Equip"),
 
-	"0121": new ItemCategoryInfo("0121", "Weapon", "閃亮克魯", "weapon", "閃亮克魯"),
-	"0122": new ItemCategoryInfo("0122", "Weapon", "靈魂射手", "weapon", "靈魂射手"),
-	"0123": new ItemCategoryInfo("0123", "Weapon", "魔劍", "weapon", "魔劍"),
-	"0124": new ItemCategoryInfo("0124", "Weapon", "能量劍", "weapon", "能量劍"),
-	"0125": new ItemCategoryInfo("0125", "Weapon", "幻獸棒", "weapon", "幻獸棒"),
-	"0126": new ItemCategoryInfo("0126", "Weapon", "ESP限制器", "weapon", "ESP限制器"),
-	"0127": new ItemCategoryInfo("0127", "Weapon", "鎖鏈", "weapon", "鎖鏈"),
-	"0128": new ItemCategoryInfo("0128", "Weapon", "魔力護腕", "weapon", "魔力護腕"),
+	"0121": new ItemCategoryInfo("0121", "Weapon", "閃亮克魯", "weapon", "閃亮克魯", "Equip"),
+	"0122": new ItemCategoryInfo("0122", "Weapon", "靈魂射手", "weapon", "靈魂射手", "Equip"),
+	"0123": new ItemCategoryInfo("0123", "Weapon", "魔劍", "weapon", "魔劍", "Equip"),
+	"0124": new ItemCategoryInfo("0124", "Weapon", "能量劍", "weapon", "能量劍", "Equip"),
+	"0125": new ItemCategoryInfo("0125", "Weapon", "幻獸棒", "weapon", "幻獸棒", "Equip"),
+	"0126": new ItemCategoryInfo("0126", "Weapon", "ESP限制器", "weapon", "ESP限制器", "Equip"),
+	"0127": new ItemCategoryInfo("0127", "Weapon", "鎖鏈", "weapon", "鎖鏈", "Equip"),
+	"0128": new ItemCategoryInfo("0128", "Weapon", "魔力護腕", "weapon", "魔力護腕", "Equip"),
 
-	"0130": new ItemCategoryInfo("0130", "Weapon", "單手劍", "weapon", "單手劍"),
-	"0131": new ItemCategoryInfo("0131", "Weapon", "單手斧", "weapon", "單手斧"),
-	"0132": new ItemCategoryInfo("0132", "Weapon", "單手錘", "weapon", "單手錘"),
-	"0133": new ItemCategoryInfo("0133", "Weapon", "短劍", "weapon", "短劍"),
-	"0134": new ItemCategoryInfo("0134", "Weapon", "雙刀", "weapon", "雙刀"),
-	"013526": new ItemCategoryInfo("013526", "Weapon", "靈魂之環", "weapon", "靈魂之環"),
-	"013530": new ItemCategoryInfo("013530", "Weapon", "控制器", "weapon", "控制器"),
-	"0136": new ItemCategoryInfo("0136", "Weapon", "手杖", "weapon", "手杖"),
-	"0137": new ItemCategoryInfo("0137", "Weapon", "短杖", "weapon", "短杖"),
-	"0138": new ItemCategoryInfo("0138", "Weapon", "長杖", "weapon", "長杖"),
+	"0130": new ItemCategoryInfo("0130", "Weapon", "單手劍", "weapon", "單手劍", "Equip"),
+	"0131": new ItemCategoryInfo("0131", "Weapon", "單手斧", "weapon", "單手斧", "Equip"),
+	"0132": new ItemCategoryInfo("0132", "Weapon", "單手錘", "weapon", "單手錘", "Equip"),
+	"0133": new ItemCategoryInfo("0133", "Weapon", "短劍", "weapon", "短劍", "Equip"),
+	"0134": new ItemCategoryInfo("0134", "Weapon", "雙刀", "weapon", "雙刀", "Equip"),
+	"013526": new ItemCategoryInfo("013526", "Weapon", "靈魂之環", "weapon", "靈魂之環", "Equip"),
+	"013530": new ItemCategoryInfo("013530", "Weapon", "控制器", "weapon", "控制器", "Equip"),
+	"0136": new ItemCategoryInfo("0136", "Weapon", "手杖", "weapon", "手杖", "Equip"),
+	"0137": new ItemCategoryInfo("0137", "Weapon", "短杖", "weapon", "短杖", "Equip"),
+	"0138": new ItemCategoryInfo("0138", "Weapon", "長杖", "weapon", "長杖", "Equip"),
 	
-	"0140": new ItemCategoryInfo("0140", "Weapon", "雙手劍", "weapon", "雙手劍"),
-	"0141": new ItemCategoryInfo("0141", "Weapon", "雙手斧", "weapon", "雙手斧"),
-	"0142": new ItemCategoryInfo("0142", "Weapon", "雙手棍", "weapon", "雙手棍"),
-	"0143": new ItemCategoryInfo("0143", "Weapon", "槍", "weapon", "槍"),
-	"0144": new ItemCategoryInfo("0144", "Weapon", "矛", "weapon", "矛"),
-	"0145": new ItemCategoryInfo("0145", "Weapon", "弓", "weapon", "弓"),
-	"0146": new ItemCategoryInfo("0146", "Weapon", "弩", "weapon", "弩"),
-	"0147": new ItemCategoryInfo("0147", "Weapon", "拳套", "weapon", "拳套"),
-	"0148": new ItemCategoryInfo("0148", "Weapon", "指虎", "weapon", "指虎"),
-	"0149": new ItemCategoryInfo("0149", "Weapon", "火槍", "weapon", "火槍"),
-	"0150": new ItemCategoryInfo("0150", "Weapon", "鏟", "weapon", "鏟"),
-	"0151": new ItemCategoryInfo("0151", "Weapon", "鎬", "weapon", "鎬"),
-	"0152": new ItemCategoryInfo("0152", "Weapon", "雙弩槍", "weapon", "雙弩槍"),
-	"0153": new ItemCategoryInfo("0153", "Weapon", "加農砲", "weapon", "加農砲"),
-	"0154": new ItemCategoryInfo("0154", "Weapon", "太刀", "weapon", "太刀"),
-	"0155": new ItemCategoryInfo("0155", "Weapon", "扇子", "weapon", "扇子"),
-	"0156": new ItemCategoryInfo("0156", "Weapon", "琉", "weapon", "琉"),
-	"0157": new ItemCategoryInfo("0157", "Weapon", "璃", "weapon", "璃"),
-	"0158": new ItemCategoryInfo("0158", "Weapon", "重拳槍", "weapon", "重拳槍"),
-	"0170": new ItemCategoryInfo("0170", "Weapon", "0170", "weapon", "點裝武器"),
-	"019": new ItemCategoryInfo("019", "TamingMob", "騎寵", "tamingMob", "騎寵"),
+	"0140": new ItemCategoryInfo("0140", "Weapon", "雙手劍", "weapon", "雙手劍", "Equip"),
+	"0141": new ItemCategoryInfo("0141", "Weapon", "雙手斧", "weapon", "雙手斧", "Equip"),
+	"0142": new ItemCategoryInfo("0142", "Weapon", "雙手棍", "weapon", "雙手棍", "Equip"),
+	"0143": new ItemCategoryInfo("0143", "Weapon", "槍", "weapon", "槍", "Equip"),
+	"0144": new ItemCategoryInfo("0144", "Weapon", "矛", "weapon", "矛", "Equip"),
+	"0145": new ItemCategoryInfo("0145", "Weapon", "弓", "weapon", "弓", "Equip"),
+	"0146": new ItemCategoryInfo("0146", "Weapon", "弩", "weapon", "弩", "Equip"),
+	"0147": new ItemCategoryInfo("0147", "Weapon", "拳套", "weapon", "拳套", "Equip"),
+	"0148": new ItemCategoryInfo("0148", "Weapon", "指虎", "weapon", "指虎", "Equip"),
+	"0149": new ItemCategoryInfo("0149", "Weapon", "火槍", "weapon", "火槍", "Equip"),
+	"0150": new ItemCategoryInfo("0150", "Weapon", "鏟", "weapon", "鏟", "Equip"),
+	"0151": new ItemCategoryInfo("0151", "Weapon", "鎬", "weapon", "鎬", "Equip"),
+	"0152": new ItemCategoryInfo("0152", "Weapon", "雙弩槍", "weapon", "雙弩槍", "Equip"),
+	"0153": new ItemCategoryInfo("0153", "Weapon", "加農砲", "weapon", "加農砲", "Equip"),
+	"0154": new ItemCategoryInfo("0154", "Weapon", "太刀", "weapon", "太刀", "Equip"),
+	"0155": new ItemCategoryInfo("0155", "Weapon", "扇子", "weapon", "扇子", "Equip"),
+	"0156": new ItemCategoryInfo("0156", "Weapon", "琉", "weapon", "琉", "Equip"),
+	"0157": new ItemCategoryInfo("0157", "Weapon", "璃", "weapon", "璃", "Equip"),
+	"0158": new ItemCategoryInfo("0158", "Weapon", "重拳槍", "weapon", "重拳槍", "Equip"),
+	"0170": new ItemCategoryInfo("0170", "Weapon", "0170", "weapon", "點裝武器", "Equip"),
+	"019": new ItemCategoryInfo("019", "TamingMob", "TamingMob", "tamingMob", "騎寵", "Equip", "Taming/"),
+
+	"0301": new ItemCategoryInfo("0301", "Install", "Chair", "install", "椅子", "Item"),
 };
-//椅子
+
 ItemCategoryInfo._categoryList = (function (info_map) {
 	let list = [];
 	let set = new Set();
@@ -618,7 +702,7 @@ $get.pack = async function $get_pack(path) {
 		return obj;
 	}
 	else {
-		if (process.env.NODE_ENV !== 'production') {
+		if (process.env.NODE_ENV !== "production") {
 			if (obj && !obj[symbol_isPack]) {
 				throw new TypeError("data: " + path);
 			}

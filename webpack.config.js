@@ -135,7 +135,7 @@ else {
 				'vue$': 'vue/dist/vue.esm.js',
 			}
 		},
-		devtool: 'eval-source-map'
+		devtool: 'cheap-module-eval-source-map'
 	};
 }
 

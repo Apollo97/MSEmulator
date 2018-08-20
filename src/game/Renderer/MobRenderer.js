@@ -67,7 +67,6 @@ export class MobRenderer extends LifeRenderer {
 	 * @param {!string} id
 	 */
 	async load(id) {
-		debugger
 		let result = await super.load.apply(this, arguments);
 		return result;
 	}

@@ -671,7 +671,7 @@
 							console.log("can't use item: " + id);
 						});
 					}
-					else if (!this.chara.renderer.unuse(id)) {
+					else if (!ItemCategoryInfo.isEquip(id) || !this.chara.renderer.unuse(id)) {
 						this.$store.commit("increaseProgressMax", { amount: 2 });
 						try {
 							this.chara.useItem(id, category, equip);

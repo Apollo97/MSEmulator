@@ -79,7 +79,7 @@
 								<!--淺在-Level-->
 								<texture style="position: absolute; left: 2px; top: 4px;" :src="`images/UI/UIToolTip/Item/ItemIcon/${equip.potential_level}`"></texture>
 							</div>
-							<img v-if="'icon' in equip" :src="equip.icon['']" @load="onload_icon($event)" class="UIToolTip equip-icon"></img>
+							<img v-if="'icon' in equip" :src="getIconUrl()" @load="onload_icon($event)" class="UIToolTip equip-icon"></img>
 							<texture style="position: absolute; left: 8px; top: 10px;" src="images/UI/UIToolTip/Item/ItemIcon/cover"></texture>
 						</div>
 						<div style="float: left; position: relative; top: 1px; width: 160px; height: 100%;">
@@ -144,7 +144,7 @@
 					<!--end-dotline-->
 					<!--begin-text-seg-->
 					<div class="UIToolTip attribute">
-						<div v-if='isEquip(equip.id)'>
+						<div v-if='isEquip()'>
 							<div class="c1"><span>裝備分類 : {{getEquipCategoryName()}}</span></div>
 						</div>
 
@@ -613,8 +613,11 @@
 			shouldShowAttr(attrName) {
 				return this.equip[attrName] != null && this.equip[attrName] > 0;
 			},
-			isEquip(id) {
-				return ItemCategoryInfo.isEquip(id);
+			isEquip() {
+				return ItemCategoryInfo.isEquip(this.equip.id);
+			},
+			getIconUrl() {
+				return $get.imageUrl(this.equip.icon['']);
 			},
 			onload_icon(event) {
 				const img = event.target;
