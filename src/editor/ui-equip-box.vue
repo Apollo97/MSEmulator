@@ -756,7 +756,7 @@
 				if (this.selected_category == "0170") {
 					let item = this.__get_item(num);
 					console.groupCollapsed("沒有設定職業，無法使用點裝武器");
-					console.log("click cash weapon: [%s] %s %o", item.id, item.name, item);
+					console.log("click cash weapon: [%o] %o %o", item.id, item.name, item);
 					console.groupEnd();
 				}
 				else {
@@ -769,7 +769,7 @@
 						equip: item,
 					});
 
-					console.log("Use equip: [%s] %s %o", item.id, item.name, item);
+					console.log("Use equip: [%o] %o %o", item.id, item.name, item);
 				}
 			},
 			hoverItem: function (e, num) {

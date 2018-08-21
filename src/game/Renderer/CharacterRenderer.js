@@ -538,21 +538,39 @@ class ItemEffect {
 ItemEffect._list = new Set();
 
 class CharacterFragmentBase {
-
 	/**
 	 * @param {{[action:string]: FragmentTexture[]}} textures
 	 */
 	constructor(textures) {
-		/** @type {{[action:string]: FragmentTexture[]}|{[action:string]: {[frame:number]: FragmentTexture}}} - textures[action:string][frame:number] */
+		/** @type {{[action:string]: FragmentTexture[]}} - textures[action:string][frame:number] */
 		this.textures = textures;
-		//this.opacity = 1;
 	}
 
 	/**
+	 * @virtual
 	 * @param {CharacterAnimationBase} chara
 	 * @returns {FragmentTexture}
 	 */
 	getTexture(chara) {
+		throw new Error("Not implement");
+	}
+
+	/**
+	 * @virtual
+	 * @param {CharacterAnimationBase} chara
+	 * @param {number} frame
+	 * @returns {FragmentTexture}
+	 */
+	getFrameTexture(chara, frame) {
+		throw new Error("Not implement");
+	}
+
+	/**
+	 * @virtual
+	 * @param {CharacterAnimationBase} chara
+	 * @returns {number}
+	 */
+	getFrameCount(chara) {
 		throw new Error("Not implement");
 	}
 }
@@ -566,6 +584,7 @@ class CharacterBodyFragment extends CharacterFragmentBase {
 	}
 
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @returns {FragmentTexture}
 	 */
@@ -574,6 +593,7 @@ class CharacterBodyFragment extends CharacterFragmentBase {
 	}
 	
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @param {number} frame
 	 * @returns {FragmentTexture}
@@ -582,14 +602,21 @@ class CharacterBodyFragment extends CharacterFragmentBase {
 		if (!(chara.action in this.textures)) {
 			return null;
 		}
-		//if (this.textures.is_show) {
-			let ft = this.textures[chara.action][frame];
-			if (ft) {
-				//ft.opacity = this.opacity;
-				return ft;
-			}
-		//}
-		return null;
+		const fc = this.textures[chara.action].length;
+		let ft = this.textures[chara.action][frame % fc];
+		return ft;
+	}
+
+	/**
+	 * @override
+	 * @param {CharacterAnimationBase} chara
+	 * @returns {number}
+	 */
+	getFrameCount(chara) {
+		if (this.textures[chara.action]) {
+			return this.textures[chara.action].length;
+		}
+		return 0;
 	}
 }
 
@@ -602,6 +629,7 @@ class CharacterFaceFragment extends CharacterFragmentBase {
 	}
 
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @returns {FragmentTexture}
 	 */
@@ -610,6 +638,7 @@ class CharacterFaceFragment extends CharacterFragmentBase {
 	}
 
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @param {number} frame
 	 * @returns {FragmentTexture}
@@ -618,29 +647,42 @@ class CharacterFaceFragment extends CharacterFragmentBase {
 		if (!(chara.emotion in this.textures)) {
 			return null;
 		}
-		//if (this.textures.is_show) {
-			let ft = this.textures[chara.emotion][frame];
-			//ft.opacity = this.opacity;
-			return ft;
-		//}
-		return null;
+		let ft = this.textures[chara.emotion][frame];
+		return ft;
+	}
+
+	/**
+	 * @override
+	 * @param {CharacterAnimationBase} chara
+	 * @returns {number}
+	 */
+	getFrameCount(chara) {
+		if (this.textures[chara.emotion]) {
+			return this.textures[chara.emotion].length;
+		}
+		return 0;
 	}
 }
 
 /**
  * @final 
  */
-class CharacterTamingMobFragment extends CharacterFragmentBase  {
+class CharacterTamingMobFragment extends CharacterFragmentBase {
+	constructor(textures) {
+		super(textures);
+	}
 
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @returns {FragmentTexture}
 	 */
 	getTexture(chara) {
-		return this.getFrameTexture(chara, chara.action_frame);
+		return this.getFrameTexture(chara, chara._action_frame);
 	}
 
 	/**
+	 * @override
 	 * @param {CharacterAnimationBase} chara
 	 * @param {number} frame
 	 * @returns {FragmentTexture}
@@ -649,14 +691,21 @@ class CharacterTamingMobFragment extends CharacterFragmentBase  {
 		if (!(chara._ride_action in this.textures)) {
 			return null;
 		}
-		//if (this.textures.is_show) {
-		let ft = this.textures[chara._ride_action][frame];
-		if (ft) {
-			//ft.opacity = this.opacity;
-			return ft;
+		const fc = this.textures[chara._ride_action].length;
+		let ft = this.textures[chara._ride_action][frame % fc];
+		return ft;
+	}
+
+	/**
+	 * @override
+	 * @param {CharacterAnimationBase} chara
+	 * @returns {number}
+	 */
+	getFrameCount(chara) {
+		if (this.textures[chara._ride_action]) {
+			return this.textures[chara._ride_action].length;
 		}
-		//}
-		return null;
+		return 0;
 	}
 }
 
@@ -1209,12 +1258,7 @@ class CharacterEquip extends CharacterEquipBase {
 	 * @returns {number}
 	 */
 	getFrameCount(chara) {
-		try {
-			return chara.slots.body.fragments.body.textures[chara.action].length;
-		}
-		catch (ex) {
-			return 0;
-		}
+		return chara.slots.body.fragments.body.textures[chara.action].length;
 	}
 
 	/**
@@ -1222,14 +1266,9 @@ class CharacterEquip extends CharacterEquipBase {
 	 * @returns {number}
 	 */
 	getDelay(chara) {
-		try {
-			const d = this._raw[chara.action][chara.action_frame].delay;
-			if (d != null) {!isNaN(d) && isFinite(d)
-				return d;
-			}
-		}
-		catch (ex) {
-			debugger
+		const d = this._raw[chara.action][chara.action_frame].delay;
+		if (Number.isSafeInteger(d)) {
+			return d;
 		}
 		return 120;
 	}
@@ -1406,12 +1445,7 @@ class CharacterEquipFaceBase extends CharacterEquipBase {
 	 * @returns {number}
 	 */
 	getFrameCount(chara) {
-		try {
-			return chara.slots.face.fragments.face.textures[chara.emotion].length;
-		}
-		catch (ex) {
-			return 0;
-		}
+		return chara.slots.face.fragments.face.textures[chara.emotion].length;
 	}
 
 	/**
@@ -1419,14 +1453,9 @@ class CharacterEquipFaceBase extends CharacterEquipBase {
 	 * @returns {number}
 	 */
 	getDelay(chara) {
-		try {
-			const d = this._raw[chara.emotion][chara.emotion_frame].delay;
-			if (d != null) {//!isNaN(d) && isFinite(d)
-				return d;
-			}
-		}
-		catch (ex) {
-			debugger
+		const d = this._raw[chara.emotion][chara.emotion_frame].delay;
+		if (d != null) {//!isNaN(d) && isFinite(d)
+			return d;
 		}
 		return 60;
 	}
@@ -1473,12 +1502,7 @@ class CharacterTamingMob extends CharacterEquip {
 	 * @returns {number}
 	 */
 	getFrameCount(chara) {
-		try {
-			return chara.slots.body.fragments.body.textures[chara._ride_action].length;
-		}
-		catch (ex) {
-			return 0;
-		}
+		return chara.slots.body.fragments.body.textures[chara._ride_action].length;
 	}
 
 	/**
@@ -1487,14 +1511,9 @@ class CharacterTamingMob extends CharacterEquip {
 	 * @returns {number}
 	 */
 	getDelay(chara) {
-		try {
-			const d = Math.trunc(this._raw[chara._ride_action][chara.action_frame].delay);//?? _ride_action_frame => action_frame
-			if (Number.isSafeInteger(d)) {
-				return d;
-			}
-		}
-		catch (ex) {
-			debugger
+		const d = Math.trunc(this._raw[chara._ride_action][chara.action_frame].delay);//?? _ride_action_frame => action_frame
+		if (Number.isSafeInteger(d)) {
+			return d;
 		}
 		return 120;
 	}
@@ -2094,7 +2113,6 @@ export class CharacterAnimationBase {
 		
 		this._action = "stand1";
 		this._action_frame = 0;
-		this._action_time = 0;
 
 		this._emotion = "blink";
 		this._emotion_frame = 0;
@@ -2151,15 +2169,12 @@ export class CharacterAnimationBase {
 	_waitFrameTexturesLoaded() {
 		let tasks = [];
 		for (let i in this.slots) {
+			/** @type {CharacterEquipBase} */
 			let item = this.slots[i];
 			if (item) {
-				if (typeof item.getFrameCount != "function") {
-					alert('typeof item.getFrameCount != "function"');
-					debugger;
-				}
-				let count = item.getFrameCount(this);
 				for (let j in item.fragments) {
 					let frag = item.fragments[j];
+					let count = frag.getFrameCount(this);
 					for (let k = 0; k < count; ++k) {
 						let ft = frag.getFrameTexture(this, k);
 						if (ft && !ft._isLoaded_or_doload()) {
@@ -2178,9 +2193,6 @@ export class CharacterAnimationBase {
 	initAnimation() {
 		/** @type {string} */
 		this.action = "stand1";
-
-		/** @type {number} */
-		this._action_time = 0;
 
 		/** @type {number} */
 		this._action_frame = 0;
@@ -2282,6 +2294,13 @@ export class CharacterAnimationBase {
 
 	/** @type {string} */
 	get action() {
+		//if (this.slots.tamingMob) {
+		//	const actmap = this.slots.tamingMob.actionMap;
+		//	if (actmap) {
+		//		return actmap[this._action];
+		//	}
+		//	return "sit";//default
+		//}
 		return this._action;
 	}
 	set action(act) {
@@ -2292,56 +2311,44 @@ export class CharacterAnimationBase {
 
 			if (this.slots.tamingMob.actionMap) {
 				_act = this.slots.tamingMob.actionMap[act];
-			}
-			//else {
-			//	_act = "sit";
-			//}
 
-			let hideBody = _act == "hideBody";
-
-			if (_act && !hideBody) {
-				this._action = _act;
-
-				if (this.actani._action != _act) {
-					this.actani.reload(_act);
-				}
-
-				this.__require_update |= true;
-			}
-			else {
-				this._action = act;
+				let hideBody = _act == "hideBody";
 
 				if (hideBody) {
-					if (this.actani._action != act) {
-						//TODO: hideBody
-						this.actani.reload(act);
-					}
 				}
 				else {
-					this.actani.reload("sit");
+					this._action = act;
+					if (this.actani._action != act) {
+						this.actani.reload(act);
+					}
+					this.__require_update |= true;
 				}
-
+			}
+			else {
+				this._action = "sit";//default
+				if (this.actani._action != act) {
+					this.actani.reload(act);
+				}
 				this.__require_update |= true;
 			}
 		}
-		else if (this.actani._action != act && this.slots.body) {
-			this._action = act;
-			this.actani.reload(act);
+		else {
+			this._ride_action = null;
 
-			this.__require_update |= true;
+			if (this.actani._action != act && this.slots.body) {
+				this._action = act;
+				this.actani.reload(act);
+
+				this.__require_update |= true;
+			}
 		}
 	}
 
 	/** @type {number} */
 	get action_frame() {
-		const frame_count = this.action_frame_count;
-		if (frame_count) {
-			return this._action_frame % frame_count;
-		}
-		return 0;
+		return this._action_frame;
 	}
 	set action_frame(value) {
-		this._action_time = 0;
 		this._action_frame = value;
 		this.__require_update |= true;
 
@@ -2351,61 +2358,6 @@ export class CharacterAnimationBase {
 				this._action_frame = Number(value) | 0;
 			}
 		}
-	}
-
-	/**
-	 * @param {number} next
-	 */
-	_get_action_next_frame(next) {
-		const frame_count = this.action_frame_count;
-		if (frame_count) {
-			let f = this._action_frame + next;
-			return f < 0 ? (frame_count - 1) : (f % frame_count);
-		}
-		return 0;
-	}
-
-	/** @type {number} */
-	get action_time() {
-		return this._action_time;
-	}
-	set action_time(time) {
-		const frame_count = this.action_frame_count;
-
-		if (frame_count) {
-			if (time < this.action_delay) {
-				this._action_time = time;
-			}
-			else {
-				this._action_time = 0;
-				++this._action_frame;
-
-				this.__require_update |= true;
-			}
-		}
-	}
-
-	/**
-	 * @returns {number}
-	 */
-	get action_delay() {
-		if (this.slots.body) {
-			return this.slots.body.getDelay(this);
-		}
-		return 180;
-	}
-
-	/** @type {number} */
-	get action_frame_count() {
-		try {
-			if (this.slots.body) {
-				return this.slots.body.getFrameCount(this);
-			}
-		}
-		catch (ex) {
-			debugger;
-		}
-		return 0;
 	}
 
 	/** @type {string} */
@@ -2515,9 +2467,6 @@ export class CharacterAnimationBase {
 			}
 
 			this.actani.update(stamp, this);
-		}
-		else {
-			this.action_time += stamp;
 		}
 
 		this.emotion_time += _stamp;

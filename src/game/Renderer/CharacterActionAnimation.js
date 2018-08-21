@@ -144,7 +144,9 @@ export class ActionAnimation {
 		}
 		
 		// 改變 action & action_frame 會造成迴圈: this.reload(this._action)
-		target._action = fdat.action;
+		if (!target._ride_action) {
+			target._action = fdat.action;
+		}
 		target._action_frame = fdat.frame;
 
 		if (!this.frames || this.fdat == null) {

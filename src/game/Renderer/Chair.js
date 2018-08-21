@@ -127,17 +127,6 @@ export class Chair {
 		/** @type {SceneCharacter} - owner */
 		this._player = null;
 		
-		Object.defineProperties(this, {
-			_raw: {
-				configurable: true,
-				enumerable: false,
-			},
-			_player: {
-				configurable: true,
-				enumerable: false,
-			},
-		});
-		
 		/** @type {Vec2} */
 		this.bodyRelMove = null;
 		
@@ -174,8 +163,11 @@ export class Chair {
 		const raw = await this.$promise;
 		delete this.$promise;
 
+		delete this._raw;
 		Object.defineProperties(this, {
 			_raw: {
+				configurable: false,
+				writable: false,
 				value: raw,
 			},
 		});
@@ -185,10 +177,13 @@ export class Chair {
 		if (this._raw.info.bodyRelMove) {
 			this.bodyRelMove = new Vec2(this._raw.info.bodyRelMove.x, this._raw.info.bodyRelMove.y);
 		}
-		else if (raw.effect) {
+		else if (raw.effect && raw.effect[0].origin.y < 0) {
 			//let w = raw.effect[0].__w;
 			let h = raw.effect[0].__h;
 			offset = new Vec2(0, -h * 1.5);
+		}
+		if (raw.effect[0].origin.y == 0) {
+			debugger;
 		}
 		
 		for (let key in raw) {

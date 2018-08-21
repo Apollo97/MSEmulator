@@ -683,6 +683,7 @@
 						}
 						this.$store.commit("increaseProgress", { amount: 1 });
 						try {
+							//TODO: synchronize chair
 							this.chara.renderer.__synchronize(0).then(() => {
 								this.$store.commit("increaseProgress", { amount: 1 });
 								app.updateScreen();

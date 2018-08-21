@@ -9,7 +9,18 @@ import DebugDraw from './Physics/DebugDraw.js';
 
 export class GlobalVar {
 	constructor() {
-		this.m_is_run = true;
+		let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+		if (isMobile) {
+			this.is_mobile = true;
+		}
+
+		if (isMobile) {
+			this.m_is_run = false;
+		}
+		else {
+			this.m_is_run = true;
+		}
+
 		{
 			this.MAX_FPS = 60;
 			this.FRAME_ELAPSED = 1000 / 60;
