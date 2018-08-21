@@ -89,6 +89,9 @@ export class SceneObject {
 	 * @param {string} labelStyle
 	 */
 	__drawName(renderer, name, labelStyle) {
+		if (!$gv.m_display_name_label) {
+			return;
+		}
 		if (labelStyle) {
 			let label = NameLabel.get(labelStyle);
 			if (label && !label.$promise) {

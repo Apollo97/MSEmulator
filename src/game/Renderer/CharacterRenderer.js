@@ -258,6 +258,11 @@ class FragmentTexture extends SpriteBase {
 			const head = chara.slots.head.fragments.head.getTexture(chara);
 			if (body && head) {
 				this.relative = this.calcRelative(chara, body, head);
+
+				const tamingMob = chara.slots.tamingMob;
+				if (tamingMob) {
+					this.relative = tamingMob.adj_pos(this.relative, body, chara);
+				}
 			}
 		}
 	}
@@ -305,6 +310,12 @@ class HairFragmentTexture extends FragmentTexture {
 			const head = chara.slots.head.fragments.head.getTexture(chara);
 			if (body && head) {
 				this.relative = this.calcRelative(chara, body, head);
+
+				const tamingMob = chara.slots.tamingMob;
+				if (tamingMob) {
+					this.relative = tamingMob.adj_pos(this.relative, body, chara);
+				}
+
 				if (this.graph2) {
 					this.graph2.relative = this.relative;
 				}
@@ -1492,8 +1503,51 @@ class CharacterTamingMob extends CharacterEquip {
 		super();
 	}
 
+	/**
+	 * @returns {number}
+	 */
+	get type() {
+		return this._raw.info.tamingMob;
+	}
+
 	get actionMap() {
 		return this._raw.characterAction;
+	}
+
+	get emotionMap() {
+		return this._raw.characterEmotion;
+	}
+
+	/**
+	 * @param {Vec2} relative
+	 * @param {FragmentTexture} body
+	 * @param {CharacterAnimationBase} chara
+	 * @returns {Vec2}
+	 */
+	adj_pos(relative, body, chara) {
+		const frag = this.fragments[0];
+		if (frag) {
+			const tm = frag.getTexture(chara);
+			if (tm) {
+				//if (this.type == 1) {
+					//let ori;
+					//if (window.$rel) {
+					//	ori = window.$rel(frag, body, chara);
+					//}
+					//else {
+					//	ori = tm.origin.mul(0.5);
+					//}
+					//window.$rel = (frag, body, chara) => {
+					//	//return { x: 0, y: 0 };
+					//	return body.navel.mul(-1);
+					//	return { x: 0, y: chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin.y };
+					//	return chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin;
+					//}
+					return relative.plus(tm.navel).minus(body.navel);
+				//}
+			}x
+		}
+		return relative;
 	}
 
 	/**
@@ -2315,6 +2369,8 @@ export class CharacterAnimationBase {
 				let hideBody = _act == "hideBody";
 
 				if (hideBody) {
+					//TODO: hideBody
+					//this._action = "hideBody";
 				}
 				else {
 					this._action = act;

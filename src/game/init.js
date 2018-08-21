@@ -71,6 +71,13 @@ export class GlobalVar {
 
 			this.m_display_portal = true;
 
+			if (process.env.NODE_ENV === 'production') {
+				this.m_display_name_label = true;
+			}
+			else {
+				this.m_display_name_label = false;
+			}
+
 			this.m_display_player = true;
 			this.m_display_other_player = true;
 			this.m_display_life = true;

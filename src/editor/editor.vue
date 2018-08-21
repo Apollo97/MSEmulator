@@ -48,6 +48,7 @@
 							</fieldset>
 							<fieldset>
 								<legend>life</legend>
+								<label><input type="checkbox" v-model="gv.m_display_name_label" />name label</label>
 								<label><input type="checkbox" v-model="gv.m_display_life" />life</label>
 								<label><input type="checkbox" v-model="gv.m_display_player" />player</label>
 								<label><input type="checkbox" v-model="gv.m_display_other_player" />other player</label>
