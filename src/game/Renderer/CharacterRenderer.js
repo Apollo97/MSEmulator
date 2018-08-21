@@ -1542,8 +1542,8 @@ class CharacterTamingMob extends CharacterEquip {
 					//	return body.navel.mul(-1);
 					//	return { x: 0, y: chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin.y };
 					//	return chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin;
-					//}
-					return relative.plus(tm.navel).minus(body.navel);
+				//}
+					return relative.plus(tm.navel.minus(body.navel));
 				//}
 			}x
 		}
@@ -2370,15 +2370,13 @@ export class CharacterAnimationBase {
 
 				if (hideBody) {
 					//TODO: hideBody
-					//this._action = "hideBody";
 				}
-				else {
-					this._action = act;
-					if (this.actani._action != act) {
-						this.actani.reload(act);
-					}
-					this.__require_update |= true;
+
+				this._action = act;
+				if (this.actani._action != act) {
+					this.actani.reload(act);
 				}
+				this.__require_update |= true;
 			}
 			else {
 				this._action = "sit";//default
