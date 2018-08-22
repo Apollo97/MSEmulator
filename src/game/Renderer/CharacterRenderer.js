@@ -485,10 +485,17 @@ class ItemEffect {
 	async load(equipID) {
 		const id = Number(equipID);
 		const url = `/Effect/ItemEff/${id}/effect`;
+		let raw;
 
-		let raw = await $get.data(url);
+		try {
+			raw = await $get.data(url);
+		}
+		catch (ex) {
+			throw ex;
+		}
+
 		if (raw) {
-			return await this._load(equipID, url, raw);
+			return this._load(equipID, url, raw);
 		}
 
 		return null;
@@ -525,7 +532,7 @@ class ItemEffect {
 	 * @param {string} equipID
 	 * @param {object} raw_data
 	 */
-	async _load(equipID, url, raw) {
+	_load(equipID, url, raw) {
 		this.id = equipID;
 
 		if (!raw) {
@@ -1689,27 +1696,27 @@ class CharacterTamingMob extends CharacterAppearance {
 }
 
 
-ItemCategoryInfo._info['0000'].fragmentType = CharacterBody;		//	body			-> CharacterBody
-ItemCategoryInfo._info['0001'].fragmentType = CharacterHead;		//	elfEar			-> CharacterHeadBase -> CharacterHead
-ItemCategoryInfo._info['0002'].fragmentType = CharacterFace;		//	Face			-> CharacterHeadBase -> CharacterFaceBase -> CharacterFace
-ItemCategoryInfo._info['0003'].fragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
-ItemCategoryInfo._info['0004'].fragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
+ItemCategoryInfo._info['0000'].FragmentType = CharacterBody;		//	body			-> CharacterBody
+ItemCategoryInfo._info['0001'].FragmentType = CharacterHead;		//	elfEar			-> CharacterHeadBase -> CharacterHead
+ItemCategoryInfo._info['0002'].FragmentType = CharacterFace;		//	Face			-> CharacterHeadBase -> CharacterFaceBase -> CharacterFace
+ItemCategoryInfo._info['0003'].FragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
+ItemCategoryInfo._info['0004'].FragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
 
-ItemCategoryInfo._info['0100'].fragmentType = CharacterEquip;		//	Cap				-> CharacterBody
-ItemCategoryInfo._info['0101'].fragmentType = CharacterFaceAcc;		//	accessoryFace	-> CharacterHeadBase -> CharacterFaceBase -> CharacterFaceAcc
-ItemCategoryInfo._info['0102'].fragmentType = CharacterEquip;		//	accessoryEyes	-> CharacterEquip
-ItemCategoryInfo._info['0103'].fragmentType = CharacterEquip;		//	accessoryEars	-> CharacterEquip
-ItemCategoryInfo._info['0104'].fragmentType = CharacterEquip;		//	Coat			-> CharacterBody
-ItemCategoryInfo._info['0105'].fragmentType = CharacterEquip;		//	Longcoat		-> CharacterBody
-ItemCategoryInfo._info['0106'].fragmentType = CharacterEquip;		//	Pants			-> CharacterBody
-ItemCategoryInfo._info['0107'].fragmentType = CharacterEquip;		//	Shoes			-> CharacterBody
-ItemCategoryInfo._info['0108'].fragmentType = CharacterEquip;		//	Glove			-> CharacterBody
-ItemCategoryInfo._info['0109'].fragmentType = CharacterEquip;		//	Shield			-> CharacterBody
-ItemCategoryInfo._info['0110'].fragmentType = CharacterEquip;		//	Cape			-> CharacterBody
+ItemCategoryInfo._info['0100'].FragmentType = CharacterEquip;		//	Cap				-> CharacterBody
+ItemCategoryInfo._info['0101'].FragmentType = CharacterFaceAcc;		//	accessoryFace	-> CharacterHeadBase -> CharacterFaceBase -> CharacterFaceAcc
+ItemCategoryInfo._info['0102'].FragmentType = CharacterEquip;		//	accessoryEyes	-> CharacterEquip
+ItemCategoryInfo._info['0103'].FragmentType = CharacterEquip;		//	accessoryEars	-> CharacterEquip
+ItemCategoryInfo._info['0104'].FragmentType = CharacterEquip;		//	Coat			-> CharacterBody
+ItemCategoryInfo._info['0105'].FragmentType = CharacterEquip;		//	Longcoat		-> CharacterBody
+ItemCategoryInfo._info['0106'].FragmentType = CharacterEquip;		//	Pants			-> CharacterBody
+ItemCategoryInfo._info['0107'].FragmentType = CharacterEquip;		//	Shoes			-> CharacterBody
+ItemCategoryInfo._info['0108'].FragmentType = CharacterEquip;		//	Glove			-> CharacterBody
+ItemCategoryInfo._info['0109'].FragmentType = CharacterEquip;		//	Shield			-> CharacterBody
+ItemCategoryInfo._info['0110'].FragmentType = CharacterEquip;		//	Cape			-> CharacterBody
 
-ItemCategoryInfo._info['0170'].fragmentType = CharacterEquipCashWeapon;	//	cash-weapon	-> CharacterEquip
+ItemCategoryInfo._info['0170'].FragmentType = CharacterEquipCashWeapon;	//	cash-weapon	-> CharacterEquip
 
-ItemCategoryInfo._info['019'].fragmentType = CharacterTamingMob;	//	TamingMob		-> CharacterTamingMob
+ItemCategoryInfo._info['019'].FragmentType = CharacterTamingMob;	//	TamingMob		-> CharacterTamingMob
 
 
 class CharacterSlots {
@@ -2029,7 +2036,7 @@ class CharacterSlots {
 					alert("CharacterSlots # _use: param loadedEquip ??");
 					debugger;
 				}
-				const fragmentType = cateInfo.fragmentType || CharacterEquip;
+				const fragmentType = cateInfo.FragmentType || CharacterEquip;
 
 				item = new fragmentType();
 			}
@@ -2507,6 +2514,7 @@ export class CharacterAnimationBase {
 			}
 		}
 		else {
+			this.hideBody = false;
 			this._ride_action = null;
 
 			if (this.actani._action != act && this.slots.body) {

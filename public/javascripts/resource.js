@@ -40,7 +40,7 @@ export class ItemCategoryInfo {
 		this.categoryName = categoryName;
 
 		/** renderer */
-		this.fragmentType = null;
+		this.FragmentType = null;
 
 		/** @type {string} */
 		this.dataDir = null;

@@ -18,6 +18,8 @@
 _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt\dist\electron.exe</Environment>
     <ScriptArguments>--port 80 -P</ScriptArguments>
     <LastActiveSolutionConfig>Debug|Any CPU</LastActiveSolutionConfig>
+    <LaunchUrl>http://localhost</LaunchUrl>
+    <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
