@@ -39,7 +39,8 @@ class FragmentTexture extends SpriteBase {
 		}
 
 		/**
-		 * if this.relative == null then hide
+		 * if this.relative == null then remove this
+		 * @type {Vec2}
 		 */
 		this.relative = new Vec2(0, 0);
 		
@@ -47,6 +48,9 @@ class FragmentTexture extends SpriteBase {
 
 		this.filter = new ImageFilter();
 		this.opacity = 1;
+
+		/** @type {boolean} */
+		this.visible = true;
 
 
 		/** @type {string} - extra property. */
@@ -272,13 +276,13 @@ class FragmentTexture extends SpriteBase {
 	 * @param {CharacterAnimationBase} chara
 	 */
 	render(renderer, chara) {
-		if (!this.relative) {
+		if (!(this.relative && this.visible)) {
 			return;
 		}
 		const x = this.relative.x;
 		const y = this.relative.y;
 
-		renderer.globalAlpha = this.opacity || 1;
+		renderer.globalAlpha = this.opacity;
 		if (this.filter.isEmpty) {
 			renderer.drawGraph2(this, x, y);
 		}
@@ -287,6 +291,16 @@ class FragmentTexture extends SpriteBase {
 			renderer.drawGraph2(this, x, y);
 			renderer.ctx.filter = "none";
 		}
+	}
+}
+
+class BodyFragmentTexture extends FragmentTexture {
+	/**
+	 * @param {CharacterAnimationBase} chara
+	 */
+	update(chara) {
+		super.update(chara);
+		this.visible = !chara.hideBody;
 	}
 }
 
@@ -722,7 +736,7 @@ class CharacterTamingMobFragment extends CharacterFragmentBase {
 
 class EquipImageFilter {
 	/**
-	 * @param {ICharacterEquip} equip
+	 * @param {CharacterAppearanceBase} equip
 	 */
 	constructor(equip) {
 		this.equip = equip;
@@ -853,7 +867,10 @@ class EquipImageFilter {
 	}
 }
 
-class ICharacterEquip {
+/**
+ * @interface
+ */
+class ICharacterAppearanceBase {
 	constructor() {
 	}
 
@@ -902,7 +919,7 @@ class ICharacterEquip {
 /**
  * ??
  */
-class _CharacterEquipSlotLink extends ICharacterEquip {
+class _CharacterAppearanceBaseSlotLink extends ICharacterAppearanceBase {
 	constructor(slot_link) {
 		super();
 		this.slot_link = slot_link;//??
@@ -915,7 +932,10 @@ class _CharacterEquipSlotLink extends ICharacterEquip {
 	}
 }
 
-class CharacterEquipBase extends ICharacterEquip {
+/**
+ * character loader
+ */
+class CharacterAppearanceBase extends ICharacterAppearanceBase {
 	constructor() {
 		super();
 			
@@ -963,7 +983,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		return this.fragments != null;
 	}
 
-	/** @type {function(CharacterEquipBase):void} */
+	/** @type {function(CharacterAppearanceBase):void} */
 	get _onload() {
 		return this.__onload;
 	}
@@ -1027,7 +1047,7 @@ class CharacterEquipBase extends ICharacterEquip {
 		return true;
 	}
 	__load_fragments() {
-		const fragmentConstructor = this.fragmentConstructor;
+		const FragmentConstructor = this.FragmentConstructor;
 
 		//Object.keys(this._raw_textures).map(k => { return '0' in this._raw_textures[k]; })
 
@@ -1048,7 +1068,7 @@ class CharacterEquipBase extends ICharacterEquip {
 				for (let place in textures[action][frame]) {
 					if (!(place in fragment_textures)) {
 						fragment_textures[place] = {};
-						//fragment_textures[place].is_show = true;
+						//fragment_textures[place].visible = true;
 					}
 					if (!(action in fragment_textures[place])) {
 						fragment_textures[place][action] = [];
@@ -1060,13 +1080,13 @@ class CharacterEquipBase extends ICharacterEquip {
 
 		let fragments = {};
 		for (let frag in fragment_textures) {
-			fragments[frag] = new fragmentConstructor(fragment_textures[frag]);
+			fragments[frag] = new FragmentConstructor(fragment_textures[frag]);
 		}
 		this.fragments = fragments;
 	}
 	/**
 	 * @param {string} _url
-	 * @returns {Object.<string, FragmentTexture>[]} - array - textures[frame][place]
+	 * @returns {{[place:string]:FragmentTexture}[]} - array - textures[frame][place]
 	 */
 	__load_frame_textures(_raw, _url) {
 		let textures = [];
@@ -1078,7 +1098,7 @@ class CharacterEquipBase extends ICharacterEquip {
 	}
 	/**
 	 * @param {string} _url
-	 * @returns {Object.<string, FragmentTexture>} - object - textures[place]
+	 * @returns {{[place:string]:FragmentTexture}} - object - textures[place]
 	 */
 	__load_place_textures(_raw, _url) {
 		let textures = {};
@@ -1088,7 +1108,7 @@ class CharacterEquipBase extends ICharacterEquip {
 
 			if (raw) {
 				/** @type {FragmentTexture} */
-				const FragmentTextureType = this.FragmentTextureType;
+				const FragmentTextureConstructor = this.FragmentTextureConstructor;
 				let ft;
 				if (raw[""] == "") {
 					ft._url = path;
@@ -1096,12 +1116,12 @@ class CharacterEquipBase extends ICharacterEquip {
 					textures[place] = ft
 				}
 				else if (typeof raw[""] == 'string') {
-					ft = new FragmentTextureType(raw);
+					ft = new FragmentTextureConstructor(raw);
 					//ft._url = raw[""];
 					textures[place] = ft;
 				}
 				else if (place == "hairShade") {
-					ft = new FragmentTextureType(raw[0]);
+					ft = new FragmentTextureConstructor(raw[0]);
 					//ft._url = path + "/0";
 					textures[place] = ft;
 				}
@@ -1231,17 +1251,18 @@ class CharacterEquipBase extends ICharacterEquip {
 
 	/**
 	 * @virtual
+	 * @returns {typeof CharacterFragmentBase}
 	 */
-	get fragmentConstructor() {
+	get FragmentConstructor() {
 		throw new Error("Not implement");
 	}
 
 	/**
-	 * 通常不會被覆寫
 	 * @virtual
+	 * @returns {typeof FragmentTexture}
 	 */
-	get FragmentTextureType() {
-		return FragmentTexture;
+	get FragmentTextureConstructor() {
+		throw new Error("Not implement");
 	}
 
 	/**
@@ -1256,7 +1277,10 @@ class CharacterEquipBase extends ICharacterEquip {
 	}
 }
 
-class CharacterEquip extends CharacterEquipBase {
+/**
+ * @abstract
+ */
+class CharacterAppearance extends CharacterAppearanceBase {
 	constructor() {
 		super();
 	}
@@ -1285,7 +1309,7 @@ class CharacterEquip extends CharacterEquipBase {
 	}
 }
 
-class CharacterEquipBody extends CharacterEquip {
+class CharacterBody extends CharacterAppearance {
 	constructor() {
 		super();
 	}
@@ -1294,8 +1318,46 @@ class CharacterEquipBody extends CharacterEquip {
 		return "action";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterBodyFragment;
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof BodyFragmentTexture}
+	 */
+	get FragmentTextureConstructor() {
+		return BodyFragmentTexture;
+	}
+}
+
+class CharacterEquip extends CharacterAppearance {
+	constructor() {
+		super();
+	}
+
+	get _animation_type() {
+		return "action";
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
+		return CharacterBodyFragment;
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof BodyFragmentTexture}
+	 */
+	get FragmentTextureConstructor() {
+		return BodyFragmentTexture;
 	}
 }
 
@@ -1326,7 +1388,11 @@ class CharacterEquipCashWeapon extends CharacterEquip {
 		return "action";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterBodyFragment;
 	}
 
@@ -1342,7 +1408,34 @@ class CharacterEquipCashWeapon extends CharacterEquip {
 	}
 }
 
-class CharacterEquipHead extends CharacterEquip {
+
+class CharacterHeadBase extends CharacterAppearance {
+	constructor() {
+		super();
+	}
+
+	get _animation_type() {
+		return "action";
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
+		return CharacterBodyFragment;
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof FragmentTexture}
+	 */
+	get FragmentTextureConstructor() {
+		return FragmentTexture;
+	}
+}
+
+class CharacterHead extends CharacterHeadBase {
 	constructor() {
 		super();
 		this.elfEarFragment = null;
@@ -1416,12 +1509,16 @@ class CharacterEquipHead extends CharacterEquip {
 		return "action";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterBodyFragment;
 	}
 }
 
-class CharacterEquipHair extends CharacterEquip {
+class CharacterHair extends CharacterHeadBase {
 	constructor() {
 		super();
 	}
@@ -1430,20 +1527,25 @@ class CharacterEquipHair extends CharacterEquip {
 		return "action";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterBodyFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterBodyFragment;
 	}
 
 	/**
 	 * hair color mix
 	 * @override
+	 * @returns {typeof HairFragmentTexture}
 	 */
-	get FragmentTextureType() {
+	get FragmentTextureConstructor() {
 		return HairFragmentTexture;
 	}
 }
 
-class CharacterEquipFaceBase extends CharacterEquipBase {
+class CharacterFaceBase extends CharacterHeadBase {
 	constructor() {
 		super();
 	}
@@ -1471,7 +1573,7 @@ class CharacterEquipFaceBase extends CharacterEquipBase {
 		return 60;
 	}
 }
-class CharacterEquipFace extends CharacterEquipFaceBase {
+class CharacterFace extends CharacterFaceBase {
 	constructor() {
 		super();
 	}
@@ -1480,11 +1582,15 @@ class CharacterEquipFace extends CharacterEquipFaceBase {
 		return "emotion";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterFaceFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterFaceFragment;
 	}
 }
-class CharacterEquipFaceAcc extends CharacterEquipFaceBase {
+class CharacterFaceAcc extends CharacterFaceBase {
 	constructor() {
 		super();
 	}
@@ -1493,12 +1599,16 @@ class CharacterEquipFaceAcc extends CharacterEquipFaceBase {
 		return "emotion";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterFaceFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterFaceFragment;
 	}
 }
 
-class CharacterTamingMob extends CharacterEquip {
+class CharacterTamingMob extends CharacterAppearance {
 	constructor() {
 		super();
 	}
@@ -1525,27 +1635,12 @@ class CharacterTamingMob extends CharacterEquip {
 	 * @returns {Vec2}
 	 */
 	adj_pos(relative, body, chara) {
-		const frag = this.fragments[0];
+		const frag = this.fragments[0];//default
 		if (frag) {
 			const tm = frag.getTexture(chara);
 			if (tm) {
-				//if (this.type == 1) {
-					//let ori;
-					//if (window.$rel) {
-					//	ori = window.$rel(frag, body, chara);
-					//}
-					//else {
-					//	ori = tm.origin.mul(0.5);
-					//}
-					//window.$rel = (frag, body, chara) => {
-					//	//return { x: 0, y: 0 };
-					//	return body.navel.mul(-1);
-					//	return { x: 0, y: chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin.y };
-					//	return chara.slots.tamingMob.fragments[0].textures[chara._ride_action][0].origin;
-				//}
-					return relative.plus(tm.navel.minus(body.navel));
-				//}
-			}x
+				return relative.plus(tm.navel.minus(body.navel));
+			}
 		}
 		return relative;
 	}
@@ -1576,49 +1671,63 @@ class CharacterTamingMob extends CharacterEquip {
 		return "_ride_action";
 	}
 
-	get fragmentConstructor() {
+	/**
+	 * @override
+	 * @returns {typeof CharacterTamingMobFragment}
+	 */
+	get FragmentConstructor() {
 		return CharacterTamingMobFragment;
+	}
+
+	/**
+	 * @override
+	 * @returns {typeof FragmentTexture}
+	 */
+	get FragmentTextureConstructor() {
+		return FragmentTexture;
 	}
 }
 
-ItemCategoryInfo._info['0000'].fragmentType = CharacterEquipBody;
-ItemCategoryInfo._info['0001'].fragmentType = CharacterEquipHead;	//	elfEar
-ItemCategoryInfo._info['0002'].fragmentType = CharacterEquipFace;	//	Face
-ItemCategoryInfo._info['0003'].fragmentType = CharacterEquipHair;	//	CharacterEquipHair;	//	Hair
-ItemCategoryInfo._info['0004'].fragmentType = CharacterEquipHair;	//	CharacterEquipHair;	//	Hair
 
-ItemCategoryInfo._info['0100'].fragmentType = CharacterEquipBody;		//	Cap
-ItemCategoryInfo._info['0101'].fragmentType = CharacterEquipFaceAcc;//	accessoryFace
-ItemCategoryInfo._info['0102'].fragmentType = CharacterEquipBody;		//	accessoryEyes
-ItemCategoryInfo._info['0103'].fragmentType = CharacterEquipBody;		//	accessoryEars
-ItemCategoryInfo._info['0104'].fragmentType = CharacterEquipBody;		//	Coat
-ItemCategoryInfo._info['0105'].fragmentType = CharacterEquipBody;		//	Longcoat
-ItemCategoryInfo._info['0106'].fragmentType = CharacterEquipBody;		//	Pants
-ItemCategoryInfo._info['0107'].fragmentType = CharacterEquipBody;		//	Shoes
-ItemCategoryInfo._info['0108'].fragmentType = CharacterEquipBody;		//	Glove
-ItemCategoryInfo._info['0109'].fragmentType = CharacterEquipBody;		//	Shield
-ItemCategoryInfo._info['0110'].fragmentType = CharacterEquipBody;		//	Cape
+ItemCategoryInfo._info['0000'].fragmentType = CharacterBody;		//	body			-> CharacterBody
+ItemCategoryInfo._info['0001'].fragmentType = CharacterHead;		//	elfEar			-> CharacterHeadBase -> CharacterHead
+ItemCategoryInfo._info['0002'].fragmentType = CharacterFace;		//	Face			-> CharacterHeadBase -> CharacterFaceBase -> CharacterFace
+ItemCategoryInfo._info['0003'].fragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
+ItemCategoryInfo._info['0004'].fragmentType = CharacterHair;		//	Hair			-> CharacterHeadBase -> CharacterHair
 
-ItemCategoryInfo._info['0170'].fragmentType = CharacterEquipCashWeapon;		//	cash-weapon
+ItemCategoryInfo._info['0100'].fragmentType = CharacterEquip;		//	Cap				-> CharacterBody
+ItemCategoryInfo._info['0101'].fragmentType = CharacterFaceAcc;		//	accessoryFace	-> CharacterHeadBase -> CharacterFaceBase -> CharacterFaceAcc
+ItemCategoryInfo._info['0102'].fragmentType = CharacterEquip;		//	accessoryEyes	-> CharacterEquip
+ItemCategoryInfo._info['0103'].fragmentType = CharacterEquip;		//	accessoryEars	-> CharacterEquip
+ItemCategoryInfo._info['0104'].fragmentType = CharacterEquip;		//	Coat			-> CharacterBody
+ItemCategoryInfo._info['0105'].fragmentType = CharacterEquip;		//	Longcoat		-> CharacterBody
+ItemCategoryInfo._info['0106'].fragmentType = CharacterEquip;		//	Pants			-> CharacterBody
+ItemCategoryInfo._info['0107'].fragmentType = CharacterEquip;		//	Shoes			-> CharacterBody
+ItemCategoryInfo._info['0108'].fragmentType = CharacterEquip;		//	Glove			-> CharacterBody
+ItemCategoryInfo._info['0109'].fragmentType = CharacterEquip;		//	Shield			-> CharacterBody
+ItemCategoryInfo._info['0110'].fragmentType = CharacterEquip;		//	Cape			-> CharacterBody
 
-ItemCategoryInfo._info['019'].fragmentType = CharacterTamingMob;
+ItemCategoryInfo._info['0170'].fragmentType = CharacterEquipCashWeapon;	//	cash-weapon	-> CharacterEquip
+
+ItemCategoryInfo._info['019'].fragmentType = CharacterTamingMob;	//	TamingMob		-> CharacterTamingMob
+
 
 class CharacterSlots {
 	constructor() {
 			
-		/** @type {CharacterEquipBase[]} */
+		/** @type {CharacterAppearanceBase[]} */
 		this._ordered_slot = [];
 
 
-		/** @type {CharacterEquipHair} */
+		/** @type {CharacterHair} */
 		this._hair = null;
-		/** @type {CharacterEquipHair} */
+		/** @type {CharacterHair} */
 		this._hair2 = null;
-		/** @type {CharacterEquipHair} 0~1.0 */
+		/** @type {CharacterHair} 0~1.0 */
 		this._hairMix2 = null;
-		/** @type {CharacterEquipHair} */
+		/** @type {CharacterHair} */
 		this._hair3 = null;
-		/** @type {CharacterEquipHair} 0~1.0 */
+		/** @type {CharacterHair} 0~1.0 */
 		this._hairMix3 = null;
 
 
@@ -1628,7 +1737,7 @@ class CharacterSlots {
 		/** @type {CharacterEquip} */
 		this.head = null;
 
-		/** @type {CharacterEquipFace} */
+		/** @type {CharacterFace} */
 		this.face = null;
 
 		/** @type {CharacterEquip} */
@@ -1637,7 +1746,7 @@ class CharacterSlots {
 		/** @type {CharacterEquip} - 1 */
 		this.cap = null;
 
-		/** @type {CharacterEquipFace} - 2 */
+		/** @type {CharacterFace} - 2 */
 		this.accessoryFace = null;
 
 		/** @type {CharacterEquip} - 3*/
@@ -1709,7 +1818,7 @@ class CharacterSlots {
 		}
 	}
 
-	/** @type {CharacterEquipHair} */
+	/** @type {CharacterHair} */
 	get hair() {
 		return this._hair;
 	}
@@ -1735,7 +1844,7 @@ class CharacterSlots {
 			const url = `/Character/${cateInfo.path + (cateInfo.path ? "/" : "") + id}`;
 			const use_category = undefined;
 
-			let hair = new CharacterEquipHair();
+			let hair = new CharacterHair();
 
 			await hair.load(url, id, cateInfo, use_category);
 
@@ -1786,9 +1895,9 @@ class CharacterSlots {
 		value = Number(value);
 
 		Promise.resolve(this.hair.$promise_hair2).then(() => {
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item = this._hair2;
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let base = this.hair;
 
 			if (!item || !base) {
@@ -1856,9 +1965,9 @@ class CharacterSlots {
 		value = Number(value);
 
 		Promise.resolve(this.hair.$promise_hair3).then(() => {
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item = this._hair3;
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let base = this.hair;
 
 			if (!item || !base) {
@@ -1895,7 +2004,7 @@ class CharacterSlots {
 
 	/**
 	 * @param {string} id
-	 * @param {CharacterEquipBase} loadedEquip
+	 * @param {CharacterAppearanceBase} loadedEquip
 	 * @param {string} use_category - category which used of cash-weapon
 	 */
 	async _use(id, loadedEquip, use_category) {
@@ -1907,10 +2016,10 @@ class CharacterSlots {
 
 		if (cateInfo) {
 			let url = `/Character/${cateInfo.path + (cateInfo.path ? "/":"") + id}`;
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item;
 
-			if (loadedEquip instanceof CharacterEquipBase) {
+			if (loadedEquip instanceof CharacterAppearanceBase) {
 				alert("CharacterSlots # _use: param loadedEquip ??");
 				debugger;
 				item = loadedEquip;
@@ -1962,7 +2071,7 @@ class CharacterSlots {
 		}
 		let cateInfo, equip;
 
-		if (id instanceof CharacterEquipBase) {
+		if (id instanceof CharacterAppearanceBase) {
 			equip = id;
 			id = equip.id;
 			cateInfo = equip.categoryInfo;
@@ -2163,6 +2272,8 @@ export class CharacterAnimationBase {
 		/** @type {boolean} */
 		this.fixed_speed = false;
 
+		this.hideBody = false;
+
 		this._ride_action = "stand1";
 		
 		this._action = "stand1";
@@ -2223,7 +2334,7 @@ export class CharacterAnimationBase {
 	_waitFrameTexturesLoaded() {
 		let tasks = [];
 		for (let i in this.slots) {
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item = this.slots[i];
 			if (item) {
 				for (let j in item.fragments) {
@@ -2366,17 +2477,26 @@ export class CharacterAnimationBase {
 			if (this.slots.tamingMob.actionMap) {
 				_act = this.slots.tamingMob.actionMap[act];
 
-				let hideBody = _act == "hideBody";
+				if (_act == "hideBody") {
+					this.hideBody = true;
 
-				if (hideBody) {
-					//TODO: hideBody
-				}
+					//TODO: hideBody act=?
 
-				this._action = act;
-				if (this.actani._action != act) {
-					this.actani.reload(act);
+					this._action = act;
+					if (this.actani._action != act) {
+						this.actani.reload(act);
+					}
+					this.__require_update |= true;
 				}
-				this.__require_update |= true;
+				else {
+					this.hideBody = false;
+
+					this._action = _act;
+					if (this.actani._action != _act) {
+						this.actani.reload(_act);
+					}
+					this.__require_update |= true;
+				}
 			}
 			else {
 				this._action = "sit";//default
@@ -2432,6 +2552,7 @@ export class CharacterAnimationBase {
 
 	*emotion_frame_sequence_generator(length) {
 		for (; ;) {
+			//TODO: random blink
 			yield* circularSequence(length);
 
 			for (; Math.random() < 0.5;) {
@@ -2623,17 +2744,17 @@ export class CharacterAnimationBase {
 	__update_frag_list() {
 		this.__frag_list = [];
 		
-		/** @type {Array<CharacterEquipBase>[]} */
+		/** @type {Array<CharacterAppearanceBase>[]} */
 		let slots = {};
 		
 		for (let i = 2; i <= 3; ++i) {
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item = this.slots["_hair" + i];
 			
 			this.__add_equip_to_frag_list(slots, item);
 		}
 		for (let i in this.slots._ordered_slot) {
-			/** @type {CharacterEquipBase} */
+			/** @type {CharacterAppearanceBase} */
 			let item = this.slots._ordered_slot[i];
 			
 			this.__add_equip_to_frag_list(slots, item);
@@ -2671,15 +2792,15 @@ export class CharacterAnimationBase {
 		this._calcBoundBox();
 	}
 	/**
-	 * @param {Array<CharacterEquipBase>[]} slots
-	 * @param {CharacterEquipBase} item
+	 * @param {Array<CharacterAppearanceBase>[]} slots
+	 * @param {CharacterAppearanceBase} item
 	 */
 	__add_equip_to_frag_list(slots, item) {
 		// if equip not use then value is mumber(slot_order) where this.slots._ordered_slot
 		if (item == null) {
 			return;//debugger;
 		}
-		else if (item > 0) {// typeof item == 'number'; item != null && (item instanceof CharacterEquipBase || item >= 0)
+		else if (item > 0) {// typeof item == 'number'; item != null && (item instanceof CharacterAppearanceBase || item >= 0)
 			return;//continue;
 		}
 
@@ -2723,7 +2844,7 @@ export class CharacterAnimationBase {
 					this.__add_frag_to_list(ft);
 				}
 			}
-			//item.fragments[j].is_show = true;
+			//item.fragments[j].visible = true;
 		}
 	}
 	/** @param {FragmentTexture} ft */
@@ -2742,7 +2863,7 @@ export class CharacterAnimationBase {
 
 		for (let i in this.__frag_list) {
 			let ft = this.__frag_list[i];
-			if (ft.texture) {
+			if (ft.texture && ft.relative) {
 				let x0 = ft.relative.x;
 				let y0 = ft.relative.y;
 				let x1 = x0 + ft.width;
@@ -3120,9 +3241,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 			svg += '<g transform="translate(32, 96)">';
 			frag_list.forEach(function (ft) {
-				if (ft) {
+				if (ft && ft.relative) {
 					let clz = ft.classList;
-					svg += `\t<image class="${clz}" opacity="${ft.opacity}" x="${ft.relative.x}" y="${ft.relative.y}" width="${ft.width}" height="${ft.height}" xlink:href="${ft._url}"></image>\n`;
+					svg += `\t<image class="${clz}" opacity="${ft.visible ? ft.opacity : 0}" x="${ft.relative.x}" y="${ft.relative.y}" width="${ft.width}" height="${ft.height}" xlink:href="${ft._url}"></image>\n`;
 				}
 			});
 			svg += '</g>';
@@ -3208,7 +3329,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 		return base64;
 	}
-	
+
+	/**
+	 * @returns {Promise<FragmentTexture[]>}
+	 */
 	async __texture_to_base64() {
 		let frag_list = this.__frag_list;
 		let tasks = [];

@@ -6,7 +6,8 @@
 				>
 			<g transform="translate(32, 96)">
 				<template v-for="ft in frag_list">
-					<image :class="ft.classList"
+					<image v-if="ft.relative"
+						   :class="ft.classList"
 						   :x="ft.relative.x"
 						   :y="ft.relative.y"
 						   :width="ft.width"
@@ -74,7 +75,7 @@
 				return {
 					left: ft.relative.x + 'px',
 					top: ft.relative.y + 'px',
-					opacity: ft.opacity,
+					opacity: ft.visible ? ft.opacity : 0,
 					width: ft.width + 'px',
 					height: ft.height + 'px',
 					filter: ft.filter.toString(),

@@ -3,7 +3,8 @@
 	<div v-if="chara != null" class="frame">
 		<div class="center">
 			<template v-for="ft in frag_list">
-				<img :src="get_ft_src(ft)"
+				<img v-if="ft.relative"
+					 :src="get_ft_src(ft)"
 					 :class="ft.classList"
 					 :style="get_ft_style(ft)" />
 			</template>
@@ -104,6 +105,7 @@
 					width: ft.width + 'px',
 					height: ft.height + 'px',
 					filter: ft.filter.toString(),
+					visibility: ft.visible ? "visible" : "hidden",
 				};
 
 				return style;
