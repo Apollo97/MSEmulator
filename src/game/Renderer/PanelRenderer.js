@@ -59,7 +59,10 @@ export class PanelRenderer {
 	 * @param {string} defCol
 	 */
 	_load_color(defCol) {
-		this.color = (this._raw.clr == -1 || !this._raw.clr) ? defCol : ("#" + (this._raw.clr >>> 0).toString(16));
+		const argb = Number("clr" in this._raw ? this._raw.clr : defCol);
+		const rgba = (((argb & 0xFF000000) >>> 24) | ((argb & 0x00FFFFFF) << 8)) >>> 0;
+		const str_rgba = rgba.toString(16).padStart(8, "0");
+		this.color = (this._raw.clr == -1 || !this._raw.clr) ? ("white") : ("#" + str_rgba);
 	}
 	
 	/**

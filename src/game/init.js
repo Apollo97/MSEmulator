@@ -91,7 +91,9 @@ export class GlobalVar {
 		}
 		
 		{
-			this.ChatBalloon_default_style = 0;
+			this.NameLabel_default_style = "214";
+
+			this.ChatBalloon_default_style = 212;
 			this.ChatBalloon_display_duration = 5000;
 		}
 		

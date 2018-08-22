@@ -92,7 +92,7 @@ export class SceneObject {
 		if (!$gv.m_display_name_label) {
 			return;
 		}
-		if (labelStyle) {
+		if (labelStyle && labelStyle != "0") {
 			let label = NameLabel.get(labelStyle);
 			if (label && !label.$promise) {
 				const crr = this.renderer;

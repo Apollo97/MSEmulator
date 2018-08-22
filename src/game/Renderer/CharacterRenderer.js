@@ -2506,7 +2506,15 @@ export class CharacterAnimationBase {
 				}
 			}
 			else {
-				this._action = "sit";//default
+				if (act == "rope") {
+					this._action = "rope";//default
+				}
+				else if (act == "ladder") {
+					this._action = "ladder";//default
+				}
+				else {
+					this._action = "sit";//default
+				}
 				if (this.actani._action != act) {
 					this.actani.reload(act);
 				}

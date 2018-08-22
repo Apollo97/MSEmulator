@@ -60,7 +60,7 @@ class TimeElapsed {
 class ChatController {
 	constructor() {
 		/** @type {number} */
-		this.style = 212;
+		this.style = 0;
 
 		/** @type {string} */
 		this.text = "";
@@ -198,7 +198,7 @@ export class BaseSceneCharacter extends SceneObject {
 		this.chatCtrl = new ChatController();
 		
 		/** @type {string} */
-		this.labelStyle = "214";
+		this.labelStyle = 0;
 
 		/** @type {{move:$Packet_CharacterMove}} */
 		this.$inPacket = {};
@@ -432,7 +432,7 @@ export class BaseSceneCharacter extends SceneObject {
 	 */
 	_$drawName(renderer) {
 		const name = this.id;
-		this.__drawName(renderer, name, this.labelStyle);
+		this.__drawName(renderer, name, this.labelStyle || $gv.NameLabel_default_style);
 	}
 	/**
 	 * @param {IRenderer} renderer

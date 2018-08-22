@@ -48,10 +48,16 @@
 							</fieldset>
 							<fieldset>
 								<legend>life</legend>
-								<label><input type="checkbox" v-model="gv.m_display_name_label" />name label</label>
 								<label><input type="checkbox" v-model="gv.m_display_life" />life</label>
 								<label><input type="checkbox" v-model="gv.m_display_player" />player</label>
 								<label><input type="checkbox" v-model="gv.m_display_other_player" />other player</label>
+							</fieldset>
+							<fieldset>
+								<legend>character</legend>
+								<div><label><input type="checkbox" v-model="gv.m_display_name_label" />顯示名牌</label></div>
+								<div><label>名牌<input type="number" min="0" v-model="gv.NameLabel_default_style" /></label></div>
+								<div><label>聊天<input type="number" min="0" v-model.number="gv.ChatBalloon_default_style" /></label></div>
+								<div><label>聊天顯示時間<input type="number" min="0" v-model.number="gv.ChatBalloon_display_duration" />毫秒</label></div>
 							</fieldset>
 						</div>
 					</p>
