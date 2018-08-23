@@ -39,23 +39,28 @@ main(process_argv["--init"]);
 function main(firstInit) {
 	let app;
 
-	if (edge && firstInit) {
-		console.log("產生道具清單...");
-
-		let equipListTasks = [];
-		let settingList = getSettingList("./").reverse();
-
-		for (let i = 0; i < settingList.length; ++i) {
-			equipListTasks[i] = function () {
-				return EquipList(settingList[i]);
-			}
+	if (edge) {
+		if (!check_lib()) {
+			return;
 		}
-
-		sequenceTasks(equipListTasks).then(function () {
-			console.log("產生道具清單...完成");
-		});
-
-		return;
+		if (firstInit) {
+			console.log("產生道具清單...");
+			
+			let equipListTasks = [];
+			let settingList = getSettingList("./").reverse();
+			
+			for (let i = 0; i < settingList.length; ++i) {
+				equipListTasks[i] = function () {
+					return EquipList(settingList[i]);
+				}
+			}
+			
+			sequenceTasks(equipListTasks).then(function () {
+				console.log("產生道具清單...完成");
+			});
+			
+			return;
+		}
 	}
 	app = WebServer(app);
 
@@ -117,6 +122,53 @@ function main(firstInit) {
 		Object.defineProperty(repl_context, "app", {
 			value: app,
 		});
+	}
+}
+
+/**
+ * @returns {boolean}
+ */
+function check_lib() {
+	if (!fs.existsSync(path.join(__dirname, "bin", "libwz.net.dll"))) {
+		console.log("Not found ./bin/libwz.net");
+		
+		if (process.platform == "win32") {
+			let Framework = process.arch == "x64" ? "Framework64" : "Framework";
+			
+			const child_process = require("child_process");
+			let csc = path.join(process.env.windir, "Microsoft.NET", Framework, "v4.0.30319", "csc.exe");
+			if (fs.existsSync(csc)) {
+				console.log("compile libwz.net");
+				
+				let ret = child_process.spawnSync(csc, [
+					"-target:library",
+					"-unsafe",
+					"-optimize",
+					"-platform:x64",
+					"-out:" + path.join(__dirname, "bin", "libwz.net.dll"),
+					path.join(__dirname, "Tools", "libwz.net", "*.cs"),
+				], {
+					//cwd: path.join(__dirname, "Tools", "libwz.net"),
+				});
+				if (ret.stdout) console.info(ret.stdout.toString());
+				if (ret.stderr) console.error(ret.stderr.toString());
+				if (ret.error) {
+					console.error(ret.error);
+					return false;
+				}
+			}
+			else {
+				console.error("Not found C# compiler: " + csc);
+				return false;
+			}
+		}
+		else {
+			console.error("Unsupported platform");
+			return false;
+		}
+	}
+	else {
+		return true;
 	}
 }
 
