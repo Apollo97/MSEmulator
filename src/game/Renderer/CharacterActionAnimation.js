@@ -99,7 +99,7 @@ export class ActionAnimation {
 	 * @param {CharacterRenderer} target
 	 */
 	update(stamp, target) {
-		if (!this.frames) {
+		if (!this.frames || !stamp) {
 			return;
 		}
 		const fdat = this.fdat;

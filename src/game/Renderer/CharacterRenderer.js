@@ -634,8 +634,7 @@ class CharacterBodyFragment extends CharacterFragmentBase {
 		if (!(chara.action in this.textures)) {
 			return null;
 		}
-		const fc = this.textures[chara.action].length;
-		let ft = this.textures[chara.action][frame % fc];
+		let ft = this.textures[chara.action][frame];//if frame not exist then return undefined
 		return ft;
 	}
 
@@ -723,8 +722,7 @@ class CharacterTamingMobFragment extends CharacterFragmentBase {
 		if (!(chara._ride_action in this.textures)) {
 			return null;
 		}
-		const fc = this.textures[chara._ride_action].length;
-		let ft = this.textures[chara._ride_action][frame % fc];
+		let ft = this.textures[chara._ride_action][frame];//if frame not exist then return undefined
 		return ft;
 	}
 
@@ -2270,6 +2268,7 @@ export class CharacterAnimationBase {
 		/** @type {string} - 未完成 */
 		this.subJob = null;
 
+
 		/** @type {ActionAnimation} */
 		this.actani = new ActionAnimation();
 
@@ -2278,6 +2277,10 @@ export class CharacterAnimationBase {
 
 		/** @type {boolean} */
 		this.fixed_speed = false;
+
+		/** @type {boolean} - pause animation */
+		this.pause = false;
+
 
 		this.hideBody = false;
 
@@ -2381,6 +2384,9 @@ export class CharacterAnimationBase {
 
 	/** @type {number} - 0~1 */
 	getSpeed() {
+		if (this.pause) {
+			return 0;
+		}
 		return this.fixed_speed ? 1 : this.speed;
 	}
 
@@ -2539,15 +2545,33 @@ export class CharacterAnimationBase {
 		return this._action_frame;
 	}
 	set action_frame(value) {
-		this._action_frame = value;
-		this.__require_update |= true;
-
+		if (value === "") {//from $("input")
+			return;
+		}
 		if (process.env.NODE_ENV !== 'production') {
 			if (!(typeof value == 'number')) {
 				debugger;
 				this._action_frame = Number(value) | 0;
+				this.__require_update |= true;
+				return;
 			}
 		}
+
+		this._action_frame = value;
+		this.__require_update |= true;
+	}
+
+	/** @type {number} */
+	get action_frame_count() {
+		try {
+			if (this.slots.body) {
+				return this.slots.body.getFrameCount(this);
+			}
+		}
+		catch (ex) {
+			debugger;
+		}
+		return 0;
 	}
 
 	/** @type {string} */
@@ -2583,16 +2607,21 @@ export class CharacterAnimationBase {
 		return f;
 	}
 	set emotion_frame(value) {
-		this._emotion_frame = value;
-		this._emotion_time = 0;
-		this.__require_update |= true;
-
+		if (value === "") {//from $("input")
+			return;
+		}
 		if (process.env.NODE_ENV !== 'production') {
 			if (!(typeof value == 'number')) {
 				debugger;
 				this._emotion_frame = Number(value) | 0;
+				this._emotion_time = 0;
+				this.__require_update |= true;
 			}
 		}
+
+		this._emotion_frame = value;
+		this._emotion_time = 0;
+		this.__require_update |= true;
 	}
 
 	/**
@@ -2650,6 +2679,10 @@ export class CharacterAnimationBase {
 	 * @param {number} stamp - 0 <= stamp < Infinity
 	 */
 	_update(_stamp) {
+		if (this.pause) {
+			return;
+		}
+
 		let stamp = _stamp * this.getSpeed();
 		
 		if (this.actani) {

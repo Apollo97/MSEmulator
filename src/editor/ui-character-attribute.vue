@@ -5,13 +5,13 @@
 			<table style="border-collapse: collapse; border-spacing: 0px;">
 				<tr>
 					<td>
-						<template v-if="chara.speed">	
-							<button @click="pauseAnimation" title="pause animation">
+						<template v-if="!chara.pause && chara.speed">	
+							<button @click="chara.pause=!chara.pause" title="pause animation">
 								<img src="images/player_pause.png" alt="pause" />
 							</button>
 						</template>
 						<template v-else="">
-							<button @click="pauseAnimation" title="play animation">
+							<button @click="chara.pause=!chara.pause" title="play animation">
 								<img src="images/player_play.png" alt="play" />
 							</button>
 						</template>
@@ -28,21 +28,6 @@
 					</td>
 				</tr>
 				<tr>
-					<th>動作</th>
-					<td>
-						<select v-model="chara.action" @clicl="update_frame_list('action')">
-							<option v-if="!actions.length" disabled value="">請選擇</option>
-							<option v-else v-for="item in actions">{{item}}</option>
-						</select>
-					</td>
-					<td>
-						<select v-model.number="chara.action_frame">
-							<option v-if="!actions.length" disabled> ---- </option>
-							<option v-else v-for="frame in chara.action_frame_count" :value="frame - 1">{{frame - 1}}</option>
-						</select>
-					</td>
-				</tr>
-				<tr>
 					<th>表情</th>
 					<td>
 						<select v-model="chara.emotion">
@@ -51,17 +36,32 @@
 						</select>
 					</td>
 					<td>
-						<select v-model.number="chara.emotion_frame" @clicl="update_frame_list('emotion')">
+						<select v-model.number="chara.emotion_frame" @wheel.prevent="onwheel($event, 'emotion', chara.emotion_frame_count-1)">
 							<option v-if="!emotions.length" disabled> ---- </option>
 							<option v-else v-for="frame in chara.emotion_frame_count" :value="frame - 1">{{frame - 1}}</option>
+						</select>
+					</td>
+				</tr>
+				<tr title="禁用物理後可設定角色的動作">
+					<th>動作</th>
+					<td>
+						<select :disabled="sceneChara.enablePhysics" v-model="chara.action">
+							<option v-if="!actions.length" disabled value="">請選擇</option>
+							<option v-else v-for="item in actions">{{item}}</option>
+						</select>
+					</td>
+					<td>
+						<select :disabled="sceneChara.enablePhysics" v-model.number="chara.action_frame" @wheel.prevent="onwheel($event, 'action', chara.action_frame_count-1)">
+							<option v-if="!actions.length" disabled> ---- </option>
+							<option v-else v-for="frame in chara.action_frame_count" :value="frame - 1">{{frame - 1}}</option>
 						</select>
 					</td>
 				</tr>
 				<tr title="禁用物理後可設定角色的位置">
 					<th>位置</th>
 					<td colspan="3" style="display: flex; position: absolute;">
-						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-9999" max="9999" />
-						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-9999" max="9999" />
+						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-99999" max="99999" />
+						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-99999" max="99999" />
 						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
 					</td>
 				</tr>
@@ -107,9 +107,9 @@
 			<table style="border-spacing: 0px; border-collapse: collapse; width: 100%;">
 				<template v-for="(equip,index) in chara.slots._ordered_slot">
 					<template v-if="equip">
-						<tr @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-							<td>
-								{{getEquipCategoryName(equip)}}
+						<tr @click="showEquipImageFilter($event, index)">
+							<td style="width:1em;">
+								<span class="hover-red">{{getEquipCategoryName(equip)}}</span>
 							</td>
 							<td style="width: 32px; height: 32px;">
 								<img :src="equip.getIconUrl()" class="equip-icon" />
@@ -118,12 +118,11 @@
 								<div>{{equip.name}}</div>
 								<div>{{equip.id}}</div>
 							</td>
-							<td>
-							</td>
+							<td></td>
 						</tr>
 						<transition name="fade">
-							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-								<td></td>
+							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
+								<td style="width:10%;"></td>
 								<td>opacity</td>
 								<td>
 									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
@@ -135,8 +134,8 @@
 							</tr>
 						</transition>
 						<transition name="fade">
-							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-								<td></td>
+							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
+								<td style="width:10%;"></td>
 								<td>hue</td>
 								<td>
 									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" />
@@ -148,8 +147,8 @@
 							</tr>
 						</transition>
 						<transition name="fade">
-							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-								<td></td>
+							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
+								<td style="width:10%;"></td>
 								<td>sat</td>
 								<td>
 									<input type="range" v-model.number="equip.filter.sat" min="0" max="999" />
@@ -161,8 +160,8 @@
 							</tr>
 						</transition>
 						<transition name="fade">
-							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-								<td></td>
+							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
+								<td style="width:10%;"></td>
 								<td>bri</td>
 								<td>
 									<input type="range" v-model.number="equip.filter.bri" min="0" max="999" />
@@ -174,8 +173,8 @@
 							</tr>
 						</transition>
 						<transition name="fade">
-							<tr v-show="isShowEquipImageFilter[index]" @mouseover="isShowEquipImageFilter[index]=true;" @mouseleave="isShowEquipImageFilter[index]=false;">
-								<td></td>
+							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
+								<td style="width:10%;"></td>
 								<td>contrast</td>
 								<td>
 									<input type="range" v-model.number="equip.filter.contrast" min="0" max="999" />
@@ -220,14 +219,40 @@
 			},
 		},
 		methods: {
-			pauseAnimation: function () {
-				this.chara.speed = this.chara.speed ? 0 : 1;//this.pause ? 0 : 1;
-			},
 			isEquip: function (id) {
 				return ItemCategoryInfo.isEquip(id);
 			},
 			getEquipCategoryName: function (equip) {
 				return ItemCategoryInfo.get(equip.id).categoryName;
+			},
+			showEquipImageFilter: function (event, index) {
+				let old_status = Boolean(this.isShowEquipImageFilter[index]);
+				if (!old_status) {
+					//close all
+					//for (let i = 0; i < this.isShowEquipImageFilter.length; ++i) {
+					//	this.isShowEquipImageFilter[i] = false;
+					//}
+					
+					this.isShowEquipImageFilter[index] = true;
+					
+					event.target.scrollIntoView({ behavior: "instant", block: "start", inline: "start" });
+				}
+				else {
+					this.isShowEquipImageFilter[index] = false;
+				}
+			},
+			click_scrollIntoView: function (event) {
+				event.target.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+			},
+			onwheel: function (event, type, max) {
+				let amount = Math.sign(-event.deltaY);
+				let oldVal = this.chara[type + "_frame"];
+				if (amount) {
+					let newVal = oldVal + amount;
+					if (newVal >= 0 && newVal <= max) {
+						this.chara[type + "_frame"] = newVal;
+					}
+				}
 			},
 		},
 	}
@@ -254,5 +279,8 @@
 		max-height: 32px;
 		width: auto !important;
 		height: auto !important;
+	}
+	.hover-red:hover {
+		color: red;
 	}
 </style>
