@@ -2,18 +2,20 @@
 <template>
 	<ui-draggable class="ui-dialog" :zIndex="zIndex" :position="position" @update:position="updateDialogPosition">
 		<div ref="header" class="header" @mousedown.left="requireOrder($event)" :style="header_style">
-			<slot name="header"></slot>
-			<div class="header-buttons">
-				<button v-if="minimum"
-						@click="minimum=false"
-						class="header-button">
-							<span class="ui-icon ui-icon-plus"></span>
-						</button>
-				<button v-else
-						@click="minimum=true; onCollapsed()"
-						class="header-button">
-							<span class="ui-icon ui-icon-minus"></span>
-						</button>
+			<div @contextmenu.self.prevent="minimum=!minimum" class="header">
+				<slot name="header"></slot>
+				<div class="header-buttons">
+					<button v-if="minimum"
+							@click="minimum=false"
+							class="header-button">
+								<span class="ui-icon ui-icon-plus"></span>
+							</button>
+					<button v-else
+							@click="minimum=true; onCollapsed()"
+							class="header-button">
+								<span class="ui-icon ui-icon-minus"></span>
+							</button>
+				</div>
 			</div>
 		</div>
 		<div ref="content" @mousedown.left="requireOrder($event)" :style="content_style" class="content">

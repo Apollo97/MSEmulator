@@ -87,12 +87,18 @@
 						<label class="chara_ear">妖精<input type="radio" name="chara_ear" v-model="chara.ear" value="elf" /></label>
 					</td>
 					<td>
-						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lef" /></label>
+						<!---->
 					</td>
 				</tr>
 				<tr>
 					<td>
+						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lef" /></label>
+					</td>
+					<td>
 						<label class="chara_ear">亥雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" /></label>
+					</td>
+					<td>
+						<!---->
 					</td>
 				</tr>
 				<!--<tr>
@@ -104,85 +110,89 @@
 		</div>
 		<div v-if="isShowDebug" style="width: 100%; display: inline-block; user-select: text;">
 			<hr />
-			<table style="border-spacing: 0px; border-collapse: collapse; width: 100%;">
+			<table>
+				<tr>
+					<th>max value</th>
+					<td><input type="range" min="100" max="999" v-model="max_value" /></td>
+					<td><input type="number" min="100" max="999" v-model="max_value" /></td>
+				</tr>
+			</table>
+			<hr />
+			<table class="tb-equip-filter">
 				<template v-for="(equip,index) in chara.slots._ordered_slot">
 					<template v-if="equip">
-						<tr @click="showEquipImageFilter($event, index)">
-							<td style="width:1em;">
-								<span class="hover-red">{{getEquipCategoryName(equip)}}</span>
-							</td>
-							<td style="width: 32px; height: 32px;">
-								<img :src="equip.getIconUrl()" class="equip-icon" />
-							</td>
+						<tr :class="isShowEquipImageFilter[index] ? 'open':''" @click="showEquipImageFilter($event, index, equip)">
+							<!--<td style="width:1em;">
+								<span>{{getEquipCategoryName(equip)}}</span>
+							</td>-->
 							<td>
-								<div>{{equip.name}}</div>
+								<img style="max-width: 32px; max-height: 32px; width: ayuto; height: auto;" :src="equip.getIconUrl()" class="equip-icon" />
+							</td>
+							<td style="width:50%;">
+								<div>{{equip._raw.name||equip.name}}</div>
+							</td>
+							<td style="width:50%;">
 								<div>{{equip.id}}</div>
 							</td>
-							<td></td>
 						</tr>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
-								<td style="width:10%;"></td>
 								<td>opacity</td>
-								<td>
+								<td style="width:50%;">
 									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
 								</td>
-								<td>
+								<td style="width:50%;">
 									<input type="number" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
 								</td>
-								<td><button @click="equip.opacity=1;" class="btn">×</button></td>
+								<td><input @click="equip.opacity=1;" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
-								<td style="width:10%;"></td>
 								<td>hue</td>
-								<td>
+								<td style="width:50%;">
 									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" />
 								</td>
-								<td>
+								<td style="width:50%;">
 									<input type="number" v-model.number="equip.filter.hue" min="0" max="359" />
 								</td>
-								<td><button @click="equip.filter.hue=0;" class="btn">×</button></td>
+								<td><input @click="equip.filter.hue=0;" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
-								<td style="width:10%;"></td>
 								<td>sat</td>
-								<td>
-									<input type="range" v-model.number="equip.filter.sat" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="range" v-model.number="equip.filter.sat" min="0" :max="max_value" />
 								</td>
-								<td>
-									<input type="number" v-model.number="equip.filter.sat" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="number" v-model.number="equip.filter.sat" min="0" :max="max_value" />
 								</td>
-								<td><button @click="equip.filter.sat=100;" class="btn">×</button></td>
+								<td><input @click="equip.filter.sat=100;" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
-								<td style="width:10%;"></td>
 								<td>bri</td>
-								<td>
-									<input type="range" v-model.number="equip.filter.bri" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="range" v-model.number="equip.filter.bri" min="0" :max="max_value" />
 								</td>
-								<td>
-									<input type="number" v-model.number="equip.filter.bri" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="number" v-model.number="equip.filter.bri" min="0" :max="max_value" />
 								</td>
-								<td><button @click="equip.filter.bri=100;" class="btn">×</button></td>
+								<td><input @click="equip.filter.bri=100;" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
-								<td style="width:10%;"></td>
 								<td>contrast</td>
-								<td>
-									<input type="range" v-model.number="equip.filter.contrast" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="range" v-model.number="equip.filter.contrast" min="0" :max="max_value" />
 								</td>
-								<td>
-									<input type="number" v-model.number="equip.filter.contrast" min="0" max="999" />
+								<td style="width:50%;">
+									<input type="number" v-model.number="equip.filter.contrast" min="0" :max="max_value" />
 								</td>
-								<td><button @click="equip.filter.contrast=100;" class="btn">×</button></td>
+								<td><input @click="equip.filter.contrast=100;" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 					</template>
@@ -201,6 +211,7 @@
 			return {
 				isShowDebug: false,
 				isShowEquipImageFilter: [],
+				max_value: 100,
 			}
 		},
 		computed: {
@@ -233,16 +244,18 @@
 					//	this.isShowEquipImageFilter[i] = false;
 					//}
 					
-					this.isShowEquipImageFilter[index] = true;
+					this.$set(this.isShowEquipImageFilter, index, true);
 					
 					event.target.scrollIntoView({ behavior: "instant", block: "start", inline: "start" });
 				}
 				else {
-					this.isShowEquipImageFilter[index] = false;
+					this.$set(this.isShowEquipImageFilter, index, false);
 				}
 			},
 			click_scrollIntoView: function (event) {
-				event.target.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+				if (event.target.tagName.toLowerCase() != "input") {
+					event.target.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+				}
 			},
 			onwheel: function (event, type, max) {
 				let amount = Math.sign(-event.deltaY);
@@ -279,8 +292,14 @@
 		max-height: 32px;
 		width: auto !important;
 		height: auto !important;
+		display: table-row;
 	}
-	.hover-red:hover {
+	.open {
 		color: red;
+	}
+	.tb-equip-filter {
+		border-spacing: 0px;
+		border-collapse: collapse;
+		width: 100%;
 	}
 </style>

@@ -26,15 +26,16 @@
 					throw new Error("Can't get value before update.");
 				}
 				
-				let indices = {};
-				for (let i = 0; i < order.length; ++i) {
-					indices[order[i]] = i;
+				let item_map = {};
+				for (let i = 0; i < this.items.length; ++i) {
+					const item = this.items[i];
+					item_map[item.id] = item;
 				}
-
+				
 				let new_list = [];
+				
 				for (let i = 0; i < order.length; ++i) {
-					const id = order[i];
-					new_list[i] = this.items[indices[id]];
+					new_list[i] = item_map[order[i]];
 				}
 				
 				this.$emit('update:items', new_list);	//output value by async

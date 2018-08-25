@@ -1,6 +1,10 @@
 ﻿
 <template>
-	<div @mousedown="mousedown($event)" class="ui-draggable">
+	<div @mousedown="mousedown($event)"
+		 @touchstart="onTouch"
+		 @touchmove="onTouch"
+		 @touchend="onTouch"
+		 class="ui-draggable">
 		<slot></slot>
 	</div>
 </template>
@@ -182,6 +186,42 @@
 					y: this.$el.offsetTop
 				}
 			},
+			onTouch: function (evt) {
+				const tt = evt.target.tagName.toLowerCase();
+				if (tt == "input" || tt == "select" || tt == "button" || tt == "summary") {
+					return;
+				}
+				
+				//evt.preventDefault();
+				
+				if (evt.touches.length > 1 || (evt.type == "touchend" && evt.touches.length > 0)) {
+					return;
+				}
+				let newEvt = document.createEvent("MouseEvents");
+				let type = null;
+				let touch = null;
+				
+				switch (evt.type) {
+					case "touchstart": 
+						type = "mousedown";
+						touch = evt.changedTouches[0];
+						break;
+					case "touchmove":
+						type = "mousemove";
+						touch = evt.changedTouches[0];
+						break;
+					case "touchend":
+						type = "mouseup";
+						touch = evt.changedTouches[0];
+						break;
+				}
+				
+				newEvt.initMouseEvent(type, true, true, evt.target.ownerDocument.defaultView, 0,
+				touch.screenX, touch.screenY, touch.clientX, touch.clientY,
+				evt.ctrlKey, evt.altKey, evt.shiftKey, evt.metaKey, 0, null);
+				
+				evt.target.dispatchEvent(newEvt);
+			}
 		},
 		mounted: function () {
 			let el = this.$el;

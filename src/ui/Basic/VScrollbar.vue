@@ -206,7 +206,7 @@
 					}
 					else {
 						this._onscroll_target = this._onscroll.bind(this);
-						tElem.addEventListener("scroll", this._onscroll_target);
+						tElem.addEventListener("scroll", this._onscroll_target, { passive: true });
 					}
 				}
 			},
