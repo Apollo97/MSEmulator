@@ -402,6 +402,16 @@
 				debugger;
 			},
 			_createChara: async function (context, payload) {
+				const scene_map = window.scene_map;
+				try {
+					if (scene_map && scene_map.$promise) {
+						await scene_map.$promise;
+					}
+				}
+				catch (ex) {
+					throw ex;
+				}
+				
 				if (window.$io && payload && payload.remote_chara) {
 					//alert("dont use _createChara in online mode");
 					//return;
@@ -470,13 +480,11 @@
 					chara: chara,
 				});
 				
-				try {
-					if (window.scene_map) {
-						window.scene_map.addChara(result);
-					}
+				if (scene_map) {
+					scene_map.addChara(result);
 				}
-				catch (ex) {
-					console.error(ex);
+				else {
+					debugger;
 				}
 				
 				return result;

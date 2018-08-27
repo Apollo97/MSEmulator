@@ -1,29 +1,31 @@
+const PORT = process.env.PORT || 8787;
 
-let repl = require('repl');
 //let app = require('express')();
 let http = require('http').Server(/*app*/);
 let io = require('socket.io')(http);
 let { $PlayerData } = require("./src/Common/PlayerData.js");
-
-let repl_context = repl.start({ prompt: '> ' }).context;
+//let { AttackInfo } = require("./src/Common/AttackInfo.js");
 
 let $clients = {};
-Object.defineProperties(repl_context, {
-	io: {
-		get: function () {
-			return $clients;
-		},
-		set: function (value) {
-			console.log("error: clients no getter.");
-		},
-		enumerable: true,
-	},
-	mapId: {
-		enumerable: true,
-		writable: true,
-		value: "450004000"
-	},
-});
+
+//let repl = require('repl');
+//let repl_context = repl.start({ prompt: '> ' }).context;
+//Object.defineProperties(repl_context, {
+//	io: {
+//		get: function () {
+//			return $clients;
+//		},
+//		set: function (value) {
+//			console.log("error: clients no getter.");
+//		},
+//		enumerable: true,
+//	},
+//	mapId: {
+//		enumerable: true,
+//		writable: true,
+//		value: "450004000"
+//	},
+//});
 
 class ClientState {
 	constructor() {
@@ -46,7 +48,7 @@ let client_number = 0;
 io.on("connection", function (socket) {
 	const id = "chara_" + (++client_number);
 
-	let state = new ClientState();
+	const state = new ClientState();
 	socket.clientState = state;
 
 	$clients[id] = socket;
@@ -91,7 +93,7 @@ io.on("connection", function (socket) {
 
 		state.chara.id = id;//id == name
 		state.chara.equips_code = $$aa[client_number % $$aa.length];
-		state.chara.mapId = repl_context.mapId || "000000000";
+		state.chara.mapId = "000000000";//repl_context.mapId || 
 
 		if (state.chara.guildId) {
 			socket.join(state.chara.guildId);//guildId == guildName
@@ -118,29 +120,43 @@ io.on("connection", function (socket) {
 	socket.on("charaAnim", function (packet, fnAck) {
 		console.log(JSON.stringify(packet));
 	});
-	socket.on("skill", function (packet, fnAck) {
-		let data = packet;
 
-		data.id = id;
-		//data.skillId
-
-		fnAck(true);
-
-		socket.broadcast.emit("remoteCharaSkill", data);
-	});
 	socket.on("useItem", function (packet, fnAck) {
 		let data = packet;
-
+		
 		if (data.itemId[0] == "0") {//equip
 			data.id = id;
-
+			
 			fnAck(true);
-
+			
 			socket.broadcast.emit("remoteAvatarModified", data);
 		}
 		else {
 			fnAck(false);
 		}
+	});
+	
+	socket.on("skill", function (packet, fnAck) {
+		let data = packet;
+		
+		data.id = id;
+		//data.skillId
+		
+		fnAck(true);
+		
+		socket.broadcast.emit("remoteCharaSkill", data);
+	});
+	socket.on("attack", function (packet, fnAck) {
+		let data = packet;
+
+		///** @type {AttackInfo[]} */
+		//const attack = data.attack;
+		
+		data.id = id;
+
+		fnAck(true);
+
+		socket.broadcast.emit("remoteCharaAttack", data);
 	});
 	
 	function enumEnterRemoteCharaData(clients) {
@@ -162,7 +178,7 @@ io.on("connection", function (socket) {
 	}
 });
 
-http.listen(8787, function () {
-	console.log("listening on *:8787");
+http.listen(PORT, function () {
+	console.log("listening on ?:" + PORT);
 });
 

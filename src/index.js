@@ -29,7 +29,7 @@ async function load_module() {
 
 	const MainUI = modules[5].default;
 	const Editor = modules[6].default;
-
+	
 	return {
 		Vue, Vuex, InitAll, Game, MainUI, Editor
 	};
@@ -65,11 +65,11 @@ export class App {
 
 		this.game = new Game();
 
-		this.game._$startClient();
+		this.game._$startClient().then(function () {
+			document.getElementById("loading").style.display = "none";
+		});
 
 		this.game.run();
-
-		document.getElementById("loading").style.display = "none";
 	}
 
 	/**

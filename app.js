@@ -15,7 +15,7 @@ const IniParser = require('ini-parser');
 let edge = null, CS_PROGRAM_REFERENCES = null;
 
 const process_argv = argv_parse(process.argv);
-const port = process_argv["--port"] || process_argv["-p"] || 80;
+const port = process_argv["--port"] || process_argv["-p"] || process.env.PORT || 80;
 
 const IMAGES_EXTNAME = ".png";
 const SOUND_WAV_EXTNAME = ".wav";

@@ -660,7 +660,7 @@ class SkillAnimationBase {
 
 		this.attackInfo.allAttack.push(attack);
 	}
-
+	
 	createBullet(effectName) {
 		let eff, bullet;
 
@@ -1054,7 +1054,7 @@ export class SceneSkill extends SkillAnimationBase {
 		}
 		//skillId = 1120017;//1001005;// jobId + 4-digit
 
-		this.attackInfo.skill = skillId;
+		this.attackInfo.skillId = skillId;
 		
 		let loaded_skill = SceneSkill.__loaded_skill[skillId];
 		if (loaded_skill && loaded_skill.data) {

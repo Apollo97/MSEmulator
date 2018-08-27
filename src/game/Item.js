@@ -58,7 +58,7 @@ const SLOT_INS = 3;
 const SLOT_CASH = 4;
 
 const TYPE_TO_SLOT_MAP = [
-	undefined, SLOT_EQUIP, SLOT_COS, SLOT_INS, SLOT_ETC, SLOT_CASH
+	SLOT_EQUIP, SLOT_EQUIP, SLOT_COS, SLOT_INS, SLOT_ETC, SLOT_CASH
 ];
 
 export class ItemBase {

@@ -122,6 +122,16 @@ class $RemotePlayerData {
 
 		/** @type {string} */
 		this.equips_code = null;
+		
+		
+		/** @type {number} */
+		this.chatBalloonStyle = 0;
+		
+		/** @type {string} */
+		this.labelStyle = 0;
+		
+		/** @type {string} */
+		this.damageSkin = "default";
 	}
 }
 //?? packet

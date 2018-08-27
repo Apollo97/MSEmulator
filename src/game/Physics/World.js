@@ -92,7 +92,7 @@ export class World extends b2World {
 
 		this.SetContactListener(new ContactListener());
 
-		//if (!window.io) {
+		//if (!window.$io) {
 		//	this.player = null;
 		//	this._player_rebirth();
 		//	this.player.setPosition(0, 0, true);

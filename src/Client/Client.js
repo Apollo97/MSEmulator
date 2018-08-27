@@ -1,4 +1,6 @@
 ﻿
+import io from "socket.io-client";
+
 import { GameStateManager } from "../game/GameState.js";
 
 import { SceneMap } from "../game/Map.js";
@@ -60,8 +62,7 @@ class $Socket {
 export class Client {
 	constructor() {
 		/** @type {$Socket} */
-		this.socket = this._conn();
-		window.$io = this.socket;
+		this.socket = null;
 
 		/** @type {{[id:string]:SceneCharacter}} */
 		this.charaMap = {};
@@ -108,48 +109,45 @@ export class Client {
 			//}
 		});
 	}
+	
+	/** @returns {Promise<$Socket>} */
+	async connect() {
+		return await new Promise((resolve, reject) => {
+			let socket;
 
-	/** @returns {$Socket} */
-	_conn() {
-		let socket;
-
-		if (window.io != null) {
 			let url = new URL(window.location);
 			url.port = 8787;
 
 			socket = io(url.href);
-
-			const emit = socket.emit;
-
-			socket.emit = function (eventName, data) {
-				//let cbfunc = arguments[arguments.length - 1];
-				//if (typeof cbfunc == 'function') {
-				//	emit(eventName, data, cbfunc);
-				//}
-				//else {
-				return new Promise(function (resolve, reject) {
-					emit.call(socket, eventName, data, function () {
-						resolve.apply(this, arguments);
-					});
-				});
-				//}
-			};
-		}
-		else {
-			socket = {
-				emit() {
-					return true;
-				},
-				on() {
-					return true;
-				},
-				once() {
-					return true;
-				},
-			};
-		}
-
-		return socket;
+			
+			socket.on("connect", () => {
+				this.socket = this._conn();
+				
+				window.$io = this.socket;
+				
+				const emit = socket.emit;
+				
+				socket.emit = function (eventName, data) {
+					//let cbfunc = arguments[arguments.length - 1];
+					//if (typeof cbfunc == 'function') {
+					//	emit(eventName, data, cbfunc);
+					//}
+					//else {
+						return new Promise(function (resolve, reject) {
+							emit.call(socket, eventName, data, function () {
+								resolve.apply(this, arguments);
+							});
+						});
+					//}
+				};
+				
+				resolve(socket);
+			});
+			socket.on("connect_error", error => {
+				socket.disconnect();
+				reject(error);
+			});
+		});
 	}
 
 	/** @type {SceneMap} */
@@ -205,12 +203,15 @@ export class Client {
 
 		if (charaData) {
 			try {
-				this._CreateMyCharacter(charaData);
-				this.onEnterRemoteChara(remoteCharacters);
+				await this.$scene_map.load(charaData.mapId);
+				
+				let task1 = this._CreateMyCharacter(charaData);
+				let task2 = this.onEnterRemoteChara(remoteCharacters);
+				
+				await Promise.all([task1, task2]);
 			}
 			catch (ex) {
-				alert(err.message);
-				console.error(err);
+				console.error(ex);
 			}
 		}
 		else {
@@ -229,8 +230,6 @@ export class Client {
 			}
 		});
 		this.chara = chara;
-
-		this.$scene_map.load(charaData.mapId);
 
 		chara._$data = chara._$data || {
 			guildId: "",//guildId == guildName
@@ -271,14 +270,12 @@ export class Client {
 					id: charaData.id,
 					code: charaData.equips_code,
 				}
-			}).then(arg0 => {
+			}).then((...args) => {
 				try {
 					const world = this.$scene_map.controller;
 
 					/** @type {SceneRemoteCharacter} */
-					let chara = arg0;
-					
-					chara.$physics = world.$createRemotePlayer(chara, chara.$$renderer);
+					let chara = args[0];
 
 					this.charaMap[chara.id] = chara;
 				}

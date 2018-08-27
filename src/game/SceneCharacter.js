@@ -29,6 +29,7 @@ import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
 // chatCtrl.update (順序無關)
 //
 // <...controller>
+// control
 // activeSkills.forEach(skill => skill.update)
 // chara._handleAttack
 // chara._player_control => { inputKey.forEach(key => key ? activeSkills.forEach(skill => skill.control)); ... }
@@ -59,9 +60,6 @@ class TimeElapsed {
 
 class ChatController {
 	constructor() {
-		/** @type {number} */
-		this.style = 0;
-
 		/** @type {string} */
 		this.text = "";
 
@@ -104,7 +102,7 @@ class ChatController {
 	 */
 	async draw(renderer, chara) {
 		if (this._isDisplay) {
-			const style = this.style || $gv.ChatBalloon_default_style;
+			const style = chara.chatBalloonStyle || $gv.ChatBalloon_default_style;
 
 			/** @type {ChatBalloon} */
 			let cb = ChatBalloon.cache[style];
@@ -197,8 +195,28 @@ export class BaseSceneCharacter extends SceneObject {
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
 		
+		// begin PlayerData
+		//TODO: move player data to PlayerData
+		
+		/** @type {number} */
+		this.chatBalloonStyle = 0;
+		
 		/** @type {string} */
 		this.labelStyle = 0;
+		
+		/** @type {string} */
+		this.damageSkin = "default";
+		
+		// end PlayerData
+		
+		Object.defineProperties(this, {
+			$inPacket: {
+				writable: true,
+			},
+			$outPacket: {
+				writable: true,
+			},
+		});
 
 		/** @type {{move:$Packet_CharacterMove}} */
 		this.$inPacket = {};
@@ -269,6 +287,9 @@ export class BaseSceneCharacter extends SceneObject {
 
 				crr.front = elem.pState.front;
 			}
+			//else {
+			//	//non physics state: chara.renderer...
+			//}
 		
 			if (elem.action) {
 				crr.action = elem.action;
@@ -347,12 +368,43 @@ export class BaseSceneCharacter extends SceneObject {
 		
 		this.chair = null;//TODO: remove chair
 	}
-	
+
+	/**
+	 * @param {string} skillId
+	 * @param {function(SceneSkill):void} [cbfunc]
+	 * @returns {SceneSkill}
+	 */
+	invokeSkill(skillId, cbfunc) {
+		if (window.$io) {
+			this.__invokeSkill_client(skillId).then(cbfunc);
+		}
+		else {
+			return this.__invokeSkill_localhost(skillId);
+		}
+	}
 	/**
 	 * @param {string} skillId
 	 * @returns {SceneSkill}
 	 */
-	invokeSkill(skillId) {
+	async __invokeSkill_client(skillId) {
+		let isValid;
+		try {
+			isValid = await window.$io.emit("skill", {
+				skillId: skillId
+			});
+		}
+		catch (ex) {
+			console.error(ex);
+		}
+		if (isValid) {
+			return this.__invokeSkill_localhost(skillId);
+		}
+	}
+	/**
+	 * @param {string} skillId
+	 * @returns {SceneSkill}
+	 */
+	__invokeSkill_localhost(skillId) {
 		let skill = new SceneSkill();
 		skill.load(skillId, this);
 		this.activeSkills.set(skillId, skill);
@@ -368,25 +420,7 @@ export class BaseSceneCharacter extends SceneObject {
 
 		this.chatCtrl.update(stamp);
 
-		this.activeSkills.forEach(skill => {
-			if (skill) {
-				if (skill.isEnd()) {
-					this.activeSkills.delete(skill.skillId);
-				}
-				else {
-					skill.update(stamp, this);
-				}
-
-				//TODO: 結算攻擊傷害，skill.attackInfo
-				this._handleAttack();
-
-				//clear all attack
-				skill.attackInfo.allAttack.length = 0;
-			}
-			else {
-				debugger;
-			}
-		});
+		this._handleSkill(stamp);
 
 		this._player_control();
 
@@ -520,70 +554,99 @@ export class BaseSceneCharacter extends SceneObject {
 			}
 		}
 	}
-
+	
 	/**
+	 * route
 	 * 結算攻擊傷害
 	 */
-	_handleAttack() {
-		if (window.$io) {
-			throw new Error("未完成");
-
-			let attackInfoList = [];
-
-			this.activeSkills.forEach(skill => {
-				attackInfoList.push(skill.attackInfo);
-			});
-
-			window.$io
-				.emit("attack", {
-					//TODO: online mode: packet_attack
-					attack: attackInfoList
-				})
-				.then(result => {
-					if (result) {
-						//TODO: online mode: attack ??
-					}
-				});
-		}
-		else {
-			this.activeSkills.forEach(skill => {
-				const attackInfo = skill.attackInfo;
-
-				for (let i = 0; i < attackInfo.allAttack.length; ++i) {
-					const attack = attackInfo.allAttack[i];
-
-					const targetObject = attack.getTargetObject();
-
-					for (let j = 0; j < attack.allDamage.length; ++j) {
-						let damVar = this.stat.getCurrentMaxBaseDamage() - this.stat.getCurrentMinBaseDamage();
-						let realDamage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
-						let damage = attack.allDamage[j] = new DamagePair();
-						let style;
-
-						if (Math.trunc(Math.random() * 100) < this.stat.critRate) {
-							realDamage = realDamage * (1 + this.stat.critDamage / 100);
-							damage.critical = true;
-						}
-						
-						realDamage = Math.trunc(realDamage);
-						damage.realDamage = realDamage;
-
-						targetObject.damage(this, realDamage);
-
-						if (damage.critical) {
-							style = "NoCri";
-						}
-						else {
-							style = "NoRed";
-						}
-
-						//TODO: ?? target position
-						damageNumberLayer.addDamagePair(this.m_damageSkin || "default", style, damage, targetObject.x + (attack.allDamage.length > 1 ? (25 - (1 - j & 1) * 25) : 0), targetObject.y, j * 100);
-					}
-					//
-					targetObject.knockback(this, 16, 16);
+	_handleSkill(stamp) {
+		/** @type {AttackInfo[]} */
+		let attackInfoList = [];
+		
+		this.activeSkills.forEach(skill => {
+			if (skill) {
+				if (skill.isEnd()) {
+					this.activeSkills.delete(skill.skillId);
 				}
-			});
+				else {
+					skill.update(stamp, this);
+				}
+				//clear all attack
+				let attackInfo = new AttackInfo();
+				attackInfo.allAttack = skill.attackInfo.shiftAllAttack();
+				attackInfoList.push(attackInfo);
+			}
+			else {
+				debugger;
+			}
+		});
+		
+		if (attackInfoList.length) {
+			if (window.$io) {
+				this.__handleAttack_client(attackInfoList);
+			}
+			else {
+				this.__handleAttack_localhost(attackInfoList);
+			}
+		}
+	}
+	/**
+	 * 結算攻擊傷害
+	 * @param {AttackInfo[]} attackInfoList
+	 */
+	async __handleAttack_client(attackInfoList) {
+		throw new Error("未完成");
+		
+		let isValid = await window.$io.emit("attack", {
+			//TODO: online mode: packet_attack
+			attack: attackInfoList
+		});
+		
+		if (isValid) {
+			//TODO: online mode: attack ??
+			this.__handleAttack_localhost();//show attack
+		}
+	}
+	/**
+	 * 結算攻擊傷害
+	 * @param {AttackInfo[]} attackInfoList
+	 */
+	__handleAttack_localhost(attackInfoList) {
+		for (let attackInfo of attackInfoList) {
+			for (let i = 0; i < attackInfo.allAttack.length; ++i) {
+				const attack = attackInfo.allAttack[i];
+
+				const targetObject = attack.getTargetObject();
+
+				for (let j = 0; j < attack.allDamage.length; ++j) {
+					let damVar = this.stat.getCurrentMaxBaseDamage() - this.stat.getCurrentMinBaseDamage();
+					let realDamage = this.stat.getCurrentMinBaseDamage() + Math.random() * damVar;
+					let damage = attack.allDamage[j] = new DamagePair();
+					let style;
+
+					if (Math.trunc(Math.random() * 100) < this.stat.critRate) {
+						realDamage = realDamage * (1 + this.stat.critDamage / 100);
+						damage.critical = true;
+					}
+					
+					realDamage = Math.trunc(realDamage);
+					damage.realDamage = realDamage;
+
+					targetObject.damage(this, realDamage);
+
+					if (damage.critical) {
+						style = "NoCri";
+					}
+					else {
+						style = "NoRed";
+					}
+
+					//TODO: ?? target position
+					damageNumberLayer.addDamagePair(this.damageSkin || "default", style, damage, targetObject.x + (attack.allDamage.length > 1 ? (25 - (1 - j & 1) * 25) : 0), targetObject.y, j * 100);
+				}
+				//
+				targetObject.knockback(this, 16, 16);
+			}
 		}
 	}
 }
@@ -893,7 +956,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 					}
 				}
 				else {
-					console.log("無法使用不存在的道具。");
+					console.log("無法使用不存在的道具。you can try add item editor mode");
 				}
 			}
 
@@ -1002,7 +1065,7 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 		this.renderer = new CharacterRenderer();
 
 		/** @type {PPlayer} */
-		this.$physics = scene.controller.$createPlayer(this, this.renderer);
+		this.$physics = scene.controller.$createRemotePlayer(this, this.renderer);
 	}
 
 	get $remote() {

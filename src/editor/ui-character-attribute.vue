@@ -113,8 +113,8 @@
 			<table>
 				<tr>
 					<th>max value</th>
-					<td><input type="range" min="100" max="999" v-model="max_value" /></td>
-					<td><input type="number" min="100" max="999" v-model="max_value" /></td>
+					<td><input type="range" step="100" min="100" max="1000" v-model="max_value" /></td>
+					<td><input type="number" step="100" min="100" max="1000" v-model="max_value" /></td>
 				</tr>
 			</table>
 			<hr />
@@ -125,8 +125,8 @@
 							<!--<td style="width:1em;">
 								<span>{{getEquipCategoryName(equip)}}</span>
 							</td>-->
-							<td>
-								<img style="max-width: 32px; max-height: 32px; width: ayuto; height: auto;" :src="equip.getIconUrl()" class="equip-icon" />
+							<td style="height: 32px">
+								<img style="max-width: 32px; width: auto; height: 32px;" :src="getIconUrl(equip)" class="equip-icon" />
 							</td>
 							<td style="width:50%;">
 								<div>{{equip._raw.name||equip.name}}</div>
@@ -139,60 +139,60 @@
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
 								<td>opacity</td>
 								<td style="width:50%;">
-									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
+									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" />
+									<input type="number" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" @input="oninput" />
 								</td>
-								<td><input @click="equip.opacity=1;" type="button" value="×" class="btn" /></td>
+								<td><input @click="equip.opacity=1; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
 								<td>hue</td>
 								<td style="width:50%;">
-									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" />
+									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.hue" min="0" max="359" />
+									<input type="number" v-model.number="equip.filter.hue" min="0" max="359" @input="oninput" />
 								</td>
-								<td><input @click="equip.filter.hue=0;" type="button" value="×" class="btn" /></td>
+								<td><input @click="equip.filter.hue=0; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
 								<td>sat</td>
 								<td style="width:50%;">
-									<input type="range" v-model.number="equip.filter.sat" min="0" :max="max_value" />
+									<input type="range" v-model.number="equip.filter.sat" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.sat" min="0" :max="max_value" />
+									<input type="number" v-model.number="equip.filter.sat" min="0" :max="max_value" @input="oninput" />
 								</td>
-								<td><input @click="equip.filter.sat=100;" type="button" value="×" class="btn" /></td>
+								<td><input @click="equip.filter.sat=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
 								<td>bri</td>
 								<td style="width:50%;">
-									<input type="range" v-model.number="equip.filter.bri" min="0" :max="max_value" />
+									<input type="range" v-model.number="equip.filter.bri" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.bri" min="0" :max="max_value" />
+									<input type="number" v-model.number="equip.filter.bri" min="0" :max="max_value" @input="oninput" />
 								</td>
-								<td><input @click="equip.filter.bri=100;" type="button" value="×" class="btn" /></td>
+								<td><input @click="equip.filter.bri=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 						<transition name="fade">
 							<tr v-show="isShowEquipImageFilter[index]" @click="click_scrollIntoView($event)">
 								<td>contrast</td>
 								<td style="width:50%;">
-									<input type="range" v-model.number="equip.filter.contrast" min="0" :max="max_value" />
+									<input type="range" v-model.number="equip.filter.contrast" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.contrast" min="0" :max="max_value" />
+									<input type="number" v-model.number="equip.filter.contrast" min="0" :max="max_value" @input="oninput" />
 								</td>
-								<td><input @click="equip.filter.contrast=100;" type="button" value="×" class="btn" /></td>
+								<td><input @click="equip.filter.contrast=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
 					</template>
@@ -236,6 +236,9 @@
 			getEquipCategoryName: function (equip) {
 				return ItemCategoryInfo.get(equip.id).categoryName;
 			},
+			getIconUrl(equip) {
+				return $get.imageUrl(equip.getIconUrl());
+			},
 			showEquipImageFilter: function (event, index) {
 				let old_status = Boolean(this.isShowEquipImageFilter[index]);
 				if (!old_status) {
@@ -256,6 +259,11 @@
 				if (event.target.tagName.toLowerCase() != "input") {
 					event.target.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
 				}
+			},
+			oninput: function () {
+				const crr = this.sceneChara.renderer;
+				crr.__forceUpdate(0);
+				this.$forceUpdate();
 			},
 			onwheel: function (event, type, max) {
 				let amount = Math.sign(-event.deltaY);

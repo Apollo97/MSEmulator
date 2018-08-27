@@ -1234,7 +1234,14 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 	 * @returns {string}
 	 */
 	getIconUrl() {
-		return ItemCategoryInfo.getIconUrl(this.id);
+		const icon = this._raw.info.icon;
+		if (icon) {
+			return icon[""];
+		}
+		else {
+			debugger;
+			return ItemCategoryInfo.getIconUrl(this.id);
+		}
 	}
 
 	/**
@@ -1243,7 +1250,14 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 	 * @returns {string}
 	 */
 	getIconRawUrl() {
-		return ItemCategoryInfo.getIconRawUrl(this.id);
+		const iconRaw = this._raw.info.iconRaw;
+		if (iconRaw) {
+			return iconRaw[""];
+		}
+		else {
+			debugger;
+			return ItemCategoryInfo.getIconRawUrl(this.id);
+		}
 	}
 
 	/**
@@ -1725,7 +1739,7 @@ class CharacterSlots {
 
 
 		/** @type {CharacterHair} */
-		this._hair = null;
+		this.hair = null;
 		/** @type {CharacterHair} */
 		this._hair2 = null;
 		/** @type {CharacterHair} 0~1.0 */
@@ -1794,7 +1808,32 @@ class CharacterSlots {
 				enumerable: false,
 				value: []
 			});
-
+			
+			Object.defineProperty(this, "_hair", {
+				writable: true,
+				enumerable: false,
+				value: null,
+			});
+			Object.defineProperty(this, "hair", {
+				enumerable: true,
+				get: function () {
+					return this._hair;
+				},
+				set: function (value) {
+					this._hair = value;
+					if (value) {
+						if (this._hair2 && this._hairMix2) {
+							this.hairColor2 = this.hairColor2;//force reload
+							this.hairMix2 = this.hairMix2;
+						}
+						if (this._hair3 && this._hairMix3) {
+							this.hairColor3 = this.hairColor3;//force reload
+							this.hairMix3 = this.hairMix3;
+						}
+					}
+				},
+			});
+			
 			Object.defineProperty(this, "_hair", {
 				writable: true,
 				enumerable: false,
@@ -1820,24 +1859,6 @@ class CharacterSlots {
 				enumerable: false,
 				value: null,
 			});
-		}
-	}
-
-	/** @type {CharacterHair} */
-	get hair() {
-		return this._hair;
-	}
-	set hair(value) {
-		this._hair = value;
-		if (value) {
-			if (this._hair2 && this._hairMix2) {
-				this.hairColor2 = this.hairColor2;
-				this.hairMix2 = this.hairMix2;
-			}
-			if (this._hair3 && this._hairMix3) {
-				this.hairColor3 = this.hairColor3;
-				this.hairMix3 = this.hairMix3;
-			}
 		}
 	}
 
@@ -3257,7 +3278,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		return result;
 	}
 
-	_outlink() {
+	_outlink_old() {
 		if (this.slots.body && this.slots.body.id && this.slots.face && this.slots.face.id && this.action && this.emotion) {
 			let link = "https://labs.maplestory.io/api/GMS/latest/character/center/" + this.slots.body.id + "/";
 			let slots = [...this.slots.enumerate()].map(a => parseInt(a.id, 10));
@@ -3274,7 +3295,55 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		}
 		console.log("character need body, face, action, emotion");
 	}
-
+	
+	_outlink(name) {
+		const animationName = this.action;
+		const frame = this.action_frame;
+		const slots = this.slots;
+		const itemList = JSON.stringify(makeItemList.call());
+		return encodeURI(
+				"https://maplestory.io/api/character/" +
+				itemList.slice(1, itemList.length - 1) +    // not array
+				"/" + animationName + "/" + frame + "?" +
+				"showears=" + this.elfEar +
+				"&showLefEars=" + this.lefEar +
+				"&resize=1" +
+				(name ? ("&name=" + name) : "") +
+				"&flipX=" + Boolean(this.front > 0) +
+				"&bgColor=0,0,0,0"
+				);
+		function makeItemList() {
+			return Object.values(slots).filter(a => a).map(transformItemData);
+		}
+		function transformItemData(item) {
+			let region, version;
+			if (item._raw.info.__v) {
+				const m = item._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
+				region = m[1] == "TWMS" ? "TMS" : m[1];
+				version = "latest";//m[2];
+			}
+			else {
+				region ="TMS";
+				version = "latest";
+			}
+			const filter = item.filter;
+			return {
+				itemId:        Number(item.id),
+				region:        region,
+				version:       version,
+				hue:           filter.hue,
+				saturation:    strNum(filter.sat),
+				brightness:    strNum(filter.bri),
+				contrast:      strNum(filter.contrast),
+				alpha:         Number(item.opacity.toFixed(1)),
+				animationName: animationName,
+			};
+		}
+		function strNum(val) {
+			return (val / 100).toFixed(1);
+		}
+	}
+	
 	_download() {
 		window.open(this._outlink());
 	}

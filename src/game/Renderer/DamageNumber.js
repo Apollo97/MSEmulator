@@ -253,7 +253,7 @@ class DamageNumberRenderer {
 	}
 
 	get _default_base_path() {
-		return "/Effect/BasicEff";
+		return "/Effect/BasicEff/";
 	}
 	get _skin_base_path() {
 		return "/Effect/BasicEff/damageSkin/";
@@ -389,7 +389,7 @@ export class DamageNumber extends LayerObject {
 	 * @param {RenderingOption} option
 	 */
 	render(renderer, option) {
-		renderer.globalAlpha = this.opacity * opt.opacity;
+		renderer.globalAlpha = this.opacity * option.opacity;
 		this.renderer.draw(renderer, this.damagePair.realDamage, this.damagePair.critical, this.x, this.y);
 	}
 }

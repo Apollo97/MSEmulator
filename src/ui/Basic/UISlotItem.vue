@@ -119,18 +119,27 @@
 				/** @type {ItemBase} */
 				let itemData = itemSlot.data;
 
-				return ItemCategoryInfo.getIconUrl(itemData.id);
+				return $get.imageUrl(itemData._raw.info.icon[""]);
 			},
 			getItemIconStyle: /** @param {ItemSlot} itemSlot */function (itemSlot) {
 				/** @type {ItemBase} */
 				let itemData = itemSlot.data;
 				let size = itemData._raw.info.icon;
-
-				return {
-					position: "absolute",
-					left: ((SLOT_SIZE_WIDTH - size.__w) / 2) + "px",
-					top: ((SLOT_SIZE_HEIGHT - size.__h) / 2) + "px",
-				};
+				if (size) {
+					return {
+						position: "absolute",
+						left: ((SLOT_SIZE_WIDTH - size.__w) / 2) + "px",
+						top: ((SLOT_SIZE_HEIGHT - size.__h) / 2) + "px",
+					};
+				}
+				else {
+					debugger;
+					return {
+						position: "absolute",
+						left: "16px",
+						top: "16px",
+					};
+				}
 			},
 		},
 	};

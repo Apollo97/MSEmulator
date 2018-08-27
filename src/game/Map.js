@@ -1999,9 +1999,13 @@ export class SceneMap {
 		/** @type {Promise<any>} */
 		this.$promise = null;
 
-		this.$loading_status = "loading";
+		this.$loading_status = "unload";
 		
+		/** @type {function():void} */
 		this.onload = null;
+		
+		/** @type {(function():void)[]} */
+		this._onload = [];
 	}
 
 	static async _Init() {
@@ -2319,47 +2323,87 @@ export class SceneMap {
 	 * @param {boolean} reload - download
 	 */
 	async load(map_id, reload) {
+		this.$promise = await this._route_load(map_id, reload);
+		delete this.$promise;//loaded
+	}
+	/**
+	 * loading: map data
+	 * @param {string} map_id
+	 * @param {boolean} reload - download
+	 */
+	async _route_load(map_id, reload) {
+		this.$loading_status = "loading";
+		
 		if (!reload && map_id != null && this.map_id == map_id && this._raw != null) {
 			if (this.isLoaded()) {
 				this.unload();
 			}
-			this._load(this._raw);
+			await this._load(this._raw);
 			return;
 		}
 		const url = this._get_map_data_url(map_id);
-
-		let raw = await $get.data(url);
-		if (!raw) {
-			alert("map not exit");
-			debugger;
-			return;
-		}
-		if (raw.info && raw.info.link) {
-			const url2 = this._get_map_data_url(raw.info.link);
-				
-			raw = await $get.data(url2);
+		
+		let raw;
+		try {
+			raw = await $get.data(url);
 			if (!raw) {
-				alert("map-link not exit");
+				alert("map not exit");
 				debugger;
-				return;
+				throw new Error("map not exit");
 			}
 		}
-		if (this.isLoaded()) {
-			this.unload();
+		catch (ex) {
+			this.$loading_status = "failed: load";
+			throw ex;
 		}
-		this._url = url;
-		this.map_id = map_id;
 		
-		this._load(raw);
+		try {
+			if (raw.info && raw.info.link) {
+				const url2 = this._get_map_data_url(raw.info.link);
+					
+				raw = await $get.data(url2);
+				if (!raw) {
+					alert("map-link not exit");
+					debugger;
+					return;
+				}
+			}
+		}
+		catch (ex) {
+			this.$loading_status = "failed: link";
+			throw ex;
+		}
+		
+		try {
+			if (this.isLoaded()) {
+				this.unload();
+			}
+		}
+		catch (ex) {
+			console.warn("SceneMap#unload");
+		}
+		
+		try {
+			this._url = url;
+			this.map_id = map_id;
+			
+			await this._load(raw);
+		}
+		catch (ex) {
+			this.$loading_status = "failed: constructor map";
+			throw ex;
+		}
+		
+		delete this.$loading_status;//loaded
 	}
 	/**
 	 * load map from loaded data
 	 * @param {{[prop:string]:{}}} raw
 	 */
-	_load(raw) {
+	async _load(raw) {
 		const map_id = this.map_id;
-
-		this.$loading_status = "loading";
+		
+		this._raw = raw;
 
 		$gv.allQuest = {};
 		
@@ -2391,24 +2435,19 @@ export class SceneMap {
 		
 		this.$load_tasks.push(MapParticle.construct(raw, this));
 
-		this.$promise = Promise.all(this.$load_tasks);
-		this.$promise.then((results) => {
-			const viewRect = this._compute_map_bound();
-			const viewCenter = viewRect.center;
-			
-			$gv.m_viewRect.setCenter(viewCenter.x, viewCenter.y);
-			
-			this.controller._createMapBound(viewRect);
-			
-			this.controller.stop = false;//end load
-			
-			this.$load_tasks = [];
-			this.$promise = null;
-			delete this.$loading_status;
-			console.log("completed scene_map.waitLoaded: [...]");
-		});
+		let load_results = await Promise.all(this.$load_tasks);
 		
-		this._raw = raw;
+		const viewRect = this._compute_map_bound();
+		const viewCenter = viewRect.center;
+		
+		$gv.m_viewRect.setCenter(viewCenter.x, viewCenter.y);
+		
+		this.controller._createMapBound(viewRect);
+		
+		this.controller.stop = false;//end load
+		
+		this.$load_tasks = [];
+		console.log("completed scene_map.waitLoaded: [...]");
 		
 		this._script();
 		

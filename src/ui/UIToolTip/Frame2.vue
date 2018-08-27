@@ -49,14 +49,15 @@
 		},
 		methods: {
 			_getImgStyle: function (p, h, v, repeat) {
-				let src, img, data = this.guiData, s = {};
-				if (data && (img = data[p]) && (src = img[""])) {
+				let path, img, data = this.guiData, s = {};
+				if (data && (img = data[p]) && (path = img[""])) {
 					if (h) {
 						s.width = img.__w + "px";
 					}
 					if (v) {
 						s.height = img.__h + "px";
 					}
+					let src = $get.imageUrl(path);
 					s.background = `url(${src}) ${repeat ? "repeat" : "no-repeat"}`;
 					return s;
 				}

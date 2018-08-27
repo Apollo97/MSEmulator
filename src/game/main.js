@@ -257,30 +257,43 @@ export class Game {
 	
 	async _$startClient() {
 		if (scene_map) {
-			if (window.io != null) {
-				let client = new Client();
-				gApp.client = client;
-				client.$test();
+			let client = new Client();
+			
+			try {
+				await client.connect();
+				console.log("start client");
 			}
-			else {
-				let params = _parseUrlParameter();
-				let map_id;
-
-				if (process.env.NODE_ENV === 'production') {
-					map_id = params["map"] || window.DEFAULT_MAP_ID;
-				}
-				else {
-					map_id = params["map"] || "000000000";//450003000
-				}
-
-				let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
-
-				GameStateManager.PopState({
-					map_id: map_id,
-					chara: chara_code,
-				});
+			catch (err) {
+				console.warn(err);
+				console.log("start localhost");
+				this._$startLocalhost();
+				return;
 			}
+			
+			gApp.client = client;
+			client.$test();
 		}
+		else {
+			debugger;
+		}
+	}
+	_$startLocalhost() {
+		let params = _parseUrlParameter();
+		let map_id;
+	
+		if (process.env.NODE_ENV === 'production') {
+			map_id = params["map"] || window.DEFAULT_MAP_ID;
+		}
+		else {
+			map_id = params["map"] || "000000000";//450003000
+		}
+	
+		let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
+	
+		GameStateManager.PopState({
+			map_id: map_id,
+			chara: chara_code,
+		});
 	}
 
 	/** @type {boolean} */
@@ -415,6 +428,14 @@ export class Game {
 	}
 	
 	_renderScene() {
+		if (this._isMapReady) {
+			this._render_map_ready();
+		}
+		else {
+			this._render_map_loading();
+		}
+	}
+	_render_map_ready() {
 		/** @type {SceneCharacter} */
 		const chara = this.chara;
 
@@ -439,10 +460,10 @@ export class Game {
 				}
 			}
 
-			if ($gv.m_editor_mode && this._isMapReady) {
+			if ($gv.m_editor_mode) {
 				this.moveViewport(false);
 			}
-			if ($gv.m_is_rendering_map && this._isMapReady) {
+			if ($gv.m_is_rendering_map) {
 				scene_map.beginRender(engine);
 				{
 					scene_map.renderBackground(engine);
@@ -527,7 +548,7 @@ export class Game {
 				charaList[i]._$drawChatBalloon(engine);
 			}
 			
-			if ($gv.m_is_rendering_map && this._isMapReady) {
+			if ($gv.m_is_rendering_map) {
 				scene_map.beginRender(engine);
 				{
 					scene_map.applyCamera(engine);
@@ -579,76 +600,94 @@ export class Game {
 		}
 		engine.endScene();
 	}
+	_render_map_loading() {
+		const ctx = engine.ctx;
+		const screen_width = engine.screen_size.x;
+		const screen_height = engine.screen_size.y;
+		const scr_hw = screen_width * 0.5;
+		const scr_hh = screen_height * 0.5;
+		
+		ctx.font = "2em 微軟正黑體";
+		ctx.textAlign = "center";
+		ctx.textBaseline = "center";
+		
+		ctx.fillStyle = "white";
+		ctx.fillText("loading...", scr_hw, scr_hh);
+		
+		ctx.strokeStyle = "black";
+		ctx.fillText("loading...", scr_hw, scr_hh);
+	}
 
 	_render_debug_info() {
-		if (this._isMapReady && scene_map.controller && scene_map.controller.player) {
-			/** @type {CanvasRenderingContext2D} */
-			const ctx = engine.ctx;
+		if (!(scene_map.controller && scene_map.controller.player)) {
+			return;
+		}
+		/** @type {CanvasRenderingContext2D} */
+		const ctx = engine.ctx;
 
-			const ta = ctx.textAlign, tb = ctx.textBaseline, lw = ctx.lineWidth;
-			ctx.textBaseline = "top";
-			ctx.lineWidth = 2.5;
-			ctx.strokeStyle = "#000";
-			let x = 400, y = 5;
-			for (let line of window._SCREEN_PRINTLN) {
-				const val = line.getValue();
-				const text = line.getText();
+		const ta = ctx.textAlign, tb = ctx.textBaseline, lw = ctx.lineWidth;
+		ctx.textBaseline = "top";
+		ctx.lineWidth = 2.5;
+		ctx.strokeStyle = "#000";
+		let x = 400, y = 5;
+		for (let line of window._SCREEN_PRINTLN) {
+			const val = line.getValue();
+			const text = line.getText();
+
+			ctx.fillStyle = "#FFF";
+			{
+				ctx.textAlign = "right";
+				ctx.strokeText(text, x - 2, y);
+				ctx.fillText(text, x - 2, y);
+
+				ctx.textAlign = "center";
+				ctx.strokeText(":", x, y);
+				ctx.fillText(":", x, y);
+
+				ctx.textAlign = "left";
+				ctx.strokeText(val, x + 2, y);
+				ctx.fillText(val, x + 2, y);
+			}
+
+			if ("_val" in line) {
+				let _val;
+				if (line._val != val) {
+					_val = line._val;//display new value
+					line.__val = line._val;
+					line._val = val;
+				}
+				else {
+					_val = line.__val;//display old value
+				}
+				if (_val != val) {
+					ctx.fillStyle = "#0FF";
+				}
 
 				ctx.fillStyle = "#FFF";
 				{
 					ctx.textAlign = "right";
-					ctx.strokeText(text, x - 2, y);
-					ctx.fillText(text, x - 2, y);
+					ctx.strokeText(text, x - 2 + 200, y);
+					ctx.fillText(text, x - 2 + 200, y);
 
 					ctx.textAlign = "center";
-					ctx.strokeText(":", x, y);
-					ctx.fillText(":", x, y);
+					ctx.strokeText(":", x + 200, y);
+					ctx.fillText(":", x + 200, y);
 
 					ctx.textAlign = "left";
-					ctx.strokeText(val, x + 2, y);
-					ctx.fillText(val, x + 2, y);
+					ctx.strokeText(_val, x + 2 + 200, y);
+					ctx.fillText(_val, x + 2 + 200, y);
 				}
-
-				if ("_val" in line) {
-					let _val;
-					if (line._val != val) {
-						_val = line._val;//display new value
-						line.__val = line._val;
-						line._val = val;
-					}
-					else {
-						_val = line.__val;//display old value
-					}
-					if (_val != val) {
-						ctx.fillStyle = "#0FF";
-					}
-
-					ctx.fillStyle = "#FFF";
-					{
-						ctx.textAlign = "right";
-						ctx.strokeText(text, x - 2 + 200, y);
-						ctx.fillText(text, x - 2 + 200, y);
-
-						ctx.textAlign = "center";
-						ctx.strokeText(":", x + 200, y);
-						ctx.fillText(":", x + 200, y);
-
-						ctx.textAlign = "left";
-						ctx.strokeText(_val, x + 2 + 200, y);
-						ctx.fillText(_val, x + 2 + 200, y);
-					}
-				}
-				else {
-					line.__val = val;
-					line._val = val;
-				}
-
-				y += 16;
 			}
-			ctx.textAlign = ta;
-			ctx.textBaseline = tb;
-			ctx.lineWidth = lw;
+			else {
+				line.__val = val;
+				line._val = val;
+			}
+
+			y += 16;
 		}
+		ctx.textAlign = ta;
+		ctx.textBaseline = tb;
+		ctx.lineWidth = lw;
 	}
 	
 	/**

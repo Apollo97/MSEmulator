@@ -1,18 +1,27 @@
 ﻿
-//import BigInt from "big-integer";//bitwise operation
-
 import { SkillAnimation } from "../game/Skill.js";
-import { SceneObject } from "../game/SceneObject.js";
+import { SceneObject } from "../game/SceneObject.js";//?? ref
 
 
 export class AttackInfo {
 	constructor() {
 		/** @type {AttackPair[]} - { objectid, attack }[each monster] */
 		this.allAttack = [];
-
-		/** @type {SkillAnimation} */
-		this.skill = null;
+		
+		//TODO: make this JSON
+		
+		/** @type {string} */
+		this.skillId = null;
 	}
+	
+	///** returns {AttackInfo} */
+	//clone() {
+	//	let ai = new AttackInfo();
+	//	//ai.allAttack = this.allAttack.slice();//??
+	//	ai.skill = this.skill;
+	//	return ai;
+	//}
+	
 	///**
 	// * @param {number} objectid
 	// * @returns {AttackPair}
@@ -22,6 +31,16 @@ export class AttackInfo {
 	//	attack.objectid = objectid;
 	//	this.allAttack.push(attack);
 	//}
+	
+	/**
+	 * return current attack and set new instance
+	 * @returns {AttackPair[]} - { objectid, attack }[each monster]
+	 */
+	shiftAllAttack() {
+		let allAttack = this.allAttack;
+		this.allAttack = [];
+		return allAttack;
+	}
 }
 
 const symbol_targetObject = Symbol("targetObject");

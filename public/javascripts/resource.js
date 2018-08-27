@@ -207,7 +207,8 @@ export class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == "0") {
-			return $get.imageUrl(info.dataDir + id + "/" + info.iconRawPath);
+			//TODO: return path, not url
+			return info.dataDir + id + "/" + info.iconRawPath;
 		}
 	}
 
@@ -222,7 +223,8 @@ export class ItemCategoryInfo {
 			return null;
 		}
 		if (id[0] == "0") {
-			return $get.imageUrl(info.dataDir + id + "/" + info.iconPath);
+			//TODO: return path, not url
+			return info.dataDir + id + "/" + info.iconPath;
 		}
 	}
 

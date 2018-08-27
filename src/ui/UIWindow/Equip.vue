@@ -129,7 +129,7 @@
 				if (this.chara && this.chara.renderer) {
 					let equip = this.chara.renderer.slots[slot];
 					if (equip) {
-						return equip.getIconUrl();
+						return $get.imageUrl(equip.getIconUrl());
 					}
 				}
 				return "";

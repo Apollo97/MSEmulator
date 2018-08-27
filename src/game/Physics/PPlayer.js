@@ -166,7 +166,7 @@ export class FootContact {
 class PCharacterBase {
 	constructor() {
 		/** @type {boolean} */
-		this.disable = false;
+		this.enable = true;
 
 		this.chara_profile = Object.assign({}, chara_profile);
 		
@@ -1274,6 +1274,9 @@ class PCharacter extends PCharacterBase {
 	 */
 	moveTo(moveElem) {
 		const body = this.body;
+		
+		this.body.SetAwake(true);
+		this.foot_walk.SetAwake(true);
 
 		if (moveElem.elapsed == 0) {
 			body.ConstantVelocityWorldCenter2(vx, vy);
@@ -1363,7 +1366,7 @@ export class PPlayer extends PCharacter {
 			const super_destroy = super._destroy;
 
 			this._destroy = function () {
-				super_destroy();
+				super_destroy.call(this);
 				PPlayer_instance_list.splice(PPlayer_instance_list.indexOf(this), 1);
 			}
 		}
@@ -1454,7 +1457,7 @@ export class PRemoteCharacter extends PCharacter {
 			const super_destroy = super._destroy;
 
 			this._destroy = function () {
-				super_destroy();
+				super_destroy.call(this);
 				PRemoteCharacter_instance_list.splice(PRemoteCharacter_instance_list.indexOf(this), 1);
 			}
 		}
@@ -1479,6 +1482,9 @@ export class PRemoteCharacter extends PCharacter {
 	 * @param {CharacterMoveElem} moveElem
 	 */
 	moveTo(moveElem) {
+		this.body.SetAwake(true);
+		this.foot_walk.SetAwake(true);
+		
 		//if (this._anchor) {
 			this._anchor.m_targetA.x = moveElem.x;
 			this._anchor.m_targetA.y = moveElem.y;
