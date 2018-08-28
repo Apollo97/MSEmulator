@@ -217,10 +217,6 @@
 	import { CharacterStat } from "../Common/PlayerData.js";
 	//import { SceneCharacter } from "../game/SceneCharacter";
 
-	//Vue.config.productionTip = false;
-
-	//Vue.use(Vuex);
-
 	class PlayerTalk {
 		constructor(type, style, text) {
 			this.type = type;

@@ -255,18 +255,21 @@ export class Game {
 		}
 	}
 	
-	async _$startClient() {
+	/**
+	 * @param {string} server
+	 */
+	async _$startClient(server) {
 		if (scene_map) {
 			let client = new Client();
 			
 			try {
-				await client.connect();
+				await client.connect(server);
 				console.log("start client");
 			}
 			catch (err) {
 				console.warn(err);
-				console.log("start localhost");
-				this._$startLocalhost();
+				console.log("start offline");
+				this._$start_offline();
 				return;
 			}
 			
@@ -277,7 +280,7 @@ export class Game {
 			debugger;
 		}
 	}
-	_$startLocalhost() {
+	_$start_offline() {
 		let params = _parseUrlParameter();
 		let map_id;
 	

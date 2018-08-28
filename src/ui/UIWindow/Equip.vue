@@ -119,7 +119,7 @@
 						const sh = this.slot_imgHeight;
 						let pos = equip._raw.info.icon.origin;
 						let size = equip._raw.info.icon;
-						let result={ x: (sw - size.__w) / 2, y: (sh - size.__h) / 2 };
+						let result = { x: (sw - size.__w) / 2, y: (sh - size.__h) / 2 };
 						return result;
 					}
 				}

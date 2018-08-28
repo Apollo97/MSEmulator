@@ -379,7 +379,7 @@ export class BaseSceneCharacter extends SceneObject {
 			this.__invokeSkill_client(skillId).then(cbfunc);
 		}
 		else {
-			return this.__invokeSkill_localhost(skillId);
+			return this.__invokeSkill_offline(skillId);
 		}
 	}
 	/**
@@ -397,14 +397,14 @@ export class BaseSceneCharacter extends SceneObject {
 			console.error(ex);
 		}
 		if (isValid) {
-			return this.__invokeSkill_localhost(skillId);
+			return this.__invokeSkill_offline(skillId);
 		}
 	}
 	/**
 	 * @param {string} skillId
 	 * @returns {SceneSkill}
 	 */
-	__invokeSkill_localhost(skillId) {
+	__invokeSkill_offline(skillId) {
 		let skill = new SceneSkill();
 		skill.load(skillId, this);
 		this.activeSkills.set(skillId, skill);
@@ -572,9 +572,12 @@ export class BaseSceneCharacter extends SceneObject {
 					skill.update(stamp, this);
 				}
 				//clear all attack
-				let attackInfo = new AttackInfo();
-				attackInfo.allAttack = skill.attackInfo.shiftAllAttack();
-				attackInfoList.push(attackInfo);
+				let allAttack = skill.attackInfo.shiftAllAttack();
+				if (allAttack.length) {
+					let attackInfo = new AttackInfo();
+					attackInfo.allAttack = allAttack;
+					attackInfoList.push(attackInfo);
+				}
 			}
 			else {
 				debugger;
@@ -586,7 +589,7 @@ export class BaseSceneCharacter extends SceneObject {
 				this.__handleAttack_client(attackInfoList);
 			}
 			else {
-				this.__handleAttack_localhost(attackInfoList);
+				this.__handleAttack_offline(attackInfoList);
 			}
 		}
 	}
@@ -595,8 +598,6 @@ export class BaseSceneCharacter extends SceneObject {
 	 * @param {AttackInfo[]} attackInfoList
 	 */
 	async __handleAttack_client(attackInfoList) {
-		throw new Error("未完成");
-		
 		let isValid = await window.$io.emit("attack", {
 			//TODO: online mode: packet_attack
 			attack: attackInfoList
@@ -604,14 +605,14 @@ export class BaseSceneCharacter extends SceneObject {
 		
 		if (isValid) {
 			//TODO: online mode: attack ??
-			this.__handleAttack_localhost();//show attack
+			this.__handleAttack_offline(attackInfoList);//show attack
 		}
 	}
 	/**
 	 * 結算攻擊傷害
 	 * @param {AttackInfo[]} attackInfoList
 	 */
-	__handleAttack_localhost(attackInfoList) {
+	__handleAttack_offline(attackInfoList) {
 		for (let attackInfo of attackInfoList) {
 			for (let i = 0; i < attackInfo.allAttack.length; ++i) {
 				const attack = attackInfo.allAttack[i];

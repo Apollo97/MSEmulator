@@ -164,8 +164,8 @@ class _SkillData {
 
 
 export class SkillEffectAnimation extends Animation {
-	constructor(raw, url) {
-		super(raw, url);
+	constructor(raw/*, url*/) {
+		super(raw/*, url*/);
 		this.x = 0;
 		this.y = 0;
 
@@ -187,18 +187,23 @@ export class SkillEffectAnimation extends Animation {
 	 */
 	load(type) {
 		if (!this._raw) {
-			throw new Error("Not implement. skill data is loaded");
-			this._url = [this._url, type].join("/");
-			return super.load();
+			throw new TypeError("raw");
+			//this._url = [this._url, type].join("/");
+			//return super.load();
 		}
 		else {
-			if (Array.isArray(this._raw[0])) {
+			if (Array.isArray(this._raw[type])) {
 				/** @type {Sprite[]} */
 				this.textures = this._raw[type];
 			}
 			else {
 				/** @type {Sprite[]} */
 				this.textures = this._raw;
+			}
+			if (process.env.NODE_ENV !== 'production') {
+				if (!(this.textures[0] instanceof Sprite)) {
+					throw new TypeError();
+				}
 			}
 		}
 	}
@@ -530,7 +535,7 @@ class SkillAnimationBase {
 		for (let effName of this._effect_names) {
 			let eff = this.data[effName];
 			if (eff) {
-				this.data[effName] = arrNd_texture(eff, [this.url, effName].join("/"));
+				this.data[effName] = arrNd_texture(eff/*, [this.url, effName].join("/")*/);
 			}
 		}
 		
@@ -706,7 +711,7 @@ class SkillAnimationBase {
 
 		try {
 			const type = this.actType;
-			let effect = new SkillEffectAnimation(this.data[effectName], [this.url, effectName].join("/"));
+			let effect = new SkillEffectAnimation(this.data[effectName]/*, [this.url, effectName].join("/")*/);
 
 			if (isBullet) {
 				//...??
@@ -1042,7 +1047,7 @@ export class SceneSkill extends SkillAnimationBase {
 	 * @param {string} skillId
 	 * @param {SceneObject} owner
 	 */
-	load(skillId, owner) {
+	async load(skillId, owner) {
 		this.owner = owner;
 
 		if (!skillId) {
@@ -1056,8 +1061,14 @@ export class SceneSkill extends SkillAnimationBase {
 
 		this.attackInfo.skillId = skillId;
 		
+		this.update = this.wait_loading;
+		this.control = this.wait_loading;
+		
 		let loaded_skill = SceneSkill.__loaded_skill[skillId];
-		if (loaded_skill && loaded_skill.data) {
+		if (loaded_skill) {
+			if (loaded_skill.$promise) {
+				await loaded_skill.$promise;
+			}
 			this._assign(loaded_skill);
 		}
 		else {
@@ -1067,12 +1078,16 @@ export class SceneSkill extends SkillAnimationBase {
 
 			SceneSkill.__loaded_skill[skillId] = this;
 
-			promise.then(() => {
-				delete this.$promise;
-			});
+			await promise;
 
-			return promise;
+			delete this.$promise;
 		}
+		
+		delete this.update;
+		delete this.control;
+	}
+	
+	wait_loading() {
 	}
 }
 SceneSkill.__loaded_skill = {};

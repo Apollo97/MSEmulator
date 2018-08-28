@@ -1,15 +1,4 @@
-﻿/*
-import Vue from "vue";
-import Vuex from "vuex";
-
-import { InitAll } from "./init.js";
-import { } from "./game/init.js";
-import { Game } from "./game/main.js";
-
-import MainUI from "./main-ui.vue";
-import Editor from "./editor/editor.vue";//ref -> vuex
-*/
-
+﻿
 async function load_module() {
 	const modules = await Promise.all([
 		import("vue"),
@@ -35,15 +24,17 @@ async function load_module() {
 	};
 }
 
-
 export class App {
 	constructor() {
 		/** @type {Vue} */
 		this.vue = null;
 
 		//this.engine = engine;
-
+		
+		/** @type {Game} */
 		this.game = null;
+		
+		this.store = null;
 	}
 
 	/**
@@ -62,46 +53,18 @@ export class App {
 		this.vue = new AppUI({ el: elem });
 
 		await InitAll();
-
-		this.game = new Game();
-
-		this.game._$startClient().then(function () {
-			document.getElementById("loading").style.display = "none";
-		});
-
-		this.game.run();
 	}
 
 	/**
-	 * @returns {Promise}
+	 * @returns {Promise<void>}
 	 */
 	updateScreen() {
 		return this.game.forceUpdateScreen();
 	}
 }
 
-
-///////////////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
 export const app = new App();
-
-window.app = app;
 
 app.start("#vue");
 
-
-///////////////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
-////https://github.com/glenjamin/webpack-hot-middleware/blob/master/example/client.js
-//if (module.hot) {
-//	module.hot.accept();
-//	module.hot.dispose(() => {
-//		window.location.reload();
-//	});
-//}
+window.app = app;

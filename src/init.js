@@ -23,10 +23,6 @@ import Vuex from "vuex";
 window.jQuery = jQuery;
 window.$ = jQuery;
 
-Vue.config.productionTip = false;
-
-Vue.use(Vuex);
-
 if (!window.onwheel) {
 	window.onwheel = function () {
 	}

@@ -447,7 +447,7 @@ class ItemEffect {
 			let itemEffectList = ItemEffect._list;
 
 			/** @type {string[]} */
-			let raw = $get.list("/Effect/ItemEff");
+			let raw = await $get.list("/Effect/ItemEff");
 
 			itemEffectList.clear();
 

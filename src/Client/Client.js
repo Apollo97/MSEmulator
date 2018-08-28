@@ -14,35 +14,6 @@ import { $RequestPacket_SelectChara, $ResponsePacket_SelectChara,
 
 import { app as gApp } from "../index.js";//debug
 
-//(function (window) {
-//	let elemSc = document.getElementById("io");
-//	function conn_io() {
-//		return new Promise(function (resolve, reject) {
-//			if (!elemSc) {
-//				elemSc = document.createElement("SCRIPT");
-//				elemSc.id = "io";
-//				elemSc.src = "//localhost:8787/socket.io/socket.io.js";
-//				elemSc.onload = function () {
-//					resolve(true);
-//				};
-//				document.body.append(elemSc);
-//			}
-//			else {
-//				resolve(true);
-//			}
-//		});
-//	};
-//	conn_io().then(function () {
-//		let socket = io("//localhost:8787");
-//		socket.emit("chat", "hello");
-//		socket.on("gWvs", function (msg) {
-//			console.log("gWvs: " + msg);
-//		});
-//	});
-//
-//	window.$io = socket;
-//})(window);
-
 class $Socket {
 	/**
 	 * socket.emit(eventName[, ...args])
@@ -110,22 +81,22 @@ export class Client {
 		});
 	}
 	
-	/** @returns {Promise<$Socket>} */
-	async connect() {
+	/**
+	 * @type {string} server_href
+	 * @returns {Promise<$Socket>}
+	 */
+	async connect(server_href) {
 		return await new Promise((resolve, reject) => {
 			let socket;
-
-			let url = new URL(window.location);
-			url.port = 8787;
-
-			socket = io(url.href);
+			
+			socket = io(server_href);
 			
 			socket.on("connect", () => {
-				this.socket = this._conn();
+				this.socket = socket;
 				
 				window.$io = this.socket;
 				
-				const emit = socket.emit;
+				const emit = socket.$emit = socket.emit;
 				
 				socket.emit = function (eventName, data) {
 					//let cbfunc = arguments[arguments.length - 1];
@@ -134,8 +105,8 @@ export class Client {
 					//}
 					//else {
 						return new Promise(function (resolve, reject) {
-							emit.call(socket, eventName, data, function () {
-								resolve.apply(this, arguments);
+							emit.call(socket, eventName, data, function (...args) {
+								resolve.apply(this, args);
 							});
 						});
 					//}
