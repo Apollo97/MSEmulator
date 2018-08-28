@@ -792,26 +792,49 @@ export class SceneCharacter extends BaseSceneCharacter {
 	}
 
 	/**
+	 * route addItem
 	 * @param {string} itemId
 	 * @param {number} amount
 	 */
 	addItem(itemId, amount) {
-		if (window.$io) {//TODO: online mode: addItem
-			throw new Error("未完成");
+		if (window.$io) {
+			//TODO: online mode: addItem
+			console.warn("未完成: __addItem_client");
+			//this.__addItem_client(itemId, amount);
 		}
-		else {
-			/** @type {Partial<ItemEquip>} */
-			let props = {//test attr
-				incDEXr: Math.trunc(Math.random() * 3),
-				timeLimited: Date(),
-			};
+		//else {
+			this.__addItem_offline(itemId, amount);
+		//}
+	}
+	/**
+	 * @param {string} itemId
+	 * @param {number} amount
+	 */
+	async __addItem_client(itemId, amount) {
+		//TODO: online mode: addItem
+		console.warn("未完成: __addItem_client");
+		
+		let result = await window.$io.emit("addItem", {
+			type: type,
+			slot: slot,
+		});
+	}
+	/**
+	 * @param {string} itemId
+	 * @param {number} amount
+	 */
+	__addItem_offline(itemId, amount) {
+		/** @type {Partial<ItemEquip>} */
+		let props = {//test attr
+			incDEXr: Math.trunc(Math.random() * 3),
+			timeLimited: Date(),
+		};
 
-			$createItem(itemId, props).then(item => {
-				this._addItem(item, amount);
-			}, function (err) {
-				console.warn(err);
-			});
-		}
+		$createItem(itemId, props).then(item => {
+			this._addItem(item, amount);
+		}, function (err) {
+			console.warn(err);
+		});
 	}
 
 	/**
@@ -854,22 +877,29 @@ export class SceneCharacter extends BaseSceneCharacter {
 	 * @param {number} type - item type
 	 * @param {number} slot
 	 */
-	async removeItem(type, slot) {
-		if (window.$io) {//TODO: online mode: removeItem
-			throw new Error("未完成");
-
-			let result = await window.$io.emit("removeItem", {
-				type: type,
-				slot: slot,
-			});
-			if (result) {
-				this._removeItem(type, slot);
-			}
-			return result;
+	removeItem(type, slot) {
+		if (window.$io) {
+			//TODO: online mode: removeItem
+			console.warn("未完成: removeItem");
 		}
-		else {
+		//if (window.$io) {//TODO: online mode: removeItem
+		//	console.warn("未完成: removeItem");
+		//	
+		//	window.$io.emit("removeItem", {
+		//		type: type,
+		//		slot: slot,
+		//	}).then(results => {
+		//		if (result) {
+		//			this._removeItem(type, slot);
+		//		}
+		//		return result;
+		//	}, err => {
+		//		console.error(err);
+		//	});
+		//}
+		//else {
 			return this._removeItem(type, slot);
-		}
+		//}
 	}
 
 	/**
@@ -919,26 +949,59 @@ export class SceneCharacter extends BaseSceneCharacter {
 	}
 
 	/**
+	 * route
 	 * @param {number} itemId
 	 */
-	useItem(itemId) {
+	useItem(itemId, category, itemInfo) {
 		if (window.$io) {
-			window.$io.emit("useItem", {
-				itemId: itemId
-			});
+			this.__useItem_client(itemId);
 		}
 		else {
-			const args = arguments;
-			let existItem = this.findItem(itemId).itemSlot;
+			this.__useItem_offline(itemId);
+		}
+	}
+	/**
+	 * @param {number} itemId
+	 * @returns {Promise<{}>}
+	 */
+	__useItem_client(itemId) {
+		return window.$io.emit("useItem", {
+			itemId: itemId
+		}).then(results => {
+			if (results) {
+				this.__useItem_offline(itemId);
+			}
+			return results;
+		}, err => {
+			console.log();
+			console.error("can't use item: %o\nerror: %o", id, err);
+		});
+	}
+	/**
+	 * @param {number} itemId
+	 */
+	__useItem_offline(itemId) {
+		const args = arguments;
+		let existItem = this.findItem(itemId).itemSlot;
 
-			if (existItem) {
-				if (!$gv.m_editor_mode) {
-					console.log(`消耗道具：${itemId}。未完成`);
-					this._consume(itemId, 1);
-				}
-				else {
-					console.log(`使用道具：${itemId}。`);
-				}
+		if (existItem) {
+			if (!$gv.m_editor_mode) {
+				console.log(`消耗道具：${itemId}。未完成`);
+				this._consume(itemId, 1);
+			}
+			else {
+				console.log(`使用道具：${itemId}。`);
+			}
+			if (ItemCategoryInfo.isChair(itemId)) {
+				this.sitChair(itemId);
+			}
+			else {
+				update_renderer.call(this);
+			}
+		}
+		else {
+			if ($gv.m_editor_mode) {
+				this.addItem(itemId, 1);
 				if (ItemCategoryInfo.isChair(itemId)) {
 					this.sitChair(itemId);
 				}
@@ -947,29 +1010,18 @@ export class SceneCharacter extends BaseSceneCharacter {
 				}
 			}
 			else {
-				if ($gv.m_editor_mode) {
-					this.addItem(itemId, 1);
-					if (ItemCategoryInfo.isChair(itemId)) {
-						this.sitChair(itemId);
-					}
-					else {
-						update_renderer.call(this);
-					}
-				}
-				else {
-					console.log("無法使用不存在的道具。you can try add item editor mode");
-				}
+				console.log("無法使用不存在的道具。you can try add item editor mode");
 			}
+		}
 
-			function update_renderer() {
-				//TODO: implement job
-				if (process.env.NODE_ENV !== 'production') {
-					const category = args[1], equipInfo = args[2];
-					this.renderer.use(itemId, category, equipInfo);
-				}
-				else {
-					this.renderer.use(itemId);
-				}
+		function update_renderer() {
+			//TODO: implement job
+			if (process.env.NODE_ENV !== 'production') {
+				const category = args[1], equipInfo = args[2];
+				this.renderer.use(itemId, category, equipInfo);
+			}
+			else {
+				this.renderer.use(itemId);
 			}
 		}
 	}
