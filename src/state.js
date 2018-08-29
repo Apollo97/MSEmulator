@@ -4,10 +4,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 
 
-Vue.config.productionTip = false;
-Vue.use(Vuex);
-
-
 const server_list = {
 	"server1": "https://maplestory-chat-emulator.herokuapp.com/",
 	"localhost": "//localhost:8787",

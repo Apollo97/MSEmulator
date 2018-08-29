@@ -1,26 +1,26 @@
 ﻿
 async function load_module() {
-	const modules = await Promise.all([
+	const modules_1 = await Promise.all([
 		import("vue"),
-		import("vuex"),
 		import("./init.js"),
+	]);
+	const Vue = modules_1[0].default;
+	const { InitAll } = modules_1[1];
+	
+	const modules_2 = await Promise.all([
 		import("./game/init.js"),
 		import("./game/main.js"),
 		import("./main-ui.vue"),
-		import("./editor/editor.vue")
+		import("./editor/editor.vue"),
 	]);
-	const Vue = modules[0].default;
-	const Vuex = modules[1].default;
+	const { } = modules_2[0];
+	const { Game } = modules_2[1];
 
-	const { InitAll } = modules[2];
-	const { } = modules[3];
-	const { Game } = modules[4];
-
-	const MainUI = modules[5].default;
-	const Editor = modules[6].default;
+	const MainUI = modules_2[2].default;
+	const Editor = modules_2[3].default;
 	
 	return {
-		Vue, Vuex, InitAll, Game, MainUI, Editor
+		Vue, InitAll, Game, MainUI, Editor
 	};
 }
 
@@ -41,7 +41,7 @@ export class App {
 	 * @param {HTMLElement} elem
 	 */
 	async start(elem) {
-		const { Vue, Vuex, InitAll, Game, MainUI, Editor } = await load_module();
+		const { Vue, InitAll, Game, MainUI, Editor } = await load_module();
 
 		this.store = Editor.store;
 

@@ -2,11 +2,29 @@
 <template>
 	<div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; user-select: none;">
 		<div>
-			<div v-for="(server, name) in serverList">
-				<button @click="selectServer(server)">
-					<h1>{{name}}</h1>
-				</button>
-			</div>
+			<table>
+				<thead>
+					<tr>
+						<td>
+							<h1>Select chat server</h1>
+						</td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(server, name) in serverList">
+						<td style="width: 50%;">
+						</td>
+						<td>
+							<button @click="selectServer(server)">
+								<h2>{{name}}</h2>
+							</button>
+						</td>
+						<td style="width: 50%;">
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
 		</div>
 	</div>
 </template>
