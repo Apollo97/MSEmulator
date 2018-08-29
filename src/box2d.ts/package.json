@@ -1,0 +1,46 @@
+{
+  "name": "@flyover/box2d",
+  "version": "1.0.0",
+  "description": "A TypeScript port of Box2D",
+  "main": "./dist/box2d.umd.js",
+  "types": "./Box2D/Box2D.ts",
+  "scripts": {
+    "build": "npm run build-testbed",
+    "build-all": "npm run build-box2d && npm run build-helloworld && npm run build-testbed",
+    "watch": "npm run watch-testbed",
+    "start": "http-server -c-1 -o",
+    "dist": "npm run dist-box2d && npm run dist-helloworld && npm run dist-testbed",
+    "build-box2d": "tsc -p Box2D",
+    "watch-box2d": "tsc -p Box2D --watch",
+    "dist-box2d": "(cd Box2D && rollup -c)",
+    "build-helloworld": "tsc -p HelloWorld",
+    "watch-helloworld": "tsc -p HelloWorld --watch",
+    "dist-helloworld": "(cd HelloWorld && rollup -c)",
+    "build-testbed": "tsc -p Testbed",
+    "watch-testbed": "tsc -p Testbed --watch",
+    "dist-testbed": "(cd Testbed && rollup -c)",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyover/box2d.ts.git"
+  },
+  "author": "Isaac Burns <isaacburns@gmail.com>",
+  "license": "Zlib",
+  "bugs": {
+    "url": "https://github.com/flyover/box2d.ts/issues"
+  },
+  "homepage": "https://github.com/flyover/box2d.ts#readme",
+  "dependencies": {
+    "@types/systemjs": "^0.20.6"
+  },
+  "devDependencies": {
+    "http-server": "^0.11.1",
+    "plugin-typescript": "^8.0.0",
+    "rollup": "^0.63.2",
+    "rollup-plugin-typescript2": "^0.16.1",
+    "systemjs": "^0.21.4",
+    "tslint": "^5.11.0",
+    "typescript": "^2.9.2"
+  }
+}

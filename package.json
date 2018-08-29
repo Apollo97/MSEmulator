@@ -30,7 +30,7 @@
     "onecolor": "^3.0.5",
     "property-accessors": "^1.1.3",
     "style-loader": "^0.21.0",
-    "typescript": "^2.8.3",
+    "typescript": "^3.0.1",
     "url-loader": "^1.0.1",
     "vue-hot-reload-api": "^2.3.0",
     "vue-html-loader": "^1.2.4",
@@ -46,8 +46,9 @@
     "start": "set NODE_ENV=production&&node app.js",
     "wvs": "node wvs.js",
     "dev": "node app.js",
-    "build": "tsc&&webpack",
+    "build:web": "webpack",
     "build:box2d": "tsc",
+    "build": "tsc&&webpack",
     "static-server": "node app -P -s"
   }
 }

@@ -3,12 +3,15 @@
     "target": "es2018",
     "module": "es2015",
     "strict": true,
-    "strictNullChecks": false,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
     "inlineSourceMap": true,
     "declaration": true,
-    "outDir": "./src/Box2D/build"
+    "outDir": "./src/box2d.ts/build"
   },
   "include": [
-    "./src/Box2D/Box2D/Box2D/**/*"
+    "./src/box2d.ts/Box2D/**/*"
   ]
 }

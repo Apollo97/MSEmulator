@@ -393,22 +393,46 @@ export class World extends b2World {
 
 		let that = this;
 		let hit_fixture = null;
-
+		
 		// Query the world for overlapping shapes.
-		this.QueryAABB(function (fixture) {
-			let body = fixture.GetBody();
-			if (body.GetType() != b2BodyType.b2_staticBody) {
-				let inside = fixture.TestPoint(p);
-				if (inside) {
-					hit_fixture = fixture;
+		this.QueryAABB({
+			/**
+			 * Called for each fixture found in the query AABB.
+			 * @param {b2Fixture} fixture
+			 * @returns false to terminate the query.
+			 */
+			ReportFixture(fixture) {
+				let body = fixture.GetBody();
+				if (body.GetType() != b2BodyType.b2_staticBody) {
+					let inside = fixture.TestPoint(p);
+					if (inside) {
+						hit_fixture = fixture;
 
-					// We are done, terminate the query.
-					return false;
+						// We are done, terminate the query.
+						return false;
+					}
 				}
+				
+				// Continue the query.
+				return true;
+			},
+			/**
+			 * Called for each fixture found in the query AABB.
+			 * @param {b2ParticleSystem} system
+			 * @param {number} index
+			 * @returns false to terminate the query.
+			 */
+			ReportParticle(system, index) {
+				return false;
+			},
+			/**
+			 * Called for each fixture found in the query AABB.
+			 * @param {b2ParticleSystem} system
+			 * @returns false to terminate the query.
+			 */
+			ShouldQueryParticleSystem(system) {
+				return true;
 			}
-
-			// Continue the query.
-			return true;
 		}, aabb);
 
 		if (hit_fixture) {

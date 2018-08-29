@@ -1,5 +1,5 @@
 ﻿
-const box2d = require("../../Box2D/build/Box2D/Box2D/Box2D.js");
+const box2d = require("../../box2d.ts/build/Box2D.js");
 
 const { FilterHelper } = require("./Filter.js");
 

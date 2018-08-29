@@ -1,6 +1,5 @@
 ﻿
-import { b2Filter } from "../../Box2D/build/Box2D/Box2D/Dynamics/b2Fixture";
-import { b2ContactFilter } from "../../Box2D/build/Box2D/Box2D/Box2D";
+import { b2Filter, b2ContactFilter } from "../../box2d.ts/build/Box2D.js";
 
 
 /** @type {{[string]:FilterHelper}} */

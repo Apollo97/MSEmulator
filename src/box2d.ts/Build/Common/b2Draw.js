@@ -1,0 +1,184 @@
+/*
+* Copyright (c) 2011 Erin Catto http://box2d.org
+*
+* This software is provided 'as-is', without any express or implied
+* warranty.  In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely, subject to the following restrictions:
+* 1. The origin of this software must not be misrepresented; you must not
+* claim that you wrote the original software. If you use this software
+* in a product, an acknowledgment in the product documentation would be
+* appreciated but is not required.
+* 2. Altered source versions must be plainly marked as such, and must not be
+* misrepresented as being the original software.
+* 3. This notice may not be removed or altered from any source distribution.
+*/
+/// Color for debug drawing. Each value has the range [0,1].
+export class b2Color {
+    constructor(rr = 0.5, gg = 0.5, bb = 0.5, aa = 1.0) {
+        this.r = rr;
+        this.g = gg;
+        this.b = bb;
+        this.a = aa;
+    }
+    Clone() {
+        return new b2Color().Copy(this);
+    }
+    Copy(other) {
+        this.r = other.r;
+        this.g = other.g;
+        this.b = other.b;
+        this.a = other.a;
+        return this;
+    }
+    IsEqual(color) {
+        return (this.r === color.r) && (this.g === color.g) && (this.b === color.b) && (this.a === color.a);
+    }
+    IsZero() {
+        return (this.r === 0) && (this.g === 0) && (this.b === 0) && (this.a === 0);
+    }
+    Set(r, g, b, a = this.a) {
+        this.SetRGBA(r, g, b, a);
+    }
+    SetByteRGB(r, g, b) {
+        this.r = r / 0xff;
+        this.g = g / 0xff;
+        this.b = b / 0xff;
+        return this;
+    }
+    SetByteRGBA(r, g, b, a) {
+        this.r = r / 0xff;
+        this.g = g / 0xff;
+        this.b = b / 0xff;
+        this.a = a / 0xff;
+        return this;
+    }
+    SetRGB(rr, gg, bb) {
+        this.r = rr;
+        this.g = gg;
+        this.b = bb;
+        return this;
+    }
+    SetRGBA(rr, gg, bb, aa) {
+        this.r = rr;
+        this.g = gg;
+        this.b = bb;
+        this.a = aa;
+        return this;
+    }
+    SelfAdd(color) {
+        this.r += color.r;
+        this.g += color.g;
+        this.b += color.b;
+        this.a += color.a;
+        return this;
+    }
+    Add(color, out) {
+        out.r = this.r + color.r;
+        out.g = this.g + color.g;
+        out.b = this.b + color.b;
+        out.a = this.a + color.a;
+        return out;
+    }
+    SelfSub(color) {
+        this.r -= color.r;
+        this.g -= color.g;
+        this.b -= color.b;
+        this.a -= color.a;
+        return this;
+    }
+    Sub(color, out) {
+        out.r = this.r - color.r;
+        out.g = this.g - color.g;
+        out.b = this.b - color.b;
+        out.a = this.a - color.a;
+        return out;
+    }
+    SelfMul(s) {
+        this.r *= s;
+        this.g *= s;
+        this.b *= s;
+        this.a *= s;
+        return this;
+    }
+    Mul(s, out) {
+        out.r = this.r * s;
+        out.g = this.g * s;
+        out.b = this.b * s;
+        out.a = this.a * s;
+        return out;
+    }
+    Mix(mixColor, strength) {
+        b2Color.MixColors(this, mixColor, strength);
+    }
+    static MixColors(colorA, colorB, strength) {
+        const dr = (strength * (colorB.r - colorA.r));
+        const dg = (strength * (colorB.g - colorA.g));
+        const db = (strength * (colorB.b - colorA.b));
+        const da = (strength * (colorB.a - colorA.a));
+        colorA.r += dr;
+        colorA.g += dg;
+        colorA.b += db;
+        colorA.a += da;
+        colorB.r -= dr;
+        colorB.g -= dg;
+        colorB.b -= db;
+        colorB.a -= da;
+    }
+    MakeStyleString(alpha = this.a) {
+        return b2Color.MakeStyleString(this.r, this.g, this.b, alpha);
+    }
+    static MakeStyleString(r, g, b, a = 1.0) {
+        // function clamp(x: number, lo: number, hi: number) { return x < lo ? lo : hi < x ? hi : x; }
+        r *= 255; // r = clamp(r, 0, 255);
+        g *= 255; // g = clamp(g, 0, 255);
+        b *= 255; // b = clamp(b, 0, 255);
+        // a = clamp(a, 0, 1);
+        if (a < 1) {
+            return `rgba(${r},${g},${b},${a})`;
+        }
+        else {
+            return `rgb(${r},${g},${b})`;
+        }
+    }
+}
+b2Color.ZERO = new b2Color(0, 0, 0, 0);
+b2Color.RED = new b2Color(1, 0, 0);
+b2Color.GREEN = new b2Color(0, 1, 0);
+b2Color.BLUE = new b2Color(0, 0, 1);
+export var b2DrawFlags;
+(function (b2DrawFlags) {
+    b2DrawFlags[b2DrawFlags["e_none"] = 0] = "e_none";
+    b2DrawFlags[b2DrawFlags["e_shapeBit"] = 1] = "e_shapeBit";
+    b2DrawFlags[b2DrawFlags["e_jointBit"] = 2] = "e_jointBit";
+    b2DrawFlags[b2DrawFlags["e_aabbBit"] = 4] = "e_aabbBit";
+    b2DrawFlags[b2DrawFlags["e_pairBit"] = 8] = "e_pairBit";
+    b2DrawFlags[b2DrawFlags["e_centerOfMassBit"] = 16] = "e_centerOfMassBit";
+    // #if B2_ENABLE_PARTICLE
+    b2DrawFlags[b2DrawFlags["e_particleBit"] = 32] = "e_particleBit";
+    // #endif
+    b2DrawFlags[b2DrawFlags["e_controllerBit"] = 64] = "e_controllerBit";
+    b2DrawFlags[b2DrawFlags["e_all"] = 63] = "e_all";
+})(b2DrawFlags || (b2DrawFlags = {}));
+/// Implement and register this class with a b2World to provide debug drawing of physics
+/// entities in your game.
+export class b2Draw {
+    constructor() {
+        this.m_drawFlags = 0;
+    }
+    SetFlags(flags) {
+        this.m_drawFlags = flags;
+    }
+    GetFlags() {
+        return this.m_drawFlags;
+    }
+    AppendFlags(flags) {
+        this.m_drawFlags |= flags;
+    }
+    ClearFlags(flags) {
+        this.m_drawFlags &= ~flags;
+    }
+}
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiYjJEcmF3LmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vQm94MkQvQ29tbW9uL2IyRHJhdy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQTs7Ozs7Ozs7Ozs7Ozs7OztFQWdCRTtBQWNGLDREQUE0RDtBQUM1RCxNQUFNLE9BQU8sT0FBTztJQVlsQixZQUFZLEtBQWEsR0FBRyxFQUFFLEtBQWEsR0FBRyxFQUFFLEtBQWEsR0FBRyxFQUFFLEtBQWEsR0FBRztRQUNoRixJQUFJLENBQUMsQ0FBQyxHQUFHLEVBQUUsQ0FBQztRQUNaLElBQUksQ0FBQyxDQUFDLEdBQUcsRUFBRSxDQUFDO1FBQ1osSUFBSSxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUM7UUFDWixJQUFJLENBQUMsQ0FBQyxHQUFHLEVBQUUsQ0FBQztJQUNkLENBQUM7SUFFTSxLQUFLO1FBQ1YsT0FBTyxJQUFJLE9BQU8sRUFBRSxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztJQUNsQyxDQUFDO0lBRU0sSUFBSSxDQUFDLEtBQVc7UUFDckIsSUFBSSxDQUFDLENBQUMsR0FBRyxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2pCLElBQUksQ0FBQyxDQUFDLEdBQUcsS0FBSyxDQUFDLENBQUMsQ0FBQztRQUNqQixJQUFJLENBQUMsQ0FBQyxHQUFHLEtBQUssQ0FBQyxDQUFDLENBQUM7UUFDakIsSUFBSSxDQUFDLENBQUMsR0FBRyxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2pCLE9BQU8sSUFBSSxDQUFDO0lBQ2QsQ0FBQztJQUVNLE9BQU8sQ0FBQyxLQUFXO1FBQ3hCLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQyxLQUFLLEtBQUssQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDLEtBQUssS0FBSyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUMsS0FBSyxLQUFLLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQyxLQUFLLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FBQztJQUN0RyxDQUFDO0lBRU0sTUFBTTtRQUNYLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQyxLQUFLLENBQUMsQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUMsS0FBSyxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDLEtBQUssQ0FBQyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDO0lBQzlFLENBQUM7SUFFTSxHQUFHLENBQUMsQ0FBUyxFQUFFLENBQVMsRUFBRSxDQUFTLEVBQUUsSUFBWSxJQUFJLENBQUMsQ0FBQztRQUM1RCxJQUFJLENBQUMsT0FBTyxDQUFDLENBQUMsRUFBRSxDQUFDLEVBQUUsQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDO0lBQzNCLENBQUM7SUFFTSxVQUFVLENBQUMsQ0FBUyxFQUFFLENBQVMsRUFBRSxDQUFTO1FBQy9DLElBQUksQ0FBQyxDQUFDLEdBQUcsQ0FBQyxHQUFHLElBQUksQ0FBQztRQUNsQixJQUFJLENBQUMsQ0FBQyxHQUFHLENBQUMsR0FBRyxJQUFJLENBQUM7UUFDbEIsSUFBSSxDQUFDLENBQUMsR0FBRyxDQUFDLEdBQUcsSUFBSSxDQUFDO1FBQ2xCLE9BQU8sSUFBSSxDQUFDO0lBQ2QsQ0FBQztJQUVNLFdBQVcsQ0FBQyxDQUFTLEVBQUUsQ0FBUyxFQUFFLENBQVMsRUFBRSxDQUFTO1FBQzNELElBQUksQ0FBQyxDQUFDLEdBQUcsQ0FBQyxHQUFHLElBQUksQ0FBQztRQUNsQixJQUFJLENBQUMsQ0FBQyxHQUFHLENBQUMsR0FBRyxJQUFJLENBQUM7UUFDbEIsSUFBSSxDQUFDLENBQUMsR0FBRyxDQUFDLEdBQUcsSUFBSSxDQUFDO1FBQ2xCLElBQUksQ0FBQyxDQUFDLEdBQUcsQ0FBQyxHQUFHLElBQUksQ0FBQztRQUNsQixPQUFPLElBQUksQ0FBQztJQUNkLENBQUM7SUFFTSxNQUFNLENBQUMsRUFBVSxFQUFFLEVBQVUsRUFBRSxFQUFVO1FBQzlD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

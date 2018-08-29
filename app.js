@@ -25,6 +25,10 @@ const PACK_EXTNAME = ".json";
 const LIST_EXTNAME = ".json";
 //const BINARY_EXTNAME = ".bin";
 
+const path_equipList_dir = path.join(__dirname, "public", "equips");
+const path_bin = path.join(__dirname, "bin");
+const path_dll = path.join(path_bin, "libwz.net.dll");
+
 if (!process_argv["--static"] && !process_argv["-s"]) {
 	edge = require('edge');
 
@@ -40,10 +44,22 @@ function main(firstInit) {
 	let app;
 
 	if (edge) {
-		if (!check_lib()) {
-			return;
+		let enum_equips = firstInit;
+		if (!fs.existsSync(path_equipList_dir)) {
+			fs.mkdirSync(path_equipList_dir);
+			enum_equips = true;
 		}
-		if (firstInit) {
+		else {
+			let all_list = fs.readdirSync(path_equipList_dir);
+			if (!all_list.length) {
+				enum_equips = true;
+			}
+		}
+		
+		if (!check_lib()) {
+			edge = null;
+		}
+		else if (enum_equips) {
 			console.log("產生道具清單...");
 			
 			let equipListTasks = [];
@@ -58,8 +74,6 @@ function main(firstInit) {
 			sequenceTasks(equipListTasks).then(function () {
 				console.log("產生道具清單...完成");
 			});
-			
-			return;
 		}
 	}
 	app = WebServer(app);
@@ -129,8 +143,12 @@ function main(firstInit) {
  * @returns {boolean}
  */
 function check_lib() {
-	if (!fs.existsSync(path.join(__dirname, "bin", "libwz.net.dll"))) {
+	if (!fs.existsSync(path_dll)) {
 		console.log("Not found ./bin/libwz.net");
+		
+		if (!fs.existsSync(path_bin)) {
+			fs.mkdirSync(path_bin);
+		}
 		
 		if (process.platform == "win32") {
 			let Framework = process.arch == "x64" ? "Framework64" : "Framework";
@@ -145,7 +163,7 @@ function check_lib() {
 					"-unsafe",
 					"-optimize",
 					"-platform:x64",
-					"-out:" + path.join(__dirname, "bin", "libwz.net.dll"),
+					"-out:" + path_dll,
 					path.join(__dirname, "Tools", "libwz.net", "*.cs"),
 				], {
 					//cwd: path.join(__dirname, "Tools", "libwz.net"),
@@ -156,6 +174,7 @@ function check_lib() {
 					console.error(ret.error);
 					return false;
 				}
+				return true;
 			}
 			else {
 				console.error("Not found C# compiler: " + csc);
@@ -251,7 +270,7 @@ function EquipList(iniFilePath) {
 	return new Promise(function (resolve, reject) {
 		method({
 			setting: path.join(__dirname, iniFilePath),
-			extractTo: path.join(__dirname, "public", "equips"),
+			extractTo: path_equipList_dir,
 		}, function (error) {
 			if (error) reject(error);
 			resolve();

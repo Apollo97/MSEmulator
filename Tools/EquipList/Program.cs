@@ -104,10 +104,10 @@ internal class DataExtracter
 
 	internal void extractAll(string path)
 	{
-		this.output_file(path + "/Chair.json", this.extract_chair, "Chair", "0301");
-		Console.WriteLine("extract Chair");
+		this.output_file(path + "/TamingMob.json", this.extract_TamingMob, "TamingMob", "019");
+		Console.WriteLine("extract TamingMob");
 		return;
-
+		
 		this.output_file(path + "/body.json", this.extract_body);
 		Console.WriteLine("extract body");
 
@@ -275,6 +275,12 @@ internal class DataExtracter
 		Console.WriteLine("extract 重拳槍");
 
 		this.output_file(path + "/0170.json", this.extract_cash_weapon, "Weapon", "0170");
+
+		this.output_file(path + "/TamingMob.json", this.extract_TamingMob, "TamingMob", "019");
+		Console.WriteLine("extract TamingMob");
+		
+		this.output_file(path + "/Chair.json", this.extract_chair, "Chair", "0301");
+		Console.WriteLine("extract Chair");
 	}
 
 	Dictionary<string, dynamic> loadItemInfoFromJSON(string path)
@@ -519,6 +525,86 @@ internal class DataExtracter
 
 			var name = this.get_equip_name(category, id32);
 			var desc = this.get_equip_desc(category, id32);
+
+			if (existItems.ContainsKey(identity))
+			{
+				bool modified = false;
+				var data = existItems[identity];
+
+				if (name != data.name)
+				{
+					data.name = name;
+					modified = true;
+				}
+				if (desc != null && desc != data.desc)
+				{
+					data.desc = desc;
+					modified = true;
+				}
+				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+				{
+					data.__modified = DataSource.tag_version;
+				}
+				items.Add(data);
+			}
+			else
+			{
+				var pack = this.chara[category][identity].root[""];
+				var info = pack["info"];
+
+				dynamic data = this.inspectProperty(info);
+				data.id = identity;
+				data.name = name;
+				if (desc != null)
+					data.desc = desc;
+				//
+				try
+				{
+					data.__hash = data.icon._hash + "";
+				}
+				catch (Exception)
+				{
+				}
+				data.__v = DataSource.tag_version;
+				//
+				var dict = (IDictionary<string, object>)data;
+				dict.Remove("iconRaw");
+
+				items.Add(data);
+			}
+
+#if MY_DEBUG
+			break;
+#endif
+		}
+
+		return items;
+	}
+	
+	object extract_TamingMob(string category, string id_prefix, Dictionary<string, dynamic> existItems)
+	{
+		var items = new ArrayList();
+
+		IEnumerable<string> _identities =
+			from identity in this.chara[category].identities
+			where identity.StartsWith(id_prefix)
+			select identity;
+
+		SortedSet<string> new_identities = new SortedSet<string>(_identities);
+		var identities = new SortedSet<string>(new_identities);
+		identities.UnionWith(existItems.Keys);
+
+		foreach (var identity in identities)
+		{
+			var id32 = this.parse_id(identity);
+			if (id32 < 0)
+			{
+				continue;
+			}
+			
+			var ss_prop = DataSource.packages["String"]["Eqp"].root[""]["Eqp"]["Taming"];
+			var name = this.get_item_name(ss_prop, id32);
+			var desc = this.get_item_desc(ss_prop, id32);
 
 			if (existItems.ContainsKey(identity))
 			{

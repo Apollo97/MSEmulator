@@ -1,0 +1,239 @@
+/*
+* Copyright (c) 2006-2011 Erin Catto http://www.box2d.org
+*
+* This software is provided 'as-is', without any express or implied
+* warranty.  In no event will the authors be held liable for any damages
+* arising from the use of this software.
+* Permission is granted to anyone to use this software for any purpose,
+* including commercial applications, and to alter it and redistribute it
+* freely, subject to the following restrictions:
+* 1. The origin of this software must not be misrepresented; you must not
+* claim that you wrote the original software. If you use this software
+* in a product, an acknowledgment in the product documentation would be
+* appreciated but is not required.
+* 2. Altered source versions must be plainly marked as such, and must not be
+* misrepresented as being the original software.
+* 3. This notice may not be removed or altered from any source distribution.
+*/
+import { b2_linearSlop, b2_maxLinearCorrection, b2Maybe } from "../../Common/b2Settings";
+import { b2Min, b2Clamp, b2Vec2, b2Rot } from "../../Common/b2Math";
+import { b2Joint, b2JointDef, b2JointType, b2LimitState } from "./b2Joint";
+/// Rope joint definition. This requires two body anchor points and
+/// a maximum lengths.
+/// Note: by default the connected objects will not collide.
+/// see collideConnected in b2JointDef.
+export class b2RopeJointDef extends b2JointDef {
+    constructor() {
+        super(b2JointType.e_ropeJoint);
+        this.localAnchorA = new b2Vec2(-1, 0);
+        this.localAnchorB = new b2Vec2(1, 0);
+        this.maxLength = 0;
+    }
+}
+export class b2RopeJoint extends b2Joint {
+    constructor(def) {
+        super(def);
+        // Solver shared
+        this.m_localAnchorA = new b2Vec2();
+        this.m_localAnchorB = new b2Vec2();
+        this.m_maxLength = 0;
+        this.m_length = 0;
+        this.m_impulse = 0;
+        // Solver temp
+        this.m_indexA = 0;
+        this.m_indexB = 0;
+        this.m_u = new b2Vec2();
+        this.m_rA = new b2Vec2();
+        this.m_rB = new b2Vec2();
+        this.m_localCenterA = new b2Vec2();
+        this.m_localCenterB = new b2Vec2();
+        this.m_invMassA = 0;
+        this.m_invMassB = 0;
+        this.m_invIA = 0;
+        this.m_invIB = 0;
+        this.m_mass = 0;
+        this.m_state = b2LimitState.e_inactiveLimit;
+        this.m_qA = new b2Rot();
+        this.m_qB = new b2Rot();
+        this.m_lalcA = new b2Vec2();
+        this.m_lalcB = new b2Vec2();
+        this.m_localAnchorA.Copy(b2Maybe(def.localAnchorA, new b2Vec2(-1, 0)));
+        this.m_localAnchorB.Copy(b2Maybe(def.localAnchorB, new b2Vec2(1, 0)));
+        this.m_maxLength = b2Maybe(def.maxLength, 0);
+    }
+    InitVelocityConstraints(data) {
+        this.m_indexA = this.m_bodyA.m_islandIndex;
+        this.m_indexB = this.m_bodyB.m_islandIndex;
+        this.m_localCenterA.Copy(this.m_bodyA.m_sweep.localCenter);
+        this.m_localCenterB.Copy(this.m_bodyB.m_sweep.localCenter);
+        this.m_invMassA = this.m_bodyA.m_invMass;
+        this.m_invMassB = this.m_bodyB.m_invMass;
+        this.m_invIA = this.m_bodyA.m_invI;
+        this.m_invIB = this.m_bodyB.m_invI;
+        const cA = data.positions[this.m_indexA].c;
+        const aA = data.positions[this.m_indexA].a;
+        const vA = data.velocities[this.m_indexA].v;
+        let wA = data.velocities[this.m_indexA].w;
+        const cB = data.positions[this.m_indexB].c;
+        const aB = data.positions[this.m_indexB].a;
+        const vB = data.velocities[this.m_indexB].v;
+        let wB = data.velocities[this.m_indexB].w;
+        const qA = this.m_qA.SetAngle(aA), qB = this.m_qB.SetAngle(aB);
+        // this.m_rA = b2Mul(qA, this.m_localAnchorA - this.m_localCenterA);
+        b2Vec2.SubVV(this.m_localAnchorA, this.m_localCenterA, this.m_lalcA);
+        b2Rot.MulRV(qA, this.m_lalcA, this.m_rA);
+        // this.m_rB = b2Mul(qB, this.m_localAnchorB - this.m_localCenterB);
+        b2Vec2.SubVV(this.m_localAnchorB, this.m_localCenterB, this.m_lalcB);
+        b2Rot.MulRV(qB, this.m_lalcB, this.m_rB);
+        // this.m_u = cB + this.m_rB - cA - this.m_rA;
+        this.m_u.Copy(cB).SelfAdd(this.m_rB).SelfSub(cA).SelfSub(this.m_rA);
+        this.m_length = this.m_u.Length();
+        const C = this.m_length - this.m_maxLength;
+        if (C > 0) {
+            this.m_state = b2LimitState.e_atUpperLimit;
+        }
+        else {
+            this.m_state = b2LimitState.e_inactiveLimit;
+        }
+        if (this.m_length > b2_linearSlop) {
+            this.m_u.SelfMul(1 / this.m_length);
+        }
+        else {
+            this.m_u.SetZero();
+            this.m_mass = 0;
+            this.m_impulse = 0;
+            return;
+        }
+        // Compute effective mass.
+        const crA = b2Vec2.CrossVV(this.m_rA, this.m_u);
+        const crB = b2Vec2.CrossVV(this.m_rB, this.m_u);
+        const invMass = this.m_invMassA + this.m_invIA * crA * crA + this.m_invMassB + this.m_invIB * crB * crB;
+        this.m_mass = invMass !== 0 ? 1 / invMass : 0;
+        if (data.step.warmStarting) {
+            // Scale the impulse to support a variable time step.
+            this.m_impulse *= data.step.dtRatio;
+            // b2Vec2 P = m_impulse * m_u;
+            const P = b2Vec2.MulSV(this.m_impulse, this.m_u, b2RopeJoint.InitVelocityConstraints_s_P);
+            // vA -= m_invMassA * P;
+            vA.SelfMulSub(this.m_invMassA, P);
+            wA -= this.m_invIA * b2Vec2.CrossVV(this.m_rA, P);
+            // vB += m_invMassB * P;
+            vB.SelfMulAdd(this.m_invMassB, P);
+            wB += this.m_invIB * b2Vec2.CrossVV(this.m_rB, P);
+        }
+        else {
+            this.m_impulse = 0;
+        }
+        // data.velocities[this.m_indexA].v = vA;
+        data.velocities[this.m_indexA].w = wA;
+        // data.velocities[this.m_indexB].v = vB;
+        data.velocities[this.m_indexB].w = wB;
+    }
+    SolveVelocityConstraints(data) {
+        const vA = data.velocities[this.m_indexA].v;
+        let wA = data.velocities[this.m_indexA].w;
+        const vB = data.velocities[this.m_indexB].v;
+        let wB = data.velocities[this.m_indexB].w;
+        // Cdot = dot(u, v + cross(w, r))
+        // b2Vec2 vpA = vA + b2Cross(wA, m_rA);
+        const vpA = b2Vec2.AddVCrossSV(vA, wA, this.m_rA, b2RopeJoint.SolveVelocityConstraints_s_vpA);
+        // b2Vec2 vpB = vB + b2Cross(wB, m_rB);
+        const vpB = b2Vec2.AddVCrossSV(vB, wB, this.m_rB, b2RopeJoint.SolveVelocityConstraints_s_vpB);
+        // float32 C = m_length - m_maxLength;
+        const C = this.m_length - this.m_maxLength;
+        // float32 Cdot = b2Dot(m_u, vpB - vpA);
+        let Cdot = b2Vec2.DotVV(this.m_u, b2Vec2.SubVV(vpB, vpA, b2Vec2.s_t0));
+        // Predictive constraint.
+        if (C < 0) {
+            Cdot += data.step.inv_dt * C;
+        }
+        let impulse = -this.m_mass * Cdot;
+        const oldImpulse = this.m_impulse;
+        this.m_impulse = b2Min(0, this.m_impulse + impulse);
+        impulse = this.m_impulse - oldImpulse;
+        // b2Vec2 P = impulse * m_u;
+        const P = b2Vec2.MulSV(impulse, this.m_u, b2RopeJoint.SolveVelocityConstraints_s_P);
+        // vA -= m_invMassA * P;
+        vA.SelfMulSub(this.m_invMassA, P);
+        wA -= this.m_invIA * b2Vec2.CrossVV(this.m_rA, P);
+        // vB += m_invMassB * P;
+        vB.SelfMulAdd(this.m_invMassB, P);
+        wB += this.m_invIB * b2Vec2.CrossVV(this.m_rB, P);
+        // data.velocities[this.m_indexA].v = vA;
+        data.velocities[this.m_indexA].w = wA;
+        // data.velocities[this.m_indexB].v = vB;
+        data.velocities[this.m_indexB].w = wB;
+    }
+    SolvePositionConstraints(data) {
+        const cA = data.positions[this.m_indexA].c;
+        let aA = data.positions[this.m_indexA].a;
+        const cB = data.positions[this.m_indexB].c;
+        let aB = data.positions[this.m_indexB].a;
+        const qA = this.m_qA.SetAngle(aA), qB = this.m_qB.SetAngle(aB);
+        // b2Vec2 rA = b2Mul(qA, this.m_localAnchorA - this.m_localCenterA);
+        b2Vec2.SubVV(this.m_localAnchorA, this.m_localCenterA, this.m_lalcA);
+        const rA = b2Rot.MulRV(qA, this.m_lalcA, this.m_rA);
+        // b2Vec2 rB = b2Mul(qB, this.m_localAnchorB - this.m_localCenterB);
+        b2Vec2.SubVV(this.m_localAnchorB, this.m_localCenterB, this.m_lalcB);
+        const rB = b2Rot.MulRV(qB, this.m_lalcB, this.m_rB);
+        // b2Vec2 u = cB + rB - cA - rA;
+        const u = this.m_u.Copy(cB).SelfAdd(rB).SelfSub(cA).SelfSub(rA);
+        const length = u.Normalize();
+        let C = length - this.m_maxLength;
+        C = b2Clamp(C, 0, b2_maxLinearCorrection);
+        const impulse = -this.m_mass * C;
+        // b2Vec2 P = impulse * u;
+        const P = b2Vec2.MulSV(impulse, u, b2RopeJoint.SolvePositionConstraints_s_P);
+        // cA -= m_invMassA * P;
+        cA.SelfMulSub(this.m_invMassA, P);
+        aA -= this.m_invIA * b2Vec2.CrossVV(rA, P);
+        // cB += m_invMassB * P;
+        cB.SelfMulAdd(this.m_invMassB, P);
+        aB += this.m_invIB * b2Vec2.CrossVV(rB, P);
+        // data.positions[this.m_indexA].c = cA;
+        data.positions[this.m_indexA].a = aA;
+        // data.positions[this.m_indexB].c = cB;
+        data.positions[this.m_indexB].a = aB;
+        return length - this.m_maxLength < b2_linearSlop;
+    }
+    GetAnchorA(out) {
+        return this.m_bodyA.GetWorldPoint(this.m_localAnchorA, out);
+    }
+    GetAnchorB(out) {
+        return this.m_bodyB.GetWorldPoint(this.m_localAnchorB, out);
+    }
+    GetReactionForce(inv_dt, out) {
+        // return out.Set(inv_dt * this.m_linearImpulse.x, inv_dt * this.m_linearImpulse.y);
+        return b2Vec2.MulSV((inv_dt * this.m_impulse), this.m_u, out);
+    }
+    GetReactionTorque(inv_dt) {
+        return 0;
+    }
+    GetLocalAnchorA() { return this.m_localAnchorA; }
+    GetLocalAnchorB() { return this.m_localAnchorB; }
+    SetMaxLength(length) { this.m_maxLength = length; }
+    GetMaxLength() {
+        return this.m_maxLength;
+    }
+    GetLimitState() {
+        return this.m_state;
+    }
+    Dump(log) {
+        const indexA = this.m_bodyA.m_islandIndex;
+        const indexB = this.m_bodyB.m_islandIndex;
+        log("  const jd: b2RopeJointDef = new b2RopeJointDef();\n");
+        log("  jd.bodyA = bodies[%d];\n", indexA);
+        log("  jd.bodyB = bodies[%d];\n", indexB);
+        log("  jd.collideConnected = %s;\n", (this.m_collideConnected) ? ("true") : ("false"));
+        log("  jd.localAnchorA.Set(%.15f, %.15f);\n", this.m_localAnchorA.x, this.m_localAnchorA.y);
+        log("  jd.localAnchorB.Set(%.15f, %.15f);\n", this.m_localAnchorB.x, this.m_localAnchorB.y);
+        log("  jd.maxLength = %.15f;\n", this.m_maxLength);
+        log("  joints[%d] = this.m_world.CreateJoint(jd);\n", this.m_index);
+    }
+}
+b2RopeJoint.InitVelocityConstraints_s_P = new b2Vec2();
+b2RopeJoint.SolveVelocityConstraints_s_vpA = new b2Vec2();
+b2RopeJoint.SolveVelocityConstraints_s_vpB = new b2Vec2();
+b2RopeJoint.SolveVelocityConstraints_s_P = new b2Vec2();
+b2RopeJoint.SolvePositionConstraints_s_P = new b2Vec2();
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiYjJSb3BlSm9pbnQuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi9Cb3gyRC9EeW5hbWljcy9Kb2ludHMvYjJSb3BlSm9pbnQudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7Ozs7Ozs7Ozs7Ozs7Ozs7RUFnQkU7QUFFRixPQUFPLEVBQUUsYUFBYSxFQUFFLHNCQUFzQixFQUFFLE9BQU8sRUFBRSxNQUFNLHlCQUF5QixDQUFDO0FBQ3pGLE9BQU8sRUFBRSxLQUFLLEVBQUUsT0FBTyxFQUFFLE1BQU0sRUFBRSxLQUFLLEVBQU0sTUFBTSxxQkFBcUIsQ0FBQztBQUN4RSxPQUFPLEVBQUUsT0FBTyxFQUFFLFVBQVUsRUFBRSxXQUFXLEVBQUUsWUFBWSxFQUFlLE1BQU0sV0FBVyxDQUFDO0FBV3hGLG1FQUFtRTtBQUNuRSxzQkFBc0I7QUFDdEIsNERBQTREO0FBQzVELHVDQUF1QztBQUN2QyxNQUFNLE9BQU8sY0FBZSxTQUFRLFVBQVU7SUFPNUM7UUFDRSxLQUFLLENBQUMsV0FBVyxDQUFDLFdBQVcsQ0FBQyxDQUFDO1FBUGpCLGlCQUFZLEdBQVcsSUFBSSxNQUFNLENBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFFekMsaUJBQVksR0FBVyxJQUFJLE1BQU0sQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFFakQsY0FBUyxHQUFXLENBQUMsQ0FBQztJQUk3QixDQUFDO0NBQ0Y7QUFFRCxNQUFNLE9BQU8sV0FBWSxTQUFRLE9BQU87SUE0QnRDLFlBQVksR0FBb0I7UUFDOUIsS0FBSyxDQUFDLEdBQUcsQ0FBQyxDQUFDO1FBNUJiLGdCQUFnQjtRQUNBLG1CQUFjLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUN0QyxtQkFBYyxHQUFXLElBQUksTUFBTSxFQUFFLENBQUM7UUFDL0MsZ0JBQVcsR0FBVyxDQUFDLENBQUM7UUFDeEIsYUFBUSxHQUFXLENBQUMsQ0FBQztRQUNyQixjQUFTLEdBQVcsQ0FBQyxDQUFDO1FBRTdCLGNBQWM7UUFDUCxhQUFRLEdBQVcsQ0FBQyxDQUFDO1FBQ3JCLGFBQVEsR0FBVyxDQUFDLENBQUM7UUFDWixRQUFHLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUMzQixTQUFJLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUM1QixTQUFJLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUM1QixtQkFBYyxHQUFXLElBQUksTUFBTSxFQUFFLENBQUM7UUFDdEMsbUJBQWMsR0FBVyxJQUFJLE1BQU0sRUFBRSxDQUFDO1FBQy9DLGVBQVUsR0FBVyxDQUFDLENBQUM7UUFDdkIsZUFBVSxHQUFXLENBQUMsQ0FBQztRQUN2QixZQUFPLEdBQVcsQ0FBQyxDQUFDO1FBQ3BCLFlBQU8sR0FBVyxDQUFDLENBQUM7UUFDcEIsV0FBTSxHQUFXLENBQUMsQ0FBQztRQUNuQixZQUFPLEdBQUcsWUFBWSxDQUFDLGVBQWUsQ0FBQztRQUU5QixTQUFJLEdBQVUsSUFBSSxLQUFLLEVBQUUsQ0FBQztRQUMxQixTQUFJLEdBQVUsSUFBSSxLQUFLLEVBQUUsQ0FBQztRQUMxQixZQUFPLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUMvQixZQUFPLEdBQVcsSUFBSSxNQUFNLEVBQUUsQ0FBQztRQUs3QyxJQUFJLENBQUMsY0FBYyxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsR0FBRyxDQUFDLFlBQVksRUFBRSxJQUFJLE1BQU0sQ0FBQyxDQUFDLENBQUMsRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDdkUsSUFBSSxDQUFDLGNBQWMsQ0FBQyxJQUFJLENBQUMsT0FBTyxDQUFDLEdBQUcsQ0FBQyxZQUFZLEVBQUUsSUFBSSxNQUFNLENBQUMsQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUN0RSxJQUFJLENBQUMsV0FBVyxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUMsU0FBUyxFQUFFLENBQUMsQ0FBQyxDQUFDO0lBQy9DLENBQUM7SUFHTSx1QkFBdUIsQ0FBQyxJQUFrQjtRQUMvQyxJQUFJLENBQUMsUUFBUSxHQUFHLElBQUksQ0FBQyxPQUFPLENBQUMsYUFBYSxDQUFDO1FBQzNDLElBQUksQ0FBQyxRQUFRLEdBQUcsSUFBSSxDQUFDLE9BQU8sQ0FBQyxhQUFhLENBQUM7UUFDM0MsSUFBSSxDQUFDLGNBQWMsQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLE9BQU8sQ0FBQyxPQUFPLENBQUMsV0FBVyxDQUFDLENBQUM7UUFDM0QsSUFBSSxDQUFDLGNBQWMsQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLE9BQU8sQ0FBQyxPQUFPLENBQUMsV0FBVyxDQUFDLENBQUM7UUFDM0QsSUFBSSxDQUFDLFVBQVUsR0FBRyxJQUFJLENBQUMsT0FBTyxDQUFDLFNBQVMsQ0FBQztRQUN6QyxJQUFJLENBQUMsVUFBVSxHQUFHLElBQUksQ0FBQyxPQUFPLENBQUMsU0FBUyxDQUFDO1FBQ3pDLElBQUksQ0FBQyxPQUFPLEdBQUcsSUFBSSxDQUFDLE9BQU8sQ0FBQyxNQUFNLENBQUM7UUFDbkMsSUFBSSxDQUFDLE9BQU8sR0FBRyxJQUFJLENBQUMsT0FBTyxDQUFDLE1BQU0sQ0FBQztRQUVuQyxNQUFNLEVBQUUsR0FBVyxJQUFJLENBQUMsU0FBUyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDbkQsTUFBTSxFQUFFLEdBQVcsSUFBSSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBQ25ELE1BQU0sRUFBRSxHQUFXLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNwRCxJQUFJLEVBQUUsR0FBVyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFFbEQsTUFBTSxFQUFFLEdBQVcsSUFBSSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBQ25ELE1BQU0sRUFBRSxHQUFXLElBQUksQ0FBQyxTQUFTLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNuRCxNQUFNLEVBQUUsR0FBVyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDcEQsSUFBSSxFQUFFLEdBQVcsSUFBSSxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBRWxELE1BQU0sRUFBRSxHQUFVLElBQUksQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUUsR0FBVSxJQUFJLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxFQUFFLENBQUMsQ0FBQztRQUU3RSxvRUFBb0U7UUFDcEUsTUFBTSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsY0FBYyxFQUFFLElBQUksQ0FBQyxjQUFjLEVBQUUsSUFBSSxDQUFDLE9BQU8sQ0FBQyxDQUFDO1FBQ3JFLEtBQUssQ0FBQyxLQUFLLENBQUMsRUFBRSxFQUFFLElBQUksQ0FBQyxPQUFPLEVBQUUsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQ3pDLG9FQUFvRTtRQUNwRSxNQUFNLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxjQUFjLEVBQUUsSUFBSSxDQUFDLGNBQWMsRUFBRSxJQUFJLENBQUMsT0FBTyxDQUFDLENBQUM7UUFDckUsS0FBSyxDQUFDLEtBQUssQ0FBQyxFQUFFLEVBQUUsSUFBSSxDQUFDLE9BQU8sRUFBRSxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUM7UUFDekMsOENBQThDO1FBQzlDLElBQUksQ0FBQyxHQUFHLENBQUMsSUFBSSxDQUFDLEVBQUUsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUMsT0FBTyxDQUFDLEVBQUUsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUM7UUFFcEUsSUFBSSxDQUFDLFFBQVEsR0FBRyxJQUFJLENBQUMsR0FBRyxDQUFDLE1BQU0sRUFBRSxDQUFDO1FBRWxDLE1BQU0sQ0FBQyxHQUFXLElBQUksQ0FBQyxRQUFRLEdBQUcsSUFBSSxDQUFDLFdBQVcsQ0FBQztRQUNuRCxJQUFJLENBQUMsR0FBRyxDQUFDLEVBQUU7WUFDVCxJQUFJLENBQUMsT0FBTyxHQUFHLFlBQVksQ0FBQyxjQUFjLENBQUM7U0FDNUM7YUFBTTtZQUNMLElBQUksQ0FBQyxPQUFPLEdBQUcsWUFBWSxDQUFDLGVBQWUsQ0FBQztTQUM3QztRQUVELElBQUksSUFBSSxDQUFDLFFBQVEsR0FBRyxhQUFhLEVBQUU7WUFDakMsSUFBSSxDQUFDLEdBQUcsQ0FBQyxPQUFPLENBQUMsQ0FBQyxHQUFHLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztTQUNyQzthQUFNO1lBQ0wsSUFBSSxDQUFDLEdBQUcsQ0FBQyxPQUFPLEVBQUUsQ0FBQztZQUNuQixJQUFJLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQztZQUNoQixJQUFJLENBQUMsU0FBUyxHQUFHLENBQUMsQ0FBQztZQUNuQixPQUFPO1NBQ1I7UUFFRCwwQkFBMEI7UUFDMUIsTUFBTSxHQUFHLEdBQVcsTUFBTSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSxFQUFFLElBQUksQ0FBQyxHQUFHLENBQUMsQ0FBQztRQUN4RCxNQUFNLEdBQUcsR0FBVyxNQUFNLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLEVBQUUsSUFBSSxDQUFDLEdBQUcsQ0FBQyxDQUFDO1FBQ3hELE1BQU0sT0FBTyxHQUFXLElBQUksQ0FBQyxVQUFVLEdBQUcsSUFBSSxDQUFDLE9BQU8sR0FBRyxHQUFHLEdBQUcsR0FBRyxHQUFHLElBQUksQ0FBQyxVQUFVLEdBQUcsSUFBSSxDQUFDLE9BQU8sR0FBRyxHQUFHLEdBQUcsR0FBRyxDQUFDO1FBRWhILElBQUksQ0FBQyxNQUFNLEdBQUcsT0FBTyxLQUFLLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLE9BQU8sQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBRTlDLElBQUksSUFBSSxDQUFDLElBQUksQ0FBQyxZQUFZLEVBQUU7WUFDMUIscURBQXFEO1lBQ3JELElBQUksQ0FBQyxTQUFTLElBQUksSUFBSSxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUM7WUFFcEMsOEJBQThCO1lBQzlCLE1BQU0sQ0FBQyxHQUFXLE1BQU0sQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsR0FBRyxFQUFFLFdBQVcsQ0FBQywyQkFBMkIsQ0FBQyxDQUFDO1lBQ2xHLHdCQUF3QjtZQUN4QixFQUFFLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxVQUFVLEVBQUUsQ0FBQyxDQUFDLENBQUM7WUFDbEMsRUFBRSxJQUFJLElBQUksQ0FBQyxPQUFPLEdBQUcsTUFBTSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSxFQUFFLENBQUMsQ0FBQyxDQUFDO1lBQ2xELHdCQUF3QjtZQUN4QixFQUFFLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxVQUFVLEVBQUUsQ0FBQyxDQUFDLENBQUM7WUFDbEMsRUFBRSxJQUFJLElBQUksQ0FBQyxPQUFPLEdBQUcsTUFBTSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSxFQUFFLENBQUMsQ0FBQyxDQUFDO1NBQ25EO2FBQU07WUFDTCxJQUFJLENBQUMsU0FBUyxHQUFHLENBQUMsQ0FBQztTQUNwQjtRQUVELHlDQUF5QztRQUN6QyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLEdBQUcsRUFBRSxDQUFDO1FBQ3RDLHlDQUF5QztRQUN6QyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLEdBQUcsRUFBRSxDQUFDO0lBQ3hDLENBQUM7SUFLTSx3QkFBd0IsQ0FBQyxJQUFrQjtRQUNoRCxNQUFNLEVBQUUsR0FBVyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDcEQsSUFBSSxFQUFFLEdBQVcsSUFBSSxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBQ2xELE1BQU0sRUFBRSxHQUFXLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNwRCxJQUFJLEVBQUUsR0FBVyxJQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFFbEQsaUNBQWlDO1FBQ2pDLHVDQUF1QztRQUN2QyxNQUFNLEdBQUcsR0FBVyxNQUFNLENBQUMsV0FBVyxDQUFDLEVBQUUsRUFBRSxFQUFFLEVBQUUsSUFBSSxDQUFDLElBQUksRUFBRSxXQUFXLENBQUMsOEJBQThCLENBQUMsQ0FBQztRQUN0Ryx1Q0FBdUM7UUFDdkMsTUFBTSxHQUFHLEdBQVcsTUFBTSxDQUFDLFdBQVcsQ0FBQyxFQUFFLEVBQUUsRUFBRSxFQUFFLElBQUksQ0FBQyxJQUFJLEVBQUUsV0FBVyxDQUFDLDhCQUE4QixDQUFDLENBQUM7UUFDdEcsc0NBQXNDO1FBQ3RDLE1BQU0sQ0FBQyxHQUFXLElBQUksQ0FBQyxRQUFRLEdBQUcsSUFBSSxDQUFDLFdBQVcsQ0FBQztRQUNuRCx3Q0FBd0M7UUFDeEMsSUFBSSxJQUFJLEdBQVcsTUFBTSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLE1BQU0sQ0FBQyxLQUFLLENBQUMsR0FBRyxFQUFFLEdBQUcsRUFBRSxNQUFNLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQztRQUUvRSx5QkFBeUI7UUFDekIsSUFBSSxDQUFDLEdBQUcsQ0FBQyxFQUFFO1lBQ1QsSUFBSSxJQUFJLElBQUksQ0FBQyxJQUFJLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQztTQUM5QjtRQUVELElBQUksT0FBTyxHQUFXLENBQUMsSUFBSSxDQUFDLE1BQU0sR0FBRyxJQUFJLENBQUM7UUFDMUMsTUFBTSxVQUFVLEdBQVcsSUFBSSxDQUFDLFNBQVMsQ0FBQztRQUMxQyxJQUFJLENBQUMsU0FBUyxHQUFHLEtBQUssQ0FBQyxDQUFDLEVBQUUsSUFBSSxDQUFDLFNBQVMsR0FBRyxPQUFPLENBQUMsQ0FBQztRQUNwRCxPQUFPLEdBQUcsSUFBSSxDQUFDLFNBQVMsR0FBRyxVQUFVLENBQUM7UUFFdEMsNEJBQTRCO1FBQzVCLE1BQU0sQ0FBQyxHQUFXLE1BQU0sQ0FBQyxLQUFLLENBQUMsT0FBTyxFQUFFLElBQUksQ0FBQyxHQUFHLEVBQUUsV0FBVyxDQUFDLDRCQUE0QixDQUFDLENBQUM7UUFDNUYsd0JBQXdCO1FBQ3hCLEVBQUUsQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFVBQVUsRUFBRSxDQUFDLENBQUMsQ0FBQztRQUNsQyxFQUFFLElBQUksSUFBSSxDQUFDLE9BQU8sR0FBRyxNQUFNLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFDbEQsd0JBQXdCO1FBQ3hCLEVBQUUsQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFVBQVUsRUFBRSxDQUFDLENBQUMsQ0FBQztRQUNsQyxFQUFFLElBQUksSUFBSSxDQUFDLE9BQU8sR0FBRyxNQUFNLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFFbEQseUNBQXlDO1FBQ3pDLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUM7UUFDdEMseUNBQXlDO1FBQ3pDLElBQUksQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUM7SUFDeEMsQ0FBQztJQUdNLHdCQUF3QixDQUFDLElBQWtCO1FBQ2hELE1BQU0sRUFBRSxHQUFXLElBQUksQ0FBQyxTQUFTLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNuRCxJQUFJLEVBQUUsR0FBVyxJQUFJLENBQUMsU0FBUyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDakQsTUFBTSxFQUFFLEdBQVcsSUFBSSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBQ25ELElBQUksRUFBRSxHQUFXLElBQUksQ0FBQyxTQUFTLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUVqRCxNQUFNLEVBQUUsR0FBVSxJQUFJLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxFQUFFLENBQUMsRUFBRSxFQUFFLEdBQVUsSUFBSSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsRUFBRSxDQUFDLENBQUM7UUFFN0Usb0VBQW9FO1FBQ3BFLE1BQU0sQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLGNBQWMsRUFBRSxJQUFJLENBQUMsY0FBYyxFQUFFLElBQUksQ0FBQyxPQUFPLENBQUMsQ0FBQztRQUNyRSxNQUFNLEVBQUUsR0FBVyxLQUFLLENBQUMsS0FBSyxDQUFDLEVBQUUsRUFBRSxJQUFJLENBQUMsT0FBTyxFQUFFLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUM1RCxvRUFBb0U7UUFDcEUsTUFBTSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsY0FBYyxFQUFFLElBQUksQ0FBQyxjQUFjLEVBQUUsSUFBSSxDQUFDLE9BQU8sQ0FBQyxDQUFDO1FBQ3JFLE1BQU0sRUFBRSxHQUFXLEtBQUssQ0FBQyxLQUFLLENBQUMsRUFBRSxFQUFFLElBQUksQ0FBQyxPQUFPLEVBQUUsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQzVELGdDQUFnQztRQUNoQyxNQUFNLENBQUMsR0FBVyxJQUFJLENBQUMsR0FBRyxDQUFDLElBQUksQ0FBQyxFQUFFLENBQUMsQ0FBQyxPQUFPLENBQUMsRUFBRSxDQUFDLENBQUMsT0FBTyxDQUFDLEVBQUUsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxFQUFFLENBQUMsQ0FBQztRQUV4RSxNQUFNLE1BQU0sR0FBVyxDQUFDLENBQUMsU0FBUyxFQUFFLENBQUM7UUFDckMsSUFBSSxDQUFDLEdBQVcsTUFBTSxHQUFHLElBQUksQ0FBQyxXQUFXLENBQUM7UUFFMUMsQ0FBQyxHQUFHLE9BQU8sQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLHNCQUFzQixDQUFDLENBQUM7UUFFMUMsTUFBTSxPQUFPLEdBQVcsQ0FBQyxJQUFJLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQztRQUN6QywwQkFBMEI7UUFDMUIsTUFBTSxDQUFDLEdBQVcsTUFBTSxDQUFDLEtBQUssQ0FBQyxPQUFPLEVBQUUsQ0FBQyxFQUFFLFdBQVcsQ0FBQyw0QkFBNEIsQ0FBQyxDQUFDO1FBRXJGLHdCQUF3QjtRQUN4QixFQUFFLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxVQUFVLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFDbEMsRUFBRSxJQUFJLElBQUksQ0FBQyxPQUFPLEdBQUcsTUFBTSxDQUFDLE9BQU8sQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDLENBQUM7UUFDM0Msd0JBQXdCO1FBQ3hCLEVBQUUsQ0FBQyxVQUFVLENBQUMsSUFBSSxDQUFDLFVBQVUsRUFBRSxDQUFDLENBQUMsQ0FBQztRQUNsQyxFQUFFLElBQUksSUFBSSxDQUFDLE9BQU8sR0FBRyxNQUFNLENBQUMsT0FBTyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQztRQUUzQyx3Q0FBd0M7UUFDeEMsSUFBSSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxHQUFHLEVBQUUsQ0FBQztRQUNyQyx3Q0FBd0M7UUFDeEMsSUFBSSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxHQUFHLEVBQUUsQ0FBQztRQUVyQyxPQUFPLE1BQU0sR0FBRyxJQUFJLENBQUMsV0FBVyxHQUFHLGFBQWEsQ0FBQztJQUNuRCxDQUFDO0lBRU0sVUFBVSxDQUFlLEdBQU07UUFDcEMsT0FBTyxJQUFJLENBQUMsT0FBTyxDQUFDLGFBQWEsQ0FBQyxJQUFJLENBQUMsY0FBYyxFQUFFLEdBQUcsQ0FBQyxDQUFDO0lBQzlELENBQUM7SUFFTSxVQUFVLENBQWUsR0FBTTtRQUNwQyxPQUFPLElBQUksQ0FBQyxPQUFPLENBQUMsYUFBYSxDQUFDLElBQUksQ0FBQyxjQUFjLEVBQUUsR0FBRyxDQUFDLENBQUM7SUFDOUQsQ0FBQztJQUVNLGdCQUFnQixDQUFlLE1BQWMsRUFBRSxHQUFNO1FBQzFELG9GQUFvRjtRQUNwRixPQUFPLE1BQU0sQ0FBQyxLQUFLLENBQUMsQ0FBQyxNQUFNLEdBQUcsSUFBSSxDQUFDLFNBQVMsQ0FBQyxFQUFFLElBQUksQ0FBQyxHQUFHLEVBQUUsR0FBRyxDQUFDLENBQUM7SUFDaEUsQ0FBQztJQUVNLGlCQUFpQixDQUFDLE1BQWM7UUFDckMsT0FBTyxDQUFDLENBQUM7SUFDWCxDQUFDO0lBRU0sZUFBZSxLQUF1QixPQUFPLElBQUksQ0FBQyxjQUFjLENBQUMsQ0FBQyxDQUFDO0lBRW5FLGVBQWUsS0FBdUIsT0FBTyxJQUFJLENBQUMsY0FBYyxDQUFDLENBQUMsQ0FBQztJQUVuRSxZQUFZLENBQUMsTUFBYyxJQUFVLElBQUksQ0FBQyxXQUFXLEdBQUcsTUFBTSxDQUFDLENBQUMsQ0FBQztJQUNqRSxZQUFZO1FBQ2pCLE9BQU8sSUFBSSxDQUFDLFdBQVcsQ0FBQztJQUMxQixDQUFDO0lBRU0sYUFBYTtRQUNsQixPQUFPLElBQUksQ0FBQyxPQUFPLENBQUM7SUFDdEIsQ0FBQztJQUVNLElBQUksQ0FBQyxHQUE2QztRQUN2RCxNQUFNLE1BQU0sR0FBRyxJQUFJLENBQUMsT0FBTyxDQUFDLGFBQWEsQ0FBQztRQUMxQyxNQUFNLE1BQU0sR0FBRyxJQUFJLENBQUMsT0FBTyxDQUFDLGFBQWEsQ0FBQztRQUUxQyxHQUFHLENBQUMsc0RBQXNELENBQUMsQ0FBQztRQUM1RCxHQUFHLENBQUMsNEJBQTRCLEVBQUUsTUFBTSxDQUFDLENBQUM7UUFDMUMsR0FBRyxDQUFDLDRCQUE0QixFQUFFLE1BQU0sQ0FBQyxDQUFDO1FBQzFDLEdBQUcsQ0FBQywrQkFBK0IsRUFBRSxDQUFDLElBQUksQ0FBQyxrQkFBa0IsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxDQUFDLENBQUM7UUFDdkYsR0FBRyxDQUFDLHdDQUF3QyxFQUFFLElBQUksQ0FBQyxjQUFjLENBQUMsQ0FBQyxFQUFFLElBQUksQ0FBQyxjQUFjLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDNUYsR0FBRyxDQUFDLHdDQUF3QyxFQUFFLElBQUksQ0FBQyxjQUFjLENBQUMsQ0FBQyxFQUFFLElBQUksQ0FBQyxjQUFjLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDNUYsR0FBRyxDQUFDLDJCQUEyQixFQUFFLElBQUksQ0FBQyxXQUFXLENBQUMsQ0FBQztRQUNuRCxHQUFHLENBQUMsZ0RBQWdELEVBQUUsSUFBSSxDQUFDLE9BQU8sQ0FBQyxDQUFDO0lBQ3RFLENBQUM7O0FBL01jLHVDQUEyQixHQUFHLElBQUksTUFBTSxFQUFFLENBQUM7QUErRTNDLDBDQUE4QixHQUFHLElBQUksTUFBTSxFQUFFLENBQUM7QUFDOUMsMENBQThCLEdBQUcsSUFBSSxNQUFNLEVBQUUsQ0FBQztBQUM5Qyx3Q0FBNEIsR0FBRyxJQUFJLE1BQU0sRUFBRSxDQUFDO0FBMEM1Qyx3Q0FBNEIsR0FBRyxJQUFJLE1BQU0sRUFBRSxDQUFDIn0=
