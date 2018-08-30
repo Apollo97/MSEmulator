@@ -452,6 +452,7 @@ class SkillAnimationBase {
 	}
 
 	/**
+	 * return this._owner as SceneCharacter
 	 * @alias owner
 	 * @returns {SceneCharacter}
 	 */
@@ -470,17 +471,34 @@ class SkillAnimationBase {
 			const actions = this.data.action;
 			this._actani.reload(action);//action ? 0, 1
 			this._actani.loop = false;
-
+			
 			this.owner.$physics.state.invokeSkill = true;
 		}
 	}
 
+	/**
+	 * @returns {string}
+	 */
+	_getDefaultAction() {
+		const actions = this.data.action;
+		return actions[this.actType];
+	}
+
 	/** skill default action */
 	_applyDefaultAction() {
-		const actions = this.data.action;
-		this._applyAction(actions[this.actType]);
+		this._applyAction(this._getDefaultAction());
 	}
-	
+
+	_isFinishDefaultAction() {
+		const act = this._getDefaultAction();
+		if (this._actani) {
+			return this._actani._action != act;
+		}
+		else {
+			return true;
+		}
+	}
+
 	/**
 	 * download data, load texture
 	 * @param {string} skillId
@@ -490,7 +508,13 @@ class SkillAnimationBase {
 
 		const url = `${this.constructor._base_path}/${jobID}/skill/${skillId}`;
 
-		const raw = await $get.data(url);
+		let raw;
+		try {
+			raw = await $get.data(url);
+		}
+		catch (ex) {
+			throw ex;
+		}
 		if (!raw) {
 			alert("SkillAnimationBase");
 			return;
@@ -582,6 +606,16 @@ class SkillAnimationBase {
 	reset() {
 		this._actani.reset();
 		this.is_launch = false;
+	}
+
+	/**
+	 * is owner can invoke skill
+	 * @virtual
+	 * @param {SceneCharacter} owner
+	 * @returns {boolean}
+	 */
+	test(owner) {
+		return true;
 	}
 
 	/**
@@ -876,6 +910,16 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	}
 
 	/**
+	 * is owner can invoke skill
+	 * @override
+	 * @param {SceneCharacter} owner
+	 * @returns {boolean}
+	 */
+	test(owner) {
+		return true;
+	}
+
+	/**
 	 * @override
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
@@ -958,6 +1002,18 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	}
 
 	/**
+	 * is owner can invoke skill
+	 * @override
+	 * @param {SceneCharacter} owner
+	 * @returns {boolean}
+	 */
+	test(owner) {
+		const $physics = owner.$physics;
+		const state = owner.$physics.state;
+		return !$physics.$foothold && state.jump && state.jump_count < this.jump_max_count;
+	}
+
+	/**
 	 * @override
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
@@ -965,27 +1021,16 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
-		if (!this._owner) {
+		if (!this._owner_player) {
 			debugger;
 			return;
 		}
-		const $physics = this._owner.$physics;
+		if (keyDown == 1 && this.test(this._owner_player)) {
+			const $physics = this._owner_player.$physics;
+			
+			$physics.state.jump_count += $physics.state.jump_count ? 1 : 2;
 
-		if ($physics.state.jump_count == 0) {
-			if (keyDown == 1 && $physics.state.jump) {
-				this.jump2();
-				$physics.state.jump_count += 2;
-			}
-			else {//normal jump
-				inputKey.jump = inputKey.jump ? Math.max(keyDown, inputKey.jump) : keyDown;
-				return false;
-			}
-		}
-		else if ($physics.state.jump) {
-			if (keyDown == 1 && $physics.state.jump_count < this.jump_max_count) {
-				this.jump2();
-				$physics.state.jump_count += 1;
-			}
+			this.jump2()
 		}
 	}
 
@@ -994,23 +1039,18 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		const $physics = this._owner.$physics;
+		const $physics = this._owner_player.$physics;
 
-		if ($physics.state.jump_count > 1) {
-			if ($physics.$foothold || this._actani.isEnd()) {
-				this.is_end = true;
-			}
-		}
-		else if ($physics.$foothold) {//!$physics._isCanJump()
-			if (this._actani.isEnd()) {
-				this.is_end = true;
-			}
-			else if ($gv.m_editor_mode) {
-				this.is_end = true;
-			}
-		}
-		else if (this._actani.isEnd()) {
+		if (this._isFinishDefaultAction()) {
 			this.is_end = true;
+		}
+		else {
+			if ($physics.$foothold) {
+				this.is_end = true;
+			}
+			else if (!$physics.state.jump) {
+				this.is_end = true;
+			}
 		}
 	}
 }
@@ -1025,6 +1065,26 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	_init() {
 		this._applyDefaultAction();
 		// ...
+	}
+
+	/**
+	 * is owner can invoke skill
+	 * @override
+	 * @param {SceneCharacter} owner
+	 * @returns {boolean}
+	 */
+	test(owner) {
+		return true;
+	}
+
+	/**
+	 * @override
+	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
+	 * @returns {boolean} - cancel player default control
+	 */
+	control(inputKey, keyDown, keyUp) {
 	}
 
 	/**
@@ -1064,23 +1124,35 @@ export class SceneSkill extends SkillAnimationBase {
 		this.update = this.wait_loading;
 		this.control = this.wait_loading;
 		
-		let loaded_skill = SceneSkill.__loaded_skill[skillId];
-		if (loaded_skill) {
-			if (loaded_skill.$promise) {
-				await loaded_skill.$promise;
+		try {
+			let loaded_skill = SceneSkill.__loaded_skill[skillId];
+			if (loaded_skill) {
+				if (loaded_skill.$promise) {
+					this.$promise = loaded_skill.$promise;
+					await loaded_skill.$promise;
+					delete this.$promise;
+				}
+				this._assign(loaded_skill);
 			}
-			this._assign(loaded_skill);
+			else {
+				let promise = this._load(skillId/*, owner*/);//owner ??
+
+				this.$promise = promise;
+
+				SceneSkill.__loaded_skill[skillId] = this;
+
+				await promise;
+
+				delete this.$promise;
+			}
 		}
-		else {
-			let promise = this._load(skillId, owner);
-
-			this.$promise = promise;
-
-			SceneSkill.__loaded_skill[skillId] = this;
-
-			await promise;
-
+		catch (ex) {
+			console.error("can not load skill: %o, owner: %o", skillId, owner);
 			delete this.$promise;
+			this.update = this.__load_failed;//debug
+			this.control = this.__load_failed;//debug
+			//delete SceneSkill.__loaded_skill[skillId];//try reload
+			throw ex;
 		}
 		
 		delete this.update;
@@ -1088,6 +1160,36 @@ export class SceneSkill extends SkillAnimationBase {
 	}
 	
 	wait_loading() {
+	}
+	
+	/**
+	 * debug
+	 */
+	__load_failed() {
+	}
+	
+	/**
+	 * @param {string} skillId
+	 * @returns {SceneSkill}
+	 */
+	static preload(skillId) {
+		try {
+			let loaded_skill = SceneSkill.__loaded_skill[skillId];
+			if (loaded_skill) {
+				return loaded_skill;
+			}
+			else {
+				let skill = new SceneSkill();
+				
+				skill.load(skillId, "static preload no owner");
+				
+				return skill;
+			}
+		}
+		catch (ex) {
+			console.error("can not preload skill: %o", skillId);
+			throw ex;
+		}
 	}
 }
 SceneSkill.__loaded_skill = {};

@@ -1,7 +1,7 @@
 ﻿
-import { ItemCategoryInfo } from '../../public/javascripts/resource.js';
+import { ItemCategoryInfo } from "../../public/javascripts/resource.js";
 
-import { IRenderer } from './IRenderer.js';
+import { IRenderer } from "./IRenderer.js";
 
 import { SceneObject } from "./SceneObject.js";
 import { CharacterRenderer } from "./Renderer/CharacterRenderer.js";
@@ -16,11 +16,12 @@ import { CharacterMoveElem } from "../Client/PMovePath.js";
 import { $Packet_CharacterMove } from "../Common/Packet";
 import { AttackInfo, DamagePair } from "../Common/AttackInfo.js";
 
-import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from '../ui/Basic/KeySlot.js';
+import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from "../ui/Basic/KeySlot.js";
+import { InputKey } from "./InputKey.js";
 
-import { SceneMap } from './Map.js';
-import { damageNumberLayer } from './Renderer/DamageNumber.js';
-import { Chair } from './Renderer/Chair.js';
+import { SceneMap } from "./Map.js";
+import { damageNumberLayer } from "./Renderer/DamageNumber.js";
+import { Chair } from "./Renderer/Chair.js";
 import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
 
 
@@ -149,11 +150,12 @@ const keyboard_map = [
 		ArrowLeft: new KeySlot("Action", new ActionSlot("left")),
 		ArrowDown: new KeySlot("Action", new ActionSlot("down")),
 		ArrowRight: new KeySlot("Action", new ActionSlot("right")),
-		//z: new KeySlot("Action", new ActionSlot("jump")),
-		z: new KeySlot("Skill", new SkillSlot("23001002")),//二段跳取代跳躍鍵
-		x: new KeySlot("Skill", new SkillSlot("1001005")),
-		c: new KeySlot("Skill", new SkillSlot("64120000")),
-		v: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
+		z: new KeySlot("Action", new ActionSlot("jump")),
+		//z: new KeySlot("Skill", new SkillSlot("23001002")),
+		x: new KeySlot("Action", new ActionSlot("attack")),
+		c: new KeySlot("Skill", new SkillSlot("1001005")),
+		v: new KeySlot("Skill", new SkillSlot("64120000")),
+		b: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
 	},
 	{//editor mode
 		w: new KeySlot("Action", new ActionSlot("up")),
@@ -162,12 +164,92 @@ const keyboard_map = [
 		d: new KeySlot("Action", new ActionSlot("right")),
 		q: new KeySlot("Action", new ActionSlot("jump")),
 		f: new KeySlot("Skill", new SkillSlot("23001002")),//debug
-		x: new KeySlot("Skill", new SkillSlot("1001005")),
-		c: new KeySlot("Skill", new SkillSlot("64120000")),
-		v: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
+		x: new KeySlot("Action", new ActionSlot("attack")),
+		c: new KeySlot("Skill", new SkillSlot("1001005")),
+		v: new KeySlot("Skill", new SkillSlot("64120000")),
+		b: new KeySlot("Skill", new SkillSlot("23121000")),//152001001
 	}
 ];
 
+
+class PlayerJob {
+	constructor() {
+		/** @type {InputKey} */
+		this.inputKey = new InputKey();
+	}
+	
+	/**
+	 * @param {BaseSceneCharacter} owner
+	 * @param {number} stamp
+	 * @param {InputKey} inputKey
+	 */
+	update(owner, stamp, inputKey) {
+		let r = this._update_command_skill(owner, stamp, inputKey);
+		if (r) {
+			return true;
+		}
+		else {
+			return this._update(owner, stamp, inputKey);
+		}
+	}
+	
+	/**
+	 * @param {BaseSceneCharacter} owner
+	 * @param {number} stamp
+	 * @param {InputKey} inputKey
+	 */
+	_update(owner, stamp, inputKey) {
+		return false;
+	}
+	
+	/**
+	 * @param {BaseSceneCharacter} owner
+	 * @param {number} stamp
+	 * @param {InputKey} inputKey
+	 * @returns {boolean} is match
+	 */
+	_update_command_skill(owner, stamp, inputKey) {
+		const frontKey = owner.$physics.state.front > 0 ? "right" : "left";
+		
+		//this.inputKey.update(stamp, ikey);
+		
+		if (this.inputKey.match([["down"], [frontKey]], -1) ||
+			this.inputKey.match([["down"], ["down", frontKey], [frontKey]], -1)
+		) {
+			if (inputKey.attack == 1) {
+				console.log("invoke skill: 波動拳");
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+class PlayerJob_2300 extends PlayerJob {
+	/**
+	 * @param {BaseSceneCharacter} owner
+	 * @param {number} stamp
+	 * @param {InputKey} inputKey
+	 */
+	_update(owner, stamp, inputKey) {
+		if (inputKey.jump) {
+			const skill_id = "23001002";
+			let skill = owner.activeSkills.get(skill_id);
+			//if (keyDown && can_use_skill) {
+				skill = skill || SceneSkill.preload(skill_id);
+				if (!skill.$promise && skill.test(owner)) {
+					skill = skill || owner.invokeSkill(skill_id);
+					if (skill) {
+						skill.control(inputKey, inputKey.jump, 0);
+					}
+				}
+			//}
+			//if (skill) {
+			//	skill.control(ikey, keyDown, keyUp);
+			//}
+		}
+	}
+}
 
 export class BaseSceneCharacter extends SceneObject {
 	constructor() {
@@ -178,22 +260,12 @@ export class BaseSceneCharacter extends SceneObject {
 
 		/** @type {CharacterRenderer} */
 		this.renderer = null;
-
 		this.$layer = 5;
 
 		/** @type {string} */
 		this.name = null;
 
 		this.stat = new CharacterStat();
-
-		/** @type {Map<string,SceneSkill>} */
-		this.activeSkills = new Map();
-		
-		/** @type {Chair} */
-		this.chair = null;
-		
-		/** @type {ChatController} */
-		this.chatCtrl = new ChatController();
 		
 		// begin PlayerData
 		//TODO: move player data to PlayerData
@@ -208,6 +280,21 @@ export class BaseSceneCharacter extends SceneObject {
 		this.damageSkin = "default";
 		
 		// end PlayerData
+
+		/** @type {PlayerJob} */
+		this.jobController = new PlayerJob_2300();
+
+		/** @type {Map<string,SceneSkill>} */
+		this.activeSkills = new Map();
+		
+		/** @type {Map<string,SceneSkill>} */
+		this.skillControllers = new Map();
+		
+		/** @type {Chair} */
+		this.chair = null;
+		
+		/** @type {ChatController} */
+		this.chatCtrl = new ChatController();
 		
 		Object.defineProperties(this, {
 			$inPacket: {
@@ -718,6 +805,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 		//	delete this.$$jump_state;
 		//}
 		const key_map = keyboard_map[$gv.m_editor_mode ? 1 : 0];
+
 		/** @type {{[key:string]:number}} */
 		let ikey = {};
 
@@ -763,26 +851,32 @@ export class SceneCharacter extends BaseSceneCharacter {
 			}
 		}
 		if (!this.chair) {
-			for (let keyName in key_map) {
-				/** @type {KeySlot} */
-				const keySlot = key_map[keyName];
-				if (!keySlot) {
-					debugger;
-					continue;
-				}
-				const keyDown = $gv.input_keyDown[keyName];
-				const keyUp = $gv.input_keyUp[keyName];
-
-				if (keySlot.type == "Skill") {
-					/** @type {SkillSlot} */
-					const sk = keySlot.data;
-					const skill_id = sk.skill_id;
-					let skill = this.activeSkills.get(skill_id);
-					if (keyDown && can_use_skill) {
-						skill = this.invokeSkill(sk.skill_id);
+			//TODO: stamp
+			const stamp = 0;
+			if (this.jobController.update(this, stamp, ikey)) {
+			}
+			else {
+				for (let keyName in key_map) {
+					/** @type {KeySlot} */
+					const keySlot = key_map[keyName];
+					if (!keySlot) {
+						debugger;
+						continue;
 					}
-					if (skill) {
-						skill.control(ikey, keyDown, keyUp);
+					const keyDown = $gv.input_keyDown[keyName];
+					const keyUp = $gv.input_keyUp[keyName];
+
+					if (keySlot.type == "Skill") {
+						/** @type {SkillSlot} */
+						const ks = keySlot.data;
+						const skill_id = ks.skill_id;
+						let skill = this.activeSkills.get(skill_id);
+						if (keyDown && can_use_skill) {
+							skill = skill || this.invokeSkill(skill_id);
+						}
+						if (skill) {
+							skill.control(ikey, keyDown, keyUp);
+						}
 					}
 				}
 			}
