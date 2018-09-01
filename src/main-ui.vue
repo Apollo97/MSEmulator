@@ -1,12 +1,16 @@
 ﻿
 <template>
-	<component :is="view"></component>
+	<div>
+		<component :is="view"></component>
+		<frame-2 ref="smallTip" style="position: absolute;"></frame-2>
+	</div>
 </template>
 
 <script>
 	import app_state from "./state.js";
 	import UIApp from "./ui-app.vue";
 	import UILogin from "./ui-login.vue";
+	import Frame2 from "./ui/UIToolTip/Frame2.vue";
 	
 	export default {
 		store: app.store,
@@ -29,6 +33,7 @@
 		components: {
 			"ui-app": UIApp,
 			"ui-login": UILogin,
+			"frame-2": Frame2,
 		}
 	};
 </script>

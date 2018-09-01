@@ -45,9 +45,13 @@
 				html: [],
 				is_show: false,
 				guiData: null,
+				zIndex: 0,
 			};
 		},
 		methods: {
+			__set_z_index: function (z) {
+				this.zIndex = z;
+			},
 			_getImgStyle: function (p, h, v, repeat) {
 				let path, img, data = this.guiData, s = {};
 				if (data && (img = data[p]) && (path = img[""])) {

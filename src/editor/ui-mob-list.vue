@@ -238,8 +238,9 @@
 }
 
 table {
-    border-collapse: collapse;
-    border-spacing: 0;
+	border-collapse: collapse;
+	border-spacing: 0;
+	width: 100%;
 }
 
 tr.new-item {

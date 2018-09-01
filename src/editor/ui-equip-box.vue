@@ -1,27 +1,8 @@
 ﻿
 <template>
-	<ui-draggable class="ui-dialog ui-equip-box" :zIndex="zIndex" :position="position">
-		<div v-if="minimum" @mousedown.left="requireOrder($event)" class="header" :style="header_style">
-			Equip box
-			<div class="header-buttons">
-				<button @click="minimum=!minimum"
-						class="header-button">
-							<span class="ui-icon ui-icon-plus"></span>
-						</button>
-			</div>
-		</div>
-		<div v-else @mousedown.left="requireOrder($event)" class="header btn-group" :style="header_style">
-			<div class="header" style="text-align: left;">
-				Equip box
-				<div class="header-buttons">
-					<button @click="minimum=!minimum"
-							class="header-button"
-							>
-								<span class="ui-icon ui-icon-minus"></span>
-							</button>
-				</div>
-			</div>
-
+	<div class="ui-equip-box">
+		<div ref="content" @mousedown.left="requireOrder($event)" :style="content_style" class="content">
+			<!-- begin header -->
 			<div>
 				<div v-once style="display: inline-flex; width: 100%;">
 					<select v-model="selected_category" style="flex: 1;">
@@ -36,7 +17,7 @@
 							</template>
 						</template>
 					</select>
-					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" />
+					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" placeholder="<search by name or id>" />
 					<datalist id="search_param">
 						<option value="劍">item Name</option>
 						<option value="01302000">item ID</option>
@@ -55,52 +36,51 @@
 							<div><label><input type="checkbox" v-model="displayMode" />display: {{displayMode ? "plain":"list"}}</label></div>
 						</div>
 					</div>
+					</div>
+
+				<div class="button-area" style="background: lightgray;">
+					<ui-button-group type="checkbox" :buttons="filter_buttons" :active.sync="filters" class="filters">
+						<template slot-scope="{text, value}">
+							<img :src="`images/toolstrip_${value}.png`" :alt="text" />
+						</template>
+					</ui-button-group>
+
+					<ui-button-group v-if="_is_category_face()" type="radio" :buttons="face_color_buttons" :active.sync="face_color" class="face_color">
+						<template slot-scope="{text, value}">
+							<span :value="value" :title="`${value}. ${text}色臉型`" :style="{background: '#'+value}">{{text}}</span>
+						</template>
+					</ui-button-group>
+
+					<template v-if="_is_category_hair()">
+						<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
+							<template slot-scope="{text, value}">
+								<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+							</template>
+						</ui-button-group>
+						<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
+							<tr>
+								<td :style="getHairMixColor1CSS()"><span style="width: 3em; display: inline-block;">{{String(100-hair_mix2)}}%</span></td>
+								<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
+								<td :style="getHairMixColor2CSS()"><span style="width: 3em; display: inline-block;">{{String(hair_mix2)}}%</span></td>
+							</tr>
+						</table>
+						<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color2" class="hair_color">
+							<template slot-scope="{text, value}">
+								<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+							</template>
+						</ui-button-group>
+					</template>
+				</div>
+
+				<div v-if="__count_of_item_in_page > 0" class="header pagination top">
+					<template v-for="i in __count_of_page">
+						<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
+						<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
+					</template>
 				</div>
 			</div>
-
-			<div class="button-area" style="background: lightgray;">
-				<ui-button-group type="checkbox" :buttons="filter_buttons" :active.sync="filters" class="filters">
-					<template slot-scope="{text, value}">
-						<img :src="`images/toolstrip_${value}.png`" :alt="text" />
-					</template>
-				</ui-button-group>
-
-				<ui-button-group v-if="_is_category_face()" type="radio" :buttons="face_color_buttons" :active.sync="face_color" class="face_color">
-					<template slot-scope="{text, value}">
-						<span :value="value" :title="`${value}. ${text}色臉型`" :style="{background: '#'+value}">{{text}}</span>
-					</template>
-				</ui-button-group>
-
-				<template v-if="_is_category_hair()">
-					<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
-						<template slot-scope="{text, value}">
-							<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
-						</template>
-					</ui-button-group>
-					<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
-						<tr>
-							<td :style="getHairMixColor1CSS()"><span style="width: 3em; display: inline-block;">{{String(100-hair_mix2)}}%</span></td>
-							<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
-							<td :style="getHairMixColor2CSS()"><span style="width: 3em; display: inline-block;">{{String(hair_mix2)}}%</span></td>
-						</tr>
-					</table>
-					<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color2" class="hair_color">
-						<template slot-scope="{text, value}">
-							<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
-						</template>
-					</ui-button-group>
-				</template>
-			</div>
-
-			<div v-if="__count_of_item_in_page > 0" class="header pagination top">
-				<template v-for="i in __count_of_page">
-					<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
-					<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
-				</template>
-			</div>
-		</div>
-
-		<div ref="content" @mousedown.left="requireOrder($event)" :style="content_style" class="content">
+			<!-- end header -->
+			
 			<template v-if="__count_of_item_in_page > 0">
 				<template v-if="displayMode==false">
 					<ul class="item-list" style="width: calc(6*48px);">
@@ -164,31 +144,10 @@
 				</div>
 			</template>
 		</div>
-
-		<div v-if="!minimum" @mousedown.left="requireOrder($event)" class="footer" :style="header_style">
-			<div v-if="!minimum" style="text-align: center;">
-				<div v-if="__count_of_item_in_page > 0" class="pagination bottom">
-					<template v-for="i in __count_of_page">
-						<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
-						<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
-					</template>
-				</div>
-
-				<!--<div style="background: lightgray;">
-					<p>selected_category: {{selected_category}}</p>
-					<p>search_item: {{search_item}}</p>
-					<p>filters: {{filters}}</p>
-					<p>face_color: {{face_color}}</p>
-					<p>hair_color: {{hair_color}}</p>
-				</div>-->
-			</div>
-		</div>
-	</ui-draggable>
+	</div>
 </template>
 
 <script>
-	import Vuex from 'vuex';
-
 	import UIDraggable from "../components/ui-draggable.vue";
 	import UIDialog from "../components/ui-dialog.vue";
 	import UIButtonGroup from '../components/ui-button-group.vue';
@@ -343,6 +302,8 @@
 
 				onlyShowSearchResult: true,
 				displayMode: true,
+				
+				zIndex: 0,
 			};
 		},
 		computed: {
@@ -389,6 +350,9 @@
 			},
 		},
 		methods: {
+			__set_z_index: function (z) {//override
+				this.zIndex = z;
+			},
 			getHairMixColor1CSS() {
 				return Object.assign({ "clip-path": "polygon(50% 0%, 0% 20%, 0% 90%, 100% 90%, 100% 20%)" }, hair_color_buttons[this.hair_color].style);
 			},
@@ -874,7 +838,7 @@
 	};
 </script>
 
-<style>
+<style scoped>
 	.ui-equip-box .header {
 		text-align: left;
 	}

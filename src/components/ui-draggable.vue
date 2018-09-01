@@ -221,7 +221,7 @@
 				evt.ctrlKey, evt.altKey, evt.shiftKey, evt.metaKey, 0, null);
 				
 				evt.target.dispatchEvent(newEvt);
-			}
+			},
 		},
 		mounted: function () {
 			let el = this.$el;

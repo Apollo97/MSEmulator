@@ -5,8 +5,6 @@
 			<slot name="header"></slot>
 			<slot name="content"></slot>
 			<slot></slot>
-		</div>
-		<div ref="footer" @mousedown.left="requireOrder($event)" class="footer">
 			<slot name="footer"></slot>
 		</div>
 	</ui-draggable>
@@ -17,6 +15,16 @@
 	import UIDialog from "../../components/ui-dialog.vue";
 
 	export default {
+		data: function () {
+			return {
+				zIndex: 0,
+			};
+		},
+		methods: {
+			__set_z_index: function (z) {
+				this.zIndex = z;
+			},
+		},
 		components: {
 			"ui-draggable": UIDraggable,
 			"ui-dialog": UIDialog,

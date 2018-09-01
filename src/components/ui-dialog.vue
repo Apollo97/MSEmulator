@@ -1,35 +1,35 @@
 ﻿
 <template>
-	<ui-draggable class="ui-dialog" :zIndex="zIndex" :position="position" @update:position="updateDialogPosition">
-		<div ref="header" class="header" @mousedown.left="requireOrder($event)" :style="header_style">
-			<div @contextmenu.self.prevent="minimum=!minimum" class="header">
-				<slot name="header"></slot>
-				<div class="header-buttons">
-					<button v-if="minimum"
-							@click="minimum=false"
-							class="header-button">
-								<span class="ui-icon ui-icon-plus"></span>
-							</button>
-					<button v-else
-							@click="minimum=true; onCollapsed()"
-							class="header-button">
-								<span class="ui-icon ui-icon-minus"></span>
-							</button>
+	<ui-resizable ref="window" class="ui-dialog" @mousedown="requireOrder($event)">
+		<div ref="content" class="content" @mousedown="requireOrder($event)">
+			<div ref="header" class="header" @mousedown="requireOrder($event)">
+				<div @contextmenu.self.prevent="minimum=!minimum" class="header">
+					<slot name="header"></slot>
+					<div class="header-buttons">
+						<button v-if="minimum"
+								@click="onCollapsed(false)"
+								class="header-button">
+									<span class="ui-icon ui-icon-plus"></span>
+								</button>
+						<button v-else
+								@click="onCollapsed(true)"
+								class="header-button">
+									<span class="ui-icon ui-icon-minus"></span>
+								</button>
+					</div>
 				</div>
 			</div>
+			<div :style="{ display: minimum ? 'none' : 'block' }">
+				<slot name="content"></slot>
+				<slot></slot>
+			</div>
 		</div>
-		<div ref="content" @mousedown.left="requireOrder($event)" :style="content_style" class="content">
-			<slot name="content"></slot>
-			<slot></slot>
-		</div>
-		<div ref="footer" v-if="!minimum" @mousedown.left="requireOrder($event)" class="footer">
-			<slot name="footer"></slot>
-		</div>
-	</ui-draggable>
+	</ui-resizable>
 </template>
 
 <script>
 	import UIDraggable from "./ui-draggable.vue";
+	import UIResizable from "./ui-resizable.vue";
 
 	let px_regx = /(^-?(\d+|(\d*.\d+))px$)|(^auto$)/;
 	//.match(/(^[+-]?\d+\.\d+?)|(^[+-]?\d+)|(^[+-]?\.\d+)/)
@@ -72,37 +72,78 @@
 				header_style: {
 				},
 				minimum: false,
-				zIndex: 1,
 		//		_option: {}
+				
+				zIndex: 0,
+				
+				_$width: 0,
+				_$height: 0,
 			};
 		},
 
 		computed: {
+			style: function () {
+				return this.$refs.window.style;
+			},
+			/*zIndex: {
+				get: function () {
+					return this.style.zIndex;
+				},
+				set: function (value) {
+					this.style.zIndex = value;
+				}
+			}*/
 		},
 
-		// directives: {
-		//     'dialog': {
-		//         bind: function () {
-		//         }
-		//     }
-		// }
+		//directives: {
+		//	'dialog': {
+		//			bind: function () {
+		//		}
+		//	}
+		//}
 
 		methods: {
+			setStyle: function (style) {
+				this.$refs.window.setStyle(style);
+			},
 			updateDialogPosition: function (event) {
 				this.$emit('update:position', event);
 			},
-			onCollapsed: function () {
-				let contents = this.$children[0].$children;
-				for (let i = 0; i < contents.length; ++i) {
-					contents[i].$emit("onCollapsed");
+			onCollapsed: function (value) {
+				this.minimum = value;
+				
+				if (value) {
+					//save size
+					this._$width = this.$refs.window.style.width + "";
+					this._$height = this.$refs.window.style.height + "";
+					
+					let { width, height} = this.$refs.header.getBoundingClientRect();;
+					
+					//const outerBorder = 1 + 1;//left + right
+					const ResizeHolder = 5 + 5;//left + right
+					//const innerBorder = 1 + 1;//left + right
+					const bbb = /*outerBorder + */ResizeHolder/* + innerBorder*/;
+					
+					this.$refs.window.style.width = (width + bbb) + "px";
+					this.$refs.window.style.height = (height + bbb) + "px";
 				}
+				else {
+					//restore size
+					this.$refs.window.style.width = this._$width;
+					this.$refs.window.style.height = this._$height;
+				}
+				
+				//let contents = this.$children[0].$children;
+				//for (let i = 0; i < contents.length; ++i) {
+				//	contents[i].$emit("onCollapsed");
+				//}
 			},
-			compute_width: function () {
+			/*compute_width: function () {
 				return this.width;
 			},
 			compute_height: function () {
 				return this.height;
-			},
+			},*/
 			//myUpdate: function (val) {
 			//	//return;
 			//	$(this.$el).dialog({
@@ -144,9 +185,9 @@
 				}
 			},
 			__set_z_index: function (z) {
-				this.zIndex = z;
+				this.$refs.window.style.zIndex = z;
 			},
-			reset_content_style: function () {
+			/*reset_content_style: function () {
 				let style = {};
 				let el_content = this.$refs.content;
 				if (el_content) {
@@ -174,29 +215,29 @@
 				this.content_style = style;
 				this.header_style["width"] = this.content_style["width"];
 				this.header_style["max-width"] = this.content_style["max-width"];
-			}
+			}*/
 		},
 		
 		watch: {
-			width: function () {
+			/*width: function () {
 				//alert("UIDialog.width is not implement");
 				this.reset_content_style();
 			},
 			height: function () {
 				//alert("UIDialog.height is not implement");
 				this.reset_content_style();
-			},
+			},*/
 			minimum: function () {
-				this.reset_content_style();
+				//this.reset_content_style();
 			}
 		},
 
 		mounted: function () {
 			zIndices.push(this);
 
-			this.zIndex = zIndices.length;
+			this.__set_z_index(zIndices.length);
 			
-			this.reset_content_style();
+			//this.reset_content_style();
 		},
 
 		updated: function () {
@@ -206,8 +247,13 @@
 		//   }
 
 		components: {
-			"ui-draggable": UIDraggable
-		}
+			"ui-draggable": UIDraggable,
+			"ui-resizable": UIResizable,
+		},
+		
+		//mixins: [
+		//	UIResizable,
+		//]
 	}
 	
 	//export default {
@@ -304,73 +350,65 @@
 	//		$(this.$el).dialog(this.extends_option());
 	//	},
 	//
-	//	//   watch: {
-	//	//     title: function (val) {
-	//	//       $(this.$el).dialog({
-	//	//         title: val
-	//	//       });
-	//	//     }
-	//	//   }
+	//	//watch: {
+	//	//	title: function (val) {
+	//	//		$(this.$el).dialog({
+	//	//			title: val
+	//	//		});
+	//	//	}
+	//	//}
 	//}
 </script>
 
-<style>
+<style scoped>
 	.ui-dialog {
 		border-radius: 4px;
 	}
 
-	.ui-dialog > * {
-		/*padding: 0.5em 1em;*/
-		/*display: inline-block;*/
-		/*width: 100%;*/
-	}
-
-	.ui-dialog > .header {
-		/*cursor: default;*/
-		padding: 0.25em 0.5em;
+	.header {
 		user-select: none;
 		background: #e9e9e9;
-		border: 1px solid #dddddd;
-		/*border-top-left-radius: 4px;*/
-		/*border-top-right-radius: 4px;*/
 		text-align: left;
 		box-sizing: border-box;
+		padding: 0.1em;
 	}
-	
-	.ui-dialog > .header .header-buttons {
+
+	.header .header-buttons {
 		display: inline;
 		right: 0.5em;
 		margin-right: 1px;
 		position: absolute;
 	}
-	.ui-dialog > .header .header-buttons > * {
+	.header .header-buttons > * {
 		padding: 0;
 		border: none;
 		background: transparent;
 	}
-	.ui-dialog > .header .header-buttons > .header-button {
+	.header .header-buttons > .header-button {
 	}
-	.ui-dialog > .header .header-buttons > .header-button:hover {
+	.header .header-buttons > .header-button:hover {
 		background: lightgray;
 	}
-	.ui-dialog > .header .header-buttons > .header-button:active {
+	.header .header-buttons > .header-button:active {
 		background: lightblue;
 	}
 
-	.ui-dialog > .content {
+	.content {
 		position: relative;
 		background: white;
 		border-left: 1px solid #dddddd;
 		border-right: 1px solid #dddddd;
-		min-width: 16em;
-		min-height: 10em;
+		/*min-width: 16em;*/
+		/*min-height: 10em;*/
 		/*width: auto;*/
 		/*height: auto;*/
+		width: 100%;
+		height: 100%;
 		overflow: auto;
 		box-sizing: border-box;
 	}
 
-	.ui-dialog > .footer {
+	.footer {
 		padding: 0.1em 0.25em;
 		user-select: none;
 		background: #e9e9e9;

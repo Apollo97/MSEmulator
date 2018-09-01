@@ -40,8 +40,6 @@
 							:chara="chara"
 							:state="ItemTip_state"></ui-tool-tip>
 		</div>
-
-		<frame-2 ref="smallTip" style="position: absolute;"></frame-2>
 	</div>
 </template>
 
@@ -54,7 +52,6 @@
 	import UIWindowItem from "./ui/UIWindow/Item.vue";
 
 	import ItemTip from "./ui/UIToolTip/ItemTip.vue";
-	import Frame2 from "./ui/UIToolTip/Frame2.vue";
 
 	import Editor from "./editor/editor.vue";
 
@@ -311,7 +308,6 @@
 		components: {
 			"editor": Editor,
 			"ui-tool-tip": ItemTip,
-			"frame-2": Frame2,
 			"status-bar": StatusBar,
 			"ui-window-equip": UIWindowEquip,
 			"ui-window-item": UIWindowItem,

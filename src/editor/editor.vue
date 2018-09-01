@@ -2,7 +2,7 @@
 <template>
 	<div @contextmenu.self.prevent="" class="dialog-group Editor">
 		
-		<ui-dialog :position="wnds.menu.pos" width="302px">
+		<ui-dialog ref="menu">
 			<template slot="header">
 				Menu
 			</template>
@@ -88,7 +88,7 @@
 		</ui-dialog>
 
 		<transition name="fade">
-			<ui-dialog ref="character_list" v-show="wnds.character_list.visable" :position="wnds.character_list.pos" width="16.1em" height="50vh">
+			<ui-dialog ref="character_list" v-show="wnds.character_list.visable">
 				<template slot="header">
 					Characters
 					<template v-if="progressMaximum">
@@ -108,7 +108,7 @@
 						</div>
 						<ui-sortable :items="charaList" @input="oninput_sort" class="ui-character-list">
 							<template slot-scope="{item, index}">
-								<li :id="item.id" @mousedown.left="selectChara(item.id)" :class="[(selected == item.id ? 'active':''), item.id].join(' ')" :title="item.id" :key="item.id">
+								<li :id="item.id" @mousedown.left="selectChara(item.id)" :class="[(selected == item.id ? 'active':''), item.id].join(' ')" :title="item.id" :key="item.id" style="width: 100%;">
 									<table style="width:100%;">
 										<tr @contextmenu.prevent="openCharacterDLMenu($event, item.id);">
 											<td>{{index}}</td>
@@ -133,7 +133,7 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-dialog ref="character_list" v-show="wnds.character_attribute.visable" :position="wnds.character_attribute.pos" width="20em" height="50vh">
+			<ui-dialog ref="character_attribute" v-show="wnds.character_attribute.visable">
 				<template slot="header">
 					Character attribute
 				</template>
@@ -146,7 +146,7 @@
 		</transition>
 		
 		<transition name="fade">
-			<ui-dialog ref="spawnpoint" v-show="wnds.spawnpoint.visable" :position.sync="wnds.spawnpoint.pos" height="50vh">
+			<ui-dialog ref="spawnpoint" v-show="wnds.spawnpoint.visable">
 				<template slot="header">
 					Spawn point
 				</template>
@@ -157,25 +157,27 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-equip-box ref="equip_box"
-						  v-show="wnds.equip_box.visable"
-						  :position="wnds.equip_box.pos"
-						  width="20em"
-						  :height="400"
-						  @clickItem="clickItem"
-						  @hoverItem="hoverItem"
-						  @mouseleaveItem="mouseleaveItem"
-						  @faceColor="faceColor"
-						  @hairColor="hairColor"
-						  @hairColor2="hairColor2"
-						  @hairMix2="hairMix2"
-						  >
-			</ui-equip-box>
+			<ui-dialog ref="equip_box" v-show="wnds.equip_box.visable">
+				<template slot="header">
+					Equip box
+				</template>
+				<template slot="content">
+					<ui-equip-box @clickItem="clickItem"
+								  @hoverItem="hoverItem"
+								  @mouseleaveItem="mouseleaveItem"
+								  @faceColor="faceColor"
+								  @hairColor="hairColor"
+								  @hairColor2="hairColor2"
+								  @hairMix2="hairMix2"
+								  >
+					</ui-equip-box>
+				</template>
+			</ui-dialog>
 		</transition>
 		
 		<transition name="fade">
 			<template v-if="mapEditorMode.startsWith('layered')">
-				<ui-dialog v-show="wnds.debug_window.visable" :position="wnds.debug_window.pos" width="40vw" height="70vh">
+				<ui-dialog ref="debug_window" v-show="wnds.debug_window.visable">
 					<template slot="header">
 						<select v-model="mapEditorMode">
 							<option value="background">background</option>
@@ -203,7 +205,7 @@
 				</ui-dialog>
 			</template>
 			<template v-else>
-				<ui-dialog v-show="wnds.debug_window.visable" :position="wnds.debug_window.pos" width="40vw" height="70vh">
+				<ui-dialog v-show="wnds.debug_window.visable">
 					<template slot="header">
 						<select v-model="mapEditorMode">
 							<option value="background">background</option>
@@ -748,9 +750,70 @@
 			},
 		},
 		mounted: function () {
+			{
+				let elem = document.getElementById("bgm");
+				this.$refs.bgm_outer.appendChild(elem);
+			}
+			this.$nextTick(() => {
+				const scr_rat_x = $gv.is_mobile ? 0 : (window.innerWidth / 1366);
+				const scr_rat_y = $gv.is_mobile ? 0 : (window.innerHeight / 768);
+				
+				this.$refs.menu.setStyle({
+					left: _to_css_px(0),
+					top: _to_css_px(0),
+					width: _to_css_px(310),
+					height: _to_css_px(360),
+					minWidth: _to_css_px(310),
+				});
+				
+				this.$refs.character_list.setStyle({
+					left: _to_css_px(350 * scr_rat_x),
+					top: _to_css_px(0 * scr_rat_y),
+					width: CSS.em(16.1),
+					height: CSS.vh(25),
+					minWidth: CSS.em(16.1),
+				});
+				
+				this.$refs.character_attribute.setStyle({
+					left: _to_css_px(900 * scr_rat_x),
+					top: _to_css_px(0 * scr_rat_y),
+					width: CSS.em(20),
+					height: CSS.vh(26),
+					minWidth: CSS.em(20),
+				});
+				
+				this.$refs.equip_box.setStyle({
+					left: _to_css_px(0 * scr_rat_x),
+					top: _to_css_px(50 * scr_rat_y),
+					width: CSS.em(20),
+					height: _to_css_px(400),
+					minWidth: CSS.em(20),
+				});
+				
+				this.$refs.spawnpoint.setStyle({
+					left: _to_css_px(350 * scr_rat_x),
+					top: _to_css_px(0 * scr_rat_y),
+					width: _to_css_px(600),
+					height: CSS.vh(26),
+					minWidth: _to_css_px(400),
+				});
+				
+				this.$refs.spawnpoint.setStyle({
+					left: _to_css_px(0 * scr_rat_x),
+					top: _to_css_px(100 * scr_rat_y),
+					width: CSS.vw(40),
+					height: CSS.vh(70),
+					minWidth: CSS.vw(40),
+				});
+				
+				function _to_css_px(val) {
+					return CSS.px(val);
+				}
+			});
+		},
+		beforeDestroy: function () {
 			let elem = document.getElementById("bgm");
-			
-			this.$refs.bgm_outer.appendChild(elem);
+			document.getElementById("hidden_components").appendChild(elem);
 		},
 		components: {
 			"ui-draggable": UIDraggable,
