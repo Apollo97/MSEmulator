@@ -1,89 +1,102 @@
 ﻿
 <template>
 	<div class="ui-equip-box">
-		<div ref="content" @mousedown.left="requireOrder($event)" :style="content_style" class="content">
+		<div ref="content" @mousedown.left="requireOrder($event)" class="ui-equip-box-content">
 			<!-- begin header -->
-			<div>
-				<div v-once style="display: inline-flex; width: 100%;">
-					<select v-model="selected_category" style="flex: 1;">
-						<template v-for="(og,key) in categoryGroupList">
-							<template v-if="og.length>1">
-								<optgroup :label="key">
-									<option v-for="cat in og" :value="cat.id_prefix">{{cat.categoryName}}</option>
-								</optgroup>
+			<div class="header" style="width: 100%;">
+				<div style="width: 100%;">
+					<!-- begin filter -->
+					<div style="display: inline-flex; width: 100%;">
+						<select v-model="selected_category" style="flex: 1;">
+							<template v-for="(og,key) in categoryGroupList">
+								<template v-if="og.length>1">
+									<optgroup :label="key">
+										<option v-for="cat in og" :value="cat.id_prefix">{{cat.categoryName}}</option>
+									</optgroup>
+								</template>
+								<template v-else>
+									<option :value="og[0].id_prefix">{{og[0].categoryName}}</option>
+								</template>
 							</template>
-							<template v-else>
-								<option :value="og[0].id_prefix">{{og[0].categoryName}}</option>
-							</template>
-						</template>
-					</select>
-					<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" placeholder="<search by name or id>" />
-					<datalist id="search_param">
-						<option value="劍">item Name</option>
-						<option value="01302000">item ID</option>
-						<option value="<attr>:/<regexp>/"></option>
-						<option value="$style:/21158/">face | hair</option>
-						<option value="$foreign:/true/">external resource</option>
-						<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
-					</datalist>
-					<div style="position: relative; display: inline-block;">
-						<button v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" style="padding: 0;">
-							<span class="ui-icon ui-icon-gear"></span>
-						</button>
-						<div v-ui:hide v-ui:show.mouseenter="200" v-ui:hide.mouseleave="200" v-ui:ref="'setting'" ref="setting"
-							 style="position: absolute; left: 0; top: 0; background: #e9e9e9; border: 1px solid #ddd; width: 12em; text-align:left; padding: 0.25em 0.5em;">
-							<div><label><input type="checkbox" v-model="onlyShowSearchResult" />Only show result of search</label></div>
-							<div><label><input type="checkbox" v-model="displayMode" />display: {{displayMode ? "plain":"list"}}</label></div>
+						</select>
+						<input ref="input_search" type="search" v-model="search_text" @keydown.enter="searchNextText" list="search_param" placeholder="<search by name or id>" style="flex: 3;" />
+						<datalist id="search_param">
+							<option value="劍">item Name</option>
+							<option value="01302000">item ID</option>
+							<option value="<attr>:/<regexp>/"></option>
+							<option value="$style:/21158/">face | hair</option>
+							<option value="$foreign:/true/">external resource</option>
+							<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
+						</datalist>
+						<div style="position: relative; display: inline-block;">
+							<button @click="isShowSetting=!isShowSetting" title="setting" style="padding: 0;">
+								<span v-if="!isShowSetting" style="color: black;">⚙️</span>
+								<span v-else style="color: red;">⚙️</span>
+							</button>
 						</div>
 					</div>
+					<!-- end filter -->
+					
+					<!-- begin setting -->
+					<div v-if="isShowSetting">
+						<div><label><input type="checkbox" v-model="onlyShowSearchResult" />只顯示搜尋結果</label></div>
+						<div><label><input type="checkbox" v-model="displayMode" />顯示方式: {{displayMode ? "圖示":"清單"}}</label></div>
 					</div>
+					<!-- end setting -->
 
-				<div class="button-area" style="background: lightgray;">
-					<ui-button-group type="checkbox" :buttons="filter_buttons" :active.sync="filters" class="filters">
-						<template slot-scope="{text, value}">
-							<img :src="`images/toolstrip_${value}.png`" :alt="text" />
-						</template>
-					</ui-button-group>
-
-					<ui-button-group v-if="_is_category_face()" type="radio" :buttons="face_color_buttons" :active.sync="face_color" class="face_color">
-						<template slot-scope="{text, value}">
-							<span :value="value" :title="`${value}. ${text}色臉型`" :style="{background: '#'+value}">{{text}}</span>
-						</template>
-					</ui-button-group>
-
-					<template v-if="_is_category_hair()">
-						<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
+					<!-- begin color -->
+					<div class="button-area" style="background: lightgray;">
+						<ui-button-group type="checkbox" :buttons="filter_buttons" :active.sync="filters" class="filters">
 							<template slot-scope="{text, value}">
-								<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+								<img :src="`images/toolstrip_${value}.png`" :alt="text" />
 							</template>
 						</ui-button-group>
-						<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
-							<tr>
-								<td :style="getHairMixColor1CSS()"><span style="width: 3em; display: inline-block;">{{String(100-hair_mix2)}}%</span></td>
-								<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
-								<td :style="getHairMixColor2CSS()"><span style="width: 3em; display: inline-block;">{{String(hair_mix2)}}%</span></td>
-							</tr>
-						</table>
-						<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color2" class="hair_color">
+
+						<ui-button-group v-if="_is_category_face()" type="radio" :buttons="face_color_buttons" :active.sync="face_color" class="face_color">
 							<template slot-scope="{text, value}">
-								<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+								<span :value="value" :title="`${value}. ${text}色臉型`" :style="{background: '#'+value}">{{text}}</span>
 							</template>
 						</ui-button-group>
-					</template>
-				</div>
 
-				<div v-if="__count_of_item_in_page > 0" class="header pagination top">
-					<template v-for="i in __count_of_page">
-						<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
-						<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
-					</template>
+						<template v-if="_is_category_hair()">
+							<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color" class="hair_color">
+								<template slot-scope="{text, value}">
+									<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+								</template>
+							</ui-button-group>
+							<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
+								<tr>
+									<td :style="getHairMixColor1CSS()"><span class="mix-color">{{String(100-hair_mix2)}}%</span></td>
+									<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
+									<td :style="getHairMixColor2CSS()"><span class="mix-color">{{String(hair_mix2)}}%</span></td>
+								</tr>
+							</table>
+							<ui-button-group type="radio" :buttons="hair_color_buttons" :active.sync="hair_color2" class="hair_color">
+								<template slot-scope="{text, value}">
+									<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
+								</template>
+							</ui-button-group>
+						</template>
+					</div>
+					<!-- end color -->
+
+					<div style="padding-bottom: 2em;"></div>
+
+					<!-- begin pagination -->
+					<div v-if="__count_of_item_in_page > 0" class="header pagination top" style="position: absolute; margin-top: -2em; width: calc(100% - 12px);">
+						<template v-for="i in __count_of_page">
+							<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
+							<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
+						</template>
+					</div>
+					<!-- end pagination -->
 				</div>
 			</div>
 			<!-- end header -->
 			
-			<template v-if="__count_of_item_in_page > 0">
+			<div v-if="__count_of_item_in_page > 0" class="item-list-page">
 				<template v-if="displayMode==false">
-					<ul class="item-list" style="width: calc(6*48px);">
+					<ul class="item-list">
 						<template v-for="i in __count_of_item_in_page">
 							<li :key="__get_item_id(i - 1)"
 								:id="'item' + __get_item_id(i - 1)"
@@ -112,7 +125,7 @@
 					</ul>
 				</template>
 				<template v-else>
-					<div class="item-list-sm" :style="{width: `calc(${column_count + 1}*48px)`}">
+					<div class="item-list-sm">
 						<template v-for="i in __count_of_item_in_page">
 							<div @contextmenu.prevent :key="__get_item_id(i - 1)"
 								 :id="'item' + __get_item_id(i - 1)"
@@ -137,12 +150,12 @@
 						</template>
 					</div>
 				</template>
-			</template>
-			<template v-else>
+			</div>
+			<div v-else>
 				<div v-pre style="cursor: default;">
 					No search item
 				</div>
-			</template>
+			</div>
 		</div>
 	</div>
 </template>
@@ -281,8 +294,6 @@
 				search_text: "",
 				search_next: -1,
 
-				column_count: 5,
-
 				loaded_equip_list: [],	// origin list (no filter)
 				loaded_category: null,
 				equip_list: [],			// view list (final result)
@@ -302,6 +313,8 @@
 
 				onlyShowSearchResult: true,
 				displayMode: true,
+				
+				isShowSetting: false,
 				
 				zIndex: 0,
 			};
@@ -838,11 +851,23 @@
 	};
 </script>
 
-<style scoped>
+<style>
+	.ui-equip-box {
+		height: 100%;
+		width: 100%;
+	}
+	
+	.ui-equip-box-content {
+		display: table;
+		height: 100%;
+		width: 100%;
+	}
+	
 	.ui-equip-box .header {
+		display: table-row;
 		text-align: left;
 	}
-	.ui-equip-box .header.btn-group, .ui-equip-box .header .pagination {
+	.ui-equip-box .header.btn-group, .ui-equip-box .pagination {
 		text-align: center;
 	}
 
@@ -852,6 +877,14 @@
 		font-size: initial;
 	}
 
+	.ui-equip-box .item-list-page {
+		height: 100%;
+		display: table-row;
+	}
+	.ui-equip-box .item-list-page > * {
+		overflow: auto;
+		height: 100%;
+	}
 	.ui-equip-box .item-list {
 		list-style: none;
 		margin: auto;
@@ -957,6 +990,11 @@
 		color: white;
 		text-shadow: 0 0 0.1em black, 0 0 0.5em black;
 		z-index: 1;
+	}
+
+	.ui-equip-box .mix-color {
+		text-align: center;
+		width: 3em;
 	}
 
 	.ui-equip-box .button-area > * {

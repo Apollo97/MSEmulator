@@ -4,8 +4,10 @@
 		<div ref="content" class="content" @mousedown="requireOrder($event)">
 			<div ref="header" class="header" @mousedown="requireOrder($event)">
 				<div @contextmenu.self.prevent="minimum=!minimum" class="header">
-					<slot name="header"></slot>
-					<div class="header-buttons">
+					<div style="display: inline-block">
+						<slot name="header"></slot>
+					</div>
+					<div class="header-buttons" style="display: inline-block">
 						<button v-if="minimum"
 								@click="onCollapsed(false)"
 								class="header-button">
@@ -19,7 +21,7 @@
 					</div>
 				</div>
 			</div>
-			<div :style="{ display: minimum ? 'none' : 'block' }">
+			<div :style="{ display: (minimum ? 'none' : 'table-row'), height: '100%' }">
 				<slot name="content"></slot>
 				<slot></slot>
 			</div>
@@ -117,12 +119,12 @@
 					this._$width = this.$refs.window.style.width + "";
 					this._$height = this.$refs.window.style.height + "";
 					
-					let { width, height} = this.$refs.header.getBoundingClientRect();;
+					const { width, height} = this.$refs.header.getBoundingClientRect();
 					
 					//const outerBorder = 1 + 1;//left + right
 					const ResizeHolder = 5 + 5;//left + right
-					//const innerBorder = 1 + 1;//left + right
-					const bbb = /*outerBorder + */ResizeHolder/* + innerBorder*/;
+					const innerBorder = 1 + 1;//?? left + right
+					const bbb = /*outerBorder + */ResizeHolder + innerBorder;
 					
 					this.$refs.window.style.width = (width + bbb) + "px";
 					this.$refs.window.style.height = (height + bbb) + "px";
@@ -238,6 +240,36 @@
 			this.__set_z_index(zIndices.length);
 			
 			//this.reset_content_style();
+			
+			if (this.$refs.header && this.$refs.window) {
+				const { width, height} = this.$refs.header.getBoundingClientRect();
+				let minWidth, minHeight;
+				
+				if (this.style.minWidth instanceof CSSUnitValue) {
+					if (width > this.style.minWidth.value) {
+						minWidth = Math.trunc(width);
+					}
+				}
+				else if (!this.style.minWidth) {
+					minWidth = Math.trunc(width);
+				}
+				if (this.style.minHeight instanceof CSSUnitValue) {
+					if (height > this.style.minHeight.value) {
+						minHeight = Math.trunc(height);
+					}
+				}
+				else if (!this.style.minHeight) {
+					minHeight = Math.trunc(height);
+				}
+				const ResizeHolder = 5 + 5;//left + right
+				this.setStyle({
+					minWidth: CSS.px(minWidth + ResizeHolder),
+					minHeight: CSS.px(minHeight + ResizeHolder),
+				});
+			}
+			else {
+				console.log("ui-dialog not ui-resizable: ", this);
+			}
 		},
 
 		updated: function () {
@@ -366,11 +398,15 @@
 	}
 
 	.header {
+		display: table-row;
 		user-select: none;
 		background: #e9e9e9;
 		text-align: left;
 		box-sizing: border-box;
-		padding: 0.1em;
+		/*padding: 0.1em;*/
+		position: relative;
+		height: 0;/*make minimum height*/
+		cursor: move;
 	}
 
 	.header .header-buttons {
@@ -394,17 +430,17 @@
 	}
 
 	.content {
-		position: relative;
+		display: table;
+		/*position: relative;*/
 		background: white;
-		border-left: 1px solid #dddddd;
-		border-right: 1px solid #dddddd;
+		/*border-left: 1px solid #dddddd;*/
+		/*border-right: 1px solid #dddddd;*/
 		/*min-width: 16em;*/
 		/*min-height: 10em;*/
 		/*width: auto;*/
 		/*height: auto;*/
 		width: 100%;
 		height: 100%;
-		overflow: auto;
 		box-sizing: border-box;
 	}
 

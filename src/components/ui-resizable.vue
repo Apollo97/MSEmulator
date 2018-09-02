@@ -7,23 +7,23 @@
 		 >
 		<table class="fill frame" ref="frame">
 			<tr>
-				<td class="nw color_nw" @mousedown="resizable_mousedown('nw', $event)" @mouseup="resizable_mouseup('nw', $event)"></td>
-				<td class="n color_n" @mousedown="resizable_mousedown('n', $event)" @mouseup="resizable_mouseup('n', $event)"></td>
-				<td class="ne color_ne" @mousedown="resizable_mousedown('ne', $event)" @mouseup="resizable_mouseup('ne', $event)"></td>
+				<td class="resize-border nw color_nw" @mousedown="resizable_mousedown('nw', $event)" @mouseup="resizable_mouseup('nw', $event)"></td>
+				<td class="resize-border n color_n" @mousedown="resizable_mousedown('n', $event)" @mouseup="resizable_mouseup('n', $event)"></td>
+				<td class="resize-border ne color_ne" @mousedown="resizable_mousedown('ne', $event)" @mouseup="resizable_mouseup('ne', $event)"></td>
 			</tr>
 			<tr>
-				<td class="w color_w" @mousedown="resizable_mousedown('w', $event)" @mouseup="resizable_mouseup('w', $event)"></td>
+				<td class="resize-border w color_w" @mousedown="resizable_mousedown('w', $event)" @mouseup="resizable_mouseup('w', $event)"></td>
 				<td class="fill" @mousedown="resizable_mousedown('move', $event)" @mouseup="resizable_mouseup('move', $event)">
 					<div ref="content" class="fill content">
 						<slot></slot>
 					</div>
 				</td>
-				<td class="e color_e" @mousedown="resizable_mousedown('e', $event)" @mouseup="resizable_mouseup('e', $event)"></td>
+				<td class="resize-border e color_e" @mousedown="resizable_mousedown('e', $event)" @mouseup="resizable_mouseup('e', $event)"></td>
 			</tr>
 			<tr>
-				<td class="sw color_sw" @mousedown="resizable_mousedown('sw', $event)" @mouseup="resizable_mouseup('sw', $event)"></td>
-				<td class="s color_s" @mousedown="resizable_mousedown('s', $event)" @mouseup="resizable_mouseup('s', $event)"></td>
-				<td class="se color_se" @mousedown="resizable_mousedown('se', $event)" @mouseup="resizable_mouseup('se', $event)"></td>
+				<td class="resize-border sw color_sw" @mousedown="resizable_mousedown('sw', $event)" @mouseup="resizable_mouseup('sw', $event)"></td>
+				<td class="resize-border s color_s" @mousedown="resizable_mousedown('s', $event)" @mouseup="resizable_mouseup('s', $event)"></td>
+				<td class="resize-border se color_se" @mousedown="resizable_mousedown('se', $event)" @mouseup="resizable_mouseup('se', $event)"></td>
 			</tr>
 		</table>
 	</div>
@@ -124,6 +124,33 @@
 			},
 			resizable_onresize: function (orientation, ev) {
 				//console.log("o: " + orientation + ", x:" + ev.pageX);
+				
+				/*//check old width
+				if (this.style.minWidth && (this.style.minWidth instanceof CSSUnitValue)) {
+					const width = this.style.width.value;
+					const minWidth = this.style.minWidth.value;
+					
+					if (width >= minWidth && (
+						orientation == "nw" || orientation == "ne" ||
+						orientation == "w" || orientation == "e" ||
+						orientation == "sw" || orientation == "se")
+					) {
+						return;
+					}
+				}
+				
+				//check old height
+				if (this.style.minHeight && (this.style.minHeight instanceof CSSUnitValue)) {
+					const height = this.style.height.value;
+					const minHeight = this.style.minHeight.value;
+					if (height >= minHeight && (
+						orientation == "nw" || orientation == "n" || orientation == "ne" ||
+						orientation == "sw" || orientation == "s" || orientation == "se")
+					) {
+						return;
+					}
+				}*/
+				
 				{
 					let rect_content = this.$refs.content.getBoundingClientRect();
 					
@@ -201,6 +228,8 @@
 							break;
 					}
 				}
+				
+				//check new position and size
 				{
 					let left = this.style.left.value;
 					let top = this.style.top.value;
@@ -298,26 +327,17 @@
 			this.style.height = _to_css_px(height);
 		},
 		beforeDestroy: function () {
-			if (resizable_target == this) {
-				resizable_target = null;
-			}
+			resizable_target = null;
 		},
 	};
 </script>
 
 <style scoped>
-	table {
+	table.frame {
 		border-collapse: collapse;
 		border-spacing: 0;
 		user-select: none;
-	}
-
-	td {
-		padding: 0;
-		background: hsla(208, 100%, 80%, 0.5);
-	}
-
-	.frame {
+		
 		border-radius: 5px;
 		box-shadow: black 0px 0px 0px 1px inset;
 	}
@@ -332,49 +352,54 @@
 		box-shadow: 0 0 1px 0px black;
 	}
 
-	.nw {
+	.resize-border {
+		padding: 0;
+		background: hsla(208, 100%, 80%, 0.5);
+	}
+
+	.resize-border.nw {
 		cursor: nw-resize;
 		width: 5px;
 		height: 5px;
 		border-radius: 5px 0 0 0;
 	}
-	.n {
+	.resize-border.n {
 		cursor: n-resize;
 		height: 5px;
 		/*border-bottom: 1px solid gray;*/
 	}
-	.ne {
+	.resize-border.ne {
 		cursor: ne-resize;
 		width: 5px;
 		height: 5px;
 		border-radius: 0 5px 0 0;
 	}
-	.w {
+	.resize-border.w {
 		cursor: w-resize;
 		width: 5px;
 		height: 100%;
 		display: block;
 		/*border-right: 1px solid gray;*/
 	}
-	.e {
+	.resize-border.e {
 		cursor: e-resize;
 		width: 5px;
 		height: 100%;
 		display: block;
 		/*border-left: 1px solid gray;*/
 	}
-	.sw {
+	.resize-border.sw {
 		cursor: sw-resize;
 		width: 5px;
 		height: 5px;
 		border-radius: 0 0 0 5px;
 	}
-	.s {
+	.resize-border.s {
 		cursor: s-resize;
 		height: 5px;
 		/*border-top: 1px solid gray;*/
 	}
-	.se {
+	.resize-border.se {
 		cursor: se-resize;
 		width: 5px;
 		height: 5px;

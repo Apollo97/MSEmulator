@@ -2,10 +2,8 @@
 async function load_module() {
 	const modules_1 = await Promise.all([
 		import("vue"),
-		import("./init.js"),
 	]);
 	const Vue = modules_1[0].default;
-	const { InitAll } = modules_1[1];
 	
 	const modules_2 = await Promise.all([
 		import("./game/init.js"),
@@ -20,7 +18,7 @@ async function load_module() {
 	const Editor = modules_2[3].default;
 	
 	return {
-		Vue, InitAll, Game, MainUI, Editor
+		Vue, Game, MainUI, Editor
 	};
 }
 
@@ -41,7 +39,7 @@ export class App {
 	 * @param {HTMLElement} elem
 	 */
 	async start(elem) {
-		const { Vue, InitAll, Game, MainUI, Editor } = await load_module();
+		const { Vue, Game, MainUI, Editor } = await load_module();
 
 		this.store = Editor.store;
 
@@ -51,8 +49,6 @@ export class App {
 		//});
 		let AppUI = Vue.extend(MainUI);
 		this.vue = new AppUI({ el: elem });
-
-		await InitAll();
 	}
 
 	/**

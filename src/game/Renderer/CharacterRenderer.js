@@ -3500,7 +3500,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		return Promise.all(tasks);
 	}
 }
-AddInitTask(CharacterRenderer.Init());
+AddInitTask(CharacterRenderer.Init);
 
 function* circularSequence(length) {
 	let i = 0;

@@ -3,6 +3,8 @@
 import Vue from "vue";
 import Vuex from "vuex";
 
+import { InitAll } from "./init.js";
+
 
 const server_list = {
 	"server1": "https://maplestory-chat-emulator.herokuapp.com/",
@@ -44,6 +46,8 @@ export default new Vuex.Store({
 			const Game = modules[1].Game;
 			
 			if (!app.game) {
+				await InitAll();
+				
 				/** @type {Game} */
 				let game = app.game = new Game();
 				

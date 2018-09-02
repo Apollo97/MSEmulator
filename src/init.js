@@ -38,7 +38,8 @@ export function AddInitTask(task) {
 }
 
 export function InitAll() {
-	let a = Promise.all(init_tasks);
+	let promise_list = init_tasks.map(f => f());
 	init_tasks = [];
+	let a = Promise.all(promise_list);
 	return a;
 }

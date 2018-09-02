@@ -2027,7 +2027,7 @@ export class SceneMap {
 	}
 	static Init() {
 		return Promise.all([
-			this._Init(),
+			SceneMap._Init(),
 			MapPortal.Init(),
 		]);
 	}
@@ -2812,7 +2812,7 @@ export class SceneMap {
 		}
 	}
 }
-AddInitTask(SceneMap.Init());
+AddInitTask(SceneMap.Init);
 
 ///////////////////////////////////////////////////////////////////////////////
 //
