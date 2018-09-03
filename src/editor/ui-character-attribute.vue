@@ -59,10 +59,12 @@
 				</tr>
 				<tr title="禁用物理後可設定角色的位置">
 					<th>位置</th>
-					<td colspan="3" style="display: flex; position: absolute;">
-						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-99999" max="99999" />
-						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-99999" max="99999" />
-						<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
+					<td colspan="3">
+						<div>
+							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-99999" max="99999" />
+							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-99999" max="99999" />
+							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
+						</div>
 					</td>
 				</tr>
 				<tr title="禁用物理後可設定角色的旋轉和方向">
@@ -81,10 +83,10 @@
 				<tr>
 					<th rowspan="2">耳朵</th>
 					<td>
-						<label class="chara_ear">人類<input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked /></label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked />人類</label>
 					</td>
 					<td>
-						<label class="chara_ear">妖精<input type="radio" name="chara_ear" v-model="chara.ear" value="elf" /></label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="elf" />妖精</label>
 					</td>
 					<td>
 						<!---->
@@ -92,10 +94,10 @@
 				</tr>
 				<tr>
 					<td>
-						<label class="chara_ear">木雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="lef" /></label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="lef" />木雷普</label>
 					</td>
 					<td>
-						<label class="chara_ear">亥雷普<input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" /></label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" />亥雷普</label>
 					</td>
 					<td>
 						<!---->

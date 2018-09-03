@@ -66,10 +66,10 @@
 					//outline: "1px solid blue",
 					//border: "1px solid gray",
 					borderRadius: CSS.px(5),
-					left: CSS.em(10),
-					top: CSS.em(10),
-					width: CSS.em(5),
-					height: CSS.em(5),
+					left: CSS.em(5 + Math.trunc(Math.random() * 20)),
+					top: CSS.em(5 + Math.trunc(Math.random() * 20)),
+					width: CSS.em(20),
+					height: CSS.em(20),
 					zIndex: 0,
 				},
 			};
@@ -86,6 +86,29 @@
 					this.style.top = _to_css_px(rect.top);
 					this.style.width = _to_css_px(rect.width);
 					this.style.height = _to_css_px(rect.height);
+				});
+			},
+			setMinSize: function (width, height) {
+				let minWidth, minHeight;
+				if (this.style.minWidth instanceof CSSUnitValue) {
+					if (width > this.style.minWidth.value) {
+						minWidth = Math.trunc(width);
+					}
+				}
+				else if (!this.style.minWidth) {
+					minWidth = Math.trunc(width);
+				}
+				if (this.style.minHeight instanceof CSSUnitValue) {
+					if (height > this.style.minHeight.value) {
+						minHeight = Math.trunc(height);
+					}
+				}
+				else if (!this.style.minHeight) {
+					minHeight = Math.trunc(height);
+				}
+				this.setStyle({
+					minWidth: CSS.px(minWidth),
+					minHeight: CSS.px(minHeight),
 				});
 			},
 			resizable_mousedown: function (orientation, ev) {

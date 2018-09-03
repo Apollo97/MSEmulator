@@ -3,7 +3,7 @@
 	<ui-resizable ref="window" class="ui-dialog" @mousedown="requireOrder($event)">
 		<div ref="content" class="content" @mousedown="requireOrder($event)">
 			<div ref="header" class="header" @mousedown="requireOrder($event)">
-				<div @contextmenu.self.prevent="minimum=!minimum" class="header">
+				<div @contextmenu.self.prevent="minimum=!minimum" class="header" style="overflow-x: hidden;">
 					<div style="display: inline-block">
 						<slot name="header"></slot>
 					</div>
@@ -242,30 +242,10 @@
 			//this.reset_content_style();
 			
 			if (this.$refs.header && this.$refs.window) {
-				const { width, height} = this.$refs.header.getBoundingClientRect();
-				let minWidth, minHeight;
-				
-				if (this.style.minWidth instanceof CSSUnitValue) {
-					if (width > this.style.minWidth.value) {
-						minWidth = Math.trunc(width);
-					}
-				}
-				else if (!this.style.minWidth) {
-					minWidth = Math.trunc(width);
-				}
-				if (this.style.minHeight instanceof CSSUnitValue) {
-					if (height > this.style.minHeight.value) {
-						minHeight = Math.trunc(height);
-					}
-				}
-				else if (!this.style.minHeight) {
-					minHeight = Math.trunc(height);
-				}
 				const ResizeHolder = 5 + 5;//left + right
-				this.setStyle({
-					minWidth: CSS.px(minWidth + ResizeHolder),
-					minHeight: CSS.px(minHeight + ResizeHolder),
-				});
+				const { width, height} = this.$refs.header.getBoundingClientRect();
+				const [minWidth, minHeight] = [width + ResizeHolder, height + ResizeHolder];
+				this.$refs.window.setMinSize(minWidth, minHeight);
 			}
 			else {
 				console.log("ui-dialog not ui-resizable: ", this);

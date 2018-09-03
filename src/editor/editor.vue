@@ -570,16 +570,12 @@
 				wnd_debug_style: { background: "#ffffff", padding: "0 0.5em" },
 
 				wnds: {
-					menu: { name: "$menu", visable: true, pos: { x: 0, y: 0 } },
-					character_list: { name: "Characters", visable: true, pos: { x: 900 * scr_rat_x, y: 220 * scr_rat_y } },
-					character_attribute: { name: "Character attribute", visable: true, pos: { x: 900 * scr_rat_x, y: 0 * scr_rat_y } },
-					equip_box: { name: "Equip box", visable: true, pos: { x: 0 * scr_rat_x, y: 50 * scr_rat_y } },
-					spawnpoint: { name: "Spawn point", visable: false, pos: { x: 350 * scr_rat_x, y: 0 * scr_rat_y } },
-					debug_window: {
-						name: "Map editor (Debug)",
-						visable: false,
-						pos: { x: 0 * scr_rat_x, y: 100 * scr_rat_y },
-					},
+					menu: { name: "$menu", visable: true },
+					character_list: { name: "Characters", visable: true },
+					character_attribute: { name: "Character attribute", visable: true },
+					equip_box: { name: "Equip box", visable: true },
+					spawnpoint: { name: "Spawn point", visable: true },
+					debug_window: { name: "Map editor (Debug)", visable: true, },
 				},
 
 				gv: $gv,
@@ -751,10 +747,10 @@
 		},
 		mounted: function () {
 			{
-				let elem = document.getElementById("bgm");
+				const elem = document.getElementById("bgm");
 				this.$refs.bgm_outer.appendChild(elem);
 			}
-			this.$nextTick(() => {
+			{
 				const scr_rat_x = $gv.is_mobile ? 0 : (window.innerWidth / 1366);
 				const scr_rat_y = $gv.is_mobile ? 0 : (window.innerHeight / 768);
 				
@@ -777,9 +773,9 @@
 				this.$refs.character_attribute.setStyle({
 					left: _to_css_px(900 * scr_rat_x),
 					top: _to_css_px(0 * scr_rat_y),
-					width: CSS.em(20),
+					width: CSS.em(18),
 					height: CSS.vh(26),
-					minWidth: CSS.em(20),
+					minWidth: CSS.em(18),
 				});
 				
 				this.$refs.equip_box.setStyle({
@@ -797,22 +793,24 @@
 					height: CSS.vh(26),
 					minWidth: _to_css_px(400),
 				});
+				this.wnds.spawnpoint.visable = false;
 				
-				this.$refs.spawnpoint.setStyle({
+				this.$refs.debug_window.setStyle({
 					left: _to_css_px(0 * scr_rat_x),
 					top: _to_css_px(100 * scr_rat_y),
 					width: CSS.vw(40),
 					height: CSS.vh(70),
-					minWidth: CSS.vw(40),
+					minWidth: CSS.em(16),
 				});
+				this.wnds.debug_window.visable = false;
 				
 				function _to_css_px(val) {
-					return CSS.px(val);
+					return CSS.px(Math.trunc(val));
 				}
-			});
+			}
 		},
 		beforeDestroy: function () {
-			let elem = document.getElementById("bgm");
+			const elem = document.getElementById("bgm");
 			document.getElementById("hidden_components").appendChild(elem);
 		},
 		components: {
