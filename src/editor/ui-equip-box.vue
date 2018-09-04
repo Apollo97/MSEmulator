@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div class="ui-equip-box">
-		<div ref="content" @mousedown.left="requireOrder($event)" class="ui-equip-box-content">
+		<div ref="content" class="ui-equip-box-content">
 			<!-- begin header -->
 			<div class="header" style="width: 100%;">
 				<div style="width: 100%;">
@@ -39,6 +39,7 @@
 					
 					<!-- begin setting -->
 					<div v-if="isShowSetting">
+						<div><label>每頁顯示數量 <input type="number" v-model.number="countOfItemsPerPage" min="10" max="1000" /></label></div>
 						<div><label><input type="checkbox" v-model="onlyShowSearchResult" />只顯示搜尋結果</label></div>
 						<div><label><input type="checkbox" v-model="displayMode" />顯示方式: {{displayMode ? "圖示":"清單"}}</label></div>
 					</div>
@@ -79,21 +80,21 @@
 						</template>
 					</div>
 					<!-- end color -->
-
-					<div style="padding-bottom: 2em;"></div>
-
-					<!-- begin pagination -->
-					<div v-if="__count_of_item_in_page > 0" class="header pagination top" style="position: absolute; margin-top: -2em; width: calc(100% - 12px);">
-						<template v-for="i in __count_of_page">
-							<a v-if="page == (i-1)" :title="i - 1" class="active">{{i}}</a>
-							<a v-else @click.prevent="change_page(i - 1)" :title="i - 1" href="#">{{i}}</a>
-						</template>
-					</div>
-					<!-- end pagination -->
 				</div>
 			</div>
 			<!-- end header -->
-			
+
+			<!-- begin pagination -->
+			<div v-if="__count_of_item_in_page > 0" style="display: table-row;">
+				<div class="m-pagination">
+					<template v-for="i in __count_of_page">
+						<span v-if="page == (i-1)" :title="i - 1" class="m-pagination-item active">{{i}}</span>
+						<span v-else @click.prevent="change_page(i - 1)" :title="i - 1" class="m-pagination-item">{{i}}</span>
+					</template>
+				</div>
+			</div>
+			<!-- end pagination -->
+
 			<div v-if="__count_of_item_in_page > 0" class="item-list-page">
 				<template v-if="displayMode==false">
 					<ul class="item-list">
@@ -161,8 +162,6 @@
 </template>
 
 <script>
-	import UIDraggable from "../components/ui-draggable.vue";
-	import UIDialog from "../components/ui-dialog.vue";
 	import UIButtonGroup from '../components/ui-button-group.vue';
 
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from '../../public/javascripts/resource.js';
@@ -278,19 +277,9 @@
 		ItemFilter.list[i] = fn;
 	}
 
-	const config = new (class {
-		constructor() {
-			this.pageSize = 100;
-		}
-		calcPage(index) {
-			return Math.trunc(index / this.pageSize);
-		}
-	});
-
 	export default {
 		data: function () {
 			return {
-				//config: config,
 				search_text: "",
 				search_next: -1,
 
@@ -313,6 +302,7 @@
 
 				onlyShowSearchResult: true,
 				displayMode: true,
+				countOfItemsPerPage: 200,
 				
 				isShowSetting: false,
 				
@@ -352,14 +342,14 @@
 			face_color_buttons: () => face_color_buttons,
 			hair_color_buttons: () => hair_color_buttons,
 			__count_of_item_in_page: function () {
-				const start = this.page * config.pageSize;
-				const end = Math.min(start + config.pageSize, this.equip_list.length);
+				const start = this.page * this.countOfItemsPerPage;
+				const end = Math.min(start + this.countOfItemsPerPage, this.equip_list.length);
 				const count = end - start;
 
 				return Math.min(Math.max(0, count), this.equip_list.length);//return 0 < count < this.equip_list.length
 			},
 			__count_of_page: function () {
-				return Math.ceil(this.equip_list.length / config.pageSize);
+				return Math.ceil(this.equip_list.length / this.countOfItemsPerPage);
 			},
 		},
 		methods: {
@@ -427,7 +417,7 @@
 										this.search_equip_result = this.equip_list.filter(function (item, index) {
 											let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
-												item.$page = config.calcPage(index);
+												item.$page = (index / this.countOfItemsPerPage);
 												return true;
 											}
 										});
@@ -438,7 +428,7 @@
 										this.search_equip_result = this.equip_list.filter(function (item, index) {
 											let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
-												item.$page = config.calcPage(index);
+												item.$page = (index / this.countOfItemsPerPage);
 												return true;
 											}
 										});
@@ -448,7 +438,7 @@
 									let regexp = RegExp(rr[2]);
 									this.search_equip_result = this.equip_list.filter(function (item, index) {
 										if (item[attr] != null && regexp.test(item[attr])) {
-											item.$page = config.calcPage(index);
+											item.$page = (index / this.countOfItemsPerPage);
 											return true;
 										}
 									});
@@ -478,7 +468,7 @@
 										item.name.toLowerCase().indexOf(search_text.toLowerCase()) >= 0
 									)
 								) {
-									item.$page = config.calcPage(index);
+									item.$page = (index / this.countOfItemsPerPage);
 									return true;
 								}
 							});
@@ -678,7 +668,7 @@
 			//__get_hair_color_filter: function () {
 			//},
 			__get_item: function (index) {
-				const first = this.page * config.pageSize;
+				const first = this.page * this.countOfItemsPerPage;
 
 				return this.equip_list[first + index];
 			},
@@ -844,10 +834,8 @@
 			}
 		},
 		components: {
-			"ui-draggable": UIDraggable,
 			"ui-button-group": UIButtonGroup,
 		},
-		mixins: [UIDialog]
 	};
 </script>
 
@@ -1018,5 +1006,40 @@
 	.ui-equip-box .button-area button > img {
 		display: block;
 		margin: auto;
+	}
+	
+	.m-pagination {
+		text-align: center;
+		background: #efefef;
+		border-top: 1px solid lightgray;
+		border-bottom: 1px solid lightgray;
+	}
+	.m-pagination-item {
+		box-sizing: border-box;
+		display: inline-block;
+		min-width: 2em;
+		width: auto;
+		text-align: center;
+		color: blue;
+		border: 1px solid transparent;
+		border-right: 1px solid darkgray;
+	}
+	.m-pagination-item:last-child {
+		border-right: 1px solid transparent;
+	}
+	.m-pagination-item:hover {
+		background: #f5f5f5;
+		border-radius: 5px;
+		border: 1px solid darkgray;
+		color: #05F;
+	}
+	.m-pagination-item.active {
+		color: red;
+	}
+	.m-pagination-item.active:hover {
+		background: #efefef;
+		border-radius: 0;
+		border: 1px solid transparent;
+		color: red;
 	}
 </style>

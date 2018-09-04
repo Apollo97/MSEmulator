@@ -46,7 +46,7 @@
     "start": "set NODE_ENV=production&&node app.js",
     "wvs": "node wvs.js",
     "dev": "node app.js",
-    "build:web": "webpack",
+    "build:web": "set NODE_ENV=production&&webpack",
     "build:box2d": "tsc",
     "build": "tsc&&webpack",
     "static-server": "node app -P -s"

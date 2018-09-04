@@ -72,7 +72,8 @@ if (process.env.NODE_ENV === 'production') {
 				'vue$': 'vue/dist/vue.min.js',
 			}
 		},
-		devtool: 'source-map'
+		//devtool: 'source-map',
+		devtool: 'cheap-module-eval-source-map'
 	};
 }
 else {

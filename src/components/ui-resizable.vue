@@ -58,6 +58,26 @@
 	}
 
 	export default {
+		props: {
+			/*movableHandle: {
+				type: String,
+				default: "header",
+				description: "class name"
+			},
+			resizableHandle: {
+				type: String,
+				default: "resize-border",
+				description: "class name"
+			},*/
+			/*isMovable: {
+				type: Boolean,
+				default: true,
+			},
+			isResizable: {
+				type: Boolean,
+				default: true,
+			},*/
+		},
 		data: function () {
 			return {
 				style: {
@@ -72,6 +92,8 @@
 					height: CSS.em(20),
 					zIndex: 0,
 				},
+				m_movable: true,
+				m_resizable: true,
 			};
 		},
 		methods: {
@@ -92,23 +114,29 @@
 				let minWidth, minHeight;
 				if (this.style.minWidth instanceof CSSUnitValue) {
 					if (width > this.style.minWidth.value) {
-						minWidth = Math.trunc(width);
+						minWidth = CSS.px(Math.trunc(width));
+					}
+					else {
+						minWidth = this.style.minWidth;
 					}
 				}
 				else if (!this.style.minWidth) {
-					minWidth = Math.trunc(width);
+					minWidth = CSS.px(Math.trunc(width));
 				}
 				if (this.style.minHeight instanceof CSSUnitValue) {
 					if (height > this.style.minHeight.value) {
-						minHeight = Math.trunc(height);
+						minHeight = CSS.px(Math.trunc(height));
+					}
+					else {
+						minHeight = this.style.minHeight;
 					}
 				}
 				else if (!this.style.minHeight) {
-					minHeight = Math.trunc(height);
+					minHeight = CSS.px(Math.trunc(height));
 				}
 				this.setStyle({
-					minWidth: CSS.px(minWidth),
-					minHeight: CSS.px(minHeight),
+					minWidth: minWidth,
+					minHeight: minHeight,
 				});
 			},
 			resizable_mousedown: function (orientation, ev) {
@@ -118,7 +146,11 @@
 						if (tt == "INPUT" || tt == "SELECT" || tt == "BUTTON" || tt == "SUMMARY") {
 							return;
 						}
+						//if (this.movableHandle instanceof Array) this.movableHandle.reduce((acc, v) => acc || ev.target.classList.contains(v), false)
 						if (orientation == "move" && ev.target.className.indexOf("header") < 0) {
+							return;
+						}
+						else if (!this.m_resizable) {
 							return;
 						}
 						//debugger;

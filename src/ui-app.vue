@@ -2,7 +2,7 @@
 <template>
 	<div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; user-select: none;">
 		<transition name="fade" style="position: absolute;">
-			<div v-show="editor_mode" class="scene-editor;">
+			<div v-if="is_editor_mode" class="scene-editor;">
 				<editor ref="editor" @hoverItem="showItemTip(...arguments);"
 						@mouseleaveItem="hideItemTip(...arguments);">
 				</editor>
@@ -11,13 +11,13 @@
 
 		<transition name="fade" style="position: absolute;">
 			<status-bar ref="statusBar"
-						v-show="!editor_mode"
+						v-if="!is_editor_mode"
 						:chara="chara"
 						></status-bar>
 		</transition>
 
 		<transition name="fade" style="position: absolute;">
-			<ui-window-equip v-show="isShowUIEquipWnd"
+			<ui-window-equip v-if="isShowUIEquipWnd"
 							 :chara="chara"
 							 @hoverItem="showItemTip(...arguments);"
 							 @mouseleaveItem="hideItemTip(...arguments);"
@@ -26,7 +26,7 @@
 		</transition>
 		
 		<transition name="fade" style="position: absolute;">
-			<ui-window-item v-show="isShowUIItemWnd"
+			<ui-window-item v-if="isShowUIItemWnd"
 							:chara="chara"
 							@hoverItem="showItemTip(...arguments);"
 							@mouseleaveItem="hideItemTip(...arguments);"
@@ -187,6 +187,8 @@
 				//},
 
 				onkeydown: null,
+				
+				is_show_all_mode: true,
 			};
 		},
 		computed: {
@@ -198,7 +200,7 @@
 					this.$forceUpdate();
 				}
 			},
-			editor_mode: {
+			is_editor_mode: {
 				get: function () {
 					return $gv.m_editor_mode;
 				},
@@ -265,7 +267,7 @@
 			}
 		},
 		watch: {
-			editor_mode: function (value) {
+			is_editor_mode: function (value) {
 				if (!value && this.$refs.statusBar) {
 					this.$refs.statusBar.$forceUpdate();
 					if (this.$refs.statusBar.updated) {
@@ -301,6 +303,8 @@
 			else {
 				vm.hideItemTip();
 			}
+			
+			this.is_show_all_mode = false;
 		},
 		beforeDestroy: function () {
 			window.removeEventListener("keydown", this.onkeydown);

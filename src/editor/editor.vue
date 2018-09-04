@@ -2,7 +2,7 @@
 <template>
 	<div @contextmenu.self.prevent="" class="dialog-group Editor">
 		
-		<ui-dialog ref="menu">
+		<ui-dialog :title="wnds.menu.name" ref="menu">
 			<template slot="header">
 				Menu
 			</template>
@@ -88,7 +88,7 @@
 		</ui-dialog>
 
 		<transition name="fade">
-			<ui-dialog ref="character_list" v-show="wnds.character_list.visable">
+			<ui-dialog :title="wnds.character_list.name" ref="character_list" v-show="wnds.character_list.visable">
 				<template slot="header">
 					Characters
 					<template v-if="progressMaximum">
@@ -133,7 +133,7 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-dialog ref="character_attribute" v-show="wnds.character_attribute.visable">
+			<ui-dialog :title="wnds.character_attribute.name" ref="character_attribute" v-show="wnds.character_attribute.visable">
 				<template slot="header">
 					Character attribute
 				</template>
@@ -146,7 +146,7 @@
 		</transition>
 		
 		<transition name="fade">
-			<ui-dialog ref="spawnpoint" v-show="wnds.spawnpoint.visable">
+			<ui-dialog :title="wnds.spawnpoint.name" ref="spawnpoint" v-show="wnds.spawnpoint.visable">
 				<template slot="header">
 					Spawn point
 				</template>
@@ -157,7 +157,7 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-dialog ref="equip_box" v-show="wnds.equip_box.visable">
+			<ui-dialog :title="wnds.equip_box.name" ref="equip_box" v-show="wnds.equip_box.visable">
 				<template slot="header">
 					Equip box
 				</template>
@@ -177,7 +177,7 @@
 		
 		<transition name="fade">
 			<template v-if="mapEditorMode.startsWith('layered')">
-				<ui-dialog ref="debug_window" v-show="wnds.debug_window.visable">
+				<ui-dialog :title="wnds.debug_window.name" ref="debug_window" v-show="wnds.debug_window.visable">
 					<template slot="header">
 						<select v-model="mapEditorMode">
 							<option value="background">background</option>
@@ -205,7 +205,7 @@
 				</ui-dialog>
 			</template>
 			<template v-else>
-				<ui-dialog v-show="wnds.debug_window.visable">
+				<ui-dialog :title="wnds.debug_window.name" v-show="wnds.debug_window.visable">
 					<template slot="header">
 						<select v-model="mapEditorMode">
 							<option value="background">background</option>
@@ -750,6 +750,8 @@
 				const elem = document.getElementById("bgm");
 				this.$refs.bgm_outer.appendChild(elem);
 			}
+			
+			//set dialog position and size
 			{
 				const scr_rat_x = $gv.is_mobile ? 0 : (window.innerWidth / 1366);
 				const scr_rat_y = $gv.is_mobile ? 0 : (window.innerHeight / 768);
