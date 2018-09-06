@@ -96,31 +96,57 @@
 					</template>
 				</template>
 				<template slot="content">
-					<div :style="{filter: 'blur(' + (progressMaximum?3:0) + 'px)'}">
-						<div>
-							<span>{{charaList.length}} characters</span>
-							<div class="chara-ls-btn-group">
-								<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="images/toolstrip_character.png" alt="Add new" /></button>
-								<button @click="addCloneChara" class="chara-ls-btn" title="Add clone"><img src="images/toolstrip_duplicate.png" alt="Add clone" /></button>
-								<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open" alt="📂"></span></button>
-								<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="images/toolstrip_save_all.png" alt="Save all" /></button>
+					<div style="width: 100%; height: 100%;">
+						<div :style="{filter: 'blur(' + (progressMaximum?3:0) + 'px)', display: 'table', width: '100%', height: '100%'}">
+							<div style="display: table-row; height: 0;">
+								<span>{{charaList.length}} characters</span>
+								<div class="chara-ls-btn-group">
+									<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="images/toolstrip_character.png" alt="Add new" /></button>
+									<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open" alt="📂"></span></button>
+									<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="images/toolstrip_save_all.png" alt="Save all" /></button>
+								</div>
+							</div>
+							<div style="display: table-row; width: 100%; height: 100%;">
+								<ui-sortable :items="charaList" @input="oninput_sort" class="ui-character-list" style="overflow: auto; width: 100%; height: 100%; margin: 0; position: relative;">
+									<template slot-scope="{item, index}">
+										<li :id="item.id" @mousedown.left="selectChara(item.id)" :class="[(selected == item.id ? 'active':''), item.id].join(' ')" :title="item.id" :key="item.id">
+											<table>
+												<tr @contextmenu.prevent="openCharacterDLMenu($event, item.id)">
+													<td title="順序" style="text-align: center;">
+														<div v-if="index">
+															<span class="ui-no-interactions">▲</span>
+														</div>
+														<div>{{index}}</div>
+														<div v-if="index!=(charaList.length-1)">
+															<span class="ui-no-interactions">▼</span>
+														</div>
+													</td>
+													<td>
+														<div>
+															<div class="ui-no-interactions">
+																<input v-if="item.renderer.pause" type="text" v-model="item.id" placeholder="名字" style="width: 90%;" />
+																<span v-else title="暫停後可改名">{{item.id}}</span>
+															</div>
+															<div>
+																<button @click="addCloneChara(item)" class="chara-ls-btn ui-no-interactions" title="Add clone">
+																	<img src="images/toolstrip_duplicate.png" alt="Clone" />
+																</button>
+																<button @click="deleteCharacter(item)" class="chara-ls-btn ui-no-interactions" title="Delete">
+																	<span class="ui-icon ui-icon-trash" alt="Delete"></span>
+																</button>
+															</div>
+														</div>
+													</td>
+													<td style="position: relative;">
+														<ui-character :chara="item.renderer"></ui-character>
+													</td>
+												</tr>
+											</table>
+										</li>
+									</template>
+								</ui-sortable>
 							</div>
 						</div>
-						<ui-sortable :items="charaList" @input="oninput_sort" class="ui-character-list">
-							<template slot-scope="{item, index}">
-								<li :id="item.id" @mousedown.left="selectChara(item.id)" :class="[(selected == item.id ? 'active':''), item.id].join(' ')" :title="item.id" :key="item.id" style="width: 100%;">
-									<table style="width:100%;">
-										<tr @contextmenu.prevent="openCharacterDLMenu($event, item.id);">
-											<td>{{index}}</td>
-											<td>{{item.id}}</td>
-											<td style="position: relative;">
-												<ui-character :chara="item.renderer"></ui-character>
-											</td>
-										</tr>
-									</table>
-								</li>
-							</template>
-						</ui-sortable>
 					</div>
 					<div v-if="progressMaximum" class="loading">
 						<div>
@@ -249,6 +275,23 @@
 				</template>
 			</ui-menu>
 		</transition>
+		
+		<!--<transition name="fade">
+			<ui-dialog :title="wnds.player_data.name" ref="player_data" v-show="wnds.player_data.visable">
+				<template slot="header">
+					Player data
+				</template>
+				<template slot="content">
+					<input type="text" v-if="chara" v-model="chara.id" placeholder="名字" />
+					<input type="text" v-else placeholder="loading..." />
+				</template>
+			</ui-dialog>
+		</transition>-->
+		
+		<!--<ui-dialog title="chara.id" :options="{ hasHeader: false, resizable: false }">
+			<input type="text" v-if="chara" v-model="chara.id" placeholder="名字" />
+			<input type="text" v-else placeholder="loading..." />
+		</ui-dialog>-->
 	</div>
 </template>
 
@@ -313,6 +356,40 @@
 			//},
 		},
 		actions: {
+			deleteCharacter: function (context, payload) {
+				const { id = payload.name } = payload;//id === name
+				const state = context.state;
+				
+				//no delete default character
+				if (state.charaList.length <= 1) {
+					return;
+				}
+				
+				let delete_chara;
+				for (let i = 0; i < state.charaList.length; ++i) {
+					const chara = state.charaList[i];
+					if (chara.$remote) {
+						return false;
+					}
+					if (chara.id == id) {
+						delete_chara = state.charaList.splice(i, 1)[0];
+						break;
+					}
+				}
+				if (delete_chara.$physics) {
+					delete_chara.$physics._destroy();
+				}
+				delete_chara.$physics = null;
+				delete_chara.renderer = null;
+				
+				if (state.charaList.length) {
+					context.dispatch('selectChara', {
+						id: state.charaList[state.charaList.length - 1].id,
+					});
+				}
+				
+				return true;
+			},
 			isIdExist: function (context, payload) {
 				const state = context.state;
 				if (payload && payload.id) {
@@ -615,14 +692,15 @@
 				console.log("create new character");
 				this.$store.dispatch('createChara');
 			},
-			addCloneChara: function () {
-				if (!this.chara) {
-					return;
-				}
-				console.log("clone character: " + this.chara.id);
+			addCloneChara: function (chara) {
+				console.log("clone character: " + chara.id);
 				this.$store.dispatch('createChara', {
-					chara: this.chara
+					chara: chara
 				});
+			},
+			deleteCharacter: function (chara) {
+				console.log("delete character: " + chara.id);
+				this.$store.dispatch('deleteCharacter', { id: chara.id });
 			},
 			oninput_sort: function (value) {
 				this.$store.state.charaList = value;
@@ -715,14 +793,13 @@
 			},
 
 			openCharacterDLMenu: function (e, id) {
-				let vm = this;
-				vm.$store.dispatch("selectChara", {
+				this.$store.dispatch("selectChara", {
 					id: id
-				}).then(function () {
-					vm.is_show_chara_dl_menu = true;
+				}).then(() => {
+					this.is_show_chara_dl_menu = true;
 
-					vm.$nextTick(function () {
-						vm.$refs.chara_dl_menu.setPosition({
+					this.$nextTick(() => {
+						this.$refs.chara_dl_menu.setPosition({
 							my: "left top",
 							of: e,
 							//collision: "fit",
@@ -733,8 +810,7 @@
 				});
 			},
 			closeCharacterDLMenu: function () {
-				let vm = this;
-				vm.is_show_chara_dl_menu = false;
+				this.is_show_chara_dl_menu = false;
 				//console.log("closeCharacterDLMenu");
 			},
 			copyCharaCode: function () {
@@ -768,16 +844,16 @@
 					left: _to_css_px(350 * scr_rat_x),
 					top: _to_css_px(0 * scr_rat_y),
 					width: CSS.em(16.1),
-					height: CSS.vh(25),
+					height: CSS.vh(34),
 					minWidth: CSS.em(16.1),
 				});
 				
 				this.$refs.character_attribute.setStyle({
 					left: _to_css_px(900 * scr_rat_x),
 					top: _to_css_px(0 * scr_rat_y),
-					width: CSS.em(18),
-					height: CSS.vh(26),
-					minWidth: CSS.em(18),
+					width: CSS.em(19),
+					height: CSS.vh(30),
+					minWidth: CSS.em(19),
 				});
 				
 				this.$refs.equip_box.setStyle({
@@ -861,13 +937,14 @@
 		padding: 0;
 	}
 
-	.ui-character-list > li {
-		width: 16em;
+	.ui-character-list li {
+		width: 100%;
 	}
 
 	.ui-character-list table {
 		width: 100%;
-		/*border-collapse: collapse;*/
+		border-collapse: collapse;
+		border-spacing: 0;
 	}
 	
 	.ui-character-list td:nth-child(1) {

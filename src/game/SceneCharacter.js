@@ -1215,6 +1215,9 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 		this.$physics = scene.controller.$createRemotePlayer(this, this.renderer);
 	}
 
+	/**
+	 * is remote player
+	 */
 	get $remote() {
 		return true;
 	}

@@ -104,10 +104,6 @@ internal class DataExtracter
 
 	internal void extractAll(string path)
 	{
-		this.output_file(path + "/TamingMob.json", this.extract_TamingMob, "TamingMob", "019");
-		Console.WriteLine("extract TamingMob");
-		return;
-		
 		this.output_file(path + "/body.json", this.extract_body);
 		Console.WriteLine("extract body");
 

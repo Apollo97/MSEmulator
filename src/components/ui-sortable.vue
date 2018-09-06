@@ -7,7 +7,21 @@
 
 <script>
 	export default {
-		props: ['items'],
+		props: {
+			items: {
+				required: true,
+				type: Array,
+			},
+			options: {
+				default: function () {
+					return {
+						//handle: "p",
+						cancel: ".ui-no-interactions",
+						axis: "y",
+					};
+				},
+			},
+		},
 		//render: function (createElement) {
 		//	let es = [];
 		//	let render = this.render;
@@ -43,11 +57,11 @@
 			}
 		},
 		mounted: function () {
-			let that = this;
-			let $$el = $(this.$el);
-			$$el.sortable({
+			const $$el = $(this.$el);
+			const options = Object.assign({
 				update: this.getValue.bind(this)
-			});
+			}, this.options);
+			$$el.sortable(options);
 			$$el.disableSelection();
 		},
 		beforeUpdate: function () {
@@ -74,6 +88,7 @@
 		},
 		watch: {
 			items: function (newValue) {
+				//$(this.$el).sortable();//make sortable
 			}
 		},
 	}

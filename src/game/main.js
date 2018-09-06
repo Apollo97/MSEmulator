@@ -313,6 +313,8 @@ export class Game {
 	async forceUpdateScreen() {
 		const chara = this.chara;
 		
+		this._updateScene(0);
+		
 		chara.renderer.__forceUpdate(0);
 		
 		if (this.m_is_run) {

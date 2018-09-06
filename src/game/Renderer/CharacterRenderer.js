@@ -2313,7 +2313,10 @@ export class CharacterAnimationBase {
 		this._emotion = "blink";
 		this._emotion_frame = 0;
 		this._emotion_time = 0;
-		this._emotion_frame_sequence = [0, 1, 2, 1];
+		//this._emotion_frame_sequence = [0, 1, 2, 1];
+		this._generator_emotion_frame = this.emotion_frame_sequence_generator(3, 0);//[0,1,2].length
+		
+		this.blinkRate = 0.03;
 
 		/** @type {CharacterSlots} */
 		this.slots = new CharacterSlots();
@@ -2605,27 +2608,40 @@ export class CharacterAnimationBase {
 			this._emotion_frame = 0;
 			this._emotion_time = 0;
 
-			this._emotion_frame_sequence = [...circularSequence(this.emotion_frame_count)];
+			if (emo == "blink") {
+				this.blinkRate = 0.03;
+			}
+			else {
+				this.blinkRate = 1;
+			}
+
+			//this._emotion_frame_sequence = [...circularSequence(this.emotion_frame_count)];
+			this._generator_emotion_frame = this.emotion_frame_sequence_generator(this.emotion_frame_count, 0);
 
 			this.__require_update |= true;
 		}
 	}
 
-	*emotion_frame_sequence_generator(length) {
-		for (; ;) {
-			//TODO: random blink
-			yield* circularSequence(length);
-
-			for (; Math.random() < 0.5;) {
+	/**
+	 * @param {number} count of frame
+	 * @param {number} start frame
+	 */
+	*emotion_frame_sequence_generator(length, start) {
+		while (true) {
+			if (Math.random() < this.blinkRate) {
+				yield* linearSequence(length, start);
+			}
+			else {
 				yield 0;
 			}
 		}
 	}
-		
+	
 	/** @type {number} */
 	get emotion_frame() {
-		let f = this._emotion_frame_sequence[this._emotion_frame % this._emotion_frame_sequence.length];
-		return f;
+		return this._emotion_frame;
+		//let f = this._emotion_frame_sequence[this._emotion_frame % this._emotion_frame_sequence.length];
+		//return f;
 	}
 	set emotion_frame(value) {
 		if (value === "") {//from $("input")
@@ -2649,9 +2665,15 @@ export class CharacterAnimationBase {
 	 * @param {number} next
 	 */
 	_get_emotion_next_frame(next) {
-		let f = this._emotion_frame + next;
-		f = f < 0 ? (this._emotion_frame_sequence.length - 1) : (f % this._emotion_frame_sequence.length);
-		return this._emotion_frame_sequence[f];
+		let r = this._generator_emotion_frame.next().value;
+		
+		this._generator_emotion_frame = this.emotion_frame_sequence_generator(this.emotion_frame_count, this._emotion_frame);
+		
+		return r;
+		
+		//let f = this._emotion_frame + next;
+		//f = f < 0 ? (this._emotion_frame_sequence.length - 1) : (f % this._emotion_frame_sequence.length);
+		//return this._emotion_frame_sequence[f];
 	}
 
 	/** @type {number} */
@@ -2666,7 +2688,7 @@ export class CharacterAnimationBase {
 			else {
 				this._emotion_time = 0;
 
-				++this._emotion_frame;
+				this._emotion_frame = this._generator_emotion_frame.next().value;
 
 				this.__require_update |= true;
 			}
@@ -3502,8 +3524,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 }
 AddInitTask(CharacterRenderer.Init);
 
-function* circularSequence(length) {
-	let i = 0;
+function* circularSequence(length, start=0) {
+	let i = start;
 	for (; i < length; ++i) {//a: 0, 1, 2, 3, ...b
 		yield i;
 	}
@@ -3512,8 +3534,8 @@ function* circularSequence(length) {
 	}
 }
 
-function* linearSequence(length) {
-	for (let i = 0; i < length; ++i) {
+function* linearSequence(length, start=0) {
+	for (let i = start; i < length; ++i) {
 		yield i;
 	}
 }

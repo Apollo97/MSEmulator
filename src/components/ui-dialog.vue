@@ -1,13 +1,13 @@
 ﻿
 <template>
-	<ui-resizable ref="window" class="ui-dialog" @mousedown="requireOrder($event)">
+	<ui-resizable ref="window" :options="options" @mousedown="requireOrder($event)" class="ui-dialog">
 		<div class="inner-frame" @mousedown="requireOrder($event)">
 			<div ref="header" class="header" @mousedown="requireOrder($event)">
-				<div @contextmenu.self.prevent="minimum=!minimum" class="header" style="overflow-x: hidden;">
-					<div style="display: inline-block">
+				<div v-if="options.hasHeader" @contextmenu.self.prevent="minimum=!minimum" class="header header-caption">
+					<div class="header-title">
 						<slot name="header"></slot>
 					</div>
-					<div class="header-buttons" style="display: inline-block">
+					<div class="header-buttons">
 						<button v-if="minimum"
 								@click="onCollapsed(false)"
 								class="header-button">
@@ -21,7 +21,7 @@
 					</div>
 				</div>
 			</div>
-			<div :style="{ display: (minimum ? 'none' : 'table-row'), height: '100%' }">
+			<div ref="content" :class="{ 'dialog-content': true, 'hide': minimum }">
 				<slot name="content"></slot>
 				<slot></slot>
 			</div>
@@ -61,7 +61,15 @@
 			},
 			position: {
 				required: false
-			}
+			},
+			
+			options: {
+				default: function () {
+					return {
+						hasHeader: true,
+					};
+				},
+			},
 		},
 
 		data: function () {
@@ -165,10 +173,10 @@
 			/*reset_content_style: function () {
 			}*/
 			
-			resetMinSize() {
-				if (this.$refs.header && this.$refs.window) {
+			resetMinSize(target) {
+				if (target && this.$refs.window) {
 					const ResizeHolder = 5 + 5;//left + right
-					const { width, height} = this.$refs.header.getBoundingClientRect();
+					const { width, height} = target.getBoundingClientRect();
 					const [minWidth, minHeight] = [width + ResizeHolder, height + ResizeHolder];
 					this.$refs.window.setMinSize(minWidth, minHeight);
 					//this.$refs.window.setStyle({
@@ -186,7 +194,7 @@
 		watch: {
 			minimum: function () {
 				//this.reset_content_style();
-			}
+			},
 		},
 
 		mounted: function () {
@@ -220,7 +228,17 @@
 	.ui-dialog {
 		border-radius: 4px;
 	}
+	
+	.dialog-content {
+		display: table-row;
+		height: 100%;
+		border-top: 1px solid lightgray;
+	}
+	.hide {
+		display: none;
+	}
 
+	/* movable handle */
 	.header {
 		display: table-row;
 		user-select: none;
@@ -233,23 +251,32 @@
 		cursor: move;
 	}
 
-	.header .header-buttons {
-		display: inline;
-		right: 0.5em;
-		margin-right: 1px;
-		position: absolute;
+	.header-caption {
+		overflow-x: hidden;
+		display: flex;
+		height: auto;
 	}
-	.header .header-buttons > * {
+
+	.header-caption .header-title {
+		display: inline-block;
+		flex: 1;
+	}
+
+	.header-caption .header-buttons {
+		display: inline-block;
+		flex: 0;/* make minimum width */
+	}
+	.header-caption .header-buttons > * {
 		padding: 0;
 		border: none;
 		background: transparent;
 	}
-	.header .header-buttons > .header-button {
+	.header-caption .header-buttons > .header-button {
 	}
-	.header .header-buttons > .header-button:hover {
+	.header-caption .header-buttons > .header-button:hover {
 		background: lightgray;
 	}
-	.header .header-buttons > .header-button:active {
+	.header-caption .header-buttons > .header-button:active {
 		background: lightblue;
 	}
 

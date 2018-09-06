@@ -414,7 +414,7 @@
 									if (this._is_category_hair()) {
 										let black = CharacterRenderConfig.getColorHairID(String(si), 0);
 
-										this.search_equip_result = this.equip_list.filter(function (item, index) {
+										this.search_equip_result = this.equip_list.filter((item, index) => {
 											let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
 												item.$page = (index / this.countOfItemsPerPage);
@@ -425,7 +425,7 @@
 									else if (this._is_category_face()) {
 										let black = CharacterRenderConfig.getColorFaceID(String(si), 0);
 
-										this.search_equip_result = this.equip_list.filter(function (item, index) {
+										this.search_equip_result = this.equip_list.filter((item, index) => {
 											let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
 												item.$page = (index / this.countOfItemsPerPage);
@@ -436,7 +436,7 @@
 								}
 								if (this.search_equip_result.length == 0) {
 									let regexp = RegExp(rr[2]);
-									this.search_equip_result = this.equip_list.filter(function (item, index) {
+									this.search_equip_result = this.equip_list.filter((item, index) => {
 										if (item[attr] != null && regexp.test(item[attr])) {
 											item.$page = (index / this.countOfItemsPerPage);
 											return true;
@@ -461,7 +461,7 @@
 							}
 						}
 						else {
-							this.search_equip_result = this.equip_list.filter(function (item, index) {
+							this.search_equip_result = this.equip_list.filter((item, index) => {
 								if (item.id && item.id.indexOf(search_text) >= 0 ||
 									item.name && (
 										item.name.indexOf(search_text) >= 0 ||
@@ -513,7 +513,7 @@
 
 					this.change_page(page);
 
-					this.$nextTick(function () {
+					this.$nextTick(() => {
 						window.location.hash = "item" + item.id;
 
 						this.$refs.input_search.focus();

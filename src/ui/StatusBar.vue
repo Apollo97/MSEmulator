@@ -2,7 +2,7 @@
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
 		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
-			<gui-root p="/UI/StatusBar3">
+			<gui-root ref="gui_root" p="/UI/StatusBar3">
 				<!-- begin bottomUI -->
 				<gui p="mainBar">
 					<div style="position: absolute; bottom: 0; width: 100%;">
@@ -335,16 +335,16 @@
 				}
 			},
 			myUpdate: function () {
-				this.$nextTick(async () => {
-					//await this.$store.dispatch("waitAllLoaded");
+				//await this.$store.dispatch("waitAllLoaded");
 
-					this.updatePosition();
+				this.updatePosition();
 
-					//$(this.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
-				});
+				//$(this.$refs.dummy_expBar).draggable({ containment: "parent", snap: true, cancel: ".draggable-cancel" });
 			},
 		},
-		mounted: function () {
+		mounted: async function () {
+			this.guiData = await this.$refs.gui_root._$promise;
+			
 			window.$statusBar = this;
 			this.system._$window_resize = this._window_onresize.bind(this);
 			window.addEventListener("resize", this.system._$window_resize);

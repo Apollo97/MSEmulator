@@ -20,8 +20,8 @@
 						<input type="number" v-model.number="chara.speed" min="0" max="5" step="0.01" />
 					</td>
 					<td>
-						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">禁用物理</button>
-						<button v-else @click="sceneChara.enablePhysics=true">啟用物理</button>
+						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">分離物理</button>
+						<button v-else @click="sceneChara.enablePhysics=true">聯結物理</button>
 					</td>
 					<td>
 						<button @click="isShowDebug=!isShowDebug">細節</button>
@@ -41,8 +41,11 @@
 							<option v-else v-for="frame in chara.emotion_frame_count" :value="frame - 1">{{frame - 1}}</option>
 						</select>
 					</td>
+					<td>
+						<input type="number" v-model.number="chara.blinkRate" min="0" max="1" step="0.1" title="blink" />
+					</td>
 				</tr>
-				<tr title="禁用物理後可設定角色的動作">
+				<tr title="分離物理後可設定角色的動作">
 					<th>動作</th>
 					<td>
 						<select :disabled="sceneChara.enablePhysics" v-model="chara.action">
@@ -57,7 +60,7 @@
 						</select>
 					</td>
 				</tr>
-				<tr title="禁用物理後可設定角色的位置">
+				<tr title="分離物理後可設定角色的位置">
 					<th>位置</th>
 					<td colspan="3">
 						<div>
@@ -67,7 +70,7 @@
 						</div>
 					</td>
 				</tr>
-				<tr title="禁用物理後可設定角色的旋轉和方向">
+				<tr title="分離物理後可設定角色的旋轉和方向">
 					<td colspan="4">
 						<label>旋轉：
 							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara_angle" min="-180" max="180" step="10" />°

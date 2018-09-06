@@ -57,26 +57,36 @@
 		return CSS.px(Math.trunc(value));
 	}
 
+	const default_options = {
+		/*movableHandle: {
+			type: String,
+			default: "header",
+			description: "css selector"
+		},
+		resizableHandle: {
+			type: String,
+			default: "resize-border",
+			description: "css selector"
+		},*/
+		/*movable: {
+			type: Boolean,
+			default: true,
+		},
+		resizable: {
+			type: Boolean,
+			default: true,
+		},*/
+		movable: true,
+		resizable: true,
+	};
+
 	export default {
 		props: {
-			/*movableHandle: {
-				type: String,
-				default: "header",
-				description: "class name"
+			options: {
+				default: function () {
+					return default_options;
+				}
 			},
-			resizableHandle: {
-				type: String,
-				default: "resize-border",
-				description: "class name"
-			},*/
-			/*isMovable: {
-				type: Boolean,
-				default: true,
-			},
-			isResizable: {
-				type: Boolean,
-				default: true,
-			},*/
 		},
 		data: function () {
 			return {
@@ -94,7 +104,14 @@
 				},
 				m_movable: true,
 				m_resizable: true,
+				
+				_$options: Object.assign({}, default_options),
 			};
+		},
+		watch: {
+			options: function () {
+				this.$data._$options = Object.assign({}, this.options, default_options);
+			},
 		},
 		methods: {
 			setStyle: function (style) {
@@ -139,6 +156,12 @@
 					minHeight: minHeight,
 				});
 			},
+			isMovable: function () {
+				return this.$data._$options.movable && this.m_movable;
+			},
+			isResizable: function () {
+				return this.$data._$options.resizable && this.m_resizable;
+			},
 			resizable_mousedown: function (orientation, ev) {
 				if (ev.buttons == 1) {
 					if (!resizable_target) {
@@ -147,10 +170,12 @@
 							return;
 						}
 						//if (this.movableHandle instanceof Array) this.movableHandle.reduce((acc, v) => acc || ev.target.classList.contains(v), false)
-						if (orientation == "move" && ev.target.className.indexOf("header") < 0) {
-							return;
+						if (orientation == "move") {
+							if (!this.isMovable() || ev.target.className.indexOf("header") < 0) {
+								return;
+							}
 						}
-						else if (!this.m_resizable) {
+						if (orientation != "move" && !this.isResizable()) {
 							return;
 						}
 						//debugger;
