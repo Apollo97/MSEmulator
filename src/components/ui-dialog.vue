@@ -210,8 +210,16 @@
 		updated: function () {
 		},
 
-		//   watch: {
-		//   }
+		beforeDestroy() {
+			const index = zIndices.indexOf(this);
+
+			if (index >= 0) {
+				zIndices.splice(index, 1);//remove
+			}
+		},
+
+		//	watch: {
+		//	}
 
 		components: {
 			"ui-draggable": UIDraggable,
