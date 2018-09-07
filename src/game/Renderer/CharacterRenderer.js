@@ -2316,7 +2316,7 @@ export class CharacterAnimationBase {
 		//this._emotion_frame_sequence = [0, 1, 2, 1];
 		this._generator_emotion_frame = this.emotion_frame_sequence_generator(3, 0);//[0,1,2].length
 		
-		this.blinkRate = 0.03;
+		this.blinkRate = 0.015;
 
 		/** @type {CharacterSlots} */
 		this.slots = new CharacterSlots();
@@ -2609,7 +2609,7 @@ export class CharacterAnimationBase {
 			this._emotion_time = 0;
 
 			if (emo == "blink") {
-				this.blinkRate = 0.03;
+				this.blinkRate = 0.015;
 			}
 			else {
 				this.blinkRate = 1;
@@ -2752,6 +2752,10 @@ export class CharacterAnimationBase {
 		this._update(stamp);
 	}
 
+	/**
+	 * use await this.__synchronize(stamp) update and force wait all resource load
+	 * @param {number}
+	 */
 	__forceUpdate(stamp) {
 		this._$dirty = Math.random();
 		this._update(stamp | 0);
@@ -3096,6 +3100,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	}
 
 	
+	/**
+	 * update and force wait all resource load
+	 * @param {number}
+	 */
 	async __synchronize(stamp) {
 		this.__forceUpdate(stamp);
 	

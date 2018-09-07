@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div v-if="chara != null" class="frame">
-		<div class="center">
+		<div class="center" :style="style_transform">
 			<template v-for="ft in frag_list">
 				<img v-if="ft.relative"
 					 :src="get_ft_src(ft)"
@@ -70,7 +70,7 @@
 	*/
 
 	export default {
-		props: ['chara'],
+		props: ["chara", "allowRotate"],
 		computed: {
 			frag_list: {
 				get: function () {
@@ -91,7 +91,22 @@
 				},
 				set: function (newVal) {
 				}
-			}
+			},
+			style_transform: function () {
+				let transform = "";
+				
+				if (chara.renderer.front > 0) {
+					transform += "rotateY(180deg)";
+				}
+				
+				if (this.allowRotate && chara.renderer.angle) {
+					transform += `rotateZ(${chara.renderer.angle}rad)`;
+				}
+				
+				return {
+					transform: transform,
+				};
+			},
 		},
 		methods: {
 			get_ft_src: function (ft) {
@@ -99,11 +114,11 @@
 			},
 			get_ft_style: function (ft) {
 				let style = {
-					left: ft.relative.x + 'px',
-					top: ft.relative.y + 'px',
+					left: ft.relative.x + "px",
+					top: ft.relative.y + "px",
 					opacity: ft.opacity,
-					width: ft.width + 'px',
-					height: ft.height + 'px',
+					width: ft.width + "px",
+					height: ft.height + "px",
 					filter: ft.filter.toString(),
 					visibility: ft.visible ? "visible" : "hidden",
 				};

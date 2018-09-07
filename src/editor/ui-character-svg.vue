@@ -13,6 +13,7 @@
 						   :width="ft.width"
 						   :height="ft.height"
 						   :opacity="ft.opacity"
+						   :transform="transform"
 						   :xlink:href="get_ft_src(ft)"
 						   >
 					</image>
@@ -38,7 +39,7 @@
 
 <script>
 	export default {
-		props: ['chara'],
+		props: ["chara", "allowRotate"],
 		computed: {
 			frag_list: {
 				get: function () {
@@ -59,7 +60,20 @@
 				},
 				set: function (newVal) {
 				}
-			}
+			},
+			transform: function () {
+				let transform = "";
+				
+				if (chara.renderer.front > 0) {
+					transform += "scale(-1,1)";
+				}
+				
+				if (this.allowRotate && chara.renderer.angle) {
+					transform += `rotate(${Math.degrees(chara.renderer.angle)})`;
+				}
+				
+				return transform;
+			},
 		},
 		data: function () {
 			return {
@@ -73,11 +87,11 @@
 			},
 			get_ft_style: function (ft) {
 				return {
-					left: ft.relative.x + 'px',
-					top: ft.relative.y + 'px',
+					left: ft.relative.x + "px",
+					top: ft.relative.y + "px",
 					opacity: ft.visible ? ft.opacity : 0,
-					width: ft.width + 'px',
-					height: ft.height + 'px',
+					width: ft.width + "px",
+					height: ft.height + "px",
 					filter: ft.filter.toString(),
 				};
 			},

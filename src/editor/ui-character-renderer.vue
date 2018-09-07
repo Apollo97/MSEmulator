@@ -1,6 +1,6 @@
 ﻿
 <template>
-	<div class="UIEditCharacterAttribute" style="display: inline-block;">
+	<div class="UICharacterRenderer" style="display: inline-block;">
 		<div style="display: inline-block; vertical-align: top;">
 			<table style="border-collapse: collapse; border-spacing: 0px;">
 				<tr>
@@ -17,11 +17,11 @@
 						</template>
 					</td>
 					<td title="animation speed">
-						<input type="number" v-model.number="chara.speed" min="0" max="5" step="0.01" />
+						<input-number v-model.number="chara.speed" min="0" max="5" step="0.01" fixed="2" />
 					</td>
 					<td>
-						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false">分離物理</button>
-						<button v-else @click="sceneChara.enablePhysics=true">聯結物理</button>
+						<button v-if="sceneChara.enablePhysics" @click="sceneChara.enablePhysics=false, oninput()">分離物理</button>
+						<button v-else @click="sceneChara.enablePhysics=true, oninput()">聯結物理</button>
 					</td>
 					<td>
 						<button @click="isShowDebug=!isShowDebug">細節</button>
@@ -30,7 +30,7 @@
 				<tr>
 					<th>表情</th>
 					<td>
-						<select v-model="chara.emotion">
+						<select v-model="chara.emotion" @input="oninput">
 							<option v-if="!emotions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in emotions">{{item}}</option>
 						</select>
@@ -42,13 +42,13 @@
 						</select>
 					</td>
 					<td>
-						<input type="number" v-model.number="chara.blinkRate" min="0" max="1" step="0.1" title="blink" />
+						<input-number v-model.number="chara.blinkRate" min="0" max="1" step="0.1" title="blink" fixed="4" />
 					</td>
 				</tr>
 				<tr title="分離物理後可設定角色的動作">
 					<th>動作</th>
 					<td>
-						<select :disabled="sceneChara.enablePhysics" v-model="chara.action">
+						<select :disabled="sceneChara.enablePhysics" v-model="chara.action" @input="oninput">
 							<option v-if="!actions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in actions">{{item}}</option>
 						</select>
@@ -64,16 +64,16 @@
 					<th>位置</th>
 					<td colspan="3">
 						<div>
-							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.x" min="-99999" max="99999" />
-							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara.y" min="-99999" max="99999" />
-							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="sceneChara.$layer" min="0" max="7" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.x" min="-99999" max="99999" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.y" min="-99999" max="99999" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="sceneChara.$layer" min="0" max="7" />
 						</div>
 					</td>
 				</tr>
 				<tr title="分離物理後可設定角色的旋轉和方向">
 					<td colspan="4">
 						<label>旋轉：
-							<input :disabled="sceneChara.enablePhysics" type="number" v-model.number="chara_angle" min="-180" max="180" step="10" />°
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara_angle" min="-180" max="180" step="10" />°
 						</label>
 						<label>方向：
 							<select :disabled="sceneChara.enablePhysics" v-model.number="chara.front">
@@ -86,10 +86,10 @@
 				<tr>
 					<th rowspan="2">耳朵</th>
 					<td>
-						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked />人類</label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="human" checked @input="oninput" />人類</label>
 					</td>
 					<td>
-						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="elf" />妖精</label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="elf" @input="oninput" />妖精</label>
 					</td>
 					<td>
 						<!---->
@@ -97,10 +97,10 @@
 				</tr>
 				<tr>
 					<td>
-						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="lef" />木雷普</label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="lef" @input="oninput" />木雷普</label>
 					</td>
 					<td>
-						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" />亥雷普</label>
+						<label class="chara_ear"><input type="radio" name="chara_ear" v-model="chara.ear" value="highlef" @input="oninput" />亥雷普</label>
 					</td>
 					<td>
 						<!---->
@@ -119,7 +119,7 @@
 				<tr>
 					<th>max value</th>
 					<td><input type="range" step="100" min="100" max="1000" v-model="max_value" /></td>
-					<td><input type="number" step="100" min="100" max="1000" v-model="max_value" /></td>
+					<td><input-number step="100" min="100" max="1000" v-model="max_value" /></td>
 				</tr>
 			</table>
 			<hr />
@@ -147,7 +147,7 @@
 									<input type="range" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.opacity" min="0.01" max="1" step="0.01" @input="oninput" />
+									<input-number v-model.number="equip.opacity" min="0.01" max="1" step="0.01" @input="oninput" />
 								</td>
 								<td><input @click="equip.opacity=1; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
@@ -159,7 +159,7 @@
 									<input type="range" v-model.number="equip.filter.hue" min="0" max="359" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.hue" min="0" max="359" @input="oninput" />
+									<input-number v-model.number="equip.filter.hue" min="0" max="359" @input="oninput" />
 								</td>
 								<td><input @click="equip.filter.hue=0; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
@@ -171,7 +171,7 @@
 									<input type="range" v-model.number="equip.filter.sat" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.sat" min="0" :max="max_value" @input="oninput" />
+									<input-number v-model.number="equip.filter.sat" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td><input @click="equip.filter.sat=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
@@ -183,7 +183,7 @@
 									<input type="range" v-model.number="equip.filter.bri" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.bri" min="0" :max="max_value" @input="oninput" />
+									<input-number v-model.number="equip.filter.bri" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td><input @click="equip.filter.bri=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
@@ -195,7 +195,7 @@
 									<input type="range" v-model.number="equip.filter.contrast" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td style="width:50%;">
-									<input type="number" v-model.number="equip.filter.contrast" min="0" :max="max_value" @input="oninput" />
+									<input-number v-model.number="equip.filter.contrast" min="0" :max="max_value" @input="oninput" />
 								</td>
 								<td><input @click="equip.filter.contrast=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
@@ -265,9 +265,9 @@
 					event.target.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
 				}
 			},
-			oninput: function () {
+			oninput: async function () {
 				const crr = this.sceneChara.renderer;
-				crr.__forceUpdate(0);
+				await crr.__synchronize(0);
 				this.$forceUpdate();
 			},
 			onwheel: function (event, type, max) {
@@ -279,6 +279,8 @@
 						this.chara[type + "_frame"] = newVal;
 					}
 				}
+				
+				this.oninput();
 			},
 		},
 	}
@@ -286,7 +288,7 @@
 </script>
 
 <style scoped>
-	.UIEditCharacterAttribute td > * {
+	.UICharacterRenderer td > * {
 		width: 100%;
 	}
 	

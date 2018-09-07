@@ -114,11 +114,11 @@
 												<tr @contextmenu.prevent="openCharacterDLMenu($event, item.id)">
 													<td title="順序" style="text-align: center;">
 														<div v-if="index">
-															<span class="ui-no-interactions">▲</span>
+															<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index - 1)">▲</span>
 														</div>
 														<div>{{index}}</div>
 														<div v-if="index!=(charaList.length-1)">
-															<span class="ui-no-interactions">▼</span>
+															<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index + 1)">▼</span>
 														</div>
 													</td>
 													<td>
@@ -138,7 +138,7 @@
 														</div>
 													</td>
 													<td style="position: relative;">
-														<ui-character :chara="item.renderer"></ui-character>
+														<ui-character-svg :chara="item.renderer"></ui-character-svg>
 													</td>
 												</tr>
 											</table>
@@ -159,13 +159,13 @@
 		</transition>
 			
 		<transition name="fade">
-			<ui-dialog :title="wnds.character_attribute.name" ref="character_attribute" v-show="wnds.character_attribute.visable">
+			<ui-dialog :title="wnds.character_renderer.name" ref="character_renderer" v-show="wnds.character_renderer.visable">
 				<template slot="header">
-					Character attribute
+					Character renderer
 				</template>
 				<template slot="content">
 					<div v-if="chara!=null">
-						<ui-character-attribute :sceneChara="chara"></ui-character-attribute>
+						<ui-character-renderer :sceneChara="chara"></ui-character-renderer>
 					</div>
 				</template>
 			</ui-dialog>
@@ -307,7 +307,7 @@
 	import UIEquipBox from './ui-equip-box.vue';
 	import UICharacter from './ui-character.vue';
 	import UICharacterSVG from './ui-character-svg.vue';
-	import UICharacterAttribute from './ui-character-attribute.vue';
+	import UICharacterRenderer from './ui-character-renderer.vue';
 
 	import UIMobList from "./ui-mob-list.vue";
 	import UIMapEditor from "./ui-map-editor.vue";
@@ -356,39 +356,74 @@
 			//},
 		},
 		actions: {
+			moveCharaOrder: function (context, payload) {
+				const state = context.state;
+				
+				if (state.charaList.length <= 1) {
+					return;
+				}
+				const { id = payload.name, moveTo } = payload;//id === name
+				
+				let move_chara;
+				for (let i = 0; i < state.charaList.length; ++i) {
+					const chara = state.charaList[i];
+					if (chara.id == id) {
+						if (chara.$remote) {
+							return false;
+						}
+						else {
+							move_chara = state.charaList.splice(i, 1)[0];
+							break;
+						}
+					}
+				}
+				if (move_chara) {
+					state.charaList.splice(moveTo, 0, move_chara);
+					return true;
+				}
+				else {
+					throw new Error("");
+				}
+			},
 			deleteCharacter: function (context, payload) {
-				const { id = payload.name } = payload;//id === name
 				const state = context.state;
 				
 				//no delete default character
 				if (state.charaList.length <= 1) {
 					return;
 				}
+				const { id = payload.name } = payload;//id === name
 				
 				let delete_chara;
 				for (let i = 0; i < state.charaList.length; ++i) {
 					const chara = state.charaList[i];
-					if (chara.$remote) {
-						return false;
-					}
 					if (chara.id == id) {
-						delete_chara = state.charaList.splice(i, 1)[0];
-						break;
+						if (chara.$remote) {
+							return false;
+						}
+						else {
+							delete_chara = state.charaList.splice(i, 1)[0];
+							break;
+						}
 					}
 				}
-				if (delete_chara.$physics) {
-					delete_chara.$physics._destroy();
+				if (!move_chara) {
+					if (delete_chara.$physics) {
+						delete_chara.$physics._destroy();
+					}
+					delete_chara.$physics = null;
+					delete_chara.renderer = null;
+					
+					if (state.charaList.length) {
+						context.dispatch('selectChara', {
+							id: state.charaList[state.charaList.length - 1].id,
+						});
+					}
+					return true;
 				}
-				delete_chara.$physics = null;
-				delete_chara.renderer = null;
-				
-				if (state.charaList.length) {
-					context.dispatch('selectChara', {
-						id: state.charaList[state.charaList.length - 1].id,
-					});
+				else {
+					throw new Error("");
 				}
-				
-				return true;
 			},
 			isIdExist: function (context, payload) {
 				const state = context.state;
@@ -404,6 +439,7 @@
 				return false;
 			},
 			sortCharaById: function (context, payload) {
+				debugger;
 				const state = context.state;
 				state.charaList = state.charaList.sort((a, b) => {
 					const na = get_n(a.id);
@@ -649,7 +685,7 @@
 				wnds: {
 					menu: { name: "$menu", visable: true },
 					character_list: { name: "Characters", visable: true },
-					character_attribute: { name: "Character attribute", visable: true },
+					character_renderer: { name: "Character renderer", visable: true },
 					equip_box: { name: "Equip box", visable: true },
 					spawnpoint: { name: "Spawn point", visable: true },
 					debug_window: { name: "Map editor (Debug)", visable: true, },
@@ -698,9 +734,17 @@
 					chara: chara
 				});
 			},
+			moveCharacterOrder: function (chara, moveTo) {
+				this.$store.dispatch('moveCharaOrder', {
+					id: chara.id,
+					moveTo: moveTo,
+				});
+			},
 			deleteCharacter: function (chara) {
 				console.log("delete character: " + chara.id);
-				this.$store.dispatch('deleteCharacter', { id: chara.id });
+				this.$store.dispatch('deleteCharacter', {
+					id: chara.id,
+				});
 			},
 			oninput_sort: function (value) {
 				this.$store.state.charaList = value;
@@ -848,7 +892,7 @@
 					minWidth: CSS.em(16.1),
 				});
 				
-				this.$refs.character_attribute.setStyle({
+				this.$refs.character_renderer.setStyle({
 					left: _to_css_px(900 * scr_rat_x),
 					top: _to_css_px(0 * scr_rat_y),
 					width: CSS.em(19),
@@ -900,7 +944,7 @@
 
 			"ui-character": UICharacter,
 			"ui-character-svg": UICharacterSVG,
-			"ui-character-attribute": UICharacterAttribute,
+			"ui-character-renderer": UICharacterRenderer,
 			"ui-equip-box": UIEquipBox,
 
 			"ui-mob-list": UIMobList,
@@ -971,10 +1015,17 @@
 		float: right;
 	}
 	.chara-ls-btn {
-	    display: inline-flex;
-		width: 20px;
-		height: 20px;
+		display: inline-flex;
 		padding: 0;
+		background: none;
+		border: 1px solid transparent;
+		text-align: center;
+	}
+	.chara-ls-btn:hover {
+		border: 1px solid gray;
+		box-shadow: inset 0 0 4px 0px darkgrey;
+		background: linear-gradient(to bottom, #eee1 0%,#ccca 100%);
+		border-radius: 5px;
 	}
 	.chara-ls-btn > * {
 		margin: auto;
