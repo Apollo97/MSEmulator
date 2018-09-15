@@ -6,11 +6,12 @@ import { Sprite } from '../Sprite.js';
 export class ChatBalloon {
 	constructor() {
 		this._raw = null;
+		/** @type {string} */
 		this.style = null;
 	}
 
 	/**
-	 * @param {any} style
+	 * @param {string} style
 	 */
 	async load(style) {
 		if (style == null) {
@@ -163,7 +164,7 @@ export class ChatBalloon {
 	//}
 }
 
-/** @type {{[style:number]:ChatBalloon}} */
+/** @type {{[style:string]:ChatBalloon}} */
 ChatBalloon.cache = window.$images_ChatBalloon || {};
 
 window.$images_ChatBalloon = ChatBalloon.cache;

@@ -124,7 +124,7 @@ class $RemotePlayerData {
 		this.equips_code = null;
 		
 		
-		/** @type {number} */
+		/** @type {string} */
 		this.chatBalloonStyle = 0;
 		
 		/** @type {string} */

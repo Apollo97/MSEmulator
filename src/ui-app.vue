@@ -2,6 +2,7 @@
 <template>
 	<div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; user-select: none;">
 		<transition name="fade" style="position: absolute;">
+			<!-- editor and statusBar need init/reset window position, size -->
 			<div v-if="is_editor_mode" class="scene-editor;">
 				<editor ref="editor" @hoverItem="showItemTip(...arguments);"
 						@mouseleaveItem="hideItemTip(...arguments);">
@@ -10,36 +11,60 @@
 		</transition>
 
 		<transition name="fade" style="position: absolute;">
+			<!-- editor and statusBar need init/reset window position, size -->
 			<status-bar ref="statusBar"
 						v-if="!is_editor_mode"
-						:chara="chara"
-						></status-bar>
+						:chara="chara">
+			</status-bar>
+		</transition>
+
+		<!-- begin game ui -->
+
+		<transition name="fade" style="position: absolute;">
+			<keep-alive>
+				<ui-window-equip v-if="isShowUIEquipWnd"
+								 :chara="chara"
+								 @hoverItem="showItemTip(...arguments);"
+								 @mouseleaveItem="hideItemTip(...arguments);">
+				</ui-window-equip>
+			</keep-alive>
 		</transition>
 
 		<transition name="fade" style="position: absolute;">
-			<ui-window-equip v-if="isShowUIEquipWnd"
-							 :chara="chara"
-							 @hoverItem="showItemTip(...arguments);"
-							 @mouseleaveItem="hideItemTip(...arguments);"
-							 >
-			</ui-window-equip>
+			<keep-alive>
+				<ui-window-item v-if="isShowUIItemWnd"
+								:chara="chara"
+								@hoverItem="showItemTip(...arguments);"
+								@mouseleaveItem="hideItemTip(...arguments);">
+				</ui-window-item>
+			</keep-alive>
 		</transition>
-		
+
 		<transition name="fade" style="position: absolute;">
-			<ui-window-item v-if="isShowUIItemWnd"
-							:chara="chara"
-							@hoverItem="showItemTip(...arguments);"
-							@mouseleaveItem="hideItemTip(...arguments);"
-							>
-			</ui-window-item>
+			<keep-alive>
+				<ui-window-stat v-if="isShowUIStatWnd"
+								 :chara="chara">
+				</ui-window-stat>
+			</keep-alive>
+		</transition>
+
+		<transition name="fade" style="position: absolute;">
+			<keep-alive>
+				<ui-window-skill v-if="isShowUISkillWnd"
+								 :chara="chara">
+				</ui-window-skill>
+			</keep-alive>
 		</transition>
 
 		<div @contextmenu.prevent class="gui" style="z-index: 100; position: absolute; width: 0; height: 0;">
 			<ui-tool-tip v-if="isShowEquipTip" :isShow="isShowEquipTip"
-							:equip="equip"
-							:chara="chara"
-							:state="ItemTip_state"></ui-tool-tip>
+						 :equip="equip"
+						 :chara="chara"
+						 :state="ItemTip_state">
+			</ui-tool-tip>
 		</div>
+
+		<!-- end game ui -->
 	</div>
 </template>
 
@@ -50,6 +75,8 @@
 	import StatusBar from "./ui/StatusBar.vue";
 	import UIWindowEquip from "./ui/UIWindow/Equip.vue";
 	import UIWindowItem from "./ui/UIWindow/Item.vue";
+	import UIWindowStat from "./ui/UIWindow/Stat.vue";
+	import UIWindowSkill from "./ui/UIWindow/Skill.vue";
 
 	import ItemTip from "./ui/UIToolTip/ItemTip.vue";
 
@@ -209,6 +236,8 @@
 				isShowEquipTip: true,
 				isShowUIEquipWnd: false,
 				isShowUIItemWnd: false,
+				isShowUISkillWnd: false,
+				isShowUIStatWnd: false,
 				m_is_always_show_tip: false,
 
 				ItemTip_state: {
@@ -296,6 +325,12 @@
 					case "i":
 						this.isShowUIItemWnd = !this.isShowUIItemWnd;
 						break;
+					case "k":
+						this.isShowUISkillWnd = !this.isShowUISkillWnd;
+						break;
+					case "s":
+						this.isShowUIStatWnd = !this.isShowUIStatWnd;
+						break;
 				}
 			}
 		},
@@ -348,6 +383,8 @@
 			"status-bar": StatusBar,
 			"ui-window-equip": UIWindowEquip,
 			"ui-window-item": UIWindowItem,
+			"ui-window-stat": UIWindowStat,
+			"ui-window-skill": UIWindowSkill,
 		}
 	};
 </script>

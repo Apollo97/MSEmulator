@@ -171,6 +171,10 @@
 						}
 						//if (this.movableHandle instanceof Array) this.movableHandle.reduce((acc, v) => acc || ev.target.classList.contains(v), false)
 						if (orientation == "move") {
+							//if (ev.target.className.indexOf) {
+							//	console.log(ev, ev.target.className);
+							//	debugger;
+							//}
 							if (!this.isMovable() || ev.target.className.indexOf("header") < 0) {
 								return;
 							}

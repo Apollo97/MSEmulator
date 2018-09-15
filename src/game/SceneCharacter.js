@@ -270,7 +270,7 @@ export class BaseSceneCharacter extends SceneObject {
 		// begin PlayerData
 		//TODO: move player data to PlayerData
 		
-		/** @type {number} */
+		/** @type {string} */
 		this.chatBalloonStyle = 0;
 		
 		/** @type {string} */

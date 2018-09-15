@@ -65,6 +65,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\Engine.js" />
     <Compile Include="src\game\GameState.js" />
     <Compile Include="src\game\init.js" />
+    <Compile Include="src\game\InputKey.js" />
     <Compile Include="src\game\IRenderer.js" />
     <Compile Include="src\game\Item.js">
       <SubType>Code</SubType>
@@ -116,6 +117,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\WebGLRenderer.js" />
     <Compile Include="src\index.js" />
     <Compile Include="src\init.js" />
+    <Compile Include="src\state.js" />
     <Compile Include="src\ui\Basic\KeySlot.js">
       <SubType>Code</SubType>
     </Compile>
@@ -245,16 +247,19 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="src\components\ui-dialog.vue" />
     <Content Include="src\components\ui-draggable.vue" />
     <Content Include="src\components\ui-menu.vue" />
+    <Content Include="src\components\ui-resizable.vue" />
     <Content Include="src\components\ui-sortable.vue" />
     <Content Include="src\components\ui-trigger.vue" />
     <Content Include="src\editor\editor.vue" />
-    <Content Include="src\editor\ui-character-attribute.vue" />
+    <Content Include="src\editor\ui-character-renderer.vue" />
     <Content Include="src\editor\ui-character-svg.vue" />
     <Content Include="src\editor\ui-character.vue" />
     <Content Include="src\editor\ui-equip-box.vue" />
     <Content Include="src\editor\ui-map-editor.vue" />
     <Content Include="src\editor\ui-mob-list.vue" />
     <Content Include="src\main-ui.vue" />
+    <Content Include="src\ui-app.vue" />
+    <Content Include="src\ui-login.vue" />
     <Content Include="src\ui\BasicComponent.vue" />
     <Content Include="src\ui\StatusBar.vue" />
     <Content Include="src\ui\Basic\UISlotItem.vue">
@@ -264,6 +269,10 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="src\ui\UIToolTip\ItemTip.vue" />
     <Content Include="src\ui\UIWindow\Equip.vue" />
     <Content Include="src\ui\UIWindow\Item.vue" />
+    <Content Include="src\ui\UIWindow\Stat.vue" />
+    <Content Include="src\ui\UIWindow\Skill.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\ui\UIWindow\WindowBase.vue" />
     <Content Include="typings.json" />
     <Content Include="wz.cs" />

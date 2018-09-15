@@ -356,6 +356,20 @@
 			},
 		}]
 	});
+	let GuiBlock = Vue.extend({
+		mixins: [GuiTextureS, {
+			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			computed: {
+				img_style: function () {
+					const x = -this.origin.x, y = -this.origin.y;
+					return {
+						width: this.width + "px",
+						height: this.height + "px",
+					};
+				},
+			},
+		}]
+	});
 
 	let GuiButton = Vue.extend({
 		mixins: [Gui, {
@@ -468,6 +482,7 @@
 			"gui-extend-bg": GuiExtendBg,
 			"gui-frame": GuiFrame,
 			"gui-frame-s": GuiFrameS,
+			"gui-block": GuiBlock,
 			"gui-button": GuiButton,
 			"gui-button-s": GuiButtonS,
 			"gui-input": GuiInput,

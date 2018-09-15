@@ -102,6 +102,8 @@
 								<span>{{charaList.length}} characters</span>
 								<div class="chara-ls-btn-group">
 									<button @click="addNewChara" class="chara-ls-btn" title="Add new"><img src="images/toolstrip_character.png" alt="Add new" /></button>
+									<button @click="addCloneChara(chara)" class="chara-ls-btn ui-no-interactions" title="Add clone"><img src="images/toolstrip_duplicate.png" alt="Clone" /></button>
+									<button @click="deleteCharacter(chara)" class="chara-ls-btn ui-no-interactions" title="Delete"><span class="ui-icon ui-icon-trash" alt="Delete"></span></button>
 									<button @click="loadCharacters" class="chara-ls-btn" title="Load"><span class="ui-icon ui-icon-folder-open" alt="📂"></span></button>
 									<button @click="saveCharacters" class="chara-ls-btn" title="Save all"><img src="images/toolstrip_save_all.png" alt="Save all" /></button>
 								</div>
@@ -127,18 +129,10 @@
 																<input v-if="item.renderer.pause" type="text" v-model="item.id" placeholder="名字" style="width: 90%;" />
 																<span v-else title="暫停後可改名">{{item.id}}</span>
 															</div>
-															<div>
-																<button @click="addCloneChara(item)" class="chara-ls-btn ui-no-interactions" title="Add clone">
-																	<img src="images/toolstrip_duplicate.png" alt="Clone" />
-																</button>
-																<button @click="deleteCharacter(item)" class="chara-ls-btn ui-no-interactions" title="Delete">
-																	<span class="ui-icon ui-icon-trash" alt="Delete"></span>
-																</button>
-															</div>
 														</div>
 													</td>
 													<td style="position: relative;">
-														<ui-character-svg :chara="item.renderer"></ui-character-svg>
+														<ui-character :chara="item.renderer"></ui-character>
 													</td>
 												</tr>
 											</table>

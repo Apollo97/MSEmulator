@@ -98,12 +98,14 @@
 		data: function () {
 			return {
 				guiData: null,
+
+				typeList: [],
 				sType: "Equip",
+
 				wndStyle: {
 					width: 0,
 					height: 0,
 				},
-				typeList: [],
 			};
 		},
 		methods: {
