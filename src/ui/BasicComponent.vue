@@ -378,7 +378,7 @@
 				enabled: {
 					type: Boolean,
 					default: true,
-				}
+				},
 			},
 			data: function () {
 				return {
@@ -441,6 +441,7 @@
 			},
 			watch: {
 				"disabled": function (value) {
+					debugger;
 					if (value) {
 					}
 					else {

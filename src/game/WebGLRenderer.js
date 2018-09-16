@@ -739,6 +739,13 @@ export class WebGLRenderer extends IRenderer {
 
 		gl.bindTexture(gl.TEXTURE_2D, null);
 
+		{//TODO: make WebGLTexture like Image
+			texture.src = image.src;
+			texture.naturalWidth = image.naturalWidth;
+			texture.naturalHeight = image.naturalHeight;
+			texture.$image = image;
+		}
+
 		return texture;
 	}
 

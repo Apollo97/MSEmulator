@@ -404,6 +404,9 @@ export class IGraph {
 		let width;
 		/** @type {number} */
 		let height;
+
+		/** @type {{ src: string, naturalWidth: number, naturalHeight: number }} */
+		this.texture = null;
 		
 		/** @type {Promise} if loaded will delete */
 		this.$promise = undefined;

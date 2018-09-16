@@ -27,15 +27,35 @@
 							<gui-button-s p="BtDetailOpen" @click="showDetail($event)"></gui-button-s>
 						</template>
 
-						<template>
-							<gui-button-s :disabled="abilityPoint" p="BtHpUp"></gui-button-s>
-							<gui-button-s :disabled="abilityPoint" p="BtMpUp"></gui-button-s>
-							<gui-button-s :disabled="abilityPoint" p="BtStrUp"></gui-button-s>
-							<gui-button-s :disabled="abilityPoint" p="BtDexUp"></gui-button-s>
-							<gui-button-s :disabled="abilityPoint" p="BtIntUp"></gui-button-s>
-							<gui-button-s :disabled="abilityPoint" p="BtLukUp"></gui-button-s>
+						<div v-if="chara" class="stat-text-outer">
+							<div style="margin-top: 27px;"></div><!-- padding -->
+							<input type="text" v-model="chara.name" class="stat-text" />
+							<input type="text" v-model="chara.職業" class="stat-text" />
+							<input type="text" v-model="chara.公會" class="stat-text" />
+							<input type="number" v-model.number="chara.人氣度" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.屬性攻擊力" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.HP" min="50" class="stat-text" />
+							<input type="number" v-model.number="chara.MP" min="50" class="stat-text" />
 
-							<gui-button-s :disabled="abilityPoint" :p="'BtAuto' + autoDistType"></gui-button-s>
+							<div style="margin-top: 24px;"></div><!-- padding -->
+							<input type="number" v-model.number="chara.AP" min="0" class="stat-text" style="width: 40%;" />
+							<div style="margin-top: 8px;"></div><!-- padding -->
+
+							<input type="number" v-model.number="chara.STP" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.DEX" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.INT" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.LUK" min="0" class="stat-text" />
+						</div>
+
+						<template>
+							<gui-button-s :enabled="chara.AP" p="BtHpUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP" p="BtMpUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP" p="BtStrUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP" p="BtDexUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP" p="BtIntUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP" p="BtLukUp"></gui-button-s>
+
+							<gui-button-s :enabled="chara.AP" :p="'BtAuto' + autoDistType"></gui-button-s>
 						</template>
 
 						<template v-if="isShowHyperStat">
@@ -46,11 +66,7 @@
 						</template>
 					</gui>
 
-					<div v-if="chara" style="font-size: 14px;">
-						<span style="position: absolute; left: 70px; top: 27px;">{{chara.name}}</span>
-					</div>
-
-					<template v-if="isShowDetail & 0">
+					<template v-if="isShowDetail">
 						<gui p="detail3" class="stat-detail3">
 							<gui-block p="backgrnd"></gui-block>
 							<gui-texture-s p="backgrnd"></gui-texture-s>
@@ -102,25 +118,28 @@
 			};
 		},
 		computed: {
-			abilityPoint: function () {
-				return chara ? chara.stat ? chara.stat.abilityPoint : 10 : 10;
-			},
 		},
 		methods: {
 			showDetail: function (event) {
+				//this.wndStyle["width"] = (this.guiData.main.backgrnd.__w + this.guiData.detail3.backgrnd.__w) + "px";
+				//this.wndStyle["height"] = Math.max(this.guiData.main.backgrnd.__h, this.guiData.detail3.backgrnd.__h) + "px";
 				this.isShowDetail = true;
 				this.$emit("showDetail", event);
 			},
 			hideDetail: function (event) {
+				//this.wndStyle["width"] = this.guiData.main.backgrnd.__w + "px";
+				//this.wndStyle["height"] = this.guiData.main.backgrnd.__h + "px";
 				this.isShowDetail = false;
 				this.$emit("hideDetail", event);
 			},
 		},
 		mounted: async function () {
 			this.guiData = await this.$refs.gui_root._$promise;
-			
+
 			this.wndStyle["width"] = this.guiData.main.backgrnd.__w + "px";
 			this.wndStyle["height"] = this.guiData.main.backgrnd.__h + "px";
+
+			//this.hideDetail(false);
 		},
 		components: {
 			"window-base": WindowBase,
@@ -136,5 +155,26 @@
 	}
 
 	.stat-detail3 {
+		position: absolute;
+		left: 100%;
+		top: 0;
+	}
+
+	.stat-text-outer {
+		font-size: 12px;
+		position: relative;
+		padding-left: 70px;
+		padding-right: 12px;
+		margin-top: -150%;
+	}
+
+	.stat-text {
+		font-size: 12px;
+		padding: 0;
+		padding-top: 4px;
+		border: none;
+		background: none;
+		outline: none;
+		margin: 0;
 	}
 </style>
