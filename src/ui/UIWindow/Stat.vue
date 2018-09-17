@@ -41,21 +41,21 @@
 							<input type="number" v-model.number="chara.AP" min="0" class="stat-text" style="width: 40%;" />
 							<div style="margin-top: 8px;"></div><!-- padding -->
 
-							<input type="number" v-model.number="chara.STP" min="0" class="stat-text" />
-							<input type="number" v-model.number="chara.DEX" min="0" class="stat-text" />
-							<input type="number" v-model.number="chara.INT" min="0" class="stat-text" />
-							<input type="number" v-model.number="chara.LUK" min="0" class="stat-text" />
+							<input type="number" v-model.number="chara.STP" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.DEX" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.INT" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.LUK" min="4" class="stat-text" />
 						</div>
 
 						<template>
-							<gui-button-s :enabled="chara.AP" p="BtHpUp"></gui-button-s>
-							<gui-button-s :enabled="chara.AP" p="BtMpUp"></gui-button-s>
-							<gui-button-s :enabled="chara.AP" p="BtStrUp"></gui-button-s>
-							<gui-button-s :enabled="chara.AP" p="BtDexUp"></gui-button-s>
-							<gui-button-s :enabled="chara.AP" p="BtIntUp"></gui-button-s>
-							<gui-button-s :enabled="chara.AP" p="BtLukUp"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtHpUp" @click="chara.HP+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtMpUp" @click="chara.MP+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtStrUp" @click="chara.STP+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtDexUp" @click="chara.DEX+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtIntUp" @click="chara.INT+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" p="BtLukUp" @click="chara.LUK+=1,chara.AP-=1"></gui-button-s>
 
-							<gui-button-s :enabled="chara.AP" :p="'BtAuto' + autoDistType"></gui-button-s>
+							<gui-button-s :enabled="chara.AP > 0" :p="'BtAuto' + autoDistType"></gui-button-s>
 						</template>
 
 						<template v-if="isShowHyperStat">

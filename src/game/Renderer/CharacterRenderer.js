@@ -709,13 +709,13 @@ class CharacterTamingMobFragment extends CharacterFragmentBase {
 	 * @returns {FragmentTexture}
 	 */
 	getTexture(chara) {
-		return this.getFrameTexture(chara, chara._action_frame);
+		return this.getFrameTexture(chara, chara.actani.actionFrame);
 	}
 
 	/**
 	 * @override
 	 * @param {CharacterAnimationBase} chara
-	 * @param {number} frame
+	 * @param {number} frame - not sync chara._frame
 	 * @returns {FragmentTexture}
 	 */
 	getFrameTexture(chara, frame) {
@@ -2305,15 +2305,30 @@ export class CharacterAnimationBase {
 
 		this.hideBody = false;
 
+		/** @type {string} */
 		this._ride_action = "stand1";
-		
+
+		//	action
+
+		/** @type {string} */
 		this._action = "stand1";
+
+		/** @type {number} */
 		this._action_frame = 0;
 
+		//	emotion
+
+		/** @type {string} */
 		this._emotion = "blink";
+
+		/** @type {number} */
 		this._emotion_frame = 0;
+
+		/** @type {number} */
 		this._emotion_time = 0;
-		//this._emotion_frame_sequence = [0, 1, 2, 1];
+
+		//
+
 		this._generator_emotion_frame = this.emotion_frame_sequence_generator(3, 0);//[0,1,2].length
 		
 		this.blinkRate = 0.015;
@@ -2544,6 +2559,7 @@ export class CharacterAnimationBase {
 				}
 				else {
 					this._action = "sit";//default
+					this._action_frame = 0;//default
 				}
 				if (this.actani._action != act) {
 					this.actani.reload(act);
@@ -2614,8 +2630,7 @@ export class CharacterAnimationBase {
 			else {
 				this.blinkRate = 1;
 			}
-
-			//this._emotion_frame_sequence = [...circularSequence(this.emotion_frame_count)];
+			
 			this._generator_emotion_frame = this.emotion_frame_sequence_generator(this.emotion_frame_count, 0);
 
 			this.__require_update |= true;
@@ -2640,8 +2655,6 @@ export class CharacterAnimationBase {
 	/** @type {number} */
 	get emotion_frame() {
 		return this._emotion_frame;
-		//let f = this._emotion_frame_sequence[this._emotion_frame % this._emotion_frame_sequence.length];
-		//return f;
 	}
 	set emotion_frame(value) {
 		if (value === "") {//from $("input")
@@ -2670,10 +2683,6 @@ export class CharacterAnimationBase {
 		this._generator_emotion_frame = this.emotion_frame_sequence_generator(this.emotion_frame_count, this._emotion_frame);
 		
 		return r;
-		
-		//let f = this._emotion_frame + next;
-		//f = f < 0 ? (this._emotion_frame_sequence.length - 1) : (f % this._emotion_frame_sequence.length);
-		//return this._emotion_frame_sequence[f];
 	}
 
 	/** @type {number} */

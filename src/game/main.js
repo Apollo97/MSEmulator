@@ -17,11 +17,12 @@ import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
 
 import { Cursor, CursorAnimationData } from "./Cursor.js";
 
-import { Client } from "../Client/Client.js";
-
-
 import { SceneCharacter } from "./SceneCharacter.js";//debug
 import { app as gApp } from "../index.js";//debug
+
+import { uiAnimationManager } from '../ui/UIAnimationManager.js';
+
+import { Client } from "../Client/Client.js";
 
 
 sceneRenderer.addLayerBack(12);
@@ -700,7 +701,7 @@ export class Game {
 	 */
 	_loop(timeStamp) {
 		const scene_map = this.scene_map;
-		let stamp = timeStamp - this.timer;
+		const stamp = timeStamp - this.timer;
 		
 		this.timer = timeStamp;
 
@@ -720,6 +721,8 @@ export class Game {
 		for (let i in $gv.input_keyUp) {
 			$gv.input_keyUp[i] = 0;
 		}
+		
+		uiAnimationManager.update(stamp);
 	}
 	
 	get chara() {

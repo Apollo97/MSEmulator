@@ -50,17 +50,23 @@ export class ActionAnimation {
 		/** @returns {ActionAnimationFrameData[]} */
 		this.frames = null;
 
-		/** @type {string} */
+		/**
+		 * input
+		 * @type {string}
+		 */
 		this._action = null;
+
+		/**
+		 * input
+		 * @type {number}
+		 */
+		this.frame = 0;
 
 		/** @type {number} */
 		this.time = 0;
 
-		/** @type {number} */
-		this.frame = 0;
-
 		/** @type {number} this.delay = delay < 0 ? -delay:0; if (this.delay == 0) launch attack */
-		this.delay = 0;
+		this.delay = 0;//not frame delay
 
 		/** @type {boolean} */
 		this.loop = false;
@@ -146,8 +152,8 @@ export class ActionAnimation {
 		// 改變 action & action_frame 會造成迴圈: this.reload(this._action)
 		if (!target._ride_action) {
 			target._action = fdat.action;
+			target._action_frame = fdat.frame;
 		}
-		target._action_frame = fdat.frame;
 
 		if (!this.frames || this.fdat == null) {
 			this._is_end = true;
@@ -173,7 +179,24 @@ export class ActionAnimation {
 	 * @returns {ActionAnimationFrameData}
 	 */
 	get fdat() {
-		return this.frames[this.frame];
+		const fdat = this.frames[this.frame];
+		return fdat;
+	}
+	/**
+	 * output action
+	 * @returns {string}
+	 */
+	get action() {
+		const fdat = this.frames[this.frame];
+		return fdat ? fdat.action : this.frames[0].action;//need default
+	}
+	/**
+	 * output action frame
+	 * @returns {number}
+	 */
+	get actionFrame() {
+		const fdat = this.frames[this.frame];
+		return fdat ? fdat.frame : 0;
 	}
 
 	static async Init() {

@@ -6,6 +6,8 @@
 	import Vue from "vue";
 	import Vuex from "vuex";
 
+	import { uiAnimationManager, UIAnimation } from "./UIAnimationManager";
+
 	var store = new Vuex.Store({
 		state: {
 			root: {},
@@ -120,6 +122,17 @@
 				}
 				return ds;
 			},
+			getGuiRoot: function () {
+				let parent = this.getGuiParent();
+				if (parent) {
+					if (parent._$is_root) {
+						return parent;
+					}
+					else {
+						return parent.getGuiRoot();
+					}
+				}
+			},
 			getGuiParent: function () {
 				let parent;
 				for (parent = this.$parent; parent; parent = parent.$parent) {
@@ -199,19 +212,24 @@
 					m_data: null,
 				};
 			},
+			computed: {
+				_$is_root: function () {
+					return true;
+				},
+			},
 			methods: {
 				getData: function () {
 					return this.m_data;
 				}
 			},
-			created: function () {
+			beforeMount: function () {
 				this._$promise = this.$store.dispatch("loadData", {
 					path: this.path,
 				});
 				this._$promise.then(data => {
 					this.m_data = data;
 				});
-			}
+			},
 		}]
 	});
 
@@ -393,22 +411,6 @@
 				}
 			},
 			computed: {
-				state: {
-					get: function () {
-						return this.m_state;
-					},
-					set: function (value) {
-						if (this.enabled) {
-							let newImg = this.stateMap[value];
-							if (newImg) {
-								this.m_state = value;
-							}
-						}
-						else {
-							this.m_state = "disabled";
-						}
-					}
-				},
 				bp: function () {
 					if (this.enabled) {
 						return this.stateMap[this.m_state] + "/" + this.aniFrame;
@@ -419,25 +421,65 @@
 				}
 			},
 			methods: {
+				setState: function (value) {
+					const oldState = this.m_state;
+
+					if (this.enabled) {
+						let newImg = this.stateMap[value];
+						if (newImg) {
+							this.m_state = value;
+						}
+					}
+					else {
+						this.m_state = "disabled";
+					}
+
+					if (this.m_state != oldState) {
+						this.aniFrame = 0;
+
+						let data = this.getData();
+						let frames = data[this.m_state];
+						if (frames && frames[1]) {
+							let anima = new UIAnimation(frames);
+							anima.load();
+							anima.onupdate = (anima, stamp) => {
+								this.aniFrame = anima.frame;
+							};
+							uiAnimationManager.add(this, anima);
+						}
+						else {
+							uiAnimationManager.remove(this);
+						}
+					}
+				},
 				mouseenter: function ($event) {
-					this.state = "mouseOver";
+					this.setState("mouseOver");
 					this.$emit("mouseenter", $event);
 				},
 				mouseleave: function ($event) {
-					this.state = "normal";
+					this.setState("normal");
 					this.$emit("mouseleave", $event);
 				},
 				mousedown: function ($event) {
-					this.state = "pressed";
+					this.setState("pressed");
 					this.$emit("mousedown", $event);
 				},
 				mouseup: function ($event) {
-					this.state = "mouseOver";
+					this.setState("mouseOver");
 					this.$emit("mouseup", $event);
 				},
 				click: function ($event) {
-					this.$emit("click", $event);
+					if (this.enabled) {
+						this.$emit("click", $event);
+					}
 				},
+			},
+			//mounted: function() {
+			//	let data = await this.getGuiRoot()._$promise;
+			//	this.setState("normal");
+			//},
+			beforeDestroy: function () {
+				uiAnimationManager.remove(this);
 			},
 			watch: {
 				"disabled": function (value) {
@@ -446,7 +488,15 @@
 					}
 					else {
 					}
-				}
+				},
+				"enabled": function (value) {
+					if (value) {
+						this.setState("normal");
+					}
+					else {
+						this.setState("disabled");
+					}
+				},
 			},
 			components: {
 				"gui-texture": GuiTexture,

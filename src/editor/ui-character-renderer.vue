@@ -30,13 +30,13 @@
 				<tr>
 					<th>表情</th>
 					<td>
-						<select v-model="chara.emotion" @input="oninput">
+						<select v-model="chara.emotion" @input="oninput" title="表情">
 							<option v-if="!emotions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in emotions">{{item}}</option>
 						</select>
 					</td>
 					<td>
-						<select v-model.number="chara.emotion_frame" @wheel.prevent="onwheel($event, 'emotion', chara.emotion_frame_count-1)">
+						<select v-model.number="chara.emotion_frame" @wheel.prevent="onwheel($event, 'emotion', chara.emotion_frame_count-1)" title="表情影格">
 							<option v-if="!emotions.length" disabled> ---- </option>
 							<option v-else v-for="frame in chara.emotion_frame_count" :value="frame - 1">{{frame - 1}}</option>
 						</select>
@@ -48,15 +48,21 @@
 				<tr title="分離物理後可設定角色的動作">
 					<th>動作</th>
 					<td>
-						<select :disabled="sceneChara.enablePhysics" v-model="chara.action" @input="oninput">
+						<select :disabled="sceneChara.enablePhysics" v-model="chara.action" @input="oninput" title="動作">
 							<option v-if="!actions.length" disabled value="">請選擇</option>
 							<option v-else v-for="item in actions">{{item}}</option>
 						</select>
 					</td>
 					<td>
-						<select :disabled="sceneChara.enablePhysics" v-model.number="chara.action_frame" @wheel.prevent="onwheel($event, 'action', chara.action_frame_count-1)">
+						<select :disabled="sceneChara.enablePhysics" v-model.number="chara.action_frame" @wheel.prevent="onwheel($event, 'action', chara.action_frame_count-1)" title="動作影格">
 							<option v-if="!actions.length" disabled> ---- </option>
 							<option v-else v-for="frame in chara.action_frame_count" :value="frame - 1">{{frame - 1}}</option>
+						</select>
+					</td>
+					<td v-if="chara.slots.tamingMob">
+						<select :disabled="sceneChara.enablePhysics" v-model="chara._ride_action" @input="oninput" title="騎寵動作">
+							<option v-if="!actions.length" disabled value="">騎寵動作</option>
+							<option v-else v-for="item in actions">{{item}}</option>
 						</select>
 					</td>
 				</tr>
@@ -64,9 +70,9 @@
 					<th>位置</th>
 					<td colspan="3">
 						<div>
-							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.x" min="-99999" max="99999" />
-							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.y" min="-99999" max="99999" />
-							<input-number :disabled="sceneChara.enablePhysics" v-model.number="sceneChara.$layer" min="0" max="7" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.x" min="-99999" max="99999" title="X" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="chara.y" min="-99999" max="99999" title="Y" />
+							<input-number :disabled="sceneChara.enablePhysics" v-model.number="sceneChara.$layer" min="0" max="7" title="Z" />
 						</div>
 					</td>
 				</tr>
