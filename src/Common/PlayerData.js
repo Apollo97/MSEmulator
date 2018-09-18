@@ -17,8 +17,6 @@ class CharacterBaseStat {
 class CharacterTemporaryStat {
 }
 
-const symbol_job = Symbol("job");
-const symbol_onJobChange = Symbol("onJobChange");
 
 class CharacterStat extends CharacterBaseStat {
 	constructor(sceneChara) {
@@ -26,10 +24,28 @@ class CharacterStat extends CharacterBaseStat {
 
 		this._$sceneChara = sceneChara;
 
+		/** @type {number} */
 		this.level = 150;
 
-		//this._job = 3;
-		//this._spec_job = 3;
+		/** @type {number} */
+		this.job = 3;
+
+		/** @type {number} */
+		this.spec_job = 3;
+
+		/** @type {() => void} */
+		this.onJobChange = null;
+
+
+		/** @type {number} - abilityPoint */
+		this.ap = 0;
+
+		/** @type {number} - skill point */
+		this.sp = [0, 0, 0, 0, 0];
+
+		/** @type {number} - hyper skill point */
+		this.hyper_sp = [0, 0];
+
 
 		///** @type {number} - 最大屬性攻擊 */
 		//this.currentMaxBaseDamage = 10000;
@@ -50,27 +66,21 @@ class CharacterStat extends CharacterBaseStat {
 		//this.minCritDamage = 40;
 	}
 
-	/** @type {number} */
-	get job() {
-		return this[symbolStatJob];
-	}
-	set job(value) {
-		this[symbolStatJob] = value;
+	/** @param {number} value */
+	setJob(value) {
+		this._job = value;
 
-		const onJobChange = this[symbol_onJobChange];
-
-		if (_onJobChange) {
-			_onJobChange()
+		if (this.onJobChange) {
+			this.onJobChange();
 		}
 	}
 
-	/** @param {function():void} cbfunc */
-	onJobChange(cbfunc) {
-		this[symbol_onJobChange] = cbfunc;
+	get jobName() {
+		throw new Error("未完成");
 	}
 
 	_getTotalAttack() {
-		return 100;
+		return window.DEFAULT_TOTAL_ATTACK || 100;
 	}
 
 	/** @returns {number} - 最大屬性攻擊 */

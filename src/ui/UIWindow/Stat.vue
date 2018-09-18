@@ -8,7 +8,7 @@
 						<gui-block p="backgrnd"></gui-block>
 						<gui-texture-s p="backgrnd"></gui-texture-s>
 						<gui-texture-s p="backgrnd2"></gui-texture-s>
-						<gui-texture-s p="backgrnd3" class="point-ability-frame"></gui-texture-s>
+						<gui-texture-s p="backgrnd3" class="ability-point-frame"></gui-texture-s>
 						<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
 						<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
 						<gui-frame-s p="backgrnd3"></gui-frame-s><!--not drag-->
@@ -30,32 +30,32 @@
 						<div v-if="chara" class="stat-text-outer">
 							<div style="margin-top: 27px;"></div><!-- padding -->
 							<input type="text" v-model="chara.name" class="stat-text" />
-							<input type="text" v-model="chara.職業" class="stat-text" />
-							<input type="text" v-model="chara.公會" class="stat-text" />
-							<input type="number" v-model.number="chara.人氣度" min="0" class="stat-text" />
-							<input type="number" v-model.number="chara.屬性攻擊力" min="0" class="stat-text" />
-							<input type="number" v-model.number="chara.HP" min="50" class="stat-text" />
-							<input type="number" v-model.number="chara.MP" min="50" class="stat-text" />
+							<input type="text" v-model="chara.stat.job" class="stat-text" />
+							<input type="text" v-model="chara.stat.guildId" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.人氣度" min="0" class="stat-text" />
+							<input type="text" v-model="屬性攻擊" min="0" class="stat-text" disabled />
+							<input type="number" v-model.number="chara.stat.hp" min="50" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.mp" min="50" class="stat-text" />
 
 							<div style="margin-top: 24px;"></div><!-- padding -->
-							<input type="number" v-model.number="chara.AP" min="0" class="stat-text" style="width: 40%;" />
+							<input type="number" v-model.number="chara.stat.ap" min="0" class="stat-text" style="width: 40%;" />
 							<div style="margin-top: 8px;"></div><!-- padding -->
 
-							<input type="number" v-model.number="chara.STP" min="4" class="stat-text" />
-							<input type="number" v-model.number="chara.DEX" min="4" class="stat-text" />
-							<input type="number" v-model.number="chara.INT" min="4" class="stat-text" />
-							<input type="number" v-model.number="chara.LUK" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.str" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.dex" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.int" min="4" class="stat-text" />
+							<input type="number" v-model.number="chara.stat.luk" min="4" class="stat-text" />
 						</div>
 
 						<template>
-							<gui-button-s :enabled="chara.AP > 0" p="BtHpUp" @click="chara.HP+=1,chara.AP-=1"></gui-button-s>
-							<gui-button-s :enabled="chara.AP > 0" p="BtMpUp" @click="chara.MP+=1,chara.AP-=1"></gui-button-s>
-							<gui-button-s :enabled="chara.AP > 0" p="BtStrUp" @click="chara.STP+=1,chara.AP-=1"></gui-button-s>
-							<gui-button-s :enabled="chara.AP > 0" p="BtDexUp" @click="chara.DEX+=1,chara.AP-=1"></gui-button-s>
-							<gui-button-s :enabled="chara.AP > 0" p="BtIntUp" @click="chara.INT+=1,chara.AP-=1"></gui-button-s>
-							<gui-button-s :enabled="chara.AP > 0" p="BtLukUp" @click="chara.LUK+=1,chara.AP-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtHpUp" @click="chara.stat.hp+=1,chara.stat.ap-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtMpUp" @click="chara.stat.mp+=1,chara.stat.ap-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtStrUp" @click="chara.stat.str+=1,chara.stat.ap-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtDexUp" @click="chara.stat.dex+=1,chara.stat.ap-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtIntUp" @click="chara.stat.int+=1,chara.stat.ap-=1"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" p="BtLukUp" @click="chara.stat.luk+=1,chara.stat.ap-=1"></gui-button-s>
 
-							<gui-button-s :enabled="chara.AP > 0" :p="'BtAuto' + autoDistType"></gui-button-s>
+							<gui-button-s :enabled="chara.stat.ap > 0" :p="'BtAuto' + autoDistType"></gui-button-s>
 						</template>
 
 						<template v-if="isShowHyperStat">
@@ -94,6 +94,8 @@
 	import WindowBase from "./WindowBase.vue";
 	import BasicComponent from "../BasicComponent.vue";
 
+	import { SceneCharacter } from "../../game/SceneCharacter.js";//debug
+
 	export default {
 		name: "equip-slot",
 		props: {
@@ -118,6 +120,13 @@
 			};
 		},
 		computed: {
+			屬性攻擊: function () {
+				/** @type {SceneCharacter} */
+				const chara = this.chara;
+				const min = chara.stat.getCurrentMinBaseDamage();
+				const max = chara.stat.getCurrentMaxBaseDamage();
+				return Math.trunc(min) + " ~ " + Math.trunc(max);
+			},
 		},
 		methods: {
 			showDetail: function (event) {
@@ -151,7 +160,7 @@
 <style scoped>
 	.stat-main {
 	}
-	.point-ability-frame {
+	.ability-point-frame {
 	}
 
 	.stat-detail3 {
@@ -176,5 +185,6 @@
 		background: none;
 		outline: none;
 		margin: 0;
+		color: black;
 	}
 </style>

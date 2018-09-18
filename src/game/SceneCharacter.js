@@ -773,7 +773,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 		//this.addItem("01053322", 1);
 		//this.addItem("01073284", 1);
 
-		this.stat.onJobChange(this._onJobChange.bind(this));
+		this.stat.onJobChange = this._onJobChange.bind(this);
 	}
 
 	_onJobChange() {
