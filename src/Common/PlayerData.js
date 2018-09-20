@@ -28,6 +28,9 @@ class CharacterStat extends CharacterBaseStat {
 		this.level = 150;
 
 		/** @type {number} */
+		this.exp = 55;
+
+		/** @type {number} */
 		this.job = 3;
 
 		/** @type {number} */
@@ -64,6 +67,22 @@ class CharacterStat extends CharacterBaseStat {
 
 		///** @type {number} - 最小爆擊傷害 0~100 */
 		//this.minCritDamage = 40;
+	}
+
+	gainExp(exp) {
+		this.exp += exp;
+		console.log("gain exp: ", exp);
+	}
+
+	levelUp() {
+		this.level += 1;
+		console.log("level up");
+	}
+
+	levelUpTo(level) {
+		for (let i = this.level + 1; i <= level; ++i) {
+			this.levelUp();
+		}
 	}
 
 	/** @param {number} value */
@@ -123,6 +142,7 @@ class CharacterStat extends CharacterBaseStat {
 		return 100;
 	}
 }
+CharacterStat.all_exp = LoadEXP();
 
 //?? packet
 class $RemotePlayerData {
@@ -159,6 +179,41 @@ class $PlayerData extends $RemotePlayerData {
 			equips_code: this.equips_code,
 		};
 	}
+}
+
+function LoadEXP() {
+	let exp = [];
+    exp[1] = 15;
+    exp[2] = 34;
+    exp[3] = 57;
+    exp[4] = 92;
+    exp[5] = 135;
+    exp[6] = 372;
+    exp[7] = 560;
+    exp[8] = 840;
+    exp[9] = 1242;
+	for (let i = 10; i < 200; i++) {
+        if (i >= 10 && i < 15
+                || i >= 30 && i < 35
+                || i >= 60 && i < 65
+                || i >= 100 && i < 105) {
+            exp[i] = exp[i - 1];
+            continue;
+        }
+        exp[i] = Math.trunc(exp[i - 1] * (i < 40 ? 1.2 : i < 75 ? 1.08 : i < 160 ? 1.07 : i < 200 ? 1.06 : 1));
+    } //ExtremeDevilz SUCKS
+    for (let i = 200; i < 250; i++) {
+        if (i % 10 == 0) {
+            exp[i] = exp[i - 1] * 2;
+            if (i != 200) {
+				exp[i] = Math.trunc(exp[i] * (i == 210 ? 1.06 : i == 220 ? 1.04 : i == 230 ? 1.02 : i == 240 ? 1.01 : 1));
+            }
+            continue;
+        }
+		exp[i] = Math.trunc(exp[i - 1] * (i < 210 ? 1.2 : i < 220 ? 1.06 : i < 230 ? 1.04 : i < 240 ? 1.02 : i < 250 ? 1.01 : 1));
+    }
+	exp[250] = 0;
+	return exp;
 }
 
 module.exports = {

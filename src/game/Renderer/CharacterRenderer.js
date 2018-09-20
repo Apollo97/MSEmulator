@@ -865,10 +865,23 @@ class EquipImageFilter {
 	toJSON() {
 		return {
 			hue: this.hue,
-			sat: this.sat,
-			bri: this.bri,
-			contrast: this.contrast,
+			saturation: strNum(this.sat),
+			brightness: strNum(this.bri),
+			contrast: strNum(this.contrast),
 		};
+		function strNum(val) {
+			return (val / 100).toFixed(1);
+		}
+	}
+
+	/**
+	 * @param {{hue: number, saturation: number, brightness: number, contrast: number}} data
+	 */
+	parse(data) {
+		this.hue = Number(data.hue);
+		this.sat = Number(data.saturation);
+		this.bri = Number(data.brightness);
+		this.contrast = Number(data.contrast);
 	}
 }
 
@@ -977,11 +990,44 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		this.filter = new EquipImageFilter(this);
 	}
 
-	toJSON() {
-		return {
-			id: this.id,
-			filter: this.filter.toJSON(),
+	/**
+	 * @param {string} [animationName] - action animation
+	 */
+	toJSON(animationName) {
+		let region, version;
+		if (this._raw.info.__v) {
+			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
+			region = m[1] == "TWMS" ? "TMS" : m[1];
+			version = "latest";//m[2];
+		}
+		else {
+			region = "TMS";
+			version = "latest";
+		}
+		const filter = this.filter;
+
+		let obj = {
+			itemId: Number(this.id),
+			region: region,
+			version: version,
+			hue: filter.hue,
+			saturation: strNum(filter.sat),
+			brightness: strNum(filter.bri),
+			contrast: strNum(filter.contrast),
+			alpha: Number(this.opacity.toFixed(1)),
 		};
+		if (animationName) {
+			obj.animationName = animationName;
+		}
+		return obj;
+
+		function strNum(val) {
+			return (val / 100).toFixed(1);
+		}
+	}
+
+	parse(data) {
+		throw new Error();
 	}
 
 	isLoaded() {
@@ -1738,34 +1784,33 @@ class CharacterSlots {
 		this._ordered_slot = [];
 
 
-		/** @type {CharacterHair} */
-		this.hair = null;
-		/** @type {CharacterHair} */
-		this._hair2 = null;
-		/** @type {CharacterHair} 0~1.0 */
-		this._hairMix2 = null;
-		/** @type {CharacterHair} */
-		this._hair3 = null;
-		/** @type {CharacterHair} 0~1.0 */
-		this._hairMix3 = null;
-
-
-		/** @type {CharacterEquipBody} */
+		/** @type {CharacterBody} */
 		this.body = null;
 
-		/** @type {CharacterEquip} */
+		/** @type {CharacterHead} */
 		this.head = null;
 
 		/** @type {CharacterFace} */
 		this.face = null;
 
-		/** @type {CharacterEquip} */
+
+		/** @type {CharacterHair} */
 		this.hair = null;
+		
+		/** @type {CharacterHair} */
+		this._hair2 = null;
+		/** @type {number} 0~1.0 */
+		this._hairMix2 = null;
+		/** @type {CharacterHair} */
+		this._hair3 = null;
+		/** @type {number} 0~1.0 */
+		this._hairMix3 = null;
+
 
 		/** @type {CharacterEquip} - 1 */
 		this.cap = null;
 
-		/** @type {CharacterFace} - 2 */
+		/** @type {CharacterFaceAcc} - 2 */
 		this.accessoryFace = null;
 
 		/** @type {CharacterEquip} - 3*/
@@ -2189,22 +2234,24 @@ class CharacterSlots {
 	toJSON() {
 		let slots = [];
 
-		if (this.body) slots.push(this.body.id);
-		if (this.head) slots.push(this.head.id);
-		if (this.face) slots.push(this.face.id);
-		if (this.hair) slots.push(this.hair.id);
-		if (this.cap) slots.push(this.cap.id);
-		if (this.accessoryFace) slots.push(this.accessoryFace.id);
-		if (this.accessoryEyes) slots.push(this.accessoryEyes.id);
-		if (this.accessoryEars) slots.push(this.accessoryEars.id);
-		if (this.coat) slots.push(this.coat.id);
-		if (this.longcoat) slots.push(this.longcoat.id);
-		if (this.pants) slots.push(this.pants.id);
-		if (this.shoes) slots.push(this.shoes.id);
-		if (this.glove) slots.push(this.glove.id);
-		if (this.shield) slots.push(this.shield.id);
-		if (this.cape) slots.push(this.cape.id);
-		if (this.weapon) slots.push(this.weapon.id);
+		if (this.body) slots.push(this.body);
+		if (this.head) slots.push(this.head);
+		if (this.face) slots.push(this.face);
+		if (this.hair) slots.push(this.hair);
+		//if (this._hair2) slots.push(this._hair2);
+		//if (this._hair3) slots.push(this._hair3);
+		if (this.cap) slots.push(this.cap);
+		if (this.accessoryFace) slots.push(this.accessoryFace);
+		if (this.accessoryEyes) slots.push(this.accessoryEyes);
+		if (this.accessoryEars) slots.push(this.accessoryEars);
+		if (this.coat) slots.push(this.coat);
+		if (this.longcoat) slots.push(this.longcoat);
+		if (this.pants) slots.push(this.pants);
+		if (this.shoes) slots.push(this.shoes);
+		if (this.glove) slots.push(this.glove);
+		if (this.shield) slots.push(this.shield);
+		if (this.cape) slots.push(this.cape);
+		if (this.weapon) slots.push(this.weapon);
 
 		return slots;
 	}
@@ -2991,10 +3038,12 @@ export class CharacterAnimationBase {
 	
 	toJSON() {
 		let obj = {
-			hair2: this.slots._hair2.id,
-			hairMix2: this.slots.hairMix2,
 			slots: this.slots.toJSON(),
 		};
+		if (this.slots._hair2) {
+			obj.hair2 = this.slots._hair2.id;
+			obj.hairMix2 = this.slots.hairMix2;
+		}
 
 		if (this.slots.head.elfEar) {
 			obj.ear = "elf";
@@ -3352,34 +3401,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				"&bgColor=0,0,0,0"
 				);
 		function makeItemList() {
-			return Object.values(slots).filter(a => a).map(transformItemData);
-		}
-		function transformItemData(item) {
-			let region, version;
-			if (item._raw.info.__v) {
-				const m = item._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
-				region = m[1] == "TWMS" ? "TMS" : m[1];
-				version = "latest";//m[2];
-			}
-			else {
-				region ="TMS";
-				version = "latest";
-			}
-			const filter = item.filter;
-			return {
-				itemId:        Number(item.id),
-				region:        region,
-				version:       version,
-				hue:           filter.hue,
-				saturation:    strNum(filter.sat),
-				brightness:    strNum(filter.bri),
-				contrast:      strNum(filter.contrast),
-				alpha:         Number(item.opacity.toFixed(1)),
-				animationName: animationName,
-			};
-		}
-		function strNum(val) {
-			return (val / 100).toFixed(1);
+			return Object.values(slots).filter(a => a).map(item => {
+				return item.toJSON(animationName);
+			});
 		}
 	}
 	

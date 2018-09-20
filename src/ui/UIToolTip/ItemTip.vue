@@ -277,12 +277,14 @@
 				</div><!--content_end-->
 			</div>
 			<div v-if="isShowDebug" class="debug-info">
-				<div contenteditable="true" spellcheck="false"><span>id   : </span>{{equip.id}}</div>
-				<div v-if="!!equip._name" contenteditable="true" spellcheck="false"><span>nameEn: </span>{{equip._name}}</div>
-				<div v-else contenteditable="true" spellcheck="false"><span>name : </span>{{equip.name}}</div>
-				<div>Added in: {{equip.__v}}</div>
-				<div contenteditable="true" spellcheck="false"><span>islot: </span>{{equip.islot}}</div>
-				<div contenteditable="true" spellcheck="false"><span>vslot: </span>{{equip.vslot}}</div>
+				<div>							<span>id   : </span>	<span contenteditable="true" spellcheck="false">{{equip.id}}</span></div>
+				<div v-if="!!equip._name">		<span>nameEn: </span>	<span contenteditable="true" spellcheck="false">{{equip._name}}</span></div>
+				<div v-else>					<span>name : </span>	<span contenteditable="true" spellcheck="false">{{equip.name}}</span></div>
+				<div v-if="equip.__v">			<span>Added in: </span>	<span contenteditable="true" spellcheck="false">{{equip.__v}}</span></div>
+				<div v-if="equip.__modified">	<span>Modified: </span>	<span contenteditable="true" spellcheck="false">{{equip.__modified}}</span></div>
+				<div v-if="equip.__removed">	<span>Removed: </span>	<span contenteditable="true" spellcheck="false">{{equip.__removed}}</span></div>
+				<div v-if="equip.islot">		<span>islot: </span>	<span contenteditable="true" spellcheck="false">{{equip.islot}}</span></div>
+				<div v-if="equip.vslot">		<span>vslot: </span>	<span contenteditable="true" spellcheck="false">{{equip.vslot}}</span></div>
 			</div>
 		</template>
 	</div>

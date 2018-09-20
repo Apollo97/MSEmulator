@@ -25,6 +25,8 @@ namespace EquipList
 {
 	public class Program
 	{
+		internal static bool MIXIN_OLD_DATA;
+
 		[STAThread]
 		static void Main(string[] args)
 		{
@@ -48,7 +50,9 @@ namespace EquipList
 			//DataProvider.get_identities("Map/Obj/GachaponHousingTW");
 
 			//return;
-			
+
+			Program.MIXIN_OLD_DATA = false;
+
 			try
 			{
 				data_extracter.extractAll(extractTo);
@@ -358,10 +362,12 @@ internal class DataExtracter
 			var name = this.get_equip_name(category, id32);
 			var desc = this.get_equip_desc(category, id32);
 
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[identity];
+				data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -373,18 +379,24 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+
+				if (modified || new_identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara[category][identity].root[""];
 				var info = pack["info"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				if (desc != null)
@@ -397,19 +409,23 @@ internal class DataExtracter
 				data.icon = data.iconRaw;
 				try
 				{
-					data.__hash = Tools._inspect_canvas1(info["iconRaw"])["_hash"] + "";
+					data.__hash = Tools._inspect_canvas1(info["iconRaw"])["_hash"].data + "";
 				}
 				catch(Exception ex)
 				{
-					System.Console.WriteLine("get cashWpn(" + identity + ") icon._hash " + ex.Message);
+					System.Console.WriteLine("get cashWpn(" + identity + ") iconRaw._hash " + ex.Message);
 				}
 				data.__v = DataSource.tag_version;
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA) {
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 
 #if MY_DEBUG
 			break;
@@ -441,11 +457,13 @@ internal class DataExtracter
 
 			var name = this.get_item_name(ss_prop, id32);
 			var desc = this.get_item_desc(ss_prop, id32);
+			
+			dynamic data = null;
 
 			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[identity];
+				data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -457,17 +475,23 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+
+				if (modified || new_identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var info = chairs[identity]["info"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				if (desc != null)
@@ -475,7 +499,7 @@ internal class DataExtracter
 				//
 				try
 				{
-					data.__hash = data.icon._hash + "";
+					data.__hash = info["iconRaw"]["_hash"].data + "";
 				}
 				catch (Exception)
 				{
@@ -484,9 +508,14 @@ internal class DataExtracter
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 
 #if MY_DEBUG
 			break;
@@ -522,10 +551,12 @@ internal class DataExtracter
 			var name = this.get_equip_name(category, id32);
 			var desc = this.get_equip_desc(category, id32);
 
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[identity];
+				data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -537,18 +568,24 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+
+				if (modified || new_identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara[category][identity].root[""];
 				var info = pack["info"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				if (desc != null)
@@ -556,7 +593,7 @@ internal class DataExtracter
 				//
 				try
 				{
-					data.__hash = data.icon._hash + "";
+					data.__hash = info["iconRaw"]["_hash"].data + "";
 				}
 				catch (Exception)
 				{
@@ -565,9 +602,14 @@ internal class DataExtracter
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 
 #if MY_DEBUG
 			break;
@@ -602,10 +644,12 @@ internal class DataExtracter
 			var name = this.get_item_name(ss_prop, id32);
 			var desc = this.get_item_desc(ss_prop, id32);
 
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
 				bool modified = false;
-				var data = existItems[identity];
+				data = existItems[identity];
 
 				if (name != data.name)
 				{
@@ -617,18 +661,24 @@ internal class DataExtracter
 					data.desc = desc;
 					modified = true;
 				}
-				if (modified || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+
+				if (modified || new_identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara[category][identity].root[""];
 				var info = pack["info"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				if (desc != null)
@@ -636,7 +686,7 @@ internal class DataExtracter
 				//
 				try
 				{
-					data.__hash = data.icon._hash + "";
+					data.__hash = info["iconRaw"]["_hash"].data + "";
 				}
 				catch (Exception)
 				{
@@ -645,9 +695,14 @@ internal class DataExtracter
 				//
 				var dict = (IDictionary<string, object>)data;
 				dict.Remove("iconRaw");
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 
 #if MY_DEBUG
 			break;
@@ -685,39 +740,52 @@ internal class DataExtracter
 
 			var name = this.get_equip_name("Face", id32);
 
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[identity];
+				data = existItems[identity];
 
-				if (name != data.name || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+				bool modified = name != data.name;
+
+				if (modified || new_identities.Contains(identity))
 				{
-					data.name = name;
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara["Face", identity].root[""];
 				var info = pack["info"];
 				var icon = pack["blink", "0", "face"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				try
 				{
-					data.__hash = (icon["_hash"] ?? pack["default", "face", "_hash"]).data;
+					data.__hash = (icon["_hash"] ?? pack["default", "face", "_hash"]).data + "";
 				}
 				catch(Exception ex)
 				{
 					System.Console.WriteLine("get face(" + identity + ") icon._hash " + ex.Message);
 				}
 				data.__v = DataSource.tag_version;
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 #if MY_DEBUG
 			break;
 #endif
@@ -757,39 +825,52 @@ internal class DataExtracter
 			//			string _identity = "00033426";//has no place: hair
 			//#endif
 
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[identity];
+				data = existItems[identity];
 
-				if (name != data.name || (new_identities.Contains(identity) && data.__v != DataSource.tag_version))
+				bool modified = name != data.name;
+
+				if (modified || new_identities.Contains(identity))
 				{
-					data.name = name;
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara["Hair"][identity].root[""];
 				var info = pack["info"];
 				var icon = pack["stand1", "0", "hairOverHead"] ?? pack["stand1", "0", "hair"];
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
 				try
 				{
-					data.__hash = (icon["_hash"] ?? pack["default", "hairOverHead", "_hash"] ?? pack["default", "hair"]).data;
+					data.__hash = ((icon["_hash"] ?? pack["default", "hairOverHead", "_hash"] ?? pack["default", "hair"]).data) + "";
 				}
 				catch (Exception ex)
 				{
 					System.Console.WriteLine("get hair(" + identity + ") icon._hash " + ex.Message);
 				}
 				data.__v = DataSource.tag_version;
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 #if MY_DEBUG
 			break;
 #endif
@@ -813,23 +894,30 @@ internal class DataExtracter
 
 		foreach (var identity in identities)
 		{
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[identity];
+				data = existItems[identity];
 				if (identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara[identity].root[""];
 				var info = pack["info"];
 				var icon = pack["stand1", "0", "head"];
 				var name = "[" + identity + "]";
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
@@ -838,9 +926,14 @@ internal class DataExtracter
 					data.__hash = icon["_hash"].data + "";
 				}
 				data.__v = DataSource.tag_version;
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 #if MY_DEBUG
 			break;
 #endif
@@ -868,23 +961,30 @@ internal class DataExtracter
 
 		foreach (var identity in identities)
 		{
+			dynamic data = null;
+
 			if (existItems.ContainsKey(identity))
 			{
-				var data = existItems[identity];
+				data = existItems[identity];
 				if (identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
 				}
-				items.Add(data);
+				else
+				{
+					data.__removed = DataSource.tag_version;
+				}
 			}
-			else
+			var old_data = data;
+
+			if (data == null || EquipList.Program.MIXIN_OLD_DATA)
 			{
 				var pack = this.chara[identity].root[""];
 				var info = pack["info"];
 				var icon = pack["stand1", "0", "body"];
 				var name = "[" + identity + "]";
 
-				dynamic data = this.inspectProperty(info);
+				data = this.inspectProperty(info);
 				data.id = identity;
 				data.name = name;
 				data.icon = this.inspectProperty(icon);
@@ -893,9 +993,14 @@ internal class DataExtracter
 					data.__hash = icon["_hash"].data + "";
 				}
 				data.__v = DataSource.tag_version;
-
-				items.Add(data);
 			}
+
+			if (EquipList.Program.MIXIN_OLD_DATA)
+			{
+				data = MixinData(data, old_data);
+			}
+
+			items.Add(data);
 #if MY_DEBUG
 			break;
 #endif
@@ -1117,6 +1222,29 @@ internal class DataExtracter
 	dynamic inspectProperty(wzproperty prop)
 	{
 		return this.inspet.pod(prop, null as string);
+	}
+
+	dynamic MixinData(dynamic a, dynamic b)
+	{
+		var ob = (IDictionary<string, object>)b;
+
+		if (ob.ContainsKey("__v"))
+		{
+			a.__v = ob["__v"];
+		}
+
+		if (ob.ContainsKey("__modified"))
+		{
+			a.__modified = ob["__modified"];
+		}
+
+		if (ob.ContainsKey("__removed"))
+		{
+			a.__removed = ob["__removed"];
+		}
+
+		//throw new Exception("未完成");
+		return a;
 	}
 
 	//static string _inspectImage(wzproperty prop)

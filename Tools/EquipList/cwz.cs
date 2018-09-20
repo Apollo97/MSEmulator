@@ -76,8 +76,6 @@ public class Startup
 				break;
 		}
 
-		System.Windows.Forms.MessageBox.Show("Task: " + (string)input.func + ": " + (string)input.args.path);
-
 		return null;
 	}
 }
@@ -864,7 +862,7 @@ internal class Inspector_Plain : ObjectInspectorBase
 			var _path = Tools.get_canvas_path(prop, path);
 			eoColl.Add(new KeyValuePair<string, object>("", "/" + _path));
 
-			Console.WriteLine(_path);
+			//Console.WriteLine(_path);
 
 			eoColl.Add(new KeyValuePair<string, object>("__w", canvas.width));
 			eoColl.Add(new KeyValuePair<string, object>("__h", canvas.height));
@@ -911,8 +909,6 @@ internal class Inspector_Base64 : ObjectInspectorBase
 
 internal class POD_XML
 {
-	protected string imgPath = "";
-
 	public string toXML(string link)
 	{
 		return this._toXML(link);
@@ -920,9 +916,6 @@ internal class POD_XML
 
 	protected string _toXML(string link)
 	{
-		var paths = link.Split('/');
-		var name = paths[paths.Length - 1];
-
 		wzproperty prop;
 		DataSource.get_data(link, out prop);
 
@@ -930,7 +923,7 @@ internal class POD_XML
 		{
 			if (prop != null)
 			{
-				return this._wzimgToXML(name, prop);
+				return this._wzimgToXML(prop, link);
 			}
 		}
 		catch (Exception ex)
@@ -958,8 +951,12 @@ internal class POD_XML
 	//
 	//	return sb.ToString();
 	//}
-	protected string _wzimgToXML(string name, wzproperty prop)
+	protected string _wzimgToXML(wzproperty prop, string path)
 	{
+		bool is_wzpackage = path.EndsWith("/");
+		string _path = (is_wzpackage ? path.Substring(0, path.Length - 1) : path);
+		string raw_name = _path.Substring(_path.LastIndexOf("/") + 1) + (is_wzpackage ? ".img" : "");
+
 		StringBuilder sb = new StringBuilder();
 
 		sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>");
@@ -967,35 +964,35 @@ internal class POD_XML
 		sb.Append("<?xml-stylesheet href=\"/wzproperty.xslt\" type=\"text/xsl\" ?>");
 
 		sb.Append("<xmldump><wzimg name=\"");
-		sb.Append(name);
+		sb.Append(raw_name);
 		sb.Append("\">");
 
-		sb.Append(this.enum_property(prop));
+		sb.Append(this.enum_property(prop, path + "/"));
 
 		sb.Append("</wzimg></xmldump>");
 
 		return sb.ToString();
 	}
 
-	protected StringBuilder enum_property(wzproperty prop)
+	protected StringBuilder enum_property(wzproperty prop, string path)
 	{
 		StringBuilder sb = new StringBuilder();
 
-		foreach (var i in prop.values)
+		foreach (var sub_prop in prop.values)
 		{
 #if !EQUIPLIST
-			if (i.identity.StartsWith("_"))
+			if (sub_prop.identity.StartsWith("_"))
 			{
 				continue;
 			}
 #endif
 
-			sb.Append(this.pod(i.identity, i));
+			sb.Append(this.pod(sub_prop.identity, sub_prop, path));
 		}
 		return sb;
 	}
 
-	protected StringBuilder pod(string name, wzproperty prop)
+	protected StringBuilder pod(string name, wzproperty prop, string path)
 	{
 		StringBuilder sb = new StringBuilder();
 
@@ -1012,13 +1009,13 @@ internal class POD_XML
 					sb.Append(this.Vector(name, prop.data as wzvector));//return (prop.data as wzvector).content;
 					break;
 				case 3: // "Property"
-					sb.Append(this.ImgDir(name, prop));                  //return null;
+					sb.Append(this.ImgDir(name, prop, path));                 //return null;
 					break;
 				case 4: // Canvas
-					sb.Append(this.Canvas(name, prop));                                    //
+					sb.Append(this.Canvas(name, prop, path));           //
 					break;
 				case 5: // UOL
-					sb.Append(this.pod(name, (prop.data as wzuol).target));     //return (prop.data as wzuol).link;//need inspect
+					sb.Append(this.pod(name, (prop.data as wzuol).target, path));     //return (prop.data as wzuol).link;//need inspect
 					break;
 				case 6: // unnamed6, zmap
 					sb.Append("<" + "unnamed6" + " name=\"" + name + "\" value=\"" + (prop.data + "") + "\"/>");
@@ -1045,13 +1042,13 @@ internal class POD_XML
 		return sb;
 	}
 
-	protected virtual StringBuilder ImgDir(string name, wzproperty prop)
+	protected virtual StringBuilder ImgDir(string name, wzproperty prop, string path)
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.Append("<imgdir name=\"");
 		sb.Append(name);
 		sb.Append("\">");
-		sb.Append(this.enum_property(prop));
+		sb.Append(this.enum_property(prop, path + name + "/"));
 		sb.Append("</imgdir>");
 		return sb;
 	}
@@ -1080,7 +1077,7 @@ internal class POD_XML
 		return sb;
 	}
 
-	protected virtual StringBuilder Canvas(string name, wzproperty prop)
+	protected virtual StringBuilder Canvas(string name, wzproperty prop, string path)
 	{
 		StringBuilder sb = new StringBuilder();
 
@@ -1096,7 +1093,7 @@ internal class POD_XML
 			sb.Append("\" basedata=\"");
 			sb.Append(this.inspect_image(canvas.image));
 			sb.Append("\">");
-			sb.Append(this.enum_property(prop));
+			sb.Append(this.enum_property(prop, path + "/"));
 			sb.Append("</canvas>");
 		}
 
@@ -1111,15 +1108,18 @@ internal class POD_XML
 
 internal class POD_s_XML : POD_XML
 {
-	protected override StringBuilder Canvas(string name, wzproperty prop)
+	protected override StringBuilder Canvas(string name, wzproperty prop, string path)
 	{
 		StringBuilder sb = new StringBuilder();
 
 		var canvas = Tools.inspect_canvas1(prop);
 		if (canvas != null)
 		{
-			var path = this.imgPath + prop.absolute.Replace('\0', '/').Substring(1);
-			var _path = Tools.get_canvas_path(prop, path);
+			//string prop_path = prop.absolute.Replace('\0', '/');
+			//var path = this.imgPath + prop_path;
+
+			var sub_path = path + prop.identity;
+			var canvas_path = Tools.get_canvas_path(prop, sub_path);
 
 			sb.Append("<canvas name=\"");
 			sb.Append(name);
@@ -1128,9 +1128,9 @@ internal class POD_s_XML : POD_XML
 			sb.Append("\" height=\"");
 			sb.Append(canvas.height);
 			sb.Append("\" url=\"");
-			sb.Append(_path);
+			sb.Append(canvas_path);
 			sb.Append("\">");
-			sb.Append(this.enum_property(prop));
+			sb.Append(this.enum_property(prop, sub_path + "/"));
 			sb.Append("</canvas>");
 		}
 

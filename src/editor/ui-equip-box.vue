@@ -29,23 +29,58 @@
 							<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
 						</datalist>
 						<div style="position: relative; display: inline-block;">
-							<button @click="isShowSetting=!isShowSetting" title="setting" style="padding: 0;">
+							<button @click="isShowSetting=!isShowSetting" @mouseover="isShowSetting=true" title="setting" style="padding: 0;">
 								<span v-if="!isShowSetting" style="color: black;">⚙️</span>
 								<span v-else style="color: red;">⚙️</span>
 							</button>
 						</div>
 					</div>
 					<!-- end filter -->
-					
+
 					<!-- begin setting -->
-					<div v-if="isShowSetting">
-						<div><label>每頁顯示數量 <input type="number" v-model.number="countOfItemsPerPage" min="10" max="1000" /></label></div>
-						<div><label><input type="checkbox" v-model="onlyShowSearchResult" />只顯示搜尋結果</label></div>
-						<div><label><input type="checkbox" v-model="displayMode" />顯示方式: {{displayMode ? "圖示":"清單"}}</label></div>
-					</div>
+					<transition name="show-setting-fade">
+						<div v-if="isShowSetting">
+							<table>
+								<tbody>
+									<tr>
+										<td>每頁顯示數量</td>
+										<td><input type="number" v-model.number="countOfItemsPerPage" min="10" max="1000" /></td>
+									</tr>
+									<tr>
+										<td>只顯示搜尋結果</td>
+										<td><input type="checkbox" v-model="onlyShowSearchResult" /></td>
+									</tr>
+									<tr>
+										<td>顯示方式</td>
+										<td><label><input type="checkbox" v-model="displayMode" />{{displayMode ? "圖示":"清單"}}</label></td>
+									</tr>
+									<tr>
+										<td>
+											<span>排序方式</span>
+											<select v-model="sortCompareMethod" @change="loadList">
+												<option value="less">遞增</option>
+												<option value="greater">遞減</option>
+											</select>
+										</td>
+										<td>
+											<input v-model="sortMethod" list="sort_method" @input="loadList" />
+											<datalist id="sort_method">
+												<option value="id">ID</option>
+												<option value="name">名稱</option>
+												<option value="icon">圖示</option>
+
+												<option value="attr" disabled>--item[attr]--</option>
+												<option value="reqLevel">reqLevel</option>
+											</datalist>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</transition>
 					<!-- end setting -->
 
-					<!-- begin color -->
+					<!-- begin filter -->
 					<div class="button-area" style="background: lightgray;">
 						<ui-button-group type="checkbox" :buttons="filter_buttons" :active.sync="filters" class="filters">
 							<template slot-scope="{text, value}">
@@ -79,7 +114,7 @@
 							</ui-button-group>
 						</template>
 					</div>
-					<!-- end color -->
+					<!-- end filter -->
 				</div>
 			</div>
 			<!-- end header -->
@@ -303,6 +338,9 @@
 				onlyShowSearchResult: true,
 				displayMode: true,
 				countOfItemsPerPage: 200,
+
+				sortCompareMethod: "greater",
+				sortMethod: "id",
 				
 				isShowSetting: false,
 				
@@ -578,6 +616,7 @@
 				/** @type {EquipInfo[]} */
 				let equip_list = [];
 
+				//fetch list
 				if (coloredPath != this.loaded_category || this.loaded_equip_list.length == 0) {
 					equip_list = JSON.parse(await $get.asset(`equips/${coloredPath}.json`));
 					if (!equip_list || !equip_list.length) {
@@ -607,6 +646,7 @@
 				}
 				//this.equip_list = equip_list;
 
+				//filter item
 				if (equip_list.length > 0) {
 					let fnFilter = this.__get_filter();
 					if (fnFilter) {
@@ -616,6 +656,7 @@
 				else {
 					debugger;
 				}
+
 				this.equip_list = equip_list;// for using this.__count_of_page
 
 				if (equip_list.length > 0) {
@@ -630,7 +671,53 @@
 						this.page = 0;
 					}
 
-					equip_list.sort((a, b) => a.id - b.id);
+					//sort item
+					{
+						if (window.$sort_item) {
+							equip_list = equip_list.sort(window.$sort_item);
+						}
+						else {
+							const sort_method = this.sortMethod;
+
+							const sortCompareMethod = this.sortCompareMethod == "greater" ? -1 : 1;
+							
+							switch (sort_method) {
+								case "name":
+									equip_list = equip_list.sort(function (a, b) {
+										let [v1 = "", v2 = ""] = [a.name, b.name];
+										return sortCompareMethod * v1.localeCompare(v2);
+									});
+									break;
+
+								case "icon":
+									equip_list = equip_list.sort(function (a, b) {
+										let [v1 = "", v2 = ""] = [a.__hash, b.__hash];
+										return sortCompareMethod * v1.localeCompare(v2);
+									});
+									break;
+
+								case "id"://default order by id
+								case "reqLevel":
+								default:
+									if (sort_method) {
+										if (sortCompareMethod == -1) {
+											equip_list = equip_list.sort(function (a, b) {
+												let v1 = Number(a[sort_method]) | 0;
+												let v2 = Number(b[sort_method]) | 0;
+												return v2 - v1;
+											});
+										}
+										else {
+											equip_list = equip_list.sort(function (a, b) {
+												let v1 = Number(a[sort_method]) | 0;
+												let v2 = Number(b[sort_method]) | 0;
+												return v1 - v2;
+											});
+										}
+									}
+							}
+						}
+					}
 				}
 				else {
 					debugger;
@@ -1041,5 +1128,20 @@
 		border-radius: 0;
 		border: 1px solid transparent;
 		color: red;
+	}
+
+	.show-setting-fade-enter-active {
+		height: 6.6em;
+		overflow: hidden;
+		transition: all .3s ease;
+	}
+	.show-setting-fade-leave-active {
+		height: 6.6em;
+		overflow: hidden;
+		transition: all .3s ease;
+	}
+	.show-setting-fade-enter, .show-setting-fade-leave-to {
+		height: 0;
+		overflow: hidden;
 	}
 </style>
