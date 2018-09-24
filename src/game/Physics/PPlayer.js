@@ -225,6 +225,7 @@ class PCharacterBase {
 		/** @type {number} */
 		this.jump_force = JUMP_FORCE;
 
+		/** @type {PPlayerState} */
 		this.state = new PPlayerState();
 	}
 
@@ -588,6 +589,7 @@ class PCharacterBase {
 				//趴下
 				if (keys.down) {
 					this.state.prone = true;
+					this.body.SetAwake(true);
 					return;
 				}
 				else {
@@ -1264,6 +1266,8 @@ class PCharacter extends PCharacterBase {
 		md.bodyB = this.body;
 		md.target.Copy(this.getPosition());
 		md.maxForce = 1000 * this._getMass();
+		md.dampingRatio = 0.7;
+		md.frequencyHz = 24;
 		return world.CreateJoint(md);
 	}
 
@@ -1403,13 +1407,13 @@ export class PPlayer extends PCharacter {
 	Step(stamp) {
 		super.Step(stamp);
 		
-		if ($gv.input_keyDown['B'] == 1 && !$gv.mouse_dl) {
+		if ($gv.input_keyDown['L'] == 1 && !$gv.mouse_dl) {
 			const px = $gv.m_viewRect.left + $gv.mouse_x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y;
 
 			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);
 		}
-		else if ($gv.input_keyDown['B'] > 0 && $gv.mouse_dl) {
+		else if ($gv.input_keyDown['L'] > 0 && $gv.mouse_dl) {
 			const center = $gv.m_viewRect.center;
 			const px = $gv.m_viewRect.left + $gv.mouse_x - center.x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y - center.y;
@@ -1434,17 +1438,17 @@ export class PPlayer extends PCharacter {
 }
 
 if (module.hot) {
-	/** @type {PRemoteCharacter[]} */
-	var PRemoteCharacter_instance_list = window.PRemoteCharacter_instance_list || [];
+	/** @type {PRemotePlayer[]} */
+	var PRemotePlayer_instance_list = window.PRemotePlayer_instance_list || [];
 
-	if (PRemoteCharacter_instance_list) {
-		for (let pl of PRemoteCharacter_instance_list) {
-			pl.__proto__ = PRemoteCharacter.prototype;
+	if (PRemotePlayer_instance_list) {
+		for (let pl of PRemotePlayer_instance_list) {
+			pl.__proto__ = PRemotePlayer.prototype;
 		}
 	}
 }
 
-export class PRemoteCharacter extends PCharacter {
+export class PRemotePlayer extends PCharacter {
 	constructor() {
 		super(...arguments);
 
@@ -1452,13 +1456,13 @@ export class PRemoteCharacter extends PCharacter {
 		this._anchor = null;
 
 		if (module.hot) {
-			PRemoteCharacter_instance_list.push(this);
+			PRemotePlayer_instance_list.push(this);
 
 			const super_destroy = super._destroy;
 
 			this._destroy = function () {
 				super_destroy.call(this);
-				PRemoteCharacter_instance_list.splice(PRemoteCharacter_instance_list.indexOf(this), 1);
+				PRemotePlayer_instance_list.splice(PRemotePlayer_instance_list.indexOf(this), 1);
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿
 import { CharacterMoveElem } from "../../Client/PMovePath";
+import { SceneCharacter } from "../../game/SceneCharacter";
 
 /**
  * @type {{[x:string]:string}[]}
@@ -36,25 +37,40 @@ export class $Packet_CharacterMove {
 		/** @type {number} - time stamp */
 		this.stamp = (new Date().getTime());
 	}
+
+	/**
+	 * @param {SceneCharacter} chara
+	 */
 	capture(chara) {
 		const phy = chara.$physics;
 		const body = phy.body;
-		let elem = new CharacterMoveElem();
+		const crr = chara.renderer;
 
-		{
-			const crr = chara.renderer;
+		/** @type {CharacterMoveElem} */
+		let elem;
 
-			elem.action = crr.action;
-			//elem.action_frame = crr.action_frame;
-			elem.emotion = crr.emotion;
-			//elem.emotion_frame = crr.emotion_frame;
+		if (crr._$old_action != crr._action) {
+			elem = new CharacterMoveElem();
+
+			elem.action = crr._action;
+			//elem.action_frame = crr._action_frame;
 		}
 
-		elem.isAwake = body.IsAwake();
-		if (elem.isAwake) {
+		if (crr._$old_emotion != crr._emotion) {
+			elem = elem || new CharacterMoveElem();
+
+			elem.emotion = crr._emotion;
+			//elem.emotion_frame = crr._emotion_frame;
+		}
+		
+		const isAwake = body.IsAwake();
+		if (isAwake) {
+			elem = elem || new CharacterMoveElem();
 
 			let pos = phy.getPosition();
 			let vel = body.GetLinearVelocity();
+
+			elem.isAwake = isAwake;
 
 			elem.x = pos.x;
 			elem.y = pos.y;
@@ -68,7 +84,9 @@ export class $Packet_CharacterMove {
 			elem.elapsed = (new Date().getTime()) - this.stamp;
 		}
 
-		this.path.push(elem);
+		if (elem) {
+			this.path.push(elem);
+		}
 	}
 }
 

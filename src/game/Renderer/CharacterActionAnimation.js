@@ -51,13 +51,13 @@ export class ActionAnimation {
 		this.frames = null;
 
 		/**
-		 * input
+		 * input action
 		 * @type {string}
 		 */
 		this._action = null;
 
 		/**
-		 * input
+		 * input action
 		 * @type {number}
 		 */
 		this.frame = 0;
@@ -73,6 +73,9 @@ export class ActionAnimation {
 
 		/** @type {boolean} */
 		this._is_end = false;
+
+		/** @type {(oldInputAction:string,oldOutputAction:string) => void} */
+		this.onEnd = null;
 	}
 
 	/**
@@ -87,10 +90,16 @@ export class ActionAnimation {
 	/**
 	 * from loaded data
 	 * @param {string} action
+	 * @param {(oldInputAction:string,oldOutputAction:string) => void} onEnd
 	 */
-	reload(action) {
+	reload(action, onEnd) {
+		if (this.onEnd) {
+			this.onEnd(this._action, this.action);
+		}
+
 		this.reset();
 		this._load(action);
+		this.onEnd = onEnd;
 	}
 
 	reset() {

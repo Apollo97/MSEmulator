@@ -1,11 +1,12 @@
 ﻿
-import { PRemoteCharacter } from "./PPlayer.js";
+import { PRemotePlayer } from "./PPlayer.js";
 
 import { Animation } from "../Animation.js";
 
 
-window.$MobAction_Move_Priority = 2;
-window.$MobAction_Jump_Priority = 1;
+window.$MobAction_Stand_Priority = 1;
+window.$MobAction_Move_Priority = 10;
+window.$MobAction_Jump_Priority = 3;
 
 
 export class MobActionController {
@@ -22,10 +23,13 @@ export class MobActionController {
 
 	/** @type {number} - int */
 	get priority() {
-		return 1;
+		let [priority = 1] = [window.$MobAction_Stand_Priority];
+		return priority;
 	}
 
 	init() {
+		this.repeat = Math.ceil(Math.random() * this.priority);
+		this._ani.reset();
 	}
 
 	/**
@@ -47,10 +51,19 @@ export class MobActionController {
 	 */
 	isEnd(pMob) {
 		let end = this._ani.isEnd();
+
 		if (end) {
-			this.onEnd(pMob);
-			return true;
+			this.repeat -= 1;
+
+			if (this.repeat > 0) {
+				this._ani.reset();
+			}
+			else {
+				this.onEnd(pMob);
+				return true;
+			}
 		}
+
 		return false;
 	}
 
@@ -92,7 +105,8 @@ export class _MobAction_Move extends MobActionController {
 
 	/** @type {number} - int */
 	get priority() {
-		return window.$MobAction_Move_Priority;
+		let [priority = 1] = [window.$MobAction_Move_Priority];
+		return priority;
 	}
 	
 	/**
@@ -193,10 +207,12 @@ export class MobAction_Jump extends MobActionController {
 
 	/** @type {number} - int */
 	get priority() {
-		return window.$MobAction_Jump_Priority;
+		let [priority = 1] = [window.$MobAction_Jump_Priority];
+		return priority;
 	}
 
 	init() {
+		this._ani.reset();
 		//this.move = 1 || Math.random() > 0.5;
 	}
 
@@ -274,7 +290,7 @@ export class MobAction_Attack extends MobActionController {
 	}
 }
 
-export class PMob extends PRemoteCharacter {
+export class PMob extends PRemotePlayer {
 	/**
 	 * @param {MapMob} mapMob
 	 */

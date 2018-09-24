@@ -52,6 +52,93 @@ let rapid_attack_info = {
 };
 
 
+//超級技能是從30號開始
+let aaa = {
+	icon:                   "技能圖標（一般狀態）",
+	iconMouseOver:          "技能圖標（鼠標劃過時）",
+	iconDisabled:           "技能圖標（不可用時）",
+	effect:                 "技能光效，此外還有相關的effect0、affected（隊友身上的光效）、special、repeat、ball（發射體光效）、 hit（擊中光效）、mob（怪物頭上的debuff光效）、tile（全屏光效會用到）、prepare（rapidAttack類技能起手光效）、keydown（rapidAttack類技能持續按住光效）、keydownend（rapidAttack類技能結束光效）、finish（rapidAttack類技能結束光效）",
+	PVPcommon:              "天國的大亂斗里面的數據",
+	req:                    "前置技能",
+	reqLev:                 "要求等級",
+	fixLevel:               "固定技能等級",
+	info:                   "技能相關信息，包含攻擊類型、debuff類型等",
+	elemAttr:               "技能元素屬性（i冰l雷f火s毒h聖d暗）",
+	action:                 "技能動作指向（需要character.wz查看）",
+	masterLevel:            "能力級別",
+	combatOrders:           "戰鬥指令是否有效",
+	notRemoved:             "不可消除，一般只會在buff技能出現，就是不被消技能",
+	weapon:                 "武器限制，只有在用相應武器代碼的武器時才可以釋放",
+	subWeapon:              "副武器限制，只有在用相應副武器代碼的副武器時才可以釋放",
+	addAttack:              "銜接技能",
+	finalAttack:            "終極攻擊",
+	invisible:              "不可見（如無其他技能調用則和刪除是一樣的）",
+
+	common: {//技能數據
+		maxLevel: "最高等級",
+		mpCon:                 "mp消耗",
+		hpCon:                 "hp消耗",
+		damage:                "傷害",
+		bulletCount:           "發射體消耗（標 / 箭 / 子彈）",
+		attackCount:           "段數",
+		mobCount:              "攻擊怪物數",
+		prop:                  "特殊效果引發機率",
+		time:                  "buff / debuff持續時間、技能持續時間等",
+		cooltime:              "冷卻時間",
+		lt:                    "範圍，與rb一同使用，這個數值衡定技能最遠、最往上的有效位置",
+		rb:                    "範圍，與lt一同使用，這個數值恆定技能最近、最往下的有效位置",
+		range:                 "範圍，獨立使用，與ltrb一般不同時使用，射程類範圍",
+		cr:                    "暴擊率",
+		criticaldamageMin:     "最小暴擊傷害",
+		criticaldamageMax:     "最大暴擊傷害",
+		mastery:               "熟練度",
+		damR:                  "百分比總傷",
+		bdR:                   "百分比boss傷",
+		ignoreMobpdpR:         "百分比無視怪物防禦率",
+		dottime:               "持續傷害的時間",
+		dot:                   "持續傷害的傷害",
+		dotInterval:           "持續傷害的間隔時間",
+		dotSuperpos:           "持續傷害的疊加次數",
+		actionSpeed:           "攻速",
+		booster:               "攻速",
+		MaxDamageOver:         "傷害上限",
+		psdSpeed:              "角色移動速度",
+		psdJump:               "角色跳躍力",
+		terR:                  "屬性傷害抗性",
+		asrR:                  "異常狀態抗性",
+		pdd:                   "物理防禦力",
+		mdd:                   "魔法防禦力",
+		mhp:                   "HP上限",
+		mmp:                   "MP上限",
+		str:                   "力量",
+		dex:                   "敏捷",
+		int:                   "智力",
+		luk:                   "運氣",
+		x:                     "一些常用的在服務器端存儲效果的數值，但不限於此",
+		y:                     "一些常用的在服務器端存儲效果的數值，但不限於此",
+		z:                     "一些常用的在服務器端存儲效果的數值，但不限於此",
+		v:                     "一些常用的在服務器端存儲效果的數值，但不限於此",
+		//xxxR:                  "xxx率",
+		//xxxX:                  "xxx數值",
+		//xxx2yyy:               "xxx按照一定比率增加到yyy上",
+		//indiexxx:              "可疊加的xxx",
+		//xxxMax:                "最大xxx",
+		//Maxxxx:                "最大xxx",
+		//xxxCon:                "xxx消耗",
+		gauge:                 "夜光光暗指數",
+	}
+}
+
+
+const evaluate = (function () {
+	const u = x => Math.ceil(x);
+	const d = x => Math.trunc(x);
+	return (expr, x) => {
+		return eval(expr);
+	};
+})();
+
+
 class _SkillInfo {
 	constructor() {
 		this.type = 40;
@@ -468,7 +555,7 @@ class SkillAnimationBase {
 	 */
 	_applyAction(action) {
 		if (this._actani && this.data) {
-			const actions = this.data.action;
+			const actions = this.data.action;//??
 			this._actani.reload(action);//action ? 0, 1
 			this._actani.loop = false;
 			
@@ -987,17 +1074,21 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 		this.jump_max_count = (window.jump_max_count || 2);
 	}
 
-	jump2() {
-		const crr = this._crr;
-		//const body = this._owner_player.$physics.body;
-		const foot_walk = this._owner_player.$physics.foot_walk;
+	jump() {
+		{
+			const crr = this._crr;
+			const $physics = this._owner_player.$physics;
+			//const body = $physics.body;
+			const foot_walk = $physics.foot_walk;
 
-		const pos = this._owner_player.$physics.getPosition();
-		console.log("pos: { x: %o, y: %o }", pos.x, pos.y);
+			//const pos = $physics.getPosition();
+			//console.log("pos: { x: %o, y: %o }", pos.x, pos.y);
 
-		//body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
-		foot_walk.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+			//body.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
+			foot_walk.ConstantVelocityWorldCenter2((window.$NJmpX || 40) * crr.front, (window.$NJmpY || 0));
 
+			$physics.state.jump_count += $physics.state.jump_count ? 1 : 2;
+		}
 		this._addDefaultEffect();
 	}
 
@@ -1008,9 +1099,15 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @returns {boolean}
 	 */
 	test(owner) {
-		const $physics = owner.$physics;
-		const state = owner.$physics.state;
-		return !$physics.$foothold && state.jump && state.jump_count < this.jump_max_count;
+		if (this._owner_player.$remote) {
+			return true;
+		}
+		else {
+			const $physics = owner.$physics;
+			const state = owner.$physics.state;
+			return !$physics.$foothold && state.jump && state.jump_count < this.jump_max_count;
+		}
+		return false;
 	}
 
 	/**
@@ -1021,17 +1118,17 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
-		if (!this._owner_player) {
-			debugger;
-			return;
-		}
-		if (keyDown == 1 && this.test(this._owner_player)) {
-			const $physics = this._owner_player.$physics;
-			
-			$physics.state.jump_count += $physics.state.jump_count ? 1 : 2;
-
-			this.jump2()
-		}
+		//if (!this._owner_player) {
+		//	debugger;
+		//	return;
+		//}
+		//if (keyDown == 1 && this.test(this._owner_player)) {
+		//	const $physics = this._owner_player.$physics;
+		//
+		//	$physics.state.jump_count += $physics.state.jump_count ? 1 : 2;
+		//
+		//	this.jump2();
+		//}
 	}
 
 	/**
@@ -1039,8 +1136,26 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		const $physics = this._owner_player.$physics;
+		if (this._actani) {
+			if (this._actani.delay) {// not start yet
+				return;
+			}
+			else if (!this.is_launch) {
+				this.jump();
 
+				this.is_launch = true;
+			}
+			if (this._actani.isEnd()) {
+				this.is_end = true;
+			}
+		}
+		else {
+			this.is_launch = true;
+			this.is_end = true;
+		}
+
+		const $physics = this._owner_player.$physics;
+		
 		if (this._isFinishDefaultAction()) {
 			this.is_end = true;
 		}
@@ -1074,6 +1189,7 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	 * @returns {boolean}
 	 */
 	test(owner) {
+		//TODO: condition
 		return true;
 	}
 
@@ -1110,8 +1226,8 @@ export class SceneSkill extends SkillAnimationBase {
 	async load(skillId, owner) {
 		this.owner = owner;
 
-		if (!skillId) {
-			throw new Error("1 argument required");
+		if (!skillId || !owner) {
+			throw new TypeError("arguments");
 		}
 		
 		if (String(skillId).length <= 4) {

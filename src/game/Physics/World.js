@@ -13,7 +13,7 @@ import {
 import DebugDraw from "./DebugDraw.js";
 import { Ground } from "./Ground.js";
 import { LadderRope, MapLadderRopeLoader } from "./LadderRope.js";
-import { PPlayer, PRemoteCharacter } from "./PPlayer.js";
+import { PPlayer, PRemotePlayer } from "./PPlayer.js";
 import { PMob } from "./PMob.js";
 
 import { CharacterAnimationBase } from "../Renderer/CharacterRenderer";
@@ -346,7 +346,7 @@ export class World extends b2World {
 			debugger;
 			alert("$createRemotePlayer(sceneObject, renderer)");
 		}
-		let player = new PRemoteCharacter();
+		let player = new PRemotePlayer();
 
 		player._create(this);
 

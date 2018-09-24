@@ -268,7 +268,7 @@ export class Game {
 				console.log("start client");
 			}
 			catch (err) {
-				console.warn(err);
+				console.error(err);
 				console.log("start offline");
 				this._$start_offline();
 				return;

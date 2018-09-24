@@ -6,7 +6,7 @@
     <ProjectGuid>{97e9329a-30d6-40ee-b133-d6a2385ed9db}</ProjectGuid>
     <ProjectHome />
     <ProjectView>ShowAllFiles</ProjectView>
-    <StartupFile>app.js</StartupFile>
+    <StartupFile>GameServer\app.js</StartupFile>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
@@ -25,6 +25,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
     <Compile Include="app.js" />
+    <Compile Include="GameServer\app.js" />
     <Compile Include="public\javascripts\demo.js" />
     <Compile Include="public\javascripts\index.js" />
     <Compile Include="public\javascripts\resource.js" />
@@ -132,7 +133,6 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     </Compile>
     <Compile Include="src\util.js" />
     <Compile Include="webpack.config.js" />
-    <Compile Include="wvs.js" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".eslintrc" />
@@ -281,6 +281,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="wz.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="GameServer\" />
     <Folder Include="public\" />
     <Folder Include="public\data\" />
     <Folder Include="public\images\" />

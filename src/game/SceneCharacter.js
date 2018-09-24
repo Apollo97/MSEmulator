@@ -182,14 +182,16 @@ class PlayerJob {
 	 * @param {BaseSceneCharacter} owner
 	 * @param {number} stamp
 	 * @param {InputKey} inputKey
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
 	 */
-	update(owner, stamp, inputKey) {
-		let r = this._update_command_skill(owner, stamp, inputKey);
+	update(owner, stamp, inputKey, keyDown, keyUp) {
+		let r = this._update_command_skill(owner, stamp, inputKey, keyDown, keyUp);
 		if (r) {
 			return true;
 		}
 		else {
-			return this._update(owner, stamp, inputKey);
+			return this._update(owner, stamp, inputKey, keyDown, keyUp);
 		}
 	}
 	
@@ -197,8 +199,10 @@ class PlayerJob {
 	 * @param {BaseSceneCharacter} owner
 	 * @param {number} stamp
 	 * @param {InputKey} inputKey
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
 	 */
-	_update(owner, stamp, inputKey) {
+	_update(owner, stamp, inputKey, keyDown, keyUp) {
 		return false;
 	}
 	
@@ -206,9 +210,11 @@ class PlayerJob {
 	 * @param {BaseSceneCharacter} owner
 	 * @param {number} stamp
 	 * @param {InputKey} inputKey
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
 	 * @returns {boolean} is match
 	 */
-	_update_command_skill(owner, stamp, inputKey) {
+	_update_command_skill(owner, stamp, inputKey, keyDown, keyUp) {
 		const frontKey = owner.$physics.state.front > 0 ? "right" : "left";
 		
 		//this.inputKey.update(stamp, ikey);
@@ -230,19 +236,22 @@ class PlayerJob_2300 extends PlayerJob {
 	 * @param {BaseSceneCharacter} owner
 	 * @param {number} stamp
 	 * @param {InputKey} inputKey
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
 	 */
-	_update(owner, stamp, inputKey) {
-		if (inputKey.jump) {
+	_update(owner, stamp, inputKey, keyDown, keyUp) {
+		if (inputKey.jump == 1) {
 			const skill_id = "23001002";
 			let skill = owner.activeSkills.get(skill_id);
+			let preloadSkill;
+
+			preloadSkill = skill || SceneSkill.preload(skill_id);
+			
+			if (!preloadSkill.$promise && preloadSkill.test(owner)) {
+				owner.invokeSkill(skill_id);
+			}
+
 			//if (keyDown && can_use_skill) {
-				skill = skill || SceneSkill.preload(skill_id);
-				if (!skill.$promise && skill.test(owner)) {
-					skill = skill || owner.invokeSkill(skill_id);
-					if (skill) {
-						skill.control(inputKey, inputKey.jump, 0);
-					}
-				}
 			//}
 			//if (skill) {
 			//	skill.control(ikey, keyDown, keyUp);
@@ -337,11 +346,11 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 
 	/**
-	 * @param {BaseSceneCharacter|null} chara - 被 chara 攻擊
+	 * @param {BaseSceneCharacter|null} target - 被 chara 攻擊
 	 * @param {number} damage - 傷害
 	 */
-	damage(chara, damage) {
-		console.log("Player(" + this.$objectid + ") 被 " + chara.$objectid + " 攻擊，減少 " + damage + " HP");
+	damage(target, damage) {
+		console.log("Player(" + this.$objectid + ") 被 " + target.$objectid + " 攻擊，減少 " + damage + " HP");
 	}
 
 	/**
@@ -370,8 +379,9 @@ export class BaseSceneCharacter extends SceneObject {
 
 			if (elem.isAwake) {
 				this.$physics.moveTo(elem);
-				this.$physics.state = elem.pState;//??
-
+				if (elem.pState) {
+					this.$physics.state = elem.pState;//??
+				}
 				crr.front = elem.pState.front;
 			}
 			//else {
@@ -379,12 +389,12 @@ export class BaseSceneCharacter extends SceneObject {
 			//}
 		
 			if (elem.action) {
-				crr.action = elem.action;
-				//crr.action_frame = elem.action_frame;
+				crr._action = elem.action;
+				//crr._action_frame = elem.action_frame;
 			}
 			if (elem.emotion) {
-				crr.emotion = elem.emotion;
-				//crr.emotion_frame = elem.emotion_frame;
+				crr._emotion = elem.emotion;
+				//crr._emotion_frame = elem.emotion_frame;
 			}
 		}
 	}
@@ -458,20 +468,20 @@ export class BaseSceneCharacter extends SceneObject {
 
 	/**
 	 * @param {string} skillId
-	 * @param {function(SceneSkill):void} [cbfunc]
-	 * @returns {SceneSkill}
+	 * @returns {SceneSkill|Promise<SceneSkill>}
 	 */
-	invokeSkill(skillId, cbfunc) {
+	invokeSkill(skillId) {
 		if (window.$io) {
-			this.__invokeSkill_client(skillId).then(cbfunc);
+			return this.__invokeSkill_client(skillId);
 		}
 		else {
-			return this.__invokeSkill_offline(skillId);
+			let skill = this.__invokeSkill_offline(skillId);
+			return skill;
 		}
 	}
 	/**
 	 * @param {string} skillId
-	 * @returns {SceneSkill}
+	 * @returns {Promise<SceneSkill>}
 	 */
 	async __invokeSkill_client(skillId) {
 		let isValid;
@@ -579,7 +589,7 @@ export class BaseSceneCharacter extends SceneObject {
 		// renderer: apply default action
 		if (!pState.invokeSkill) {
 			const { front, jump, walk, prone, fly, ladder } = player_state;
-			const enablePhysics = chara.enablePhysics;
+			const enablePhysics = this.enablePhysics;
 
 			if (front != null) {
 				renderer.front = front;
@@ -595,8 +605,8 @@ export class BaseSceneCharacter extends SceneObject {
 					}
 
 					if (pState.ladder_move_dir) {
-						if (chara.renderer.actani.isEnd()) {
-							chara.renderer.actani.reset();
+						if (this.renderer.actani.isEnd()) {
+							this.renderer.actani.reset();
 							renderer.actani.loop = false;
 						}
 					}
@@ -778,7 +788,6 @@ export class SceneCharacter extends BaseSceneCharacter {
 
 	_onJobChange() {
 		//TODO: register buf, debuf, autofire skill
-		//TODO: 二段跳取代跳躍鍵
 		const newJob = this.stat.job;
 
 		console.log("Player(" + this.$objectid + ") change job: " + newJob);
@@ -872,9 +881,11 @@ export class SceneCharacter extends BaseSceneCharacter {
 						const skill_id = ks.skill_id;
 						let skill = this.activeSkills.get(skill_id);
 						if (keyDown && can_use_skill) {
-							skill = skill || this.invokeSkill(skill_id);
+							this.invokeSkill(skill_id);
+							
+							//skill.control(ikey, keyDown, keyUp);//?? await == nextTick
 						}
-						if (skill) {
+						else if (skill) {
 							skill.control(ikey, keyDown, keyUp);
 						}
 					}
@@ -1143,23 +1154,35 @@ export class SceneCharacter extends BaseSceneCharacter {
 	
 	$emit(socket) {
 		if (this.$outPacket.move) {
-			socket.emit("charaMove", this.$outPacket.move);
-			this.$outPacket.move = null;
+			/** @type {$Packet_CharacterMove} */
+			let charaMove = this.$outPacket.move;
+
+			if (charaMove.path.length) {
+				socket.emit("charaMove", charaMove);
+
+				this.$outPacket.move = null;
+			}
 		}
 		else {
+			/** @type {$Packet_CharacterMove} */
 			let charaMove = new $Packet_CharacterMove();
 
 			charaMove.capture(this);
 
-			socket.emit("charaMove", charaMove);
+			if (charaMove.path.length) {
+				socket.emit("charaMove", charaMove);
+			}
 		}
 
 		this.$outPacket.move = null;
 	}
 	
 	$recMove() {
+		/** @type {$Packet_CharacterMove} */
 		let move = this.$outPacket.move || new $Packet_CharacterMove();
+
 		move.capture(this);
+		
 		this.$outPacket.move = move;
 	}
 }
@@ -1223,10 +1246,32 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 	}
 
 	/**
+	 * 'character physics state' to 'character renderer state'
+	 * @param {PPlayerState} player_state
+	 */
+	_applyState(player_state) {
+		if (!this.activeSkills.size) {//if not skill's skill
+			super._applyState(player_state);
+		}
+	}
+
+	/**
 	 * @override
 	 */
 	_player_control() {
 		this._remote_control();
+	}
+
+	/**
+	 * @param {string} skillId
+	 * @returns {void}
+	 */
+	invokeSkill(skillId) {
+		let skill = this.__invokeSkill_offline(skillId);
+
+		//TODO: emit event: controllSkill
+		//TODO: on event: sremoteControllSkill
+		//skill.control(inputKey, keyDown, keyUp);
 	}
 }
 

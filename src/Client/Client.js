@@ -114,6 +114,9 @@ export class Client {
 				
 				resolve(socket);
 			});
+			socket.on("disconnect", () => {
+				window.location.reload();
+			});
 			socket.on("connect_error", error => {
 				socket.disconnect();
 				reject(error);
@@ -260,6 +263,23 @@ export class Client {
 	}
 
 	/**
+	 * @param {{ id: string }} packet
+	 */
+	onLeaveRemoteChara(packet) {
+		const remoteId = packet.id;
+
+		gApp.store.dispatch('deleteCharacter', {
+			id: remoteId,
+			leave: true,
+		}).then(() => {
+			console.log("onLeaveRemoteChara[%o]", remoteId);
+		}, (reason) => {
+			console.log("onLeaveRemoteChara[%o]: %o", remoteId, reason);
+		});
+		delete this.charaMap[packet.id];
+	}
+
+	/**
 	 * @param {SceneCharacter} chara
 	 * @param {$Packet_RemoteChat} packet
 	 * @param {function(...any):void} fnAck
@@ -306,6 +326,7 @@ export class Client {
 
 	async $test() {
 		this.socket.on("enterRemoteChara", this.onEnterRemoteChara.bind(this));
+		this.socket.on("leaveRemoteChara", this.onLeaveRemoteChara.bind(this));
 		this._addRemoteCharaPacketListener("remoteChat", this.onRemoteChat);
 		this._addRemoteCharaPacketListener("remoteCharaMove", this.onRemoteCharaMove);
 		this._addRemoteCharaPacketListener("remoteCharaAnim", this.onRemoteCharaAnim);

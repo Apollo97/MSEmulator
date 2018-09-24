@@ -392,7 +392,7 @@
 				for (let i = 0; i < state.charaList.length; ++i) {
 					const chara = state.charaList[i];
 					if (chara.id == id) {
-						if (chara.$remote) {
+						if (chara.$remote && !payload.leave) {
 							return false;
 						}
 						else {
@@ -401,12 +401,16 @@
 						}
 					}
 				}
-				if (!move_chara) {
+				if (delete_chara) {
 					if (delete_chara.$physics) {
 						delete_chara.$physics._destroy();
 					}
-					delete_chara.$physics = null;
-					delete_chara.renderer = null;
+
+					//??
+					if (!delete_chara.$remote) {
+						delete_chara.$physics = null;
+						delete_chara.renderer = null;
+					}
 					
 					if (state.charaList.length) {
 						context.dispatch('selectChara', {

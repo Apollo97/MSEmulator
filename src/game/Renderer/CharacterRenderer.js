@@ -2827,11 +2827,6 @@ export class CharacterAnimationBase {
 	_draw(renderer, x, y, angle, flip) {
 		renderer.pushGlobalAlpha();
 
-		if (this.__require_update) {
-			this.__update_frag_list();
-			this.__require_update = false;
-		}
-
 		//list.filter(a=>a&&a._raw.map).forEach(a=>{ for (let i in a._raw.map) { if (q[i]) { q[i].push(a); } else { q[i] = [a]; } } })
 		this.__draw_list(renderer, this.__frag_list, x, y, angle, flip);
 
@@ -3090,6 +3085,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 
 		/** @type {Rectangle} */
 		this._boundBox = null;
+
+		/** @type {string} */
+		this._$old_action = null;
+		/** @type {string} */
+		this._$old_emotion = null;
 	}
 
 	static async Init() {
@@ -3126,8 +3126,16 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	 * @param {any} number  0 < stamp * speed < Infinity
 	 */
 	update(stamp) {
+		this._$old_action = this._action;
+		this._$old_emotion = this.emotion;
+
 		this.waitLoaded();
 		super.update(stamp);
+
+		if (this.__require_update) {
+			this.__update_frag_list();
+			this.__require_update = false;
+		}
 	}
 
 	/**

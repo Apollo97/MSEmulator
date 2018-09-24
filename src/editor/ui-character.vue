@@ -76,7 +76,7 @@
 				get: function () {
 					const chara = this.chara;
 					let arr = [];
-
+					
 					chara.__forceUpdate();
 
 					for (let i in this.chara.__frag_list) {
@@ -87,22 +87,24 @@
 							if (ft.graph3 && ft.graph3.texture) arr.push(ft.graph3);
 						}
 					}
+
 					return arr;
 				},
 				set: function (newVal) {
 				}
 			},
 			style_transform: function () {
+				const chara = this.chara;
 				let transform = "";
-				
-				if (chara.renderer.front > 0) {
+
+				if (chara.front > 0) {
 					transform += "rotateY(180deg)";
 				}
-				
-				if (this.allowRotate && chara.renderer.angle) {
-					transform += `rotateZ(${chara.renderer.angle}rad)`;
+
+				if (this.allowRotate && chara.angle) {
+					transform += `rotateZ(${chara.angle}rad)`;
 				}
-				
+
 				return {
 					transform: transform,
 				};
