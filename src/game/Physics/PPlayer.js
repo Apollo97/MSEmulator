@@ -265,6 +265,15 @@ class PCharacterBase {
 	}
 
 	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
+	setLinearVelocityXY(x, y) {
+		this.body.SetLinearVelocity2(x, y);
+		this.foot_walk.SetLinearVelocity2(x, y);
+	}
+
+	/**
 	 * from.tn(hp00_1) == to.pn(hp00_1) && from.pn(hp00) == to.tn(hp00)
 	 * @param {MapPortal} portal
 	 * @returns {boolean} true if enter portal
@@ -391,12 +400,12 @@ class PCharacterBase {
 				this.state.jump_count = 0;
 
 				this.body.SetAwake(true);
-				this.body.SetLinearVelocity2(0, 0);
 				this.body.m_type = b2BodyType.b2_kinematicBody;
 				//
 				this.foot_walk.SetAwake(true);
-				this.foot_walk.SetLinearVelocity2(0, 0);
 				this.foot_walk.m_type = b2BodyType.b2_kinematicBody;
+				//
+				this.setLinearVelocityXY(0, 0);
 
 				this.walker.SetMotorSpeed(0);
 
@@ -440,12 +449,12 @@ class PCharacterBase {
 					this.state.ladder = false;
 
 					this.body.SetAwake(true);
-					this.body.SetLinearVelocity2(0, 0);
 					this.body.m_type = b2BodyType.b2_dynamicBody;
 					//
 					this.foot_walk.SetAwake(true);
-					this.foot_walk.SetLinearVelocity2(0, 0);
 					this.foot_walk.m_type = b2BodyType.b2_dynamicBody;
+					//
+					this.setLinearVelocityXY(0, 0);
 				}
 			}
 			if (this.$ladder_pj) {
@@ -466,6 +475,7 @@ class PCharacterBase {
 	}
 
 	actionJump() {
+		this.body.SetAwake(true);
 		this.state._begin_jump = true;
 		++this.state.jump_count;
 	}
@@ -481,7 +491,7 @@ class PCharacterBase {
 	/**
 	 * @param {Partial<ControlKeys>} keys
 	 */
-	control(keys) {
+	_basicControl(keys) {
 		if (!this._isCanMove()) {
 			return;
 		}
@@ -517,9 +527,7 @@ class PCharacterBase {
 
 				this.$ladder_pj.EnableMotor(false);
 
-				this.body.SetLinearVelocity2(0, 0);
-				//
-				this.foot_walk.SetLinearVelocity2(0, 0);
+				this.setLinearVelocityXY(0, 0);
 			}
 			if (keys.jump) {
 				const world = this.body.m_world;
@@ -531,16 +539,16 @@ class PCharacterBase {
 				else if (keys.left) {
 					this.useLadder(false);
 					world.doAfterStep(() => {
-						//const f = new b2Vec2(0, -world.m_gravity.y * mass);
-						//this.body.ApplyForceToCenter(f, true);
+						const f = new b2Vec2(0, -world.m_gravity.y * mass);
+						this.body.ApplyForceToCenter(f, true);
 						this.body.ApplyLinearImpulseToCenter2(-speed * mass, 0);
 					});
 				}
 				else if (keys.right) {
 					this.useLadder(false);
 					world.doAfterStep(() => {
-						//const f = new b2Vec2(0, -world.m_gravity.y * mass);
-						//this.body.ApplyForceToCenter(f, true);
+						const f = new b2Vec2(0, -world.m_gravity.y * mass);
+						this.body.ApplyForceToCenter(f, true);
 						this.body.ApplyLinearImpulseToCenter2(speed * mass, 0);
 					});
 				}
@@ -663,7 +671,7 @@ class PCharacterBase {
 	 * @param {number} increment_percent - increment_percent >= -100
 	 */
 	setMovementSpeed(increment_percent) {
-		if (!(Number.isSafeInteger(increment_percent) || (!Number.isNaN(increment_percent) && Number.isFinite(increment_percent)))) {
+		if ((!Number.isSafeInteger(increment_percent) || Number.isNaN(increment_percent)) && !Number.isFinite(increment_percent)) {
 			debugger
 			if (process.env.NODE_ENV !== '') {
 				throw new TypeError("increment_percent must is number");
@@ -1115,7 +1123,7 @@ class PCharacterBase {
 			if (this.state._begin_jump) {
 				const mass = this._getMass();
 				const force = new b2Vec2(0, -mass * this.jump_force);
-				this.body.ApplyForceToCenter(force);
+				this.body.ApplyForceToCenter(force, true);
 			}
 
 			if (this.state.knockback > 0) {
@@ -1163,14 +1171,18 @@ class PCharacterBase {
 				const translation = this.$ladder_pj.GetJointTranslation();
 
 				if (this.state.ladder_move_dir > 0 && translation > upper) {//down
-					this.useLadder(false);
+					this._useLadder(false);
 				}
 				else if (this.state.ladder_move_dir < 0 && translation < lower) {//up
-					this.useLadder(false);
+					this._useLadder(false);
 				}
 			}
 		}
 		else {
+			if (this.ladder) {
+				this._useLadder(false);
+			}
+
 			if (!this.state.dropDown) {
 				if (this.body.m_awakeFlag && this.foot_walk.m_awakeFlag) {
 					this.$foothold = this._foothold;//set or clear
@@ -1219,13 +1231,22 @@ class PCharacterBase {
 	}
 }
 
-class PCharacter extends PCharacterBase {
+export class PCharacter extends PCharacterBase {
 	constructor() {
 		super(...arguments);
 
 		/** @type {SceneCharacter} */
 		this.chara = null;
 	}
+
+	///**
+	// * @param {number} x
+	// * @param {number} y
+	// * @param {boolean} clearForce
+	// */
+	//setPosition(x, y, clearForce) {
+	//	super.setPosition(x, y, clearForce);
+	//}
 
 	/**
 	 * need set this.state.outOfControl = true
@@ -1270,82 +1291,235 @@ class PCharacter extends PCharacterBase {
 		md.frequencyHz = 24;
 		return world.CreateJoint(md);
 	}
+}
+
+export class PPlayerBase extends PCharacter {
+	constructor() {
+		super();
+
+		if (window.$io) {
+			/** @type {Partial<PPlayerState>} */
+			this.$outputState = null;
+
+			/** @type {PPlayerState} */
+			this.state = null;
+
+			/** @type {PPlayerState} */
+			this.state = null;
+
+			let state_proxy = new Proxy({}, {
+				set: (target, property, value, receiver) => {
+					if (target[property] != value) {
+						if (!this.$outputState) {
+							this.$outputState = {};
+						}
+						this.$outputState[property] = value;
+						return Reflect.set(target, property, value, receiver);
+					}
+					return true;
+				},
+				deleteProperty: (target, prop) => {
+					if (target[prop]) {//if not 0, null, undefined
+						if (!this.$outputState) {
+							this.$outputState = {};
+						}
+						this.$outputState[property] = 0;//output 0
+					}
+					return delete target[prop];
+				},
+			});
+
+			/** @type {{[action:string]:number}} */
+			this.$outputActionKey = {};
+
+			/** @type {{[action:string]:number}} - input action key */
+			let ikey_proxy = new Proxy({}, {
+				set: (target, property, value, receiver) => {
+					//let b = value > 0 ? 1 : 0;
+					//if (!this.$outputActionKey) {
+					//	this.$outputActionKey = {};
+					//}
+					//if (this.$outputActionKey[property] != b) {
+					//	this.$outputActionKey[property] = b;
+					//	return Reflect.set(target, property, value, receiver);
+					//}
+					if (target[property] != value) {
+						if (!this.$outputActionKey) {
+							this.$outputActionKey = {};
+						}
+						this.$outputActionKey[property] = value;
+						return Reflect.set(target, property, value, receiver);
+					}
+					return true;
+				},
+				deleteProperty: (target, prop) => {
+					if (target[prop]) {//if not 0, null, undefined
+						if (!this.$outputActionKey) {
+							this.$outputActionKey = {};
+						}
+						this.$outputActionKey[prop] = 0;//output 0
+					}
+					return delete target[prop];
+				},
+			});
+			
+			Object.defineProperties(this, {
+				state: {
+					value: state_proxy,
+				},
+				ikey: {
+					value: ikey_proxy,
+				},
+			});
+		}
+		else {
+			/** @type {Partial<PPlayerState>} */
+			this.$getOutputState = undefined;
+
+			/** @type {{[action:string]:number}} - input action key */
+			this.ikey = {};
+		}
+	}
 
 	/**
-	 * no anchor
-	 * experimental
+	 * @returns {PPlayerState}
+	 */
+	$getOutputState() {
+		let output = this.$outputState;
+		this.$outputState = undefined;
+		return output;
+	}
+
+	/**
+	 * @returns {PPlayerState}
+	 */
+	$getOutputActionKey() {
+		let output = this.$outputActionKey;
+		this.$outputActionKey = undefined;
+		return output;
+	}
+
+	/** @returns {boolean} */
+	isNeedUpdate() {
+		const body = this.body;
+		const isAwake = body.IsAwake();
+
+		let { x, y } = body.GetLinearVelocity();
+
+		return !!this.$outputState || !!this.$outputActionKey || (!!isAwake && x != 0 && y != 0);
+	}
+
+	/**
+	 * @param {CharacterMoveElem} moveElem
+	 * @returns {CharacterMoveElem}
+	 */
+	$setAsOutputData(moveElem) {
+		//moveElem.isAwake = isAwake;
+		moveElem.pState = this.$getOutputState();
+
+		moveElem.actionkey = this.$getOutputActionKey();
+
+		{
+			const { x, y } = this.getPosition();
+
+			moveElem.x = x;
+			moveElem.y = y;
+		}
+
+		{
+			const { x, y } = this.body.GetLinearVelocity();
+
+			moveElem.vx = x;
+			moveElem.vy = y;
+		}
+
+		return moveElem;
+	}
+
+	/**
 	 * @param {CharacterMoveElem} moveElem
 	 */
 	moveTo(moveElem) {
-		const body = this.body;
-		
 		this.body.SetAwake(true);
 		this.foot_walk.SetAwake(true);
 
-		if (moveElem.elapsed == 0) {
-			body.ConstantVelocityWorldCenter2(vx, vy);
+		if (moveElem.pState) {
+			/** after step */
+			this.$nextState = moveElem.pState;
+		}
+
+		if (moveElem.vx != null && moveElem.vy != null) {//not null and undefined
+			this.setLinearVelocityXY(moveElem.vx, moveElem.vy);
+		}
+
+		if (moveElem.actionkey) {
+			this.$moveElem = undefined;
+			
+			this.body.SetAwake(true);
+			this.foot_walk.SetAwake(true);
+
+			////normal action
+			//this.body.SetGravityScale(1);
+			//this.foot_walk.SetGravityScale(1);
+
+			//set position
+			this.setPosition(moveElem.x, moveElem.y, true);
+
+			Object.assign(this.ikey, moveElem.actionkey);
+			this._basicControl(this.ikey);//?? immediate update
 		}
 		else {
-			const ALPHA = 0.7;
-			const ONE_MINUS_ALPHA = 1 - ALPHA;
-			let dx = moveElem.x - pos.x;
-			let dy = moveElem.y - pos.y;
-			let sx = dx / (moveElem.elapsed / $gv.FRAME_ELAPSED);//speed = pixel / second
-			let sy = dy / (moveElem.elapsed / $gv.FRAME_ELAPSED);
-			let oldVel = body.GetLinearVelocity();
+			this.$moveElem = moveElem;//store
 
-			let vx, vy;
-
-			if (moveElem.pState.jump) {
-				this.setGravityScale(0);
-			}
-			else {
-				this.setGravityScale(1);
-				
-				if (moveElem.pState.walk || sx) {
-					this.walker.EnableMotor(false);//this.$physics.walker.IsMotorEnabled() == true
-				}
-				else {
-					this.walker.EnableMotor(true);//keep stop
-				}
-			}
-
-			if (sx) {
-				if (moveElem.vx) {
-					if (Math.sign(moveElem.vx) == Math.sign(sx)) {
-						vx = oldVel.x * ONE_MINUS_ALPHA + moveElem.vx * ALPHA;
-					}
-					else {
-						vx = oldVel.x * ONE_MINUS_ALPHA + sx * ALPHA;//修正座標
-					}
-				}
-				else {
-					vx = sx;//修正座標
-				}
-			}
-			else {
-				vx = 0;
-			}
-
-			if (sy) {
-				if (moveElem.vy) {
-					if (Math.sign(moveElem.vy) == Math.sign(sy)) {
-						vy = oldVel.y * ONE_MINUS_ALPHA + moveElem.vy * ALPHA;
-					}
-					else {
-						vy = oldVel.y * ONE_MINUS_ALPHA + sy * ALPHA;//修正座標
-					}
-				}
-				else {
-					vy = sy;//修正座標
-				}
-			}
-			else {
-				vy = 0;
-			}
-
-			body.ConstantVelocityWorldCenter2(vx, vy);
+			////fixed position
+			//this.body.SetGravityScale(0);
+			//this.foot_walk.SetGravityScale(0);
 		}
+	}
+
+	/**
+	 * @override
+	 */
+	control() {
+		this._basicControl(this.ikey);
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	Step(stamp) {
+		if (0) {
+		}
+		else if (0 && this.$moveElem) {
+			const body = this.body;
+			const pos = this.getPosition();
+			//const mass = this._getMass();
+
+			if (this.$moveElem.vx != null && this.$moveElem.vy != null) {//?? this.$moveElem.hasVelocity
+				this.$moveElem.vx = (this.$moveElem.vx + (this.$moveElem.x - pos.x)) * 0.5;// * mass;// * 0.7;
+				this.$moveElem.vy = (this.$moveElem.vy + (this.$moveElem.y - pos.y)) * 0.5;// * mass;// * 0.7;
+			}
+			else {
+				this.$moveElem.vx = (this.$moveElem.x - pos.x) * 0.5;
+				this.$moveElem.vy = (this.$moveElem.y - pos.y) * 0.5;
+			}
+
+			this.setPosition(pos.x + this.$moveElem.vx, pos.y + this.$moveElem.vy);//fixed position
+
+			//body.ConstantVelocityWorldCenter2(vx, vy);
+		}
+		super.Step(stamp);
+	}
+	/**
+	 * @override
+	 */
+	AfterStep() {
+		if (this.$nextState) {
+			Object.assign(this.state, this.$nextState);
+			this.$nextState = undefined;
+		}
+		super.AfterStep();
 	}
 }
 
@@ -1360,7 +1534,7 @@ if (module.hot) {
 	}
 }
 
-export class PPlayer extends PCharacter {
+export class PPlayer extends PPlayerBase {
 	constructor() {
 		super(...arguments);
 
@@ -1448,12 +1622,12 @@ if (module.hot) {
 	}
 }
 
-export class PRemotePlayer extends PCharacter {
+export class PRemotePlayer extends PPlayerBase {
 	constructor() {
 		super(...arguments);
 
-		/** @type {b2MouseJoint} */
-		this._anchor = null;
+		///** @type {b2MouseJoint} */
+		//this._anchor = null;
 
 		if (module.hot) {
 			PRemotePlayer_instance_list.push(this);
@@ -1467,36 +1641,51 @@ export class PRemotePlayer extends PCharacter {
 		}
 	}
 
-	/**
-	 * @param {World} world
-	 * @returns {void}
-	 */
-	_create(world) {
-		super._create(world);
+	///**
+	// * @param {number} x
+	// * @param {number} y
+	// * @param {boolean} clearForce
+	// */
+	//setPosition(x, y, clearForce) {
+	//	super.setPosition(x, y, clearForce);
 
-		if (window.$io) {
-			this._anchor = this._create_anchor(world);
-		}
-		else {
-			this.moveTo = super.moveTo;
-		}
-	}
+	//	if (window.$io) {
+	//		const by = y - this.chara_profile.foot_width - this.chara_profile.height * 0.75 * 0.5;
 
-	/**
-	 * @param {CharacterMoveElem} moveElem
-	 */
-	moveTo(moveElem) {
-		this.body.SetAwake(true);
-		this.foot_walk.SetAwake(true);
+	//		this._anchor.m_targetA.Set(x, by);
+	//	}
+	//}
+
+	///**
+	// * @param {World} world
+	// * @returns {void}
+	// */
+	//_create(world) {
+	//	super._create(world);
+
+	//	if (window.$io) {
+	//		this._anchor = this._create_anchor(world);
+	//	}
+	//	else {
+	//		this.moveTo = super.moveTo;
+	//	}
+	//}
+
+	///**
+	// * @param {CharacterMoveElem} moveElem
+	// */
+	//moveTo(moveElem) {
+	//	this.body.SetAwake(true);
+	//	this.foot_walk.SetAwake(true);
 		
-		//if (this._anchor) {
-			this._anchor.m_targetA.x = moveElem.x;
-			this._anchor.m_targetA.y = moveElem.y;
-		//}
-		//else {
-		//	super.moveTo(moveElem);
-		//}
-	}
+	//	//if (this._anchor) {
+	//		this._anchor.m_targetA.x = moveElem.x;
+	//		this._anchor.m_targetA.y = moveElem.y;
+	//	//}
+	//	//else {
+	//	//	super.moveTo(moveElem);
+	//	//}
+	//}
 }
 
 if (module.hot) {

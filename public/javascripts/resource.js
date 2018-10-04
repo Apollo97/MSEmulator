@@ -1,4 +1,6 @@
 ﻿
+window.$noimage = location.search.indexOf("noimage") >= 0;
+
 const $failed_urls = [];
 
 const $archive = {};
@@ -869,13 +871,18 @@ $get.listUrl = function $get_listUrl(path) {
  * @returns {string}
  */
 $get.imageUrl = function $get_imagesUrl(path) {
-	if (url_startsWith_protocol(path)) {
-		return path;
+	if (window.$noimage) {
+		return `${window.$ROOT_PATH}images/1x1.png`;
 	}
-	else if (!path.startsWith("images")) {
-		return `${window.$ROOT_PATH}images${path}.png`;
+	{
+		if (url_startsWith_protocol(path)) {
+			return path;
+		}
+		else if (!path.startsWith("images")) {
+			return `${window.$ROOT_PATH}images${path}.png`;
+		}
+		throw new Error("Not game images: " + path);
 	}
-	throw new Error("Not game images: " + path);
 }
 /**
  * @param {string} path

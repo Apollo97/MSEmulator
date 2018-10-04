@@ -1,12 +1,19 @@
 ﻿
-import { PRemotePlayer } from "./PPlayer.js";
+import { PRemotePlayer, PPlayerBase } from "./PPlayer.js";
 
 import { Animation } from "../Animation.js";
+import { MobMoveElem } from "../../Client/PMovePath.js";
 
 
-window.$MobAction_Stand_Priority = 1;
-window.$MobAction_Move_Priority = 10;
-window.$MobAction_Jump_Priority = 3;
+if (process.env.NODE_ENV !== 'production') {
+	window.$MobAction_Stand_maxRepeat = 10;
+	window.$MobAction_Move_maxRepeat = 10;
+	window.$MobAction_Jump_maxRepeat = 10;
+}
+
+
+//window.$min_time = Infinity;
+//window.$max_time = 0;
 
 
 export class MobActionController {
@@ -19,16 +26,25 @@ export class MobActionController {
 
 		/** @type {Animation} */
 		this._ani = animation;
+
+		this.is_end = false;
 	}
 
 	/** @type {number} - int */
-	get priority() {
-		let [priority = 1] = [window.$MobAction_Stand_Priority];
-		return priority;
+	get maxRepeat() {
+		if (process.env.NODE_ENV !== 'production') {
+			let [maxRepeat = 1] = [window.$MobAction_Stand_maxRepeat];
+			return maxRepeat;
+		}
+		else {
+			return 10;
+		}
 	}
 
+	/** reset */
 	init() {
-		this.repeat = Math.ceil(Math.random() * this.priority);
+		this.is_end = false;
+		this.repeat = 1;//Math.max(1, Math.ceil(Math.random() * this.maxRepeat));
 		this._ani.reset();
 	}
 
@@ -41,30 +57,42 @@ export class MobActionController {
 	}
 
 	/**
+	 * @virtual
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
+		throw new TypeError();
 	}
 
 	/**
+	 * @virtual
 	 * @param {PMob} pMob
 	 */
-	isEnd(pMob) {
+	update(pMob) {
+		this.onUpdate(pMob);
+		
 		let end = this._ani.isEnd();
 
 		if (end) {
 			this.repeat -= 1;
 
 			if (this.repeat > 0) {
+				//window.$min_time = Math.min(window.$min_time, this._ani.delta);
+				//window.$max_time = Math.max(window.$max_time, this._ani.delta);
 				this._ani.reset();
 			}
 			else {
 				this.onEnd(pMob);
-				return true;
+				this.is_end = true;
 			}
 		}
+	}
 
-		return false;
+	/**
+	 * @param {PMob} pMob
+	 */
+	isEnd(pMob) {
+		return this.is_end;
 	}
 
 	/**
@@ -82,11 +110,12 @@ export class MobAction_Stand extends MobActionController {
 		super(animation);
 		this._name = "stand";
 	}
-
+	
 	/**
+	 * @override
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
 		//保持停止。
 		pMob.ikey["left"] = 0;
 		pMob.ikey["right"] = 0;
@@ -104,9 +133,14 @@ export class _MobAction_Move extends MobActionController {
 	}
 
 	/** @type {number} - int */
-	get priority() {
-		let [priority = 1] = [window.$MobAction_Move_Priority];
-		return priority;
+	get maxRepeat() {
+		if (process.env.NODE_ENV !== 'production') {
+			let [maxRepeat = 1] = [window.$MobAction_Move_maxRepeat];
+			return maxRepeat;
+		}
+		else {
+			return 10;
+		}
 	}
 	
 	/**
@@ -147,9 +181,10 @@ export class MobAction_MoveLeft extends _MobAction_Move {
 	}
 
 	/**
+	 * @override
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
 		pMob.ikey["left"] = 1;
 		pMob.ikey["right"] = 0;
 	}
@@ -180,9 +215,10 @@ export class MobAction_MoveRight extends _MobAction_Move {
 	}
 
 	/**
+	 * @override
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
 		pMob.ikey["left"] = 0;
 		pMob.ikey["right"] = 1;
 	}
@@ -206,15 +242,21 @@ export class MobAction_Jump extends MobActionController {
 	}
 
 	/** @type {number} - int */
-	get priority() {
-		let [priority = 1] = [window.$MobAction_Jump_Priority];
-		return priority;
+	get maxRepeat() {
+		if (process.env.NODE_ENV !== 'production') {
+			let [maxRepeat = 1] = [window.$MobAction_Jump_maxRepeat];
+			return maxRepeat;
+		}
+		else {
+			return 10;
+		}
 	}
 
-	init() {
-		this._ani.reset();
-		//this.move = 1 || Math.random() > 0.5;
-	}
+	///** @override */
+	//init() {
+	//	super.init();
+	//	//this.move = 1 || Math.random() > 0.5;
+	//}
 
 	/**
 	 * @param {PMob} pMob
@@ -236,9 +278,10 @@ export class MobAction_Jump extends MobActionController {
 	}
 
 	/**
+	 * @override
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
 		if (pMob.state.walk) {
 			if (pMob.state.front < 0) {
 				pMob.ikey["left"] = 1;
@@ -284,57 +327,80 @@ export class MobAction_Attack extends MobActionController {
 	}
 
 	/**
+	 * @override
 	 * @param {PMob} pMob
 	 */
-	update(pMob) {
+	onUpdate(pMob) {
 	}
 }
 
-export class PMob extends PRemotePlayer {
+export class PMob extends PPlayerBase {//PRemotePlayer
 	/**
 	 * @param {MapMob} mapMob
 	 */
 	constructor(mapMob) {
 		super();
-		
+
 		/** @type {PPlayer} */
 		this.attackTarget = true;
-		
+
 		/** @type {PPlayer} */
 		this._enable_rx = false;
-		
+
 		/** @type {MapMob} */
 		this.chara = mapMob;
 
 		//TODO: move this code to ??
 		if (mapMob) {
 			if (mapMob.renderer.isFlyMob()) {
-				this.setMovementSpeed(this._info.flySpeed);
+				this.setMovementSpeed(this._info.flySpeed || 100);
 			}
 			else {
-				this.setMovementSpeed(this._info.speed);
+				this.setMovementSpeed(this._info.speed || 100);
 			}
 		}
-		
+
 		/** @type {Rectangle} */
 		this.activityRegion = null;
-		
-		this.$debugControl = false;
 
-		/** @type {{[action:string]:number}} */
-		this.ikey = {};
+		//
+
+		if (process.env.NODE_ENV !== 'production') {
+			this.$debugControl = false;
+		}
+
+		//
 
 		/** @type {MobActionController[]} */
 		this.actions = [];
 
+		//
+
 		/** @type {MobActionController} */
 		this.action = null;
+
+		///** @type {number} */
+		//this._actionId = null;
+	}
+
+	/**
+	 * @param {number} actionId
+	 */
+	setAction(actionId) {
+		//this._actionId = actionId;
+		this.action = this.actions[actionId];
+
+		if (!this.action) {
+			debugger;
+		}
+
+		this.action.init();
 	}
 
 	/**
 	 * @param {} param - ??
 	 */
-	_registerAction(param) {
+	__registerAction(param) {
 		this.actions.push(param);
 	}
 
@@ -355,17 +421,7 @@ export class PMob extends PRemotePlayer {
 				const list = act_map[key];
 				for (let type of list) {
 					let controller = new type(actions[key]);
-					let priority = controller.priority;
-
-					if (process.env.NODE_ENV !== 'production') {
-						if (!(Number.isSafeInteger(priority) && priority > 0)) {
-							debugger;
-						}
-					}
-
-					for (let i = 0; i < priority; ++i) {
-						this._registerAction(controller);
-					}
+					this.__registerAction(controller);
 				}
 			}
 			else {
@@ -373,7 +429,7 @@ export class PMob extends PRemotePlayer {
 			}
 		});
 
-		this.action = this.actions[0];
+		this.setAction(0);//set default
 		if (!this.action) {
 			debugger;
 		}
@@ -453,42 +509,44 @@ export class PMob extends PRemotePlayer {
 		return !(this._info.ignoreMoveImpact || this._walker_omega == 0 || this._info.noFlip);
 	}
 	
-	/** @override */
+	/**
+	 * renderer#action to physics#action
+	 * @override
+	 */
 	control() {
-		if (this.isCanMove()) {
-			switch (this._category) {
-				case 1:
-				case 6:
-					this._control_basic(false);
-					break;
-				case 8:
-					this._control_basic(true);
-					break;
-				default:
-					this._control_basic(false);
-					break;
+		if (process.env.NODE_ENV !== 'production') {
+			if (this.$debugControl) {
+				this._basicControl(this.ikey);
+				return;
 			}
-			
-			//this.ikey["jump"] = 0;
-			//this.ikey["left"] = 0;
-			//this.ikey["right"] = 0;
+		}
+		if (this.isCanMove()) {
+			//??
+			//switch (this._category) {
+			//	case 1:
+			//	case 6:
+			//		this._control_random_action();
+			//		break;
+			//	case 8:
+			//		this._control_random_action();
+			//		break;
+			//	default:
+			//		this._control_random_action();
+			//		break;
+			//}
 
-			super.control(this.ikey);
+			this._control_random_action();
+
+			this._basicControl(this.ikey);
 		}
 	}
-	_control_basic(isAllowJump) {
+	_control_random_action() {
 		if (this.action) {
 			if (this.action.isEnd(this)) {
 				let actions = this.actions.filter(act => act.isValid(this));
 				let next = Math.trunc(Math.random() * 100) % actions.length;
-
-				this.action = actions[next];
-
-				if (!this.action) {
-					debugger;
-				}
-
-				this.action.init();
+				//
+				this.setAction(next);
 
 				//console.log("mob: " + this.action.name);
 			}
@@ -497,6 +555,10 @@ export class PMob extends PRemotePlayer {
 
 			this.action.update(this);
 		}
+	}
+
+	_control_basic_action() {
+		this._basicControl(this.ikey);
 	}
 
 	stop() {
@@ -508,22 +570,20 @@ export class PMob extends PRemotePlayer {
 	Step() {		
 		super.Step();
 		
-		this.control();
-		
-		let rx0, rx1, limit_action;
+		let rx0, rx1, limitAction;
 		
 		if (this.attackTarget && this.activityRegion) {
-			rx0 = this.activityRegion.left;
-			rx1 = this.activityRegion.right;
-			limit_action = true;
+			rx0 = this.activityRegion.left + 1;
+			rx1 = this.activityRegion.right - 1;
+			limitAction = true;
 		}
 		else if (!this._enable_rx) {
-			rx0 = this.chara.spawn.rx0;
-			rx1 = this.chara.spawn.rx1;
-			limit_action = false;
+			rx0 = this.chara.spawn.rx0 + 1;
+			rx1 = this.chara.spawn.rx1 - 1;
+			limitAction = false;
 		}
 		
-		if (limit_action) {
+		if (limitAction) {
 			const cbpos = this.body.GetPosition();
 			const x = cbpos.x * $gv.CANVAS_SCALE;
 			const y = cbpos.y * $gv.CANVAS_SCALE;
@@ -560,5 +620,40 @@ export class PMob extends PRemotePlayer {
 			this.chara.front = -this.state.front;
 		}
 	}
+
+	///**
+	// * @param {number} x
+	// * @param {number} y
+	// * @param {boolean} clearForce
+	// */
+	//setPosition(x, y, clearForce) {
+	//	super.setPosition(x, y, clearForce);
+	//	//if (window.$io) {
+	//	//	const by = y - this.chara_profile.foot_width - this.chara_profile.height * 0.75 * 0.5;
+	//	//	this._anchor.m_targetA.Set(x, by);
+	//	//}
+	//}
+
+	///**
+	// * @param {World} world
+	// * @returns {void}
+	// */
+	//_create(world) {
+	//	super._create(world);
+	//}
+
+	///**
+	// * @param {CharacterMoveElem} moveElem
+	// */
+	//moveTo(moveElem) {
+	//	this._anchor = this._create_anchor(world);
+	//
+	//	this.body.SetAwake(true);
+	//	this.foot_walk.SetAwake(true);
+	//
+	//	this._anchor.m_targetA.Set(moveElem.x, moveElem.y);
+	//
+	//	super.moveTo(moveElem);
+	//}
 }
 

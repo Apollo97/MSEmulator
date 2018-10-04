@@ -415,16 +415,14 @@ export class Game {
 
 			EffectManager.Update(stamp);
 		}
-		{
+		if (window.$io) {
 			const client = gApp.client;//not offline character
 
 			if (client && client.chara) {
 				/** @type {SceneCharacter} */
 				const ch = client.chara;
-				
-				ch.$emit(window.$io);
 
-				ch.$recMove();
+				ch.$emitMovePacket();
 			}
 		}
 		

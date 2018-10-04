@@ -8,7 +8,7 @@ import { InitAll } from "./init.js";
 
 const server_list = {
 	"server1": "https://maplestory-chat-emulator.herokuapp.com/",
-	"localhost": "//localhost:8787",
+	"localhost": (() => { let url = new URL("", window.location.origin); url.port = 8787; return url.href; })(),
 	"offline": null,
 };
 

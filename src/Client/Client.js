@@ -6,7 +6,7 @@ import { GameStateManager } from "../game/GameState.js";
 import { SceneMap } from "../game/Map.js";
 import { SceneCharacter, SceneRemoteCharacter } from "../game/SceneCharacter.js";
 
-import { CharacterMoveElem } from "../Client/PMovePath.js";//debug
+import { CharacterMoveElem, MobMoveElem } from "../Client/PMovePath.js";//debug
 import { $RequestPacket_SelectChara, $ResponsePacket_SelectChara,
 		 $Packet_RemoteChat,
 		 $Packet_CharacterMove,
@@ -115,7 +115,7 @@ export class Client {
 				resolve(socket);
 			});
 			socket.on("disconnect", () => {
-				window.location.reload();
+				//window.location.reload();
 			});
 			socket.on("connect_error", error => {
 				socket.disconnect();
@@ -280,6 +280,54 @@ export class Client {
 	}
 
 	/**
+	 * @param {MobMoveElem} packet
+	 */
+	onMobMove(packet) {
+		/** @type {SceneMap} */
+		let scene_map = window.scene_map;
+
+		if (!this.chara) {
+			return;
+		}
+
+		if (this.chara.$objectid == packet.controllerOwner) {
+		}
+		else if (true) {
+			const elements = packet.elements;
+			scene_map.lifeMgr.entities.forEach(life => {
+				const elem = elements[life.$objectid];
+				if (life.spawn.type == "m" && elem) {
+					/** @type {MapMob} *///SceneMob
+					const mob = life;
+					mob.$controllerOwner = packet.controllerOwner;
+					mob.$move(elem);
+				}
+			});
+		}
+		else {
+			let arr = new Int32Array(packet.elements);
+			let elements = {};
+
+			for (let i = 0; i < arr.length; i += 3) {
+				elements[arr[i]] = {
+					x: arr[i + 1] / $gv.CANVAS_SCALE,
+					y: arr[i + 2] / $gv.CANVAS_SCALE,
+				};
+			}
+
+			scene_map.lifeMgr.entities.forEach(life => {
+				const elem = elements[life.$objectid];
+				if (life.spawn.type == "m" && elem) {
+					/** @type {MapMob} *///SceneMob
+					const mob = life;
+					mob.$controllerOwner = packet.controllerOwner;
+					mob.$move(elem);
+				}
+			});
+		}
+	}
+
+	/**
 	 * @param {SceneCharacter} chara
 	 * @param {$Packet_RemoteChat} packet
 	 * @param {function(...any):void} fnAck
@@ -327,6 +375,9 @@ export class Client {
 	async $test() {
 		this.socket.on("enterRemoteChara", this.onEnterRemoteChara.bind(this));
 		this.socket.on("leaveRemoteChara", this.onLeaveRemoteChara.bind(this));
+
+		this.socket.on("mobMove", this.onMobMove.bind(this));
+
 		this._addRemoteCharaPacketListener("remoteChat", this.onRemoteChat);
 		this._addRemoteCharaPacketListener("remoteCharaMove", this.onRemoteCharaMove);
 		this._addRemoteCharaPacketListener("remoteCharaAnim", this.onRemoteCharaAnim);

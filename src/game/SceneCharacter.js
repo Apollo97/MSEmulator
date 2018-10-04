@@ -13,7 +13,7 @@ import { SceneSkill } from "./Skill.js";
 
 import { CharacterStat } from "../Common/PlayerData.js";
 import { CharacterMoveElem } from "../Client/PMovePath.js";
-import { $Packet_CharacterMove } from "../Common/Packet";
+
 import { AttackInfo, DamagePair } from "../Common/AttackInfo.js";
 
 import { KeySlot, CommandSlot, ActionSlot, SkillSlot } from "../ui/Basic/KeySlot.js";
@@ -304,23 +304,6 @@ export class BaseSceneCharacter extends SceneObject {
 		
 		/** @type {ChatController} */
 		this.chatCtrl = new ChatController();
-		
-		Object.defineProperties(this, {
-			$inPacket: {
-				writable: true,
-			},
-			$outPacket: {
-				writable: true,
-			},
-		});
-
-		/** @type {{move:$Packet_CharacterMove}} */
-		this.$inPacket = {};
-		this.$inPacket.move = null;
-
-		/** @type {{move:$Packet_CharacterMove}} */
-		this.$outPacket = {};
-		this.$outPacket.move = null;
 	}
 
 	/**
@@ -363,40 +346,10 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 
 	/**
-	 * @param {$Packet_CharacterMove} _move
+	 * @param {CharacterMoveElem} moveElem
 	 */
-	$move(_move) {
-		let move = _move || this.$inPacket.move;
-		this.$inPacket.move = move;
-	}
-
-	_remote_control() {
-		let move = this.$inPacket.move;
-
-		if (move && move.path && move.path.length) {
-			const crr = this.renderer;
-			let elem = move.path.shift();
-
-			if (elem.isAwake) {
-				this.$physics.moveTo(elem);
-				if (elem.pState) {
-					this.$physics.state = elem.pState;//??
-				}
-				crr.front = elem.pState.front;
-			}
-			//else {
-			//	//non physics state: chara.renderer...
-			//}
-		
-			if (elem.action) {
-				crr._action = elem.action;
-				//crr._action_frame = elem.action_frame;
-			}
-			if (elem.emotion) {
-				crr._emotion = elem.emotion;
-				//crr._emotion_frame = elem.emotion_frame;
-			}
-		}
+	$move(moveElem) {
+		this.$physics.moveTo(moveElem);
 	}
 
 	/**
@@ -446,6 +399,10 @@ export class BaseSceneCharacter extends SceneObject {
 		}
 	}
 	noSit() {
+		if (window.$io) {
+			console.error("TODO: emit noSit");
+		}
+
 		this.enablePhysics = true;
 		this.$physics.body.SetAwake(true);
 		this.$physics.foot_walk.SetAwake(true);
@@ -765,8 +722,6 @@ export class SceneCharacter extends BaseSceneCharacter {
 		/** @type {PPlayer} */
 		this.$physics = scene.controller.$createPlayer(this, this.renderer);//new PPlayer();
 
-		this.$layer = 5;
-
 		/** @type {string} */
 		this.id = null;
 
@@ -800,7 +755,9 @@ export class SceneCharacter extends BaseSceneCharacter {
 	_applyState(player_state) {
 		super._applyState(player_state);
 
-		this.$recMove();
+		if (window.$io) {//??
+		//	this.$recMove();
+		}
 	}
 
 	/**
@@ -816,7 +773,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 		const key_map = keyboard_map[$gv.m_editor_mode ? 1 : 0];
 
 		/** @type {{[key:string]:number}} */
-		let ikey = {};
+		let ikey = this.$physics.ikey;
 
 		let can_use_skill = this.activeSkills.size == 0;//TODO: 以查表法檢查不同技能是否可以同時使用
 
@@ -834,19 +791,25 @@ export class SceneCharacter extends BaseSceneCharacter {
 				case "Command"://open or close UI, ...
 					break;
 				case "Action":
-					if (keyDown) {
+					{
 						/** @type {ActionSlot} */
 						const ck = keySlot.data;
-						if (this.chair) {
-							if (ck.action == "left" ||
-								ck.action == "right" ||
-								ck.action == "jump"
-							) {
-								this.noSit();
+
+						if (keyDown) {
+							if (this.chair) {
+								if (ck.action == "left" ||
+									ck.action == "right" ||
+									ck.action == "jump"
+								) {
+									this.noSit();
+								}
+							}
+							else {
+								ikey[ck.action] = keyDown;
 							}
 						}
 						else {
-							ikey[ck.action] = keyDown;
+							delete ikey[ck.action];
 						}
 					}
 					break;
@@ -893,7 +856,7 @@ export class SceneCharacter extends BaseSceneCharacter {
 			}
 		}
 
-		this.$physics.control(ikey);//apply action control
+		this.$physics.control();//apply action control
 	}
 
 	/**
@@ -1151,39 +1114,36 @@ export class SceneCharacter extends BaseSceneCharacter {
 			return true;
 		}
 	}
-	
-	$emit(socket) {
-		if (this.$outPacket.move) {
-			/** @type {$Packet_CharacterMove} */
-			let charaMove = this.$outPacket.move;
 
-			if (charaMove.path.length) {
-				socket.emit("charaMove", charaMove);
-
-				this.$outPacket.move = null;
-			}
-		}
-		else {
-			/** @type {$Packet_CharacterMove} */
-			let charaMove = new $Packet_CharacterMove();
-
-			charaMove.capture(this);
-
-			if (charaMove.path.length) {
-				socket.emit("charaMove", charaMove);
-			}
-		}
-
-		this.$outPacket.move = null;
+	/**
+	 * after step, before rendering
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		super.update(stamp);
 	}
 	
-	$recMove() {
-		/** @type {$Packet_CharacterMove} */
-		let move = this.$outPacket.move || new $Packet_CharacterMove();
+	/** @returns {boolean} */
+	isNeedUpdate() {
+		return this.$physics.isNeedUpdate();
+	}
 
-		move.capture(this);
-		
-		this.$outPacket.move = move;
+	_$makeMoveElement() {
+		let elem = new CharacterMoveElem();
+
+		this.$physics.$setAsOutputData(elem);
+
+		return elem;
+	}
+
+	$emitMovePacket() {
+		if (this.isNeedUpdate()) {
+			let moveElem = this._$makeMoveElement();
+
+			if (moveElem) {
+				window.$io.emit("charaMove", moveElem);
+			}
+		}
 	}
 }
 
@@ -1196,40 +1156,6 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 	 */
 	constructor(scene) {
 		super();
-
-		if (process.env.NODE_ENV !== 'production') {
-			delete this.$physics;
-			Object.defineProperty(this, "$physics", {
-				enumerable: false,
-				configurable: false,
-				get: function () {
-					return this.$$physics;
-				},
-				set: function (value) {
-					if (value == null) {
-						console.error("can not set SceneRemoteCharacter.$physics = null;");
-						alert("can not set SceneRemoteCharacter.$physics = null;");
-					}
-					this.$$physics = value;
-				},
-			});
-
-			delete this.renderer;
-			Object.defineProperty(this, "renderer", {
-				enumerable: false,
-				configurable: false,
-				get: function () {
-					return this.$$renderer;
-				},
-				set: function (value) {
-					if (value == null) {
-						console.error("can not set SceneRemoteCharacter.renderer = null;");
-						alert("can not set SceneRemoteCharacter.renderer = null;");
-					}
-					this.$$renderer = value;
-				},
-			});
-		}
 
 		/** @type {CharacterRenderer} */
 		this.renderer = new CharacterRenderer();
@@ -1259,7 +1185,7 @@ export class SceneRemoteCharacter extends BaseSceneCharacter {
 	 * @override
 	 */
 	_player_control() {
-		this._remote_control();
+		//this._remote_control();
 	}
 
 	/**

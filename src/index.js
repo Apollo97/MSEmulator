@@ -1,4 +1,6 @@
 ﻿
+window.CLIENT_VERSION = "181005a";
+
 async function load_module() {
 	const modules_1 = await Promise.all([
 		import("vue"),

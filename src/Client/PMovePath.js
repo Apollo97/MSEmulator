@@ -21,15 +21,15 @@ export class BaseMoveElem {
 
 		/** @type {number} - force y */
 		this.fy = undefined;
-
-		/** @type {PPlayerState} - player physics state */
-		this.pState = null;
-
-		/** @type {number} - time elapsed */
-		this.elapsed = 0;
 		
 		/** @type {boolean} */
 		this.isAwake = undefined;// value = ?
+
+		/** @type {Partial<PPlayerState>} - player physics state */
+		this.pState = null;
+
+		/** @type {{[action:string]:number}} */
+		this.actionKey = undefined;
 
 		/** @type {string} */
 		this.action = undefined;
@@ -40,6 +40,9 @@ export class BaseMoveElem {
 		this.emotion = undefined;
 		/** @type {number} */
 		this.emotion_frame = undefined;
+
+		/** @type {number} - time elapsed */
+		this.elapsed = 0;
 	}
 }
 
@@ -47,5 +50,11 @@ export class CharacterMoveElem extends BaseMoveElem {
 }
 
 export class MobMoveElem extends BaseMoveElem {
+	constructor() {
+		super();
+
+		/** @type {number} */
+		this.objectid = undefined;
+	}
 }
 

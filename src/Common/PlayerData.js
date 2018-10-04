@@ -152,6 +152,16 @@ class $RemotePlayerData {
 
 		/** @type {string} */
 		this.equips_code = null;
+
+
+		/** @type {string} */
+		this.mapId = null;
+
+		/** @type {{x:number, y:number}} */
+		this.position = {
+			x: 0,
+			y: 0,
+		};
 		
 		
 		/** @type {string} */
@@ -176,6 +186,7 @@ class $PlayerData extends $RemotePlayerData {
 		return {
 			id: this.id,
 			mapId: this.mapId,
+			position: this.position,
 			equips_code: this.equips_code,
 		};
 	}

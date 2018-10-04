@@ -42,9 +42,10 @@ export class LifeRenderer /*extends SceneObject*/ {
 		return this._action;
 	}
 	set action(act) {
-		if (this._action != act) {
-			this._action = act;
+		let currentAnim = this.actions[this._action];
+		if (this._action != act || currentAnim.is_end) {
 			if (this.actions[act]) {
+				this._action = act;
 				this.actions[act].reset();
 			}
 		}
@@ -148,8 +149,9 @@ export class LifeRenderer /*extends SceneObject*/ {
 			act.draw(engine, x, y, angle, flip);
 		}
 	}
+	
 	paint(engine) {
-		debugger;
+		throw new TypeError("??");
 		alert("Not Implement");
 		render(engine);
 	}

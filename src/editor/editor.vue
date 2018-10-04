@@ -503,6 +503,9 @@
 					await chara.renderer.__synchronize();
 
 					state.charaList.push(chara);
+					if (chara.$physics.__ob__) {
+						throw new Error("should not reactivity");
+					}
 
 					context.dispatch('selectChara', {
 						id: chara.id,

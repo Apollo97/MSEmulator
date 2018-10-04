@@ -17,6 +17,8 @@ import { Ground } from "./Physics/Ground.js";
 import { PMob } from "./Physics/PMob.js";
 import { SceneObject } from "./SceneObject.js";
 
+import { MobMoveElem } from "../Client/PMovePath.js";
+
 
 window.enable_skeletal_anim = true;
 
@@ -1277,6 +1279,9 @@ export class LifeSpawnPoint {
 	 * @param {string} spawnId - spawn index
 	 */
 	constructor(raw, spawnId) {
+		/** @type {"m"|"n"} */
+		this.type = null;
+
 		Object.assign(this, raw);
 		
 		this.spawnId = spawnId;
@@ -1321,6 +1326,7 @@ export class LifeSpawnPoint {
 
 /**
  * Mob / NPC controller
+ * SceneLife
  */
 export class MapLifeEntity extends SceneObject {
 	/**
@@ -1388,6 +1394,11 @@ export class MapLifeEntity extends SceneObject {
 
 		///** @type {number} */
 		//this.rx1 = lifeSpawnPoint.rx1;
+
+		if (window.$io) {
+			/** @type {string} owner player.id */
+			this.$controllerOwner = "chara_1";//window.chara ? window.chara.id : null;//default controller owner.id
+		}
 	}
 
 	//AfterStep
@@ -1484,20 +1495,41 @@ export class MapLifeEntity extends SceneObject {
 	}
 
 	/**
+	 * @virtual
+	 * @returns {boolean}
+	 */
+	isNeedUpdate() {
+		throw new Error("Not implement");
+	}
+
+	/**
+	 * @virtual
 	 * @param {number} stamp
 	 */
 	update(stamp) {
+		throw new Error("Not implement");
+	}
+
+	/**
+	 * @param {number} stamp
+	 */
+	_update_renderer(stamp) {
 		this.renderer.update(stamp);
 	}
 
 	/**
 	 * @param {IRenderer} renderer
 	 */
-	draw(renderer) {
+	_draw(renderer) {
 		renderer.globalAlpha = Math.max(0, Math.min(this.opacity, 1));
 		this.renderer.draw(renderer, this.x, this.y, this.angle, this.front < 0);
 	}
+
+	$makeMovePacket() {
+	}
 }
+
+//SceneMob
 class MapMob extends MapLifeEntity {
 	/**
 	 * @param {LifeSpawnPoint} lifeSpawnPoint
@@ -1515,6 +1547,8 @@ class MapMob extends MapLifeEntity {
 
 		//TODO: load mob info
 		this.hp = 100000;
+
+		this.update = this._update_renderer;
 	}
 	/**
 	 * @param {string} id mobId
@@ -1526,7 +1560,11 @@ class MapMob extends MapLifeEntity {
 		this.$physics = mapController.createMob(this);
 		this.$physics._loadAction(this.renderer.actions);
 		
-		await this._load_skill_by_mob_id(id);
+		try {
+			await this._load_skill_by_mob_id(id);
+		}
+		catch (ex) {//not thing
+		}
 
 		// experiment
 		try {
@@ -1538,11 +1576,11 @@ class MapMob extends MapLifeEntity {
 
 				this.invokeSkill(firstSkillInfo.skill, firstSkillInfo.level);
 			}
+		}
+		catch (ex) {//not thing
+		}
 
-		}
-		catch (ex) {
-			//not thing
-		}
+		delete this.update;//reset
 	}
 
 	/**
@@ -1563,13 +1601,59 @@ class MapMob extends MapLifeEntity {
 	}
 
 	/**
-	 * @virtual
+	 * @override
 	 * if (chara == null) ??
 	 * @param {SceneObject|null} chara - 被 chara 攻擊
 	 * @param {number} moveX - unit is pixel
 	 * @param {number} moveY - unit is pixel
 	 */
 	knockback(chara, moveX, moveY) {
+	}
+
+	/**
+	 * @override
+	 */
+	$makeMovePacket() {
+		if (this.$physics) {
+			const body = this.$physics.body;
+			//const isAwake = body.IsAwake();
+
+			//if (isAwake) {
+				let elem = new MobMoveElem();
+
+				elem.objectid = this.$objectid;
+
+				this.$physics.$setAsOutputData(elem);
+
+				return elem;
+			//}
+		}
+	}
+
+	/**
+	 * @param {MobMoveElem} packet
+	 */
+	$move(elem) {
+		if (this.$physics) {
+			this.$physics.moveTo(elem);
+
+			//??
+			if (!this.is_dead) {
+				this._applyState(this.$physics.state);//?? immediate update
+			}
+			else {
+				this.$physics.stop();
+			}
+		}
+	}
+
+	/**
+	 * @override
+	 * @returns {boolean}
+	 */
+	isNeedUpdate() {
+		const p = this.$physics;
+		return p && p.isNeedUpdate();
 	}
 
 	/**
@@ -1587,20 +1671,44 @@ class MapMob extends MapLifeEntity {
 		else {
 			this.renderer.action = "stand";
 		}
+
+		if (this.$physics) {
+			//if (!this.renderer._raw.info.noFlip) {//??
+				this.front = this.$physics.state.front;
+			//}
+		}
 	}
 
 	/**
+	 * @override
 	 * @param {number} stamp
 	 */
 	update(stamp) {
-		if (this.$physics) {
+		if (window.$io) {
+			if (window.chara && this.$controllerOwner == window.chara.$objectid) {
+				if (!this.is_dead) {
+					this.$physics.control();
+					this._applyState(this.$physics.state);
+				}
+				else {
+					this.$physics.stop();
+				}
+			}
+			else {
+				this.$physics._control_basic_action();
+				this._applyState(this.$physics.state);
+			}
+		}
+		else {
 			if (!this.is_dead) {
+				this.$physics.control();
 				this._applyState(this.$physics.state);
 			}
 			else {
 				this.$physics.stop();
 			}
 		}
+
 		this.renderer.update(stamp);
 	}
 
@@ -1610,7 +1718,7 @@ class MapMob extends MapLifeEntity {
 	 */
 	draw(renderer) {
 		if ($gv.m_display_mob) {
-			super.draw(renderer);
+			this._draw(renderer);
 		}
 	}
 	
@@ -1736,6 +1844,7 @@ class MapMob extends MapLifeEntity {
 	}
 }
 
+//SceneNpc
 class MapNpc extends MapLifeEntity {
 	/**
 	 * @param {LifeSpawnPoint} lifeSpawnPoint
@@ -1771,6 +1880,30 @@ class MapNpc extends MapLifeEntity {
 		//TODO: npc die ??
 		this.is_dead = true;
 	}
+
+	/**
+	 * @override
+	 * @returns {boolean}
+	 */
+	isNeedUpdate() {
+		return false;
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		this.renderer.update(stamp);
+	}
+
+	/**
+	 * @override
+	 * @param {IRenderer} renderer
+	 */
+	draw(renderer) {
+		this._draw(renderer)
+	}
 }
 
 let MapLifeEntityCapacityRate = 1;
@@ -1791,6 +1924,9 @@ class MapLifeManager {
 
 		/** @type {World} */
 		this.mapController = mapController;
+
+		///** @type {number} */
+		//this.$tick = 0;
 	}
 
 	/**
@@ -1860,6 +1996,83 @@ class MapLifeManager {
 				entity.update(stamp);
 			}
 		}
+
+		if (window.$io && window.chara && window.chara.$objectid) {
+			const ownerId = window.chara.$objectid;
+			const packet = this.$outPacket || {
+				elements: {},
+				controllerOwner: "chara_1",//this.$controllerOwner;//validation owner
+			};
+			const elements = packet.elements;
+			let count = 0;
+	
+			for (let i = 0; i < this.entities.length; ++i) {
+				let entity = this.entities[i];
+
+				if (entity && entity.$controllerOwner == ownerId && entity.isNeedUpdate()) {
+					entity.$need_update = false;//clear
+
+					let elem = entity.$makeMovePacket();
+					if (elem) {
+						elements[entity.$objectid] = elem;
+						count++;
+					}
+				}
+			}
+	
+			if (count) {
+				window.$io.emit("mobMove", packet);
+	
+				this.$outPacket = null;
+			}
+			else {
+				this.$outPacket = packet;
+			}
+		}
+
+	//	if (window.$io && (this.$tick % 3 == 0)) {
+	//		let packet = this.$outPacket || {};//restore if this.$outPacket is empty
+	//		//let count = 0;
+	//		let elements = [];
+	//
+	//		for (let i = 0; i < this.entities.length; ++i) {
+	//			let entity = this.entities[i];
+	//
+	//			if (entity) {
+	//				//let elem = entity.$makeMovePacket();
+	//				//if (elem) {
+	//				//	packet[entity.$objectid] = elem;
+	//				//	count++;
+	//				//}
+	//				if (entity.$physics) {
+	//					if (window.chara && entity.$controllerOwner == window.chara.$objectid) {
+	//						const body = entity.$physics.body;
+	//						const isAwake = body.IsAwake();
+	//
+	//						if (isAwake) {
+	//							const { x, y } = entity.$physics.getPosition();
+	//							elements.push(entity.$objectid, x * $gv.CANVAS_SCALE, y * $gv.CANVAS_SCALE);
+	//						}
+	//					}
+	//				}
+	//			}
+	//		}
+	//
+	//		if (elements.length/*count*/) {
+	//			packet.elements = new Int32Array(elements).buffer;
+	//
+	//			packet.controllerOwner = "chara_1";//this.$controllerOwner;//validation owner
+	//
+	//			window.$io.emit("mobMove", packet);
+	//
+	//			this.$outPacket = null;
+	//		}
+	//		else {
+	//			this.$outPacket = elements;
+	//		}
+	//	}
+	//
+	//	this.$tick++;
 	}
 
 	/**
@@ -1974,6 +2187,12 @@ export class SceneMap {
 
 		/** @type {World} */
 		this.controller = new World();
+
+		//Object.defineProperties(this, {
+		//	controller: {
+		//		value: new World(),
+		//	},
+		//});
 
 		/** @type {MapLifeManager} */
 		this.lifeMgr = new MapLifeManager(this.controller);
@@ -2813,6 +3032,8 @@ export class SceneMap {
 	}
 }
 AddInitTask(SceneMap.Init);
+
+window.$SceneMap = SceneMap;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

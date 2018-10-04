@@ -855,10 +855,11 @@ function DataServer(app) {
 				task.then(function (results) {
 					const mime = results.mime;
 					{
-						res.status(206);
+						let head = makeHead(results.mime, _data_provider);
+						res.writeHead(200, head);//206
 						res.end(results.data);
 					}
-					{
+					if (!noCache) {
 						let extname;
 						if (mime == "audio/mp3") {
 							extname = SOUND_MP3_EXTNAME;
@@ -866,9 +867,8 @@ function DataServer(app) {
 						else if (mime == "audio/wav") {
 							extname = SOUND_WAV_EXTNAME;
 						}
-						if (!noCache) {
-							_saveCacheFile(results, "public/sound", data_path, false, extname);
-						}
+						_saveCacheFile(results, "public/sound", data_path, false, extname);
+						
 					}
 				}), function (reason) {
 					write_reason(res, reason);

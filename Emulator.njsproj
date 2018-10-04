@@ -56,7 +56,13 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\Common\Packet\ChatPacket.js" />
     <Compile Include="src\Common\Packet\CharacterPacket.js" />
     <Compile Include="src\Common\Packet\index.js" />
+    <Compile Include="src\Common\Packet\ScenePacket.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\Common\Packet\LoginPacket.js" />
+    <Compile Include="src\Common\Packet\MobPacket.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\Common\PlayerData.js" />
     <Compile Include="src\components\CorePosition.js" />
     <Compile Include="src\game\Animation.js" />

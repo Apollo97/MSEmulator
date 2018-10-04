@@ -36,11 +36,11 @@ export class GlobalVar {
 				this.m_display_physics_debug = false;
 			}
 			else {
-				this.m_editor_mode = true;
+				this.m_editor_mode = false;
 
 				this.m_display_foothold = false;
 
-				this.m_display_physics_debug = false;
+				this.m_display_physics_debug = true;
 			}
 			this.m_display_debug_info = false;
 
@@ -61,13 +61,24 @@ export class GlobalVar {
 				this.m_is_rendering_map = true;
 			}
 
-			this.m_display_back = true;
-			this.m_display_front = true;
-			this.m_display_mapobj = true;
-			this.m_display_maptile = true;
-			this.m_display_particle_system = true;
+			if (process.env.NODE_ENV === 'production') {
+				this.m_display_back = true;
+				this.m_display_front = true;
+				this.m_display_mapobj = true;
+				this.m_display_maptile = true;
+				this.m_display_particle_system = true;
 
-			this.m_display_skeletal_anim = true;
+				this.m_display_skeletal_anim = true;
+			}
+			else {
+				this.m_display_back = false;
+				this.m_display_front = false;
+				this.m_display_mapobj = false;
+				this.m_display_maptile = false;
+				this.m_display_particle_system = false;
+
+				this.m_display_skeletal_anim = false;
+			}
 
 			this.m_display_portal = true;
 

@@ -696,7 +696,7 @@ class SkillAnimationBase {
 	}
 
 	/**
-	 * is owner can invoke skill
+	 * 使用技能的條件
 	 * @virtual
 	 * @param {SceneCharacter} owner
 	 * @returns {boolean}
@@ -707,7 +707,7 @@ class SkillAnimationBase {
 
 	/**
 	 * onKeydown + onKeyup
-	 * TODO: 可控制方向的技能
+	 * 可控制方向的技能
 	 * @virtual
 	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
 	 * @param {number} keyDown - keyDown tick counter
@@ -718,7 +718,7 @@ class SkillAnimationBase {
 	}
 	
 	/**
-	 * TODO: 自動攻擊、被動技能、debuf
+	 * 自動攻擊、被動技能、debuf
 	 * @virtual
 	 * @param {number} stamp
 	 */
@@ -997,7 +997,7 @@ class _SkillAnimation_RapidAttack extends SkillAnimationBase {
 	}
 
 	/**
-	 * is owner can invoke skill
+	 * 使用技能的條件
 	 * @override
 	 * @param {SceneCharacter} owner
 	 * @returns {boolean}
@@ -1093,13 +1093,13 @@ class _SkillAnimation_N_Jump extends SkillAnimationBase {
 	}
 
 	/**
-	 * is owner can invoke skill
+	 * 使用技能的條件
 	 * @override
 	 * @param {SceneCharacter} owner
 	 * @returns {boolean}
 	 */
 	test(owner) {
-		if (this._owner_player.$remote) {
+		if (owner.$remote) {
 			return true;
 		}
 		else {
@@ -1183,7 +1183,7 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	}
 
 	/**
-	 * is owner can invoke skill
+	 * 使用技能的條件
 	 * @override
 	 * @param {SceneCharacter} owner
 	 * @returns {boolean}
@@ -1201,6 +1201,7 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	 * @returns {boolean} - cancel player default control
 	 */
 	control(inputKey, keyDown, keyUp) {
+		//TODO: 可控制方向的技能
 	}
 
 	/**
@@ -1208,6 +1209,50 @@ class __SkillAnimation_Template extends SkillAnimationBase {
 	 * @param {number} stamp
 	 */
 	update(stamp) {
+		//TODO: 自動攻擊、被動技能、debuf
+	}
+}
+
+export class SceneSkillBasic {
+	constructor() {
+		/** @type {SkillAnimationBase} */
+		this.template = null;
+	}
+
+	/**
+	 * @override
+	 */
+	_init() {
+		this.template._init();
+	}
+
+	/**
+	 * 使用技能的條件
+	 * @override
+	 * @param {SceneCharacter} owner
+	 * @returns {boolean}
+	 */
+	test(owner) {
+		this.template.test(owner);
+	}
+
+	/**
+	 * @override
+	 * @param {Partial<_ArrowKey>} inputKey - keyDown tick counter
+	 * @param {number} keyDown - keyDown tick counter
+	 * @param {number} keyUp - is keyUp
+	 * @returns {boolean} - cancel player default control
+	 */
+	control(inputKey, keyDown, keyUp) {
+		this.template.control(inputKey, keyDown, keyUp);
+	}
+
+	/**
+	 * @override
+	 * @param {number} stamp
+	 */
+	update(stamp) {
+		this.template.update(stamp);
 	}
 }
 

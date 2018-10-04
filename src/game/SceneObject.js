@@ -3,13 +3,15 @@ import { IRenderer } from './IRenderer.js';
 import { PPlayer } from './Physics/PPlayer.js';
 import { NameLabel } from './Renderer/NameLabel.js';
 
+window.$last_objectid = 0;
+
 /**
  * Game object
  */
 export class SceneObject {
 	constructor() {
-		/** @type {string|number} */
-		this.$objectid = null;	// playerName or objectID; ?? null if not in scene
+		/** @type {number} */
+		this.$objectid = ++window.$last_objectid;	// playerName or objectID; ?? null if not in scene
 
 		/** @type {number} - layer id */
 		this.$layer = null;	//maybe override
