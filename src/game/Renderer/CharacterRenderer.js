@@ -1,12 +1,13 @@
 ﻿
-import { CharacterRenderConfig, ItemCategoryInfo, ResourceManager } from '../../../public/javascripts/resource.js';
+import { CharacterRenderConfig, ResourceManager } from "../../../public/javascripts/resource.js";
+import { ItemCategoryInfo } from "../../Common/ItemCategoryInfo.js";
 import { AddInitTask } from "../../init.js";
 import { Animation } from "../Animation";
-import { engine } from '../Engine.js';
-import { IRenderer, ImageFilter } from '../IRenderer.js';
-import { Sprite, SpriteBase } from '../Sprite.js';
-import { Rectangle, Vec2 } from '../math.js';
-import { ActionAnimation } from './CharacterActionAnimation.js';
+import { engine } from "../Engine.js";
+import { IRenderer, ImageFilter } from "../IRenderer.js";
+import { Sprite, SpriteBase } from "../Sprite.js";
+import { Rectangle, Vec2 } from "../math.js";
+import { ActionAnimation } from "./CharacterActionAnimation.js";
 
 
 let zMap = {};
@@ -1060,7 +1061,7 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		
 		try {
 			if (ResourceManager.isEquipExist(id, cateInfo)) {
-				raw = await ItemCategoryInfo.getItem(id);
+				raw = await ResourceManager.getItem(id);
 			}
 		}
 		catch (ex) {
@@ -1219,6 +1220,20 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		this.fragments = null;
 		this.effect == null;
 	}
+
+
+	/**
+	 * @param {Partial<{opacity:number,hue:number,sat:number,bri:number,contrast:number}>} option
+	 */
+	set(option) {
+		const { opacity = 1, hue = 0, sat = 100, bri = 100, contrast = 100 } = option;
+		this.opacity = opacity;
+		this.filter.hue = hue;
+		this.filter.sat = sat;
+		this.filter.bri = bri;
+		this.filter.contrast = contrast;
+	}
+
 	
 	/**
 	 * @returns {number}
@@ -2129,6 +2144,8 @@ class CharacterSlots {
 			else {
 				console.warn("item(" + id + ") is not exist");
 			}
+
+			return item;
 		}
 	}
 	/**
@@ -3152,17 +3169,30 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	}
 	
 	_setup_test() {
-		this.use("00026509");
+		if (0) {
+			this.use("00026509");
 
-		this.use("00044041");
+			this.use("00044041");
 
-		//this.use("01022274");
+			//this.use("01022274");
 
-		this.use("01053169");
+			this.use("01053169");
 
-		this.use("01071077");
+			this.use("01071077");
 
-		//this.use("01102960");
+			//this.use("01102960");
+		}
+		else {
+			this.use("00026509");
+
+			this.use("00041526");
+
+			this.use("01051429");
+
+			this.use("01071110");
+
+			this.elfEar = true;
+		}
 	}
 
 	
@@ -3209,7 +3239,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 					//
 					let task = this.slots._use(id, null, category);
 					this.__load_task.push(task);
-					await task;
+					let item = await task;
 					
 					if (id.startsWith("019")) {
 						this.action = this.action;//force update action
@@ -3217,6 +3247,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 					
 					this.__update_frag_list();
 					this._calcBoundBox();
+
+					return item;
 				}
 		}
 	}
@@ -3234,6 +3266,21 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			}
 			return result;
 		}
+	}
+
+	/**
+	 * @param {{ear:boolean,items:[]}} option
+	 */
+	set(option) {
+		this.ear = option.ear;
+
+		option.items.forEach(itemData => {
+			if (itemData) {
+				this.use(itemData.itemId).then(item => {
+					item.set(itemData);
+				});
+			}
+		});
 	}
 
 	_parse(code) {

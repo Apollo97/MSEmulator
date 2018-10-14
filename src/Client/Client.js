@@ -6,11 +6,13 @@ import { GameStateManager } from "../game/GameState.js";
 import { SceneMap } from "../game/Map.js";
 import { SceneCharacter, SceneRemoteCharacter } from "../game/SceneCharacter.js";
 
-import { CharacterMoveElem, MobMoveElem } from "../Client/PMovePath.js";//debug
+import { CharacterMoveElem, MobMoveElem } from "../Common/PMovePath.js";//debug
 import { $RequestPacket_SelectChara, $ResponsePacket_SelectChara,
 		 $Packet_RemoteChat,
 		 $Packet_CharacterMove,
 		} from "../Common/Packet";//debug
+
+import { $PlayerData, $RemotePlayerData } from "../Common/PlayerData.js";
 
 import { app as gApp } from "../index.js";//debug
 
@@ -46,7 +48,7 @@ export class Client {
 	_findChara(charaId, cbfunc) {
 		if (process.env.NODE_ENV !== 'production') {
 			if (typeof cbfunc != 'function') {
-				console.error(new TypeError());
+				throw new TypeError();
 			}
 		}
 		/** @type {SceneCharacter} */
@@ -86,42 +88,51 @@ export class Client {
 	 * @returns {Promise<$Socket>}
 	 */
 	async connect(server_href) {
-		return await new Promise((resolve, reject) => {
-			let socket;
-			
-			socket = io(server_href);
-			
-			socket.on("connect", () => {
-				this.socket = socket;
-				
-				window.$io = this.socket;
-				
-				const emit = socket.$emit = socket.emit;
-				
-				socket.emit = function (eventName, data) {
-					//let cbfunc = arguments[arguments.length - 1];
-					//if (typeof cbfunc == 'function') {
-					//	emit(eventName, data, cbfunc);
-					//}
-					//else {
+		try {
+			return await new Promise((resolve, reject) => {
+				let socket;
+
+				socket = io(server_href, {
+					reconnection: true,
+					reconnectionDelay: 1000,//1second
+					reconnectionAttempts: 30,//5minute
+				});
+
+				socket.on("connect_error", error => {
+					socket.disconnect();
+					reject(error);
+				});
+				socket.on("disconnect", () => {
+					//window.location.reload();
+				});
+				socket.on("connect", () => {
+					this.socket = socket;
+
+					window.$io = this.socket;
+
+					const emit = socket.$emit = socket.emit;
+
+					socket.emit = function (eventName, data) {
+						//let cbfunc = arguments[arguments.length - 1];
+						//if (typeof cbfunc == 'function') {
+						//	emit(eventName, data, cbfunc);
+						//}
+						//else {
 						return new Promise(function (resolve, reject) {
 							emit.call(socket, eventName, data, function (...args) {
 								resolve.apply(this, args);
 							});
 						});
-					//}
-				};
-				
-				resolve(socket);
+						//}
+					};
+
+					resolve(socket);
+				});
 			});
-			socket.on("disconnect", () => {
-				//window.location.reload();
-			});
-			socket.on("connect_error", error => {
-				socket.disconnect();
-				reject(error);
-			});
-		});
+		}
+		catch (ex) {
+			throw ex;
+		}
 	}
 
 	/** @type {SceneMap} */
@@ -135,8 +146,8 @@ export class Client {
 	 */
 	async login(account, password) {
 		let result = await this.socket.emit("login", {
-			account: "aaa",
-			password: "aaa",
+			account: account,
+			password: password,
 		});
 		if (result) {
 			console.info("login");
@@ -144,6 +155,7 @@ export class Client {
 		else {
 			console.info("login failed");
 		}
+		return result;
 	}
 	/**
 	 * @param {number} world
@@ -170,7 +182,7 @@ export class Client {
 		
 		/** @type {$Packet_SelectChara} */
 		let ackPacket = await this.socket.emit("selectChara", {
-			id: 123,
+			id: charID,
 		});
 		const charaData = ackPacket.charaData;
 		const remoteCharacters = ackPacket.remoteCharacters;
@@ -183,6 +195,12 @@ export class Client {
 				let task2 = this.onEnterRemoteChara(remoteCharacters);
 				
 				await Promise.all([task1, task2]);
+
+				this.chara.$state = charaData;
+
+				this.chara.$state.mapId = await this.socket.emit("enterMap", {
+					mapId: charaData.mapId,
+				});
 			}
 			catch (ex) {
 				console.error(ex);
@@ -192,15 +210,19 @@ export class Client {
 			alert("selectChara: chara not exist");
 		}
 	}
+
 	/**
 	 * online mode
+	 * @param {$PlayerData} charaData
 	 */
 	async _CreateMyCharacter(charaData) {
 		/** @type {SceneCharacter} */
 		let chara = await gApp.store.dispatch('_createChara', {
 			emplace: {
 				id: charaData.id,
-				code: charaData.equips_code,
+				//code: charaData.selectedItems ? Object.values(charaData.selectedItems).map(v => String(v.itemId).padStart(8, "0")) : charaData.equips_code,
+				//fromData: new Error("未完成: _CreateMyCharacter(charaData:$PlayerData)"),
+				data: charaData,
 			}
 		});
 		this.chara = chara;
@@ -210,27 +232,41 @@ export class Client {
 			partyId: "",//partyId == partyName
 		}
 	}
+
 	/**
 	 * offline mode
-	 * @param {{id:string,equips_code:string}} charaData
+	 * @static
+	 * @param {$PlayerData} charaData
 	 */
 	static async _CreateMyCharacter(charaData) {//??
 		/** @type {SceneCharacter} */
 		let chara = await gApp.store.dispatch('_createChara', {
 			emplace: {
 				id: charaData.id,
-				code: charaData.equips_code,
+				//code: charaData.selectedItems ? Object.values(charaData.selectedItems).map(v => String(v.itemId).padStart(8, "0")) : charaData.equips_code,
+				//fromData: new Error("未完成: _CreateMyCharacter(charaData:$PlayerData)"),
+				data: charaData,
 			}
 		});
 		chara = chara;
-
+	
 		chara._$data = chara._$data || {
 			guildId: "",//guildId == guildName
 			partyId: "",//partyId == partyName
 		}
 
+		if (scene_map) {
+			scene_map.addChara(chara, {
+				randomSpawn: true,
+			});
+		}
+		else {
+			debugger;
+		}
+	
 		return chara;
 	}
+
 	/**
 	 * @param {$RemotePlayerData[]} packet - characters
 	 * @returns {Promise<void>}
@@ -242,7 +278,9 @@ export class Client {
 			return gApp.store.dispatch('_createChara', {
 				remote_chara: {
 					id: charaData.id,
-					code: charaData.equips_code,
+					//code: charaData.selectedItems ? Object.values(charaData.selectedItems).map(v => String(v.itemId).padStart(8, "0")) : charaData.equips_code,
+					//fromData: new Error("未完成: onEnterRemoteChara(packet:$PlayerData[])"),
+					data: charaData,
 				}
 			}).then((...args) => {
 				try {
@@ -287,12 +325,13 @@ export class Client {
 		let scene_map = window.scene_map;
 
 		if (!this.chara) {
+			console.warn("");
 			return;
 		}
 
-		if (this.chara.$objectid == packet.controllerOwner) {
+		/*if (this.chara.$objectid == packet.controllerOwner) {
 		}
-		else if (true) {
+		else */if (true) {
 			const elements = packet.elements;
 			scene_map.lifeMgr.entities.forEach(life => {
 				const elem = elements[life.$objectid];
@@ -369,7 +408,8 @@ export class Client {
 	 * @param {function(...any):void} fnAck
 	 */
 	onRemoteAvatarModified(chara, packet, fnAck) {
-		chara.renderer.use(packet.itemId);
+		let item = chara.renderer.use(packet.itemId);
+		item.set
 	}
 
 	async $test() {
@@ -383,8 +423,6 @@ export class Client {
 		this._addRemoteCharaPacketListener("remoteCharaAnim", this.onRemoteCharaAnim);
 		this._addRemoteCharaPacketListener("remoteCharaSkill", this.onRemoteCharaSkill);
 		this._addRemoteCharaPacketListener("remoteAvatarModified", this.onRemoteAvatarModified);
-
-		await this.login("aaa", "aaa");
 
 		await this.selectWorld(0, 0);
 

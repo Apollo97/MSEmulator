@@ -84,7 +84,7 @@
 </template>
 
 <script>
-	import { ItemCategoryInfo } from "../../../public/javascripts/resource.js";
+	import { ItemCategoryInfo } from "../../Common/ItemCategoryInfo.js";
 	import { ItemBase, ItemSlot } from "../../game/Item.js";
 	import WindowBase from "./WindowBase.vue";
 	import BasicComponent from "../BasicComponent.vue";

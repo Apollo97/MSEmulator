@@ -1,5 +1,7 @@
 ﻿
-import { ItemCategoryInfo } from "../../public/javascripts/resource.js";
+import { ResourceManager } from "../../public/javascripts/resource.js";
+
+import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 
 import { Sprite } from "./Sprite";
 
@@ -204,7 +206,7 @@ export async function $createItem(itemId, ...props) {
 
 	let itemPrototype;
 	try {
-		itemPrototype = await ItemCategoryInfo.getItem(itemId);// raw
+		itemPrototype = await ResourceManager.getItem(itemId);// raw
 	}
 	catch (ex) {
 		throw ex;

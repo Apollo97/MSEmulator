@@ -1,8 +1,8 @@
 ﻿
-import { PPlayerState } from "../game/Physics/PPlayer.js";//debug
+const { PPlayerState } = require("../game/Physics/PPlayerState.js");
 
 
-export class BaseMoveElem {
+class BaseMoveElem {
 	constructor() {
 		/** @type {number} */
 		this.x = null;
@@ -46,10 +46,10 @@ export class BaseMoveElem {
 	}
 }
 
-export class CharacterMoveElem extends BaseMoveElem {
+class CharacterMoveElem extends BaseMoveElem {
 }
 
-export class MobMoveElem extends BaseMoveElem {
+class MobMoveElem extends BaseMoveElem {
 	constructor() {
 		super();
 
@@ -57,4 +57,11 @@ export class MobMoveElem extends BaseMoveElem {
 		this.objectid = undefined;
 	}
 }
+
+
+module.exports = {
+	BaseMoveElem,
+	CharacterMoveElem,
+	MobMoveElem,
+};
 

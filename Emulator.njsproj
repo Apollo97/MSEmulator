@@ -47,10 +47,13 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\Client\Client.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\Client\PMovePath.js">
+    <Compile Include="src\Common\PMovePath.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\Common\AttackInfo.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\Common\ItemCategoryInfo.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\Common\Packet\ChatPacket.js" />
@@ -98,6 +101,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Compile Include="src\game\Physics\Physics.js" />
     <Compile Include="src\game\Physics\PMob.js" />
     <Compile Include="src\game\Physics\PPlayer.js" />
+    <Compile Include="src\game\Physics\PPlayerState.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\game\Physics\World.js" />
     <Compile Include="src\game\Renderer\Chair.js" />
     <Compile Include="src\game\Renderer\CharacterActionAnimation.js" />
@@ -269,6 +275,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="src\main-ui.vue" />
     <Content Include="src\ui-app.vue" />
     <Content Include="src\ui-login.vue" />
+    <Content Include="src\ui-select-server.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\ui\BasicComponent.vue" />
     <Content Include="src\ui\StatusBar.vue" />
     <Content Include="src\ui\Basic\UISlotItem.vue">

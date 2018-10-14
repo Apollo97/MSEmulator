@@ -159,7 +159,7 @@ export class Chair {
 		}
 		this.id = id;
 		
-		this.$promise = ItemCategoryInfo.getItem(id);
+		this.$promise = ResourceManager.getItem(id);
 		const raw = await this.$promise;
 		delete this.$promise;
 

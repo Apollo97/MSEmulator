@@ -2,7 +2,7 @@
 import { PRemotePlayer, PPlayerBase } from "./PPlayer.js";
 
 import { Animation } from "../Animation.js";
-import { MobMoveElem } from "../../Client/PMovePath.js";
+import { MobMoveElem } from "../../Common/PMovePath.js";
 
 
 if (process.env.NODE_ENV !== 'production') {
@@ -619,6 +619,16 @@ export class PMob extends PPlayerBase {//PRemotePlayer
 		if (!this._info.noFlip) {
 			this.chara.front = -this.state.front;
 		}
+	}
+
+	/** @param {MapPortal} portal */
+	_beginContactPortal(portal) {
+		// nothing
+	}
+
+	/** @param {MapPortal} portal */
+	_endContactPortal(portal) {
+		// nothing
 	}
 
 	///**

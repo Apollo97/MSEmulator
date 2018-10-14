@@ -1,5 +1,6 @@
 ﻿
-import { ItemCategoryInfo } from "../../public/javascripts/resource.js";
+
+import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 
 import { IRenderer } from "./IRenderer.js";
 
@@ -12,7 +13,7 @@ import { $createItem, ItemEquip, ItemSlot, ItemBase } from "./Item.js";
 import { SceneSkill } from "./Skill.js";
 
 import { CharacterStat } from "../Common/PlayerData.js";
-import { CharacterMoveElem } from "../Client/PMovePath.js";
+import { CharacterMoveElem } from "../Common/PMovePath.js";
 
 import { AttackInfo, DamagePair } from "../Common/AttackInfo.js";
 
@@ -23,6 +24,9 @@ import { SceneMap } from "./Map.js";
 import { damageNumberLayer } from "./Renderer/DamageNumber.js";
 import { Chair } from "./Renderer/Chair.js";
 import { sceneRenderer, SceneRenderer } from "./Renderer/SceneRenderer.js";
+
+
+import { $PlayerData, $RemotePlayerData, $ExportData_Equip } from "../Common/PlayerData.js";
 
 
 // SceneCharacter的更新流程
@@ -326,6 +330,35 @@ export class BaseSceneCharacter extends SceneObject {
 	}
 	set $objectid(value) {
 		this.name = value;
+	}
+
+	/**
+	 * @param {$PlayerData} option
+	 */
+	set(option) {
+		/** @type {typeof option.equipSlots.Equip} */
+		let items = [];
+
+		items.push(option.body);
+		items.push(option.head);
+		items.push(option.face);
+		items.push(option.hair);
+
+		/** @type {typeof option.equipSlots.Equip} */
+		let equips = Object.assign([], option.equipSlots.Equip);
+
+		equips = Object.assign(equips, option.equipSlots.Cash);
+
+		items.push(...equips);
+
+		this.renderer.set({
+			ear: option.ear,
+			items: items,
+		});
+
+		if (this.$physics) {
+			this.$physics.setPosition(option.position.x, option.position.y, true);
+		}
 	}
 
 	/**

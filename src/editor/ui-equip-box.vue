@@ -197,9 +197,10 @@
 </template>
 
 <script>
-	import UIButtonGroup from '../components/ui-button-group.vue';
+	import UIButtonGroup from "../components/ui-button-group.vue";
 
-	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from '../../public/javascripts/resource.js';
+	import { ResourceManager, ItemAttrNormalize, CharacterRenderConfig } from "../../public/javascripts/resource.js";
+	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 
 	function emSize(socpe) {
 		let scopeTest = document.createElement("div");

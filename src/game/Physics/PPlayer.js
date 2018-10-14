@@ -5,7 +5,7 @@ import {
 	b2BodyType, b2BodyDef, b2FixtureDef,
 	b2Body, b2Fixture,
 	b2PolygonShape, b2CircleShape,
-	b2WheelJointDef, b2RevoluteJointDef, b2PrismaticJointDef, b2MouseJointDef,
+	b2WheelJointDef, b2RevoluteJointDef, b2PrismaticJointDef, b2MouseJointDef, b2DistanceJointDef,
 	b2Joint, b2RevoluteJoint, b2PrismaticJoint, b2MouseJoint,
 	b2Contact,
 } from "./Physics.js";
@@ -14,7 +14,8 @@ import { Foothold } from "./Ground.js";
 
 import { World } from "./World.js";
 
-import { CharacterMoveElem } from "../../Client/PMovePath.js";
+import { PPlayerState } from "./PPlayerState.js";
+import { CharacterMoveElem } from "../../Common/PMovePath.js";
 import { SceneObject } from "../SceneObject.js";
 
 import { SceneMap } from "../Map.js";
@@ -63,65 +64,6 @@ const chara_profile = {
 	window.PORTAL_COOLDOWN = 1000;
 })();
 
-
-export class PPlayerState {
-	constructor() {
-		/** @type {boolean} - ApplyForce(jump_force) until leave foothold */
-		this._begin_jump = false;
-
-		/** jump_count = jump ? jump_count : 0 */
-		this.jump = true;
-
-		/** jump_count = jump ? jump_count : 0 */
-		this.jump_count = 0;
-
-		/** ?? */
-		this._drop = true;
-
-		this.walk = false;
-
-		this.prone = false;
-
-		/** TODO: fallDown */
-		this.dropDown = false;
-
-		this._fly = false;//not jump 
-		
-		this.brake = true;//??
-		
-		/** @type {-1|1} */
-		this.front = -1;
-
-		/** @type {boolean} - is use ladder */
-		this.ladder = false;
-
-		/**
-		 * action animation
-		 * @type {-1|0|1} - up: -1, down: 1, stop: 0
-		 */
-		this.ladder_move_dir = 0;
-
-		/** @type {number} - 無敵時間，unit is millisecond */
-		this.invincible = 0;
-		
-		/** @type {boolean} - can not move or jump */
-		this.freeze = false;
-
-		/** @type {boolean} - can not move or jump */
-		this.invokeSkill = false;
-
-		/** @type {number} - use portal cooldown time，unit is millisecond */
-		this.portal_cooldown = 0;
-		
-		//
-
-		/** @type {number} - knockback time，unit is millisecond */
-		this.knockback = 0;
-
-		/** @type {boolean} - off walker power */
-		this.outOfControl = false;
-	}
-}
 
 /**
  * @param {number} jump_height
@@ -318,10 +260,16 @@ class PCharacterBase {
 				}
 			}
 			else {
-				mapController.doAfterStep(function () {
-					mapRenderer.unload();
-					mapRenderer.load(map_id);
-				});
+				let url = new URL(window.location, window.location.origin);
+
+				url.searchParams.set("map", map_id);
+
+				window.location = url;
+
+				//mapController.doAfterStep(function () {
+				//	mapRenderer.unload();
+				//	mapRenderer.load(map_id);
+				//});
 			}
 		}
 		else {
@@ -1277,19 +1225,28 @@ export class PCharacter extends PCharacterBase {
 		this.state.knockback = kbTime;
 		this.state.outOfControl = true;
 	}
+	
+	_create_anchor() {
+		const world = this.body.m_world;
+		let jd = new b2MouseJointDef();//new b2DistanceJointDef();//
 
-	/**
-	 * @param {World} world
-	 */
-	_create_anchor(world) {
-		let md = new b2MouseJointDef();
-		md.bodyA = world.ground.bodies[0];
-		md.bodyB = this.body;
-		md.target.Copy(this.getPosition());
-		md.maxForce = 1000 * this._getMass();
-		md.dampingRatio = 0.7;
-		md.frequencyHz = 24;
-		return world.CreateJoint(md);
+		jd.bodyA = world.ground.bodies[0];
+		jd.bodyB = this.body;
+
+		if (jd instanceof b2MouseJointDef) {
+			jd.target.Copy(this.getPosition());
+			jd.maxForce = 1000 * this._getMass();
+		}
+
+		jd.dampingRatio = 0.7;
+		jd.frequencyHz = 24;
+
+		return world.CreateJoint(jd);
+	}
+	
+	_destroy_anchor(anchor) {
+		const world = this.body.m_world;
+		world.DestroyJoint(anchor);
 	}
 }
 
@@ -1381,6 +1338,20 @@ export class PPlayerBase extends PCharacter {
 		}
 	}
 
+	///**
+	// * @param {World} world
+	// * @returns {void}
+	// */
+	//_create(world) {
+	//	super._create(world);
+	//
+	//	if (window.$io) {
+	//		this._anchor = this._create_anchor(world);
+	//		this._anchor.IsActive();
+	//		this._anchor.Length();
+	//	}
+	//}
+
 	/**
 	 * @returns {PPlayerState}
 	 */
@@ -1428,7 +1399,6 @@ export class PPlayerBase extends PCharacter {
 
 		{
 			const { x, y } = this.body.GetLinearVelocity();
-
 			moveElem.vx = x;
 			moveElem.vy = y;
 		}
@@ -1453,7 +1423,7 @@ export class PPlayerBase extends PCharacter {
 		}
 
 		if (moveElem.actionkey) {
-			this.$moveElem = undefined;
+			//this.$moveElem = undefined;
 			
 			this.body.SetAwake(true);
 			this.foot_walk.SetAwake(true);
@@ -1468,13 +1438,19 @@ export class PPlayerBase extends PCharacter {
 			Object.assign(this.ikey, moveElem.actionkey);
 			this._basicControl(this.ikey);//?? immediate update
 		}
-		else {
-			this.$moveElem = moveElem;//store
+		//else {
+		//	this.$moveElem = moveElem;//store
+		////
+		//	////fixed position
+		//	//this.body.SetGravityScale(0);
+		//	//this.foot_walk.SetGravityScale(0);
+		//}
 
-			////fixed position
-			//this.body.SetGravityScale(0);
-			//this.foot_walk.SetGravityScale(0);
-		}
+		//if (this._anchor) {
+		//	this._destroy_anchor(this._anchor);
+		//	this._anchor = null;
+		//	this.setLinearVelocityXY(0, 0);
+		//}
 	}
 
 	/**
@@ -1489,26 +1465,43 @@ export class PPlayerBase extends PCharacter {
 	 * @param {number} stamp
 	 */
 	Step(stamp) {
-		if (0) {
-		}
-		else if (0 && this.$moveElem) {
-			const body = this.body;
-			const pos = this.getPosition();
-			//const mass = this._getMass();
+		//if (0) {
+		//}
+		//else if (0 && this.$moveElem) {
+		//	const body = this.body;
+		//	const pos = this.getPosition();
+		//	//const mass = this._getMass();
+		//
+		//	if (this.$moveElem.vx != null && this.$moveElem.vy != null) {//?? this.$moveElem.hasVelocity
+		//		this.$moveElem.vx = (this.$moveElem.vx + (this.$moveElem.x - pos.x)) * 0.5;// * mass;// * 0.7;
+		//		this.$moveElem.vy = (this.$moveElem.vy + (this.$moveElem.y - pos.y)) * 0.5;// * mass;// * 0.7;
+		//	}
+		//	else {
+		//		this.$moveElem.vx = (this.$moveElem.x - pos.x) * 0.5;
+		//		this.$moveElem.vy = (this.$moveElem.y - pos.y) * 0.5;
+		//	}
+		//
+		//	this.setPosition(pos.x + this.$moveElem.vx, pos.y + this.$moveElem.vy);//fixed position
+		//
+		//	//body.ConstantVelocityWorldCenter2(vx, vy);
+		//}
+		//else if (0 && this._anchor) {
+		//	let length = b2Vec2.SubVV(this._anchor.m_targetA, this.getPosition(), new b2Vec2()).Length();
+		//
+		//	if (length < 0.1) {
+		//		this._destroy_anchor(this._anchor);
+		//		this._anchor = null;
+		//	}
+		//}
+		//else if (this.$moveElem && !this._anchor) {
+		//	let length = b2Vec2.SubVV(this.$moveElem, this.getPosition(), new b2Vec2()).Length();
+		//
+		//	if (length < 0.1) {
+		//		this._anchor = this._create_anchor();
+		//		this._anchor.m_targetA.Set(this.$moveElem.x, this.$moveElem.y);
+		//	}
+		//}
 
-			if (this.$moveElem.vx != null && this.$moveElem.vy != null) {//?? this.$moveElem.hasVelocity
-				this.$moveElem.vx = (this.$moveElem.vx + (this.$moveElem.x - pos.x)) * 0.5;// * mass;// * 0.7;
-				this.$moveElem.vy = (this.$moveElem.vy + (this.$moveElem.y - pos.y)) * 0.5;// * mass;// * 0.7;
-			}
-			else {
-				this.$moveElem.vx = (this.$moveElem.x - pos.x) * 0.5;
-				this.$moveElem.vy = (this.$moveElem.y - pos.y) * 0.5;
-			}
-
-			this.setPosition(pos.x + this.$moveElem.vx, pos.y + this.$moveElem.vy);//fixed position
-
-			//body.ConstantVelocityWorldCenter2(vx, vy);
-		}
 		super.Step(stamp);
 	}
 	/**

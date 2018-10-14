@@ -1,10 +1,21 @@
 
+window.GetSearchParams = function GetSearchParams() {
+	const url = new URL(window.location, window.location.origin);
+	let params = {};
+
+	for ([key, value] of url.searchParams.entries()) {
+		params[key] = value;
+	}
+
+	return params;
+}
+
 window.DownloadData = (function () {
 	let a = document.createElement("a");
 	document.body.appendChild(a);
 	a.style = "display: none";
 	a.target = "_blank";
-	return function (text, type, fileName) {
+	return function DownloadData(text, type, fileName) {
 		let blob = new Blob([text], { type: type || "octet/stream" });
 		let url = window.URL.createObjectURL(blob);
 		if (fileName && fileName != "") {
@@ -21,7 +32,7 @@ window.DownloadData = (function () {
 	};
 }());
 
-window.SelectText = function (elem) {
+window.SelectText = function SelectText(elem) {
 	var range, selection;
 
 	if (document.body.createTextRange) {
@@ -37,7 +48,7 @@ window.SelectText = function (elem) {
 		selection.addRange(range);
 	}
 }
-window.copyToClipboard = function (text) {
+window.copyToClipboard = function copyToClipboard(text) {
 	var $temp = $("<input>");
 	$("body").append($temp);
 	$temp.val(text).select();

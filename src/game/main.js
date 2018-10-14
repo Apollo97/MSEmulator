@@ -37,6 +37,7 @@ window.SCREEN_PRINTLN = function (getText, getValue) {
 }
 window._SCREEN_PRINTLN = [];
 
+/** @type {number} */
 var animationRequestID = null;
 
 window.addEventListener("popstate", function (e) {
@@ -259,30 +260,26 @@ export class Game {
 	/**
 	 * @param {string} server
 	 */
-	async _$startClient(server) {
-		if (scene_map) {
-			let client = new Client();
-			
-			try {
-				await client.connect(server);
+	async _$startClient(serverUrl) {
+		try {
+			if (scene_map) {
+				let client = new Client();
+
+				await client.connect(serverUrl);
 				console.log("start client");
+
+				gApp.client = client;
 			}
-			catch (err) {
-				console.error(err);
-				console.log("start offline");
-				this._$start_offline();
-				return;
+			else {
+				debugger;
 			}
-			
-			gApp.client = client;
-			client.$test();
 		}
-		else {
-			debugger;
+		catch (err) {
+			throw err;
 		}
 	}
-	_$start_offline() {
-		let params = _parseUrlParameter();
+	_$startOffline() {
+		let params = window.GetSearchParams();
 		let map_id;
 	
 		if (process.env.NODE_ENV === 'production') {
@@ -292,13 +289,25 @@ export class Game {
 			map_id = params["map"] || "000000000";//450003000
 		}
 	
-		let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
+		//let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00034873|00034873,01051429,01072392";
+		let chara_code = params["chara"] || "c,00002012,00012012,00026509|00026509,00041526|00041526,01051429,01071110";
 	
 		GameStateManager.PopState({
 			map_id: map_id,
 			chara: chara_code,
 		});
 	}
+
+	/** start client or offline */
+	$load() {
+		if (gApp.client) {
+			gApp.client.$test();
+		}
+		else {
+			this._$startOffline();
+		}
+	}
+
 
 	/** @type {boolean} */
 	get _isMapReady() {
@@ -741,23 +750,4 @@ export class Game {
 		window.m_is_run = value;
 	}
 }
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////////////
-
-function _parseUrlParameter() {
-	let sPageURL = decodeURIComponent(window.location.search.substring(1));
-	let sURLVariables = sPageURL.split("&");
-	let params = {};
-
-	for (let i = 0; i < sURLVariables.length; ++i) {
-		let sParameter = sURLVariables[i].split("=");
-
-		params[sParameter[0]] = sParameter[1];
-	}
-
-	return params;
-};
 

@@ -17,7 +17,7 @@ import { Ground } from "./Physics/Ground.js";
 import { PMob } from "./Physics/PMob.js";
 import { SceneObject } from "./SceneObject.js";
 
-import { MobMoveElem } from "../Client/PMovePath.js";
+import { MobMoveElem } from "../Common/PMovePath.js";
 
 
 window.enable_skeletal_anim = true;
@@ -2001,7 +2001,7 @@ class MapLifeManager {
 			const ownerId = window.chara.$objectid;
 			const packet = this.$outPacket || {
 				elements: {},
-				controllerOwner: "chara_1",//this.$controllerOwner;//validation owner
+				controllerOwner: ownerId,//this.$controllerOwner;//validation owner
 			};
 			const elements = packet.elements;
 			let count = 0;
@@ -2155,6 +2155,19 @@ class MapLifeManager {
 				entity.draw(renderer);
 			}
 		}
+	}
+}
+
+class AddCharacterOption {
+	constructor() {
+		/** @type {boolean} - random spawn point */
+		this.randomSpawn = undefined;
+
+		/** @type {number} - spawn point */
+		this.spawnPoint = undefined;
+
+		/** @type {{x:number,y:number}} - unit is px */
+		this.position = undefined;
 	}
 }
 
@@ -2850,19 +2863,53 @@ export class SceneMap {
 			debugger;
 		}
 	}
-	
+
 	/**
 	 * @param {SceneCharacter} chara
+	 * @param {number} spawnPoint
+	 * @param {number} [_spawnPoint=]
 	 */
-	_addChara(chara) {
-		try {
+	_spawnExistChara(chara, spawnPoint, _spawnPoint) {
+		let player_spawns = this.portalMgr.portals.filter(a => a.pn == "sp");
+
+		if (spawnPoint == null) {
+			spawnPoint = _spawnPoint % player_spawns.length;
+		}
+
+		if (Number.isSafeInteger(spawnPoint) && spawnPoint < player_spawns.length) {
 			let player_spawns = this.portalMgr.portals.filter(a => a.pn == "sp");
-			let spawn = player_spawns[Math.trunc(Math.random() * 100) % player_spawns.length];
+			let spawn = player_spawns[spawnPoint];
 			const $physics = chara.$physics;
 			const x = spawn.x / $gv.CANVAS_SCALE;
 			const y = spawn.y / $gv.CANVAS_SCALE;
 			$physics.setPosition(x, y);
 			$physics.body.SetAwake(true);
+		}
+		else {
+			throw new Error("spawnPoint");
+		}
+	}
+	/**
+	 * @param {SceneCharacter} chara
+	 * @param {Partial<AddCharacterOption>} [option=]
+	 */
+	_addChara(chara, option) {
+		try {
+			if (!option || option.randomSpawn) {
+				this._spawnExistChara(chara, null, Math.trunc(Math.random() * 100));
+			}
+			else if (option) {
+				if (Number.isSafeInteger(option.spawnPoint)) {
+					this._spawnExistChara(chara, option.spawnPoint);
+				}
+				else if (option.position) {
+					const $physics = chara.$physics;
+					const x = option.position.x / $gv.CANVAS_SCALE;
+					const y = option.position.y / $gv.CANVAS_SCALE;
+					$physics.setPosition(x, y);
+					$physics.body.SetAwake(true);
+				}
+			}
 		}
 		catch (ex) {
 			console.error(ex);
@@ -2870,15 +2917,16 @@ export class SceneMap {
 	}
 	/**
 	 * @param {SceneCharacter} chara
+	 * @param {Partial<AddCharacterOption>} [option=]
 	 */
-	addChara(chara) {
+	addChara(chara, option) {
 		if (this.$promise) {
 			this.$promise.then(() => {
-				this._addChara(chara);
+				this._addChara(chara, option);
 			});
 		}
 		else {
-			this._addChara(chara);
+			this._addChara(chara, option);
 		}
 	}
 	

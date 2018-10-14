@@ -307,8 +307,8 @@
 	import UIMapEditor from "./ui-map-editor.vue";
 
 	//import { GameStateManager } from '../game/GameState.js';
-
-	import { ItemCategoryInfo } from '../../public/javascripts/resource.js';
+	
+	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
 
 	import { engine } from '../game/Engine.js';
@@ -415,6 +415,7 @@
 					if (state.charaList.length) {
 						context.dispatch('selectChara', {
 							id: state.charaList[state.charaList.length - 1].id,
+							moveCharaPosition: false,
 						});
 					}
 					return true;
@@ -471,20 +472,22 @@
 						return;
 					}
 
-					try {
-						if (state.chara) {
-							state.chara.enablePhysics = false;
+					if (payload.moveCharaPosition) {
+						try {
+							if (state.chara) {
+								state.chara.enablePhysics = false;
+							}
+							//
+							selected_chara.enablePhysics = true;
+							if (selected_chara.$physics) {
+								const x = selected_chara.renderer.x / $gv.CANVAS_SCALE;
+								const y = selected_chara.renderer.y / $gv.CANVAS_SCALE;
+								selected_chara.$physics.setPosition(x, y, true);
+							}
 						}
-						//
-						selected_chara.enablePhysics = true;
-						if (selected_chara.$physics) {
-							const x = selected_chara.renderer.x / $gv.CANVAS_SCALE;
-							const y = selected_chara.renderer.y / $gv.CANVAS_SCALE;
-							selected_chara.$physics.setPosition(x, y, true);
+						catch (ex) {
+							debugger;
 						}
-					}
-					catch(ex) {
-						debugger;
 					}
 
 					window.chara = state.chara = selected_chara;
@@ -509,6 +512,7 @@
 
 					context.dispatch('selectChara', {
 						id: chara.id,
+						moveCharaPosition: false,
 					});
 
 					context.commit("increaseProgress", { amount: 1 });
@@ -585,23 +589,28 @@
 					}
 					else if (payload.emplace) {
 						chara.id = payload.emplace.id;
-						chara.renderer._parse(payload.emplace.code);
+						if (payload.emplace.code) {
+							console.warn("");
+							chara.renderer._parse(payload.emplace.code);
+						}
+						if (payload.emplace.data) {
+							if (payload.emplace.data.equips_code) {
+								chara.renderer._parse(payload.emplace.data.equips_code);
+							}
+							else {
+								chara.set(payload.emplace.data);
+							}
+						}
 					}
 				}
 				else {
 					chara.renderer._setup_test();
 				}
 
+				/** @type {typeof chara} */
 				let result = await context.dispatch('_addChara', {
 					chara: chara,
 				});
-				
-				if (scene_map) {
-					scene_map.addChara(result);
-				}
-				else {
-					debugger;
-				}
 				
 				return result;
 			},
@@ -722,12 +731,21 @@
 			selectChara: function (id) {
 				console.log("select character: " + id);
 				this.$store.dispatch("selectChara", {
-					id: id
+					id: id,
+					moveCharaPosition: true,
 				});
 			},
-			addNewChara: function () {
+			addNewChara: async function () {
 				console.log("create new character");
-				this.$store.dispatch('createChara');
+				await this.$store.dispatch('createChara');
+				if (scene_map) {
+					scene_map.addChara(chara, {
+						position: {
+							x: window.innerWidth / 2,
+							y: window.innerHeight / 2,
+						},
+					});
+				}
 			},
 			addCloneChara: function (chara) {
 				console.log("clone character: " + chara.id);
@@ -839,7 +857,8 @@
 
 			openCharacterDLMenu: function (e, id) {
 				this.$store.dispatch("selectChara", {
-					id: id
+					id: id,
+					moveCharaPosition: false,
 				}).then(() => {
 					this.is_show_chara_dl_menu = true;
 

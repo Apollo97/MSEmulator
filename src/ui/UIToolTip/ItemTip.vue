@@ -182,10 +182,10 @@
 						<div class="c3" v-if="shouldShowAttr('incCr')">			<span>爆击率 :		   {{adjAttr(equip.incCr)}}%</span></div>
 						<div class="c3" v-if="shouldShowAttr('incPVPDamage')">	<span>大乱斗时追加攻击力{{adjAttr(equip.incPVPDamage)}}%</span></div>
 						<div class="c3" v-if="shouldShowAttr('incPQEXPr')">		<span>组队任务经验值增加{{equip.incPQEXPr}}%</span></div>
-						<div class="c3" v-if="shouldShowAttr('incBDR')">		<span>攻击BOSS怪物时，伤害+{{equip.incBDR}}%</span></div>
-						<div class="c3" v-if="shouldShowAttr('bdR')">			<span>攻击BOSS怪物时，伤害+{{equip.bdR}}%</span></div>
-						<div class="c3" v-if="shouldShowAttr('incIMDR')">		<span>無視怪物防禦力{{equip.incIMDR}}%</span></div>
-						<div class="c3" v-if="shouldShowAttr('imdR')">			<span>無視怪物防禦力{{equip.imdR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incBDR')">		<span>攻擊Boss怪物時傷害+{{equip.incBDR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('bdR')">			<span>攻擊Boss怪物時傷害+{{equip.bdR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('incIMDR')">		<span>無視怪物防禦率{{equip.incIMDR}}%</span></div>
+						<div class="c3" v-if="shouldShowAttr('imdR')">			<span>無視怪物防禦率{{equip.imdR}}%</span></div>
 						<div class="c3" v-if="shouldShowAttr('limitBreak')">	<span>伤害上限突破至{{equip.limitBreak}}。</span></div>
 						<div class="c3" v-if="shouldShowAttr('reduceReq')">		<span>装备等级降低 : -{{equip.reduceReq}}。</span></div>
 						<div class="c3" v-if="shouldShowAttr('knockback')">		<span>直接攻击时{{equip.knockback}}的比率发生后退现象。</span></div>
@@ -291,7 +291,8 @@
 </template>
 
 <script>
-	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../../../public/javascripts/resource.js';
+	import { ResourceManager, ItemAttrNormalize } from "../../../public/javascripts/resource.js";
+	import { ItemCategoryInfo } from "../../Common/ItemCategoryInfo.js";
 
 	import { CharacterStat } from "../../Common/PlayerData.js";
 

@@ -10,7 +10,10 @@
 	import app_state from "./state.js";
 	import UIApp from "./ui-app.vue";
 	import UILogin from "./ui-login.vue";
+	import UISelectServer from "./ui-select-server.vue";
 	import Frame2 from "./ui/UIToolTip/Frame2.vue";
+
+	window.$app_state = app_state;
 	
 	export default {
 		store: app.store,
@@ -33,6 +36,7 @@
 		components: {
 			"ui-app": UIApp,
 			"ui-login": UILogin,
+			"ui-select-server": UISelectServer,
 			"frame-2": Frame2,
 		}
 	};

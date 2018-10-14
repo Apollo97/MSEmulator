@@ -1,6 +1,6 @@
 ﻿
-import { CharacterMoveElem } from "../../Client/PMovePath";
-import { SceneCharacter } from "../../game/SceneCharacter";
+import { CharacterMoveElem } from "../PMovePath.js";
+import { SceneCharacter } from "../../game/SceneCharacter.js";
 
 
 //export class $Packet_CharacterMove {
