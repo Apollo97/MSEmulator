@@ -38,7 +38,7 @@ let SSAnim = (function () {
 		}
 		
 		async load(url) {
-			let rawData = await $get.data(url);
+			let rawData = await $get.pack(url);
 			let fname;
 			
 			for (let file in rawData) {

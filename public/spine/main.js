@@ -1,5 +1,5 @@
 
-import { } from "../resource.js";
+import { } from "../javascripts/resource.js";
 
 function  ajax_get(url) {
 	return new Promise(function (resolve, reject) {

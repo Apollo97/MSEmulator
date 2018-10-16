@@ -4,13 +4,16 @@ class BinaryReader {
 		this._c = 0;
 		this._b = new Uint8Array(arrayBuffer);
 	}
-	
+
+	/** returns uint8 */
 	get byte() {
 		return this._b[this._c];
 	}
+	/** returns uint8 */
 	readByte() {
 		return this._b[this._c++];
 	}
+	/** returns uint8 */
 	peekByte(seek) {
 		return this._b[this._c + seek];
 	}
@@ -22,19 +25,28 @@ class BinaryReader {
 		let b = this.readByte();
 		return !!b;
 	}
+
+	/** returns int8 */
+	get int8() {
+		return BinaryReader.asInt8(this.byte);
+	}
+	/** returns int8 */
+	readInt8() {
+		return BinaryReader.asInt8(this.readByte());
+	}
 	
 	get short() {
-		return (this.byte << 8) | this.peekByte(1);
+		return BinaryReader.asInt16((this.byte << 8) | this.peekByte(1));
 	}
 	readShort() {
-		return (this.readByte() << 8) | this.readByte();
+		return BinaryReader.asInt16((this.readByte() << 8) | this.readByte());
 	}
 	
 	get int() {
-		return (this.byte << 24) | (this.peekByte(1) << 16) | (this.peekByte(2) << 8) | this.peekByte(3);
+		return BinaryReader.asInt32((this.byte << 24) | (this.peekByte(1) << 16) | (this.peekByte(2) << 8) | this.peekByte(3));
 	}
 	readInt() {
-		return (this.readByte() << 24) | (this.readByte() << 16) | (this.readByte() << 8) | this.readByte();
+		return BinaryReader.asInt32((this.readByte() << 24) | (this.readByte() << 16) | (this.readByte() << 8) | this.readByte());
 	}
 	
 	get varint() {
@@ -54,7 +66,7 @@ class BinaryReader {
 			}
 		}
 		value = ((value >> 1) ^ -(value & 1));
-		return value;
+		return BinaryReader.asInt32(value);
 	}
 	get varint_opt() {
 		let b = this.byte;
@@ -72,7 +84,7 @@ class BinaryReader {
 				}
 			}
 		}
-		return value;
+		return BinaryReader.asInt32(value);
 	}
 	readVarint(optimizePositive) {
 		let b = this.readByte();
@@ -91,7 +103,7 @@ class BinaryReader {
 			}
 		}
 		if (!optimizePositive) value = ((value >> 1) ^ -(value & 1));
-		return value;
+		return BinaryReader.asInt32(value);
 	}
 	
 	get float() {
@@ -109,23 +121,23 @@ class BinaryReader {
 		return f[0];
 	}
 	
-	get string() {
-		let maxLength = 1024;
-		let utf8decoder = new TextDecoder("utf-8");
-		let count = this.byte;//this.readVarint(true);
-		if (count-- > 1) {
-			if (count >= maxLength) {
-				count = maxLength - 1;
-			}
-			let bytes = new Uint8Array(count);
-			for (let i = 0; i < count; i++) {
-				bytes[i] = this.peekByte(i + 1);
-			}
-			bytes[count] = "\0";
-			return utf8decoder.decode(bytes);
-		}
-		//return null;
-	}
+	//get string() {
+	//	let maxLength = 1024;
+	//	let utf8decoder = new TextDecoder("utf-8");
+	//	let count = this.byte;//this.readVarint(true);
+	//	if (count-- > 1) {
+	//		if (count >= maxLength) {
+	//			count = maxLength - 1;
+	//		}
+	//		let bytes = new Uint8Array(count);
+	//		for (let i = 0; i < count; i++) {
+	//			bytes[i] = this.peekByte(i + 1);
+	//		}
+	//		bytes[count] = "\0";
+	//		return utf8decoder.decode(bytes);
+	//	}
+	//	//return null;
+	//}
 	readString(maxLength=1024) {
 		let utf8decoder = new TextDecoder("utf-8");
 		let count = this.readByte();//this.readVarint(true);
@@ -144,25 +156,92 @@ class BinaryReader {
 		//return null;
 	}
 	
-	get color () {
-		let value = [];
-		let rgba = this.int;
-		value[0] = ((rgba & 0xff000000) >>> 24).toString(16).padStart(2, "0"); // R
-		value[1] = ((rgba & 0x00ff0000) >>> 16).toString(16).padStart(2, "0"); // G
-		value[2] = ((rgba & 0x0000ff00) >>> 8).toString(16).padStart(2, "0"); // B
-		value[3] = ((rgba & 0x000000ff)).toString(16).padStart(2, "0"); // A
-		return value;
-	}
+	//get color () {
+	//	let value = [];
+	//	let rgba = this.int;
+	//	value[0] = ((rgba & 0xff000000) >>> 24).toString(16).padStart(2, "0"); // R
+	//	value[1] = ((rgba & 0x00ff0000) >>> 16).toString(16).padStart(2, "0"); // G
+	//	value[2] = ((rgba & 0x0000ff00) >>> 8).toString(16).padStart(2, "0"); // B
+	//	value[3] = ((rgba & 0x000000ff)).toString(16).padStart(2, "0"); // A
+	//	return value;
+	//}
 	readColor () {
-		let value = [];
 		let rgba = this.readInt();
-		value[0] = ((rgba & 0xff000000) >>> 24).toString(16).padStart(2, "0"); // R
-		value[1] = ((rgba & 0x00ff0000) >>> 16).toString(16).padStart(2, "0"); // G
-		value[2] = ((rgba & 0x0000ff00) >>> 8).toString(16).padStart(2, "0"); // B
-		value[3] = ((rgba & 0x000000ff)).toString(16).padStart(2, "0"); // A
-		return value.join("");
+
+		//let value = [];
+		//value[0] = ((rgba & 0xff000000) >>> 24).toString(16).padStart(2, "0"); // R
+		//value[1] = ((rgba & 0x00ff0000) >>> 16).toString(16).padStart(2, "0"); // G
+		//value[2] = ((rgba & 0x0000ff00) >>> 8).toString(16).padStart(2, "0"); // B
+		//value[3] = ((rgba & 0x000000ff)).toString(16).padStart(2, "0"); // A
+		//return value.join("").toLocaleUpperCase();
+
+		return (rgba).toString(16).padStart(8, "0");
 	}
 }
+//if (BigInt) {//slow
+//	/**
+//	 * @param {number} n
+//	 * @returns {number}
+//	 */
+//	BinaryReader.asInt8 = function asIntN(n) {
+//		return Number(BigInt.asIntN(8, BigInt(n)));
+//	}
+//	/**
+//	 * @param {number} n
+//	 * @returns {number}
+//	 */
+//	BinaryReader.asInt16 = function asIntN(n) {
+//		return Number(BigInt.asIntN(16, BigInt(n)));
+//	}
+//	/**
+//	 * @param {number} n
+//	 * @returns {number}
+//	 */
+//	BinaryReader.asInt32 = function asIntN(n) {
+//		return Number(BigInt.asIntN(32, BigInt(n)));
+//	}
+//	(function () {
+//		let a = 0;
+//		let t1 = performance.now();
+//		for (let i = 0; i < 10000000; ++i) {
+//			a += Number(BigInt.asIntN(16, BigInt(65536)));
+//		}
+//		let t2 = performance.now();
+//		console.log(t2 - t1);
+//	});
+//}
+//else {
+	/**
+	 * @param {number} n
+	 * @returns {number}
+	 */
+	BinaryReader.asInt8 = function asIntN(n) {
+		return (new Int8Array([n]))[0];
+	}
+	/**
+	 * @param {number} n
+	 * @returns {number}
+	 */
+	BinaryReader.asInt16 = function asIntN(n) {
+		return (new Int16Array([n]))[0];
+	}
+	/**
+	 * @param {number} n
+	 * @returns {number}
+	 */
+	BinaryReader.asInt32 = function asIntN(n) {
+		return (new Int32Array([n]))[0];
+	}
+//	(function () {
+//		let a = 0;
+//		let t1 = performance.now();
+//		for (let i = 0; i < 10000000; ++i) {
+//			a += (new Int16Array([65536]))[0];
+//		}
+//		let t2 = performance.now();
+//		console.log(t2 - t1);
+//	});
+//}
 
 const AttachmentType = ["region", "boundingbox", "mesh", "skinnedmesh", "path", "point", "clipping"];
 const CurveType = ["linear", "stepped", "bezier"];
@@ -184,11 +263,13 @@ class SpineBinaryReader {
 		
 		this.$err = true;
 		this.$d = true;
+
+		/** spine version */
 		this.$v = 3;
 	}
 	
 	export() {
-		let obj = Object.assign({}, {//clone
+		let obj = {
 			skeleton: this.skeleton,
 			bones: this.bones,
 			slots: this.slots,
@@ -196,19 +277,22 @@ class SpineBinaryReader {
 			//transform: [],
 			//path: [],
 			skins: this.skins,
-			//events: this.events,
+			events: this.events,
 			animations: this.animations,
-		});
-		obj.skeleton.spine = "3.1.05";
-		obj.skeleton.images = "./";
-		if (obj.skins) {
-			for (let i in obj.skins.default)
-				for (let j in obj.skins.default[i])
-					if (obj.skins.default[i][j].type == "_mesh")
-						delete obj.skins.default[i][j];
-		}
+		};
+
+		//obj.skeleton.spine = "3.1.05";
+		//obj.skeleton.images = "./";
+
+		//if (obj.skins) {
+		//	for (let i in obj.skins.default)
+		//		for (let j in obj.skins.default[i])
+		//			if (obj.skins.default[i][j].type == "_mesh")
+		//				delete obj.skins.default[i][j];
+		//}
+
 		let json = JSON.stringify(obj, null, "\t");
-		DownloadData(json, null, "lusi.json");
+		DownloadData(json, null, "export.json");
 	}
 	
 	fromBuffer(arrayBuffer) {
@@ -220,19 +304,8 @@ class SpineBinaryReader {
 		this.readSkins();
 		this.readEvent();
 		this.readAnimations();
-		
-		if (this.input._c == this.input._b.length) {
-			console.log("read file end");
-		}
-		else {
-			console.log("file format ??");
-		}
-		
-		for (let i in this.skins.default)
-			for (let j in this.skins.default[i])
-				if (this.skins.default[i][j].type == "_mesh")
-					delete this.skins.default[i][j];
-		return {
+
+		let obj = {
 			skeleton: this.skeleton,
 			bones: this.bones,
 			ik: this.ik,
@@ -240,7 +313,23 @@ class SpineBinaryReader {
 			skins: this.skins,
 			events: this.events,
 			animations: this.animations,
+		};
+		
+		if (this.input._c == this.input._b.length) {
+			console.log("read file end: ", this);
 		}
+		else {
+			console.log("file format ?? ", this);
+		}
+
+		//if (obj.skins) {
+		//	for (let i in this.skins.default)
+		//		for (let j in this.skins.default[i])
+		//			if (this.skins.default[i][j].type == "_mesh")
+		//				delete this.skins.default[i][j];
+		//}
+
+		return obj;
 	}
 	
 	_getBone(index) {
@@ -303,8 +392,11 @@ class SpineBinaryReader {
 		
 		this.nonessential = input.readBoolean();
 		
-		if (this._nonessential) {
+		if (this.nonessential) {
+			console.log("spine nonessential: ", nonessential);
+			this.skeleton.fps = 60;
 			this.skeleton.images = input.readString();
+			//this.skeleton.audio = input.readString();
 		}
 		
 		console.log("spine version: " + this.skeleton.spine);
@@ -358,7 +450,7 @@ class SpineBinaryReader {
 			bone.inheritScale = input.readBoolean();
 			bone.inheritRotation = input.readBoolean();
 			
-			if (this._nonessential) {
+			if (this.nonessential) {
 				bone.color = input.readColor();
 			}
 			
@@ -401,13 +493,13 @@ class SpineBinaryReader {
 			ik.target = this._getBone(input.readVarint(true));
 			
 			ik.mix = input.readFloat(true);
+
 			if (this.$v == 3) {
-				ik.order = 2;
-				ik.bendPositive = input.readBoolean(true);
+				ik.order = 2;//??
 			}
-			else if (this.$v == 2) {
-				ik.bendDirection = input.readBoolean(true);
-			}
+
+			let bendDirection = input.readInt8();//from binary format
+			ik.bendPositive = bendDirection < 0 ? true : false;//to json format
 			
 			this.ik.push(ik);
 		}
@@ -944,40 +1036,5 @@ class SpineBinaryReader {
 			this.animations[name] = this._readAnimation();
 		}
 	}
-}
-
-// getBinaryFile("/binary/Map/Effect3/BossLucid/Lucid/lusi").then(a=>{
-	// window._a = a;
-	// window.aaa = new SpineBinaryReader().fromBuffer(window._a);
-// });//SpineBinaryReader
-
-function getBinaryFile(url) {
-	return new Promise(function (resolve, reject) {
-		let oReq = new XMLHttpRequest();
-		oReq.open("GET", url, true);
-		oReq.responseType = "arraybuffer";
-
-		oReq.onload = function (oEvent) {
-			let arrayBuffer = oReq.response; // Note: not oReq.responseText
-			if (arrayBuffer) {
-				resolve(arrayBuffer);
-				//var byteArray = new Uint8Array(arrayBuffer);
-				//for (var i = 0; i < byteArray.byteLength; i++) {
-				//	// do something with each byte in the array
-				//}
-			}
-			else {
-				reject();
-			}
-		};
-		oReq.onerror = function() {
-			reject();
-		};
-		oReq.onabort = function() {
-			reject();
-		};
-
-		oReq.send(null);
-	});
 }
 

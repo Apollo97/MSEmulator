@@ -1,5 +1,10 @@
 ﻿
-import { ItemCategoryInfo } from "../../src/Common/ItemCategoryInfo.js";
+//import { ItemCategoryInfo } from "../../src/Common/ItemCategoryInfo.js";
+
+if (window.$ROOT_PATH == null) {
+	window.$ROOT_PATH = "";
+	console.error("window.$ROOT_PATH");
+}
 
 window.$noimage = location.search.indexOf("noimage") >= 0;
 
@@ -34,11 +39,16 @@ export class ResourceManager {
 	
 	/**
 	 * @param {string} url
+	 * @param {""|"arraybuffer"|"blob"|"document"|"json"|"text"} responseType
 	 */
-	static get(url) {
+	static get(url, responseType) {
 		return new Promise(function (resolve, reject) {
 			let xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
+
+			if (responseType) {
+				xhr.responseType = responseType;;
+			}
 
 			xhr.timeout = 10 * 60 * 1000;//20000;
 
@@ -50,7 +60,7 @@ export class ResourceManager {
 					reject(this.status + ": " + url);
 				}
 				else if (this.status == 200) {
-					resolve(this.responseText);
+					resolve(this.response);
 				}
 				else if (this.status == 304) {
 					debugger
@@ -78,6 +88,8 @@ export class ResourceManager {
 	 * @returns {{info:{icon:{[""]:string},iconRaw:{[""]:string}},name:string,desc:string,[prop:string]:any}}
 	 */
 	static async getItem(itemId) {
+		const { ItemCategoryInfo } = await import("../../src/Common/ItemCategoryInfo.js");
+
 		/** @type {ItemCategoryInfo} */
 		let info = ItemCategoryInfo.get(itemId);
 		if (!info) {
@@ -318,11 +330,11 @@ $get.pack = async function $get_pack(path) {
 		return obj;
 	}
 	else {
-		if (process.env.NODE_ENV !== "production") {
-			if (obj && !obj[symbol_isPack]) {
-				throw new TypeError("data: " + path);
-			}
-		}
+		//if (process.env.NODE_ENV !== "production") {
+		//	if (obj && !obj[symbol_isPack]) {
+		//		throw new TypeError("data: " + path);
+		//	}
+		//}
 		const url = $get.packUrl(path);
 
 		let task = (async function () {
@@ -442,6 +454,50 @@ $get.listSync = function $get_listSync(path) {
 	}
 	return undefined;
 }
+/**
+ * @param {string} path
+ * @returns {Promise<any>}
+ */
+$get.binary = async function $get_data(path) {
+	let _path = _getDataPathByUrl(path);
+	let obj;
+
+	if (_path) {
+		obj = $getValueAsync($archive, _path);
+	}
+
+	if (obj instanceof Promise) {
+		return await obj;
+	}
+	else if (obj) {
+		return obj;
+	}
+	else {
+		const url = $get.binaryUrl(path);
+
+		let task = (async function () {
+			let buf = await ResourceManager.get(url, "arrayBuffer");
+
+			_setValueByPath(path, buf, false);
+
+			return buf;
+		})();
+		_setValueByPath(path, task, false);
+
+		return await task;
+	}
+}
+/**
+ * @param {string} path
+ * @returns {any}
+ */
+$get.binarySync = function get_dataSync(path) {
+	let obj = _getValueFromArchiveByPath(path);
+	if (obj) {
+		return obj;
+	}
+	return undefined;
+}
 
 /**
  * @param {string} path
@@ -477,6 +533,19 @@ $get.listUrl = function $get_listUrl(path) {
 		return `${window.$ROOT_PATH}ls${path}.json`;
 	}
 	throw new Error(path);
+}
+/**
+ * @param {string} path
+ * @returns {string}
+ */
+$get.binaryUrl = function $get_dataUrl(path) {
+	if (url_startsWith_protocol(path)) {
+		return path;
+	}
+	else if (!path.startsWith("binary")) {
+		return `${window.$ROOT_PATH}binary${path}`;
+	}
+	throw new Error("Not game binary data: " + path);
 }
 /**
  * @param {string} path
