@@ -591,7 +591,7 @@ export class Game {
 					{
 						ctx.beginPath();
 
-						ctx.fillStyle = "white";
+						ctx.fillStyle = "0xFFF7";
 						ctx.fillRect(0, 0, 96, 50);
 
 						ctx.fillStyle = "black";
@@ -619,8 +619,8 @@ export class Game {
 		const screen_height = engine.screen_size.y;
 		const scr_hw = screen_width * 0.5;
 		const scr_hh = screen_height * 0.5;
-		
-		ctx.font = "2em 微軟正黑體";
+
+		ctx.font = "2em sans-serif";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "center";
 		
@@ -638,7 +638,12 @@ export class Game {
 		/** @type {CanvasRenderingContext2D} */
 		const ctx = engine.ctx;
 
-		const ta = ctx.textAlign, tb = ctx.textBaseline, lw = ctx.lineWidth;
+		const [ta, tb, lw, font] = [ctx.textAlign, ctx.textBaseline, ctx.lineWidth, ctx.font];
+
+		ctx.font = "14px sans-serif";
+
+		ctx.globalAlpha = 0.8;
+
 		ctx.textBaseline = "top";
 		ctx.lineWidth = 2.5;
 		ctx.strokeStyle = "#000";
@@ -675,8 +680,9 @@ export class Game {
 				if (_val != val) {
 					ctx.fillStyle = "#0FF";
 				}
-
-				ctx.fillStyle = "#FFF";
+				else {
+					ctx.fillStyle = "#FFF";
+				}
 				{
 					ctx.textAlign = "right";
 					ctx.strokeText(text, x - 2 + 200, y);
@@ -701,6 +707,7 @@ export class Game {
 		ctx.textAlign = ta;
 		ctx.textBaseline = tb;
 		ctx.lineWidth = lw;
+		ctx.font = font;
 	}
 	
 	/**

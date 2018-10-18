@@ -100,7 +100,7 @@ export class ChatBalloon {
 		const PADDING_LEFT = 0, PADDING_TOP = 0, PADDING_RIGHT = 0, PADDING_BOTTOM = 0;
 
 		ctx.fillStyle = this.color;
-		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.font = "12px sans-serif";//微軟正黑體//新細明體
 		ctx.textAlign = "center";
 		ctx.textBaseline = "hanging";//top
 		

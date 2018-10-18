@@ -115,7 +115,7 @@ export class SceneObject {
 		const ctx = renderer.ctx;
 		const crr = this.renderer;
 
-		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.font = "12px sans-serif";//微軟正黑體//新細明體
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "start";
 

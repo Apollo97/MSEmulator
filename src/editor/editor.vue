@@ -1,7 +1,8 @@
 ﻿
 <template>
 	<div @contextmenu.self.prevent="" class="dialog-group Editor">
-		
+
+		<!-- begin menu -->
 		<ui-dialog :title="wnds.menu.name" ref="menu">
 			<template slot="header">
 				Menu
@@ -75,7 +76,7 @@
 						<div><label><input type="checkbox" v-model="gv.m_display_debug_info" /> debug info</label></div>
 
 						<div><label><input type="checkbox" v-model="gv.m_display_physics_debug" /> physics debug</label></div>
-						
+
 						<div v-for="flagName in gv.m_debugDraw.flagNames">
 							<label><input type="checkbox" v-model.number="gv.m_debugDraw[flagName]" /> {{flagName.slice(5)}}</label>
 						</div>
@@ -86,7 +87,9 @@
 				</details>
 			</template>
 		</ui-dialog>
-
+		<!-- end menu -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin character_list -->
 		<transition name="fade">
 			<ui-dialog :title="wnds.character_list.name" ref="character_list" v-show="wnds.character_list.visable">
 				<template slot="header">
@@ -151,7 +154,9 @@
 				</template>
 			</ui-dialog>
 		</transition>
-			
+		<!-- end character_list -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin character_renderer -->
 		<transition name="fade">
 			<ui-dialog :title="wnds.character_renderer.name" ref="character_renderer" v-show="wnds.character_renderer.visable">
 				<template slot="header">
@@ -164,7 +169,9 @@
 				</template>
 			</ui-dialog>
 		</transition>
-		
+		<!-- end character_renderer -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin spawnpoint -->
 		<transition name="fade">
 			<ui-dialog :title="wnds.spawnpoint.name" ref="spawnpoint" v-show="wnds.spawnpoint.visable">
 				<template slot="header">
@@ -175,7 +182,9 @@
 				</template>
 			</ui-dialog>
 		</transition>
-			
+		<!-- end spawnpoint -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin equip_box -->
 		<transition name="fade">
 			<ui-dialog :title="wnds.equip_box.name" ref="equip_box" v-show="wnds.equip_box.visable">
 				<template slot="header">
@@ -188,13 +197,14 @@
 								  @faceColor="faceColor"
 								  @hairColor="hairColor"
 								  @hairColor2="hairColor2"
-								  @hairMix2="hairMix2"
-								  >
+								  @hairMix2="hairMix2">
 					</ui-equip-box>
 				</template>
 			</ui-dialog>
 		</transition>
-		
+		<!-- end equip_box -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin mapEditor -->
 		<transition name="fade">
 			<template v-if="mapEditorMode.startsWith('layered')">
 				<ui-dialog :title="wnds.debug_window.name" ref="debug_window" v-show="wnds.debug_window.visable">
@@ -205,14 +215,16 @@
 							<option value="layeredObject">layered object</option>
 							<option value="layeredTile">layered tile</option>
 						</select>
-						mode <input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
+						mode
+						<input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
 						<button @click="dirty++">{{dirty}}</button>
 					</template>
 					<template slot="content">
 						<div v-if="scene_map() && scene_map()[mapEditorMode].length" :style="wnd_debug_style">
 							<div style="background: white;">
 								<input v-model="wnd_debug_style.background" type="color" title="window background color" />
-								<label>layer <select v-model="selectedLayer">
+								<label>
+									layer <select v-model="selectedLayer">
 										<option v-for="layer in scene_map()[mapEditorMode].length">{{layer - 1}}</option>
 									</select>
 								</label>
@@ -233,7 +245,8 @@
 							<option value="layeredObject">layered object</option>
 							<option value="layeredTile">layered tile</option>
 						</select>
-						tex info <input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
+						tex info
+						<input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
 						<button @click="dirty--">{{dirty}}</button>
 					</template>
 					<template slot="content">
@@ -248,7 +261,9 @@
 				</ui-dialog>
 			</template>
 		</transition>
-			
+		<!-- end mapEditor -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin constex menu -->
 		<transition name="fade">
 			<ui-menu :show="is_show_chara_dl_menu" ref="chara_dl_menu" @close="closeCharacterDLMenu" style="position: absolute; width: 8em; z-index: 99999;">
 				<template v-if="chara">
@@ -269,23 +284,7 @@
 				</template>
 			</ui-menu>
 		</transition>
-		
-		<!--<transition name="fade">
-			<ui-dialog :title="wnds.player_data.name" ref="player_data" v-show="wnds.player_data.visable">
-				<template slot="header">
-					Player data
-				</template>
-				<template slot="content">
-					<input type="text" v-if="chara" v-model="chara.id" placeholder="名字" />
-					<input type="text" v-else placeholder="loading..." />
-				</template>
-			</ui-dialog>
-		</transition>-->
-		
-		<!--<ui-dialog title="chara.id" :options="{ hasHeader: false, resizable: false }">
-			<input type="text" v-if="chara" v-model="chara.id" placeholder="名字" />
-			<input type="text" v-else placeholder="loading..." />
-		</ui-dialog>-->
+		<!-- end constex menu -->
 	</div>
 </template>
 
@@ -313,17 +312,31 @@
 
 	import { engine } from '../game/Engine.js';
 
+	class EditorState {
+		constructor() {
+			/** @type {BaseSceneCharacter[]} chara */
+			this.charaList = [];
+
+			/** @type {BaseSceneCharacter} chara */
+			this.chara = null;
+
+			/** @type {string} id */
+			this.selected = null;
+
+			this._last_id = 0;
+
+			this.progressValue = 0;
+			this.progressMaximum = 0;
+		}
+	}
+
+	let editorState = new EditorState();
+	if (module.hot) {
+		Object.assign(editorState, window.$hot$editor_store);
+	}
 	const store = new Vuex.Store({
 		//strict: process.env.NODE_ENV !== 'production',
-		state: {
-			charaList: [],
-			chara: null,/** @type {BaseSceneCharacter} chara */
-			selected: null,/** @type {string} id */
-			_last_id: 0,
-
-			progressValue: 0,
-			progressMaximum: 0,
-		},
+		state: editorState,
 		getters: {
 			lastId: function (state, getters) {
 				return "chara_" + state._last_id;
@@ -472,22 +485,25 @@
 						return;
 					}
 
-					if (payload.moveCharaPosition) {
-						try {
-							if (state.chara) {
-								state.chara.enablePhysics = false;
-							}
-							//
-							selected_chara.enablePhysics = true;
+					try {
+						const oldSelectChara = state.chara;
+						if (oldSelectChara) {
+							oldSelectChara.enablePhysics = false;
+						}
+
+						selected_chara.enablePhysics = true;
+
+						if (payload.moveCharaPosition) {
 							if (selected_chara.$physics) {
 								const x = selected_chara.renderer.x / $gv.CANVAS_SCALE;
 								const y = selected_chara.renderer.y / $gv.CANVAS_SCALE;
 								selected_chara.$physics.setPosition(x, y, true);
 							}
 						}
-						catch (ex) {
-							debugger;
-						}
+					}
+					catch (ex) {
+						console.error(ex);
+						debugger;
 					}
 
 					window.chara = state.chara = selected_chara;
@@ -590,11 +606,12 @@
 					else if (payload.emplace) {
 						chara.id = payload.emplace.id;
 						if (payload.emplace.code) {
-							console.warn("");
+							console.warn("emplace.code is deprecated");
 							chara.renderer._parse(payload.emplace.code);
 						}
 						if (payload.emplace.data) {
 							if (payload.emplace.data.equips_code) {
+								console.warn("emplace.data.equips_code is deprecated");
 								chara.renderer._parse(payload.emplace.data.equips_code);
 							}
 							else {
@@ -673,6 +690,9 @@
 			},
 		}
 	});
+	if (module.hot) {
+		window.$hot$editor_store = store;
+	}
 
 	export default {
 		store,
@@ -741,8 +761,8 @@
 				if (scene_map) {
 					scene_map.addChara(chara, {
 						position: {
-							x: window.innerWidth / 2,
-							y: window.innerHeight / 2,
+							x: ($gv.m_viewRect.x + window.innerWidth / 2) / $gv.CANVAS_SCALE,
+							y: ($gv.m_viewRect.y + window.innerHeight / 2) / $gv.CANVAS_SCALE,
 						},
 					});
 				}
@@ -970,6 +990,10 @@
 			"ui-mob-list": UIMobList,
 			"ui-map-editor": UIMapEditor,
 		}
+	}
+
+	if (module.hot) {
+		module.hot.accept();
 	}
 </script>
 

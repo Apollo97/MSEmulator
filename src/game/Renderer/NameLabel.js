@@ -59,7 +59,7 @@ export class NameLabel extends PanelRenderer {
 		const ctx = renderer.ctx;
 		
 		ctx.fillStyle = this.color;
-		ctx.font = "12px 微軟正黑體";//新細明體
+		ctx.font = "12px sans-serif";//微軟正黑體;//新細明體
 		ctx.textAlign = "center";
 		ctx.textBaseline = "hanging";//top
 		
