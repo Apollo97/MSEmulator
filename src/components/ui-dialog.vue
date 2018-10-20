@@ -30,7 +30,6 @@
 </template>
 
 <script>
-	import UIDraggable from "./ui-draggable.vue";
 	import UIResizable from "./ui-resizable.vue";
 
 	let zIndices = [];
@@ -89,15 +88,15 @@
 		},
 
 		computed: {
-			style: function () {
-				return this.$refs.window.style;
-			},
+			//style: function () {
+			//	return this.$refs.window.style;
+			//},
 			/*zIndex: {
 				get: function () {
-					return this.style.zIndex;
+					return this.$refs.window.style.zIndex;
 				},
 				set: function (value) {
-					this.style.zIndex = value;
+					this.$refs.window.style.zIndex = value;
 				}
 			}*/
 		},
@@ -222,7 +221,6 @@
 		//	}
 
 		components: {
-			"ui-draggable": UIDraggable,
 			"ui-resizable": UIResizable,
 		},
 		

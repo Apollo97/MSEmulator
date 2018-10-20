@@ -1,56 +1,54 @@
 
 <template>
-	<ui-draggable :zIndex="zIndex" :position="position">
-		<gui-root ref="gui_root" p="/UI/UIToolTip/Item/Frame2">
-			<div v-if="is_show" class="header frame" @mousedown.left="requireOrder($event)">
-				<div v-if="guiData" class="frame-warp">
-					<table class="frame-inner">
-						<tr>
-							<td :style="_getImgStyle('nw',true,true,false)"></td>
-							<td :style="_getImgStyle('n',false,true,true)"></td>
-							<td :style="_getImgStyle('ne',true,true,false)"></td>
-						</tr>
-						<tr>
-							<td :style="_getImgStyle('w',true,false,true)"></td>
-							<td :style="_getImgStyle('c',false,false,true)"></td>
-							<td :style="_getImgStyle('e',true,false,true)"></td>
-						</tr>
-						<tr>
-							<td :style="_getImgStyle('sw',true,true,false)"></td>
-							<td :style="_getImgStyle('s',false,true,true)"></td>
-							<td :style="_getImgStyle('se',true,true,false)"></td>
-						</tr>
-					</table>
+	<window-base ref="window">
+		<template slot="content">
+			<gui-root ref="gui_root" p="/UI/UIToolTip/Item/Frame2">
+				<div class="header frame">
+					<div v-if="guiData" class="frame-warp">
+						<table class="frame-inner">
+							<tr>
+								<td :style="_getImgStyle('nw',true,true,false)"></td>
+								<td :style="_getImgStyle('n',false,true,true)"></td>
+								<td :style="_getImgStyle('ne',true,true,false)"></td>
+							</tr>
+							<tr>
+								<td :style="_getImgStyle('w',true,false,true)"></td>
+								<td :style="_getImgStyle('c',false,false,true)"></td>
+								<td :style="_getImgStyle('e',true,false,true)"></td>
+							</tr>
+							<tr>
+								<td :style="_getImgStyle('sw',true,true,false)"></td>
+								<td :style="_getImgStyle('s',false,true,true)"></td>
+								<td :style="_getImgStyle('se',true,true,false)"></td>
+							</tr>
+						</table>
+					</div>
+					<div ref="content" class="header content">
+						<div v-for="(value, index) in [...html].reverse()" v-html="value" :class="'z'+(html.length-index)"></div><!---->
+						<slot></slot>
+					</div>
 				</div>
-				<div ref="content" class="header content">
-					<div v-for="(value, index) in [...html].reverse()" v-html="value" :class="'z'+(html.length-index)"></div><!---->
-					<slot></slot>
-				</div>
-			</div>
-		</gui-root>
-	</ui-draggable>
+			</gui-root>
+		</template>
+	</window-base>
 </template>
 
 <script>
-	import UIDraggable from "../../components/ui-draggable.vue";
-	import UIDialog from "../../components/ui-dialog.vue";
-
+	import WindowBase from "../UIWindow/WindowBase.vue";
 	import BasicComponent from "../BasicComponent.vue";
-	
+
 	
 	export default {
-		mixins: [UIDialog, BasicComponent],
 		data: function() {
 			return {
 				html: [],
-				is_show: false,
 				guiData: null,
-				zIndex: 0,
+				zIndex: 10000,
 			};
 		},
 		methods: {
 			__set_z_index: function (z) {
-				this.zIndex = z;
+				//this.zIndex = z;
 			},
 			_getImgStyle: function (p, h, v, repeat) {
 				let path, img, data = this.guiData, s = {};
@@ -67,45 +65,41 @@
 				}
 				return s;
 			},
-			show: function (cbfunc) {
-				this.is_show = true;
-				if (cbfunc) {
-					this.$nextTick(function () {
-						cbfunc();
-					});
-				}
+			show: function () {
+				const style = this.$refs.window.style;
+				this.$set(style, "visibility", "visible");
 			},
-			hide: function (cbfunc) {
-				this.is_show = false;
-				if (cbfunc) {
-					this.$nextTick(function () {
-						cbfunc();
-					});
-				}
+			hide: function () {
+				const style = this.$refs.window.style;
+				this.$set(style, "visibility", "hidden");
 			},
-			$position: function (...args) {
-				let cbfunc;
-				if (args.length > 1) {
-					cbfunc = args.pop();
-				}
-				$(this.$el).position(...args);
-				if (cbfunc) {
-					this.$nextTick(function () {
-						cbfunc();
-					});
-				}
+			$position: function (options) {
+				//calculate position
+				$(this.$el).position(options);//this.$refs.window.$el == this.$el//true
+
+				const style = this.$refs.window.style;
+				const attributeStyleMap = this.$refs.window.$el.attributeStyleMap;
+
+				//save position
+				style.left = attributeStyleMap.get("left");
+				style.top = attributeStyleMap.get("top");
 			},
-			setPosition: function (...args) {
-				let cbfunc;
-				if (args.length > 1) {
-					cbfunc = args.pop();
-				}
-				$(this.$el).position(...args);
-				if (cbfunc) {
-					this.$nextTick(function () {
-						cbfunc();
-					});
-				}
+			setPosition: function (left, top) {
+				const style = this.$refs.window.style;
+				style.left = left;
+				style.top = top;
+			},
+			setContentHtml: function (...content) {
+				this.html.splice(0);//remove all
+				this.html.push(...content);
+
+				this.$forceUpdate();
+				
+				const { width, height } = this.$refs.content.getBoundingClientRect();
+				const style = this.$refs.window.style;
+
+				style.width = CSS.px(width);
+				style.height = CSS.px(height);
 			},
 		},
 		mounted: async function () {
@@ -113,17 +107,18 @@
 			this.guiData = await this.$refs.gui_root._$promise;
 		},
 		components: {
-			"ui-draggable": UIDraggable,
-		}
+			"window-base": WindowBase,
+		},
+		mixins: [BasicComponent]
 	}
 </script>
 
 <usage>
-	app.vue.$refs.smallTip.html = "<h1>Hello</h1>";
+	app.vue.$refs.smallTip.html.push("<h1>Hello</h1>");
 	app.vue.$refs.smallTip.show();
-	
-	$(app.vue.$refs.smallTip.$el).position({ my: "left top", at: "left+100 top+100", of: window });
-		or
+
+	$(app.vue.$refs.smallTip.$el).setPosition(123, 456);
+	or
 	app.vue.$refs.smallTip.$position({ my: "left top", at: "left+100 top+100", of: window });
 </usage>
 

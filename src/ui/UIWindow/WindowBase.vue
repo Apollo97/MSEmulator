@@ -1,35 +1,56 @@
 ﻿
 <template>
-	<ui-draggable class="ui-dialog" :zIndex="zIndex" :position="position" @update:position="updateDialogPosition">
-		<div ref="header" @mousedown.left="requireOrder($event)" :style="content_style" class="header">
+	<div @mousedown="mousedown($event)"
+		 @mouseup="mouseup($event)"
+		 @touchstart="onTouch"
+		 @touchmove="onTouch"
+		 @touchend="onTouch"
+		 :style="style"
+		 class="gui-window"
+		 >
+		<!--<div ref="content" :class="{ 'dialog-content': true, 'hide': minimum }">-->
+		<div ref="content">
 			<slot name="header"></slot>
 			<slot name="content"></slot>
 			<slot></slot>
 			<slot name="footer"></slot>
 		</div>
-	</ui-draggable>
+	</div>
 </template>
 
 <script>
-	import UIDraggable from "../../components/ui-draggable.vue";
+	import UIResizable from "../../components/ui-resizable.vue";
 	import UIDialog from "../../components/ui-dialog.vue";
+
+	console.log("resizable");
 
 	export default {
 		data: function () {
 			return {
-				zIndex: 0,
 			};
 		},
 		methods: {
+			mousedown: function (event) {
+				this.requireOrder(event);
+				this.resizable_mousedown("move", event);
+			},
+			mouseup: function (event) {
+				this.resizable_mouseup("move", event);
+			},
 			__set_z_index: function (z) {
-				this.zIndex = z;
+				this.style.zIndex = z;
+			},
+			log: function (...args) {
+				console.log(...args);
 			},
 		},
+		//mounted: function content() {
+		//},
 		components: {
-			"ui-draggable": UIDraggable,
-			"ui-dialog": UIDialog,
+			"ui-resizable": UIResizable,
+			//"ui-dialog": UIDialog,
 		},
-		mixins: [UIDialog]
+		mixins: [UIDialog, UIResizable]
 	};
 
 </script>

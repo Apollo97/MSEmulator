@@ -1,71 +1,69 @@
 ﻿<template>
-	<window-base>
+	<window-base ref="window">
 		<template slot="content">
-			<div :style="wndStyle">
-				<gui-root ref="gui_root" p="/UI/UIWindow2/Item">
-					<!--begin back-->
-					<template>
-						<div v-if="isCollapsed">
-							<gui-texture-s p="backgrnd"></gui-texture-s>
-							<gui-texture-s p="backgrnd2"></gui-texture-s>
-							<gui-texture-s p="backgrnd3"></gui-texture-s>
-							<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
-							<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
-						</div>
-						<div v-else>
-							<gui-texture-s p="FullBackgrnd"></gui-texture-s>
-							<gui-texture-s p="FullBackgrnd2"></gui-texture-s>
-							<gui-texture-s p="FullBackgrnd3"></gui-texture-s>
-							<gui-frame-s p="FullBackgrnd" class="header"></gui-frame-s><!--draggable capsule-->
-							<gui-frame-s p="FullBackgrnd2"></gui-frame-s><!--not drag-->
-						</div>
-					</template>
-					<!--end back-->
-					<!--begin tabs-->
-					<template v-if="guiData">
-						<template v-if="typeList.indexOf(sType)>=0">
-							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
-						</template>
-						<template v-for="(tab, idx) in guiData.Tab.disabled">
-							<template v-if="typeList[idx]!=sType">
-								<gui-texture-s :p="'Tab/disabled/'+idx" @click="sType=typeList[idx]" class="ui-clickable"></gui-texture-s>
-							</template>
-						</template>
-					</template>
-					<!--end tabs-->
-				</gui-root>
-
-				<div class="slots-viewport" :style="pageStyle">
-					<!-- viewport: 4 * 24 -->
-					<div ref="slots_panel" class="slots-container">
-						<!--begin itemSlot-->
-						<div>
-							<template v-for="i in 128">
-								<div :style="getSlotStyle(i-1)" @dragover="allowDrop($event, i-1)" @drop="drop($event, i-1)">
-									<span class="wnd-item-slot-num">{{(i-1)}}</span>
-								</div>
-							</template>
-						</div>
-						<!--end itemSlot-->
-						<!--begin itemList-->
-						<div v-if="chara && chara.items" :style="slotsPanelStyle">
-							<template v-for="itemSlot in chara.items[sType].filter(a=>!!a)">
-								<template v-if="itemSlot.data">
-									<ui-slot-item :itemSlot="itemSlot"
-												  :slots="slots"
-												  @pickItem="onPickItem"
-												  @useItem="onUseItem"
-												  @hoverItem="onHoverItem"
-												  @mouseleaveItem="onMouseleaveItem"
-												  @showMenu="showMenu">
-									</ui-slot-item>
-								</template>
-							</template>
-						</div>
-						<!--end itemList-->
+			<gui-root ref="gui_root" p="/UI/UIWindow2/Item">
+				<!--begin back-->
+				<template>
+					<div v-if="isCollapsed">
+						<gui-texture-s p="backgrnd"></gui-texture-s>
+						<gui-texture-s p="backgrnd2"></gui-texture-s>
+						<gui-texture-s p="backgrnd3"></gui-texture-s>
+						<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+						<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
 					</div>
-					<ui-v-scrollbar :target="$refs.slots_panel" :step="scrollStep"></ui-v-scrollbar>
+					<div v-else>
+						<gui-texture-s p="FullBackgrnd"></gui-texture-s>
+						<gui-texture-s p="FullBackgrnd2"></gui-texture-s>
+						<gui-texture-s p="FullBackgrnd3"></gui-texture-s>
+						<gui-frame-s p="FullBackgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+						<gui-frame-s p="FullBackgrnd2"></gui-frame-s><!--not drag-->
+					</div>
+				</template>
+				<!--end back-->
+				<!--begin tabs-->
+				<template v-if="guiData">
+					<template v-if="typeList.indexOf(sType)>=0">
+						<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
+					</template>
+					<template v-for="(tab, idx) in guiData.Tab.disabled">
+						<template v-if="typeList[idx]!=sType">
+							<gui-texture-s :p="'Tab/disabled/'+idx" @click="sType=typeList[idx]" class="ui-clickable"></gui-texture-s>
+						</template>
+					</template>
+				</template>
+				<!--end tabs-->
+			</gui-root>
+
+			<div class="slots-viewport" :style="pageStyle">
+				<!-- viewport: 4 * 24 -->
+				<div ref="slots_panel" class="slots-container">
+					<!--begin itemSlot-->
+					<div>
+						<template v-for="i in 128">
+							<div :style="getSlotStyle(i-1)" @dragover="allowDrop($event, i-1)" @drop="drop($event, i-1)">
+								<span class="wnd-item-slot-num">{{(i-1)}}</span>
+							</div>
+						</template>
+					</div>
+					<!--end itemSlot-->
+					<!--begin itemList-->
+					<div v-if="chara && chara.items" :style="slotsPanelStyle">
+						<template v-for="itemSlot in chara.items[sType].filter(a=>!!a)">
+							<template v-if="itemSlot.data">
+								<ui-slot-item :itemSlot="itemSlot"
+												:slots="slots"
+												@pickItem="onPickItem"
+												@useItem="onUseItem"
+												@hoverItem="onHoverItem"
+												@mouseleaveItem="onMouseleaveItem"
+												@showMenu="showMenu">
+								</ui-slot-item>
+							</template>
+						</template>
+					</div>
+					<!--end itemList-->
 				</div>
+				<ui-v-scrollbar :target="$refs.slots_panel" :step="scrollStep"></ui-v-scrollbar>
 			</div>
 		</template>
 		<template slot="footer" v-if="is_show_menu">
@@ -122,10 +120,6 @@
 				sType: 0,
 				typeList: [0, 1, 2, 3, 4],
 				typeNameList: ["裝備", "消耗", "其他", "裝飾", "特殊"],
-				wndStyle: {
-					width: 0,
-					height: 0,
-				},
 				pageStyle: {
 					position: "absolute",
 					left: SLOT_START_POS_X + "px",
@@ -231,12 +225,12 @@
 			this.guiData = await this.$refs.gui_root._$promise;
 
 			if (this.isCollapsed) {
-				this.wndStyle["width"] = this.guiData.backgrnd.__w + "px";
-				this.wndStyle["height"] = this.guiData.backgrnd.__h + "px";
+				this.$refs.window.style.width = CSS.px(this.guiData.backgrnd.__w);
+				this.$refs.window.style.height = CSS.px(this.guiData.backgrnd.__h);
 			}
 			else {
-				this.wndStyle["width"] = this.guiData.FullBackgrnd.__w + "px";
-				this.wndStyle["height"] = this.guiData.FullBackgrnd.__h + "px";
+				this.$refs.window.style.width = CSS.px(this.guiData.FullBackgrnd.__w);
+				this.$refs.window.style.height = CSS.px(this.guiData.FullBackgrnd.__h);
 			}
 		},
 		components: {

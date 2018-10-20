@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; user-select: none;">
-		<transition name="fade" style="position: absolute;">
+		<transition name="fade" style="position: absolute; z-index: 0;">
 			<!-- editor and statusBar need init/reset window position, size -->
 			<div v-if="is_editor_mode" class="scene-editor;">
 				<editor ref="editor" @hoverItem="showItemTip(...arguments);"
@@ -10,7 +10,7 @@
 			</div>
 		</transition>
 
-		<transition name="fade" style="position: absolute;">
+		<transition name="fade" style="position: absolute; z-index: 0;">
 			<!-- editor and statusBar need init/reset window position, size -->
 			<status-bar ref="statusBar"
 						v-if="!is_editor_mode"

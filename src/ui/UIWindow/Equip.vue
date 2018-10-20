@@ -1,47 +1,45 @@
 ﻿
 <template>
-	<window-base>
+	<window-base ref="window">
 		<template slot="content">
-			<div :style="wndStyle">
-				<gui-root ref="gui_root" p="/UI/UIWindow4/Equip">
-					<gui-texture-s p="backgrnd"></gui-texture-s>
-					<gui-texture-s p="backgrnd2"></gui-texture-s>
-					<gui-texture-s p="tabbar"></gui-texture-s>
-					<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
-					<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
+			<gui-root ref="gui_root" p="/UI/UIWindow4/Equip">
+				<gui-texture-s p="backgrnd"></gui-texture-s>
+				<gui-texture-s p="backgrnd2"></gui-texture-s>
+				<gui-texture-s p="tabbar"></gui-texture-s>
+				<gui-frame-s p="backgrnd" class="header"></gui-frame-s><!--draggable capsule-->
+				<gui-frame-s p="backgrnd2"></gui-frame-s><!--not drag-->
 
-					<template v-if="guiData">
-						<!--begin tabs-->
-						<template v-for="(tab, idx) in guiData.Tab.disabled">
-							<template v-if="typeList[idx]!=sType">
-								<gui-texture-s @click="sType=typeList[idx]" :p="'Tab/disabled/'+idx" class="ui-clickable"></gui-texture-s>
-							</template>
-						</template>
-						<template v-if="typeList.indexOf(sType)>=0">
-							<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
-						</template>
-						<!--end tabs-->
-
-						<template v-if="sType">
-							<gui-texture-s :p="sType+'/backgrnd'"></gui-texture-s>
-							<template v-for="(obj, slot) in guiData[sType].Slots">
-								<div :title="slot" @click="alert(slot)">
-									<gui-texture-s :p="sType+'/Slots/'+slot"></gui-texture-s>
-									<img v-if="slotMap[sType]" :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
-										:src="getCharaEquipIconUrl(slotMap[sType][slot])"
-										/>
-								</div>
-							</template>
+				<template v-if="guiData">
+					<!--begin tabs-->
+					<template v-for="(tab, idx) in guiData.Tab.disabled">
+						<template v-if="typeList[idx]!=sType">
+							<gui-texture-s @click="sType=typeList[idx]" :p="'Tab/disabled/'+idx" class="ui-clickable"></gui-texture-s>
 						</template>
 					</template>
+					<template v-if="typeList.indexOf(sType)>=0">
+						<gui-texture-s :p="'Tab/enabled/'+typeList.indexOf(sType)"></gui-texture-s>
+					</template>
+					<!--end tabs-->
+
+					<template v-if="sType">
+						<gui-texture-s :p="sType+'/backgrnd'"></gui-texture-s>
+						<template v-for="(obj, slot) in guiData[sType].Slots">
+							<div :title="slot" @click="alert(slot)">
+								<gui-texture-s :p="sType+'/Slots/'+slot"></gui-texture-s>
+								<img v-if="slotMap[sType]" :style="{position: 'absolute', left: (getCharaEquipIconPos(slotMap[sType][slot]).x-obj.origin.x)+'px', top: (getCharaEquipIconPos(slotMap[sType][slot]).y-obj.origin.y)+'px'}"
+									:src="getCharaEquipIconUrl(slotMap[sType][slot])"
+									/>
+							</div>
+						</template>
+					</template>
+				</template>
 					
-					<select v-model="sType" style="position: absolute; left: 1em; bottom: 1.5em;">
-						<option v-for="stype in typeList" :value="stype">
-							{{stype}}
-						</option>
-					</select>
-				</gui-root>
-			</div>
+				<select v-model="sType" style="position: absolute; left: 1em; bottom: 1.5em;">
+					<option v-for="stype in typeList" :value="stype">
+						{{stype}}
+					</option>
+				</select>
+			</gui-root>
 		</template>
 	</window-base>
 </template>
@@ -101,11 +99,6 @@
 
 				typeList: [],
 				sType: "Equip",
-
-				wndStyle: {
-					width: 0,
-					height: 0,
-				},
 			};
 		},
 		methods: {
@@ -176,8 +169,8 @@
 			this.slot_imgWidth = this.guiData.Equip.Slots[1].__w;
 			this.slot_imgHeight = this.guiData.Equip.Slots[1].__h;
 
-			this.wndStyle["width"] = this.guiData.backgrnd.__w + "px";
-			this.wndStyle["height"] = this.guiData.backgrnd.__h + "px";
+			this.$refs.window.style.width = CSS.px(this.guiData.backgrnd.__w);
+			this.$refs.window.style.height = CSS.px(this.guiData.backgrnd.__h);
 		},
 		components: {
 			"window-base": WindowBase,

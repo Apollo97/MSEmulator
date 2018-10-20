@@ -260,7 +260,6 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="setting.ini" />
     <Content Include="src\components\ui-button-group.vue" />
     <Content Include="src\components\ui-dialog.vue" />
-    <Content Include="src\components\ui-draggable.vue" />
     <Content Include="src\components\ui-menu.vue" />
     <Content Include="src\components\ui-resizable.vue" />
     <Content Include="src\components\ui-sortable.vue" />

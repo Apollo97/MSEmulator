@@ -263,6 +263,19 @@
 		</transition>
 		<!-- end mapEditor -->
 		<!-------------------------------------------------------------------------->
+		<!-- begin shapeEditor -->
+		<transition name="fade">
+			<ui-dialog title="ShapeEditor" ref="shapeEditor" v-show="wnds.debug_window.visable">
+				<!--<template slot="header">
+					Shape Editor
+				</template>-->
+				<template slot="content">
+					<ui-mob-list @resize="$refs.spawnpoint.reset_content_style()"></ui-mob-list>
+				</template>
+			</ui-dialog>
+		</transition>
+		<!-- end shapeEditor -->
+		<!-------------------------------------------------------------------------->
 		<!-- begin constex menu -->
 		<transition name="fade">
 			<ui-menu :show="is_show_chara_dl_menu" ref="chara_dl_menu" @close="closeCharacterDLMenu" style="position: absolute; width: 8em; z-index: 99999;">
@@ -290,8 +303,7 @@
 
 <script>
 	import Vuex from 'vuex';
-
-	import UIDraggable from '../components/ui-draggable.vue';
+	
 	import UIDialog from '../components/ui-dialog.vue';
 	import UISortable from '../components/ui-sortable.vue';
 	import UITrigger from '../components/ui-trigger.vue';
@@ -976,7 +988,6 @@
 			document.getElementById("hidden_components").appendChild(elem);
 		},
 		components: {
-			"ui-draggable": UIDraggable,
 			"ui-dialog": UIDialog,
 			"ui-sortable": UISortable,
 			"ui-trigger": UITrigger,

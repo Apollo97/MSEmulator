@@ -169,27 +169,25 @@
 				this.hidePreview();
 			},
 			showPreview: async function (event, m) {
-				let target = event.currentTarget;
-				let type = m.type == "m" ? "Mob":"Npc";
-				let smallTip = this.$root.$refs.smallTip;
+				const smallTip = this.$root.$refs.smallTip;
+				const target = event.currentTarget;
+				const type = m.type == "m" ? "Mob":"Npc";
 				
-				let desc = await MapLifeEntity.loadLifeDesc(m);
+				const desc = await MapLifeEntity.loadLifeDesc(m);
 
-				let _url = $get.imageUrl(`/${type}/${m.id}/stand/0`);
-				
-				smallTip.html = ["<div>" + desc.name + "</div>" + `<img src="${_url}" />`];
-				
-				smallTip.show(function () {
-					smallTip.setPosition({
-						my: "right center",
-						at: "left center",
-						of: target,
-						collision: "fit"
-					});
+				const _url = $get.imageUrl(`/${type}/${m.id}/stand/0`);
+
+				smallTip.setContentHtml("<div>" + desc.name + "</div>" + `<img src="${_url}" />`);
+				smallTip.$position({
+					my: "right center",
+					at: "left center",
+					of: target,
+					collision: "fit"
 				});
+				smallTip.show();
 			},
 			hidePreview: function (event) {
-				let smallTip = this.$root.$refs.smallTip;
+				const smallTip = this.$root.$refs.smallTip;
 				smallTip.hide();
 			},
 			addSpawn: function () {
