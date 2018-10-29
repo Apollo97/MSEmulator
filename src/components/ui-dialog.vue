@@ -21,9 +21,11 @@
 					</div>
 				</div>
 			</div>
-			<div ref="content" :class="{ 'dialog-content': true, 'hide': minimum }">
-				<slot name="content"></slot>
-				<slot></slot>
+			<div ref="content" :class="{ 'dialog-content-outer': true, 'hide': minimum }">
+				<div class="dialog-content">
+					<slot name="content"></slot>
+					<slot></slot>
+				</div>
 			</div>
 		</div>
 	</ui-resizable>
@@ -235,10 +237,17 @@
 		border-radius: 4px;
 	}
 	
-	.dialog-content {
+	.dialog-content-outer {
+		border-top: 1px solid lightgray;
 		display: table-row;
 		height: 100%;
-		border-top: 1px solid lightgray;
+	}
+	.dialog-content {
+		overflow: auto;
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+		position: relative;
 	}
 	.hide {
 		display: none;

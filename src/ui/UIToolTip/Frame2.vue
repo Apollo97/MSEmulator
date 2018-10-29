@@ -66,12 +66,10 @@
 				return s;
 			},
 			show: function () {
-				const style = this.$refs.window.style;
-				this.$set(style, "visibility", "visible");
+				this.$refs.window.show();
 			},
 			hide: function () {
-				const style = this.$refs.window.style;
-				this.$set(style, "visibility", "hidden");
+				this.$refs.window.hide();
 			},
 			$position: function (options) {
 				//calculate position

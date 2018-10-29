@@ -6,9 +6,7 @@
 		 @touchmove="onTouch"
 		 @touchend="onTouch"
 		 :style="style"
-		 class="gui-window"
 		 >
-		<!--<div ref="content" :class="{ 'dialog-content': true, 'hide': minimum }">-->
 		<div ref="content">
 			<slot name="header"></slot>
 			<slot name="content"></slot>
@@ -19,28 +17,43 @@
 </template>
 
 <script>
-	import UIResizable from "../../components/ui-resizable.vue";
-	import UIDialog from "../../components/ui-dialog.vue";
+	import UIResizable from "./ui-resizable.vue";
+	import UIDialog from "./ui-dialog.vue";
 
 	export default {
+		props: {
+			borderWidth: {
+				default: 5,
+			},
+		},
 		data: function () {
 			return {
 			};
+		},
+		watch: {
+			borderWidth: function (newValue) {
+				this.resizable_borderWidth = newValue;
+			},
 		},
 		methods: {
 			mousedown: function (event) {
 				this.requireOrder(event);
 				this.resizable_mousedown("move", event);
+
+				this.$emit("mousedown", event);
 			},
 			mouseup: function (event) {
 				this.resizable_mouseup("move", event);
+
+				this.$emit("mouseup", event);
 			},
 			__set_z_index: function (z) {
 				this.style.zIndex = z;
 			},
 		},
-		//mounted: function () {
-		//},
+		mounted: function () {
+			this.resizable_borderWidth = this.borderWidth;
+		},
 		//components: {
 		//},
 		mixins: [UIDialog, UIResizable]
@@ -49,26 +62,4 @@
 </script>
 
 <style scoped>
-	.ui-dialog {
-		border: 0;
-		border-radius: 11px;
-		background: transparent;
-	}
-	.header {
-		padding: 0;
-		border: 0;
-		border-radius: 11px;
-		background: transparent;
-	}
-	.content {
-		padding: 0;
-		border: 0;
-		background: transparent;
-	}
-	.footer {
-		padding: 0;
-		border: 0;
-		height: 0;
-		background: transparent;
-	}
 </style>

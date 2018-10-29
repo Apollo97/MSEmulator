@@ -4,10 +4,13 @@ import {
 	b2World,
 	b2Body,
 	b2BodyType, b2BodyDef, b2FixtureDef,
-	b2EdgeShape, b2PolygonShape, b2CircleShape,
-	b2MouseJointDef,
+	b2ShapeType, b2EdgeShape, b2PolygonShape, b2CircleShape,
+	b2Joint, b2MouseJoint, b2DistanceJoint, b2MotorJoint,
+	b2MouseJointDef, b2DistanceJointDef, b2MotorJointDef,
+	b2Fixture,
 	b2ContactListener, b2Contact,
-	b2ParticleSystemDef, b2ParticleSystem, b2ParticleFlag, b2ParticleGroupDef
+	b2ParticleSystemDef, b2ParticleSystem, b2ParticleFlag, b2ParticleGroupDef,
+	b2_maxPolygonVertices
 } from "./Physics.js";
 
 import DebugDraw from "./DebugDraw.js";
@@ -82,6 +85,21 @@ class ContactListener extends b2ContactListener {
 	}
 }
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {b2AABB} aabb
+ */
+function FillAABB(ctx, aabb) {
+	const { lowerBound, upperBound } = aabb;
+	const [x, y] = [lowerBound.x, lowerBound.y];
+	const [w, h] = [upperBound.x - lowerBound.x, upperBound.y - lowerBound.y];
+	ctx.beginPath();
+	ctx.fillRect(x, y, w, h);
+}
+
+/** @type {b2Vec2[]} */
+let editor_edit_vertices = [];
+
 export class World extends b2World {
 	constructor() {
 		super(GRAVITY);
@@ -104,11 +122,29 @@ export class World extends b2World {
 		this.ladderRope = [];
 		
 		/** @type {b2Body} */
-		this.mapBound_body = null;
+		this.sceneBody = null;
 		
 		this.stop = false;
+
+
+		/** @type {b2Body} */
+		this.$_mouseBody = (function (world) {
+			let bdef = new b2BodyDef();
+			bdef.type = b2BodyType.b2_kinematicBody;
+			return world.CreateBody(bdef);
+		})(this);
 		
+		/** @type {b2MouseJoint} */
 		this.$_mouseJoint = null;
+
+		this.$_mouseAABB = new b2AABB();
+		this.$_mouseBoxWidth = 0.001;
+		//this.$_mouseBoxWidth = 0.5;
+
+
+		/** @type {b2Fixture} */
+		this.$_selectedFixture = null;
+
 
 		/** @type {(function():void)[]} */
 		this._onceAfterStep = [];
@@ -163,7 +199,8 @@ export class World extends b2World {
 	/**
 	 * after load map
 	 */
-	async load(map_raw_data) {
+	load(map_raw_data) {
+		this._createSceneBody();
 		this.ground.load(map_raw_data, this);
 		this.ladderRope = MapLadderRopeLoader.load(map_raw_data, this);
 	}
@@ -175,7 +212,7 @@ export class World extends b2World {
 		else {
 			this.ground.unload(this);
 			this.ladderRope.length = 0;
-			this.DestroyBody(this.mapBound_body);
+			this.DestroyBody(this.sceneBody);
 		}
 	}
 	
@@ -257,51 +294,82 @@ export class World extends b2World {
 			return body;
 		}
 	}
+
+	_createSceneBody() {
+		let bdef = new b2BodyDef();
+		bdef.type = b2BodyType.b2_kinematicBody;//b2BodyType.b2_dynamicBody;
+		bdef.gravityScale = 0;
+
+		let bb = this.CreateBody(bdef);
+		bb.$type = "MapBorder";
+
+		this.sceneBody = bb;
+	}
 	
 	/**
 	 * @param {Rectangle} rect
 	 */
-	_createMapBound(rect) {
-		let { left, top, right, bottom } = rect;
-		
-		left /= $gv.CANVAS_SCALE;
-		right /= $gv.CANVAS_SCALE;
-		top /= $gv.CANVAS_SCALE;
-		bottom /= $gv.CANVAS_SCALE;
-		
-		let bdef = new b2BodyDef();
-		//bdef.type = b2BodyType.b2_dynamicBody;
+	_createMapBorder(rect) {
+		const bb = this.sceneBody;
+		const [left, top, right, bottom] = [
+			rect.left / $gv.CANVAS_SCALE,
+			rect.top / $gv.CANVAS_SCALE,
+			rect.right / $gv.CANVAS_SCALE,
+			rect.bottom / $gv.CANVAS_SCALE,
+		];
+		const [hw, hh] = [(right - left) * 0.5, (bottom - top) * 0.5];
+		const [cx, cy] = [(right + left) * 0.5, (bottom + top) * 0.5];
+
 		let fdef = new b2FixtureDef();
-		let shape = new b2EdgeShape();
+		let shape = new b2PolygonShape();
 
 		fdef.$type = "MapBorder";
+		fdef.density = 1000000;
 		fdef.shape = shape;
 		fdef.filter.Copy(FilterHelper.get("map_border"));
 
-		let bb = this.CreateBody(bdef);
-		bb.$type = "MapBorder";
-		
-		shape.m_vertex1.Set(left, top);
-		shape.m_vertex2.Set(right, top);
-		bb.CreateFixture(fdef);
-		
-		shape.m_vertex1.Set(left, bottom);
-		shape.m_vertex2.Set(right, bottom);
-		bb.CreateFixture(fdef);
-		
-		shape.m_vertex1.Set(left, top);
-		shape.m_vertex2.Set(left, bottom);
-		bb.CreateFixture(fdef);
+		if (shape instanceof b2PolygonShape) {
+			//top
+			shape.SetAsBox(hw, 1, new b2Vec2(cx, top - 1), 0);
+			bb.CreateFixture(fdef);
 
-		shape.m_vertex1.Set(right, top);
-		shape.m_vertex2.Set(right, bottom);
-		bb.CreateFixture(fdef);
-		
-		if (this.player) {
-			this.player.setPosition((right + left) * 0.5, (bottom + top) * 0.5, true);
+			//bottom
+			shape.SetAsBox(hw, 1, new b2Vec2(cx, bottom + 1), 0);
+			bb.CreateFixture(fdef);
+
+			//left
+			shape.SetAsBox(1, hh, new b2Vec2(left - 1, cy), 0);
+			bb.CreateFixture(fdef);
+
+			//right
+			shape.SetAsBox(1, hh, new b2Vec2(right + 1, cy), 0);
+			bb.CreateFixture(fdef);
+		}
+		else if (shape instanceof b2EdgeShape) {
+			//top
+			shape.m_vertex1.Set(left, top);
+			shape.m_vertex2.Set(right, top);
+			bb.CreateFixture(fdef);
+
+			//bottom
+			shape.m_vertex1.Set(left, bottom);
+			shape.m_vertex2.Set(right, bottom);
+			bb.CreateFixture(fdef);
+
+			//left
+			shape.m_vertex1.Set(left, top);
+			shape.m_vertex2.Set(left, bottom);
+			bb.CreateFixture(fdef);
+
+			//right
+			shape.m_vertex1.Set(right, top);
+			shape.m_vertex2.Set(right, bottom);
+			bb.CreateFixture(fdef);
 		}
 
-		this.mapBound_body = bb;
+		//if (this.player) {
+		//	this.player.setPosition(cx, cy, true);
+		//}
 	}
 
 	//_player_rebirth() {
@@ -385,13 +453,10 @@ export class World extends b2World {
 		}
 
 		// Make a small box.
-		let aabb = new b2AABB();
 		let d = new b2Vec2();
-		d.Set(0.001, 0.001);
-		b2Vec2.SubVV(p, d, aabb.lowerBound);
-		b2Vec2.AddVV(p, d, aabb.upperBound);
-
-		let that = this;
+		d.Set(this.$_mouseBoxWidth, this.$_mouseBoxWidth);
+		b2Vec2.SubVV(p, d, this.$_mouseAABB.lowerBound);
+		b2Vec2.AddVV(p, d, this.$_mouseAABB.upperBound);
 		let hit_fixture = null;
 		
 		// Query the world for overlapping shapes.
@@ -402,16 +467,17 @@ export class World extends b2World {
 			 * @returns false to terminate the query.
 			 */
 			ReportFixture(fixture) {
-				let body = fixture.GetBody();
-				if (body.GetType() != b2BodyType.b2_staticBody) {
-					let inside = fixture.TestPoint(p);
+				const shape = fixture.m_shape;
+				//const body = fixture.GetBody();
+				//if (body.GetType() != b2BodyType.b2_staticBody) {
+				let inside = shape.m_type == b2ShapeType.e_edgeShape || shape.m_type == b2ShapeType.e_chainShape || fixture.TestPoint(p);
 					if (inside) {
 						hit_fixture = fixture;
 
 						// We are done, terminate the query.
 						return false;
 					}
-				}
+				//}
 				
 				// Continue the query.
 				return true;
@@ -433,18 +499,49 @@ export class World extends b2World {
 			ShouldQueryParticleSystem(system) {
 				return true;
 			}
-		}, aabb);
+		}, this.$_mouseAABB);
 
 		if (hit_fixture) {
 			let body = hit_fixture.GetBody();
-			let md = new b2MouseJointDef();
-			md.bodyA = this.ground.bodies[0];
-			md.bodyB = body;
-			md.target.Copy(p);
-			md.maxForce = 1000 * body.GetMass();
-			this.$_mouseJoint = this.CreateJoint(md);
+			
+			//let jd = new b2MotorJointDef();//point to point
+			//let jd = new b2DistanceJointDef();
+			let jd = new b2MouseJointDef();
+
+			jd.bodyA = this.$_mouseBody;//this.sceneBody;//this.ground.bodies[0];
+			jd.bodyB = body;
+			
+			if (jd instanceof b2MotorJointDef) {
+				jd.maxForce = this.$$maxForce || 1000 * body.GetMass();
+				jd.maxTorque = this.$$maxTorque || jd.maxTorque;
+				jd.linearOffset.Copy(p);
+			}
+			else if (jd instanceof b2DistanceJointDef) {
+				jd.dampingRatio = this.$$dampingRatio || jd.dampingRatio;
+				jd.frequencyHz = this.$$frequencyHz || jd.frequencyHz;
+				jd.length = this.$$length | 0;
+			}
+			else if (jd instanceof b2MouseJointDef) {
+				jd.target.Copy(p);
+				jd.maxForce = 1000 * body.GetMass();
+			}
+
+			this.$_mouseJoint = this.CreateJoint(jd);
 			body.SetAwake(true);
+
+			this.$_selectedFixture = hit_fixture;
 		}
+		else {
+			//editor_edit_vertices.push(p);
+		}
+	}
+
+	/**
+	 * @param {b2Vec2} p
+	 */
+	$_mouseRightDown(p) {
+		//editor_edit_vertices.pop();
+		this.$_selectedFixture = null;
 	}
 	
 	/**
@@ -462,7 +559,20 @@ export class World extends b2World {
 	 */
 	$_mouseMove(p) {
 		if (this.$_mouseJoint) {
-			this.$_mouseJoint.SetTarget(p);
+			if (this.$_mouseJoint instanceof b2MouseJoint) {
+				/** @type {b2MouseJoint} */
+				const j = this.$_mouseJoint;
+				j.SetTarget(p);
+			}
+			else if (this.$_mouseJoint instanceof b2MotorJoint) {
+				/** @type {b2MotorJoint} */
+				const j = this.$_mouseJoint;
+				j.SetLinearOffset(p);
+			}
+			else {
+				this.$_mouseBody.SetPosition(p);
+			}
+			this.$_mouseJoint.GetBodyB().SetAwake(true);
 		}
 	}
 	
@@ -471,10 +581,13 @@ export class World extends b2World {
 		const y = ($gv.m_viewRect.top + $gv.mouse_y) / $gv.CANVAS_SCALE;
 		const p = new b2Vec2(x, y);
 		
-		if ($gv.mouse_dl) {
+		if ($gv.mouse_dl == 1) {
 			this.$_mouseDown(p);
 		}
-		if ($gv.mouse_ul) {
+		if ($gv.mouse_dr == 1) {
+			this.$_mouseRightDown(p);
+		}
+		if ($gv.mouse_ul == 1) {
 			$gv.mouse_ul = 0;
 			this.$_mouseUp(p);
 		}
@@ -538,7 +651,18 @@ export class World extends b2World {
 			ctx.scale(debugDraw.viewZoom, debugDraw.viewZoom);
 			ctx.lineWidth /= debugDraw.viewZoom;
 
-			this.DrawDebugData();
+			this.DrawDebugData();//line: 666
+
+			if (this.$_selectedFixture) {
+				const b = this.$_selectedFixture.GetBody();
+				const xf = b.m_xf;
+
+				this.m_debugDraw.PushTransform(xf);
+				{
+					this.DrawShape(this.$_selectedFixture, b2World.DrawDebugData_s_color.SetRGBA(0.9, 0.1, 0.1, 0.6));
+				}
+				this.m_debugDraw.PopTransform(xf);
+			}
 
 			//display player's front
 			if (player && player.body) {
@@ -557,6 +681,76 @@ export class World extends b2World {
 				}
 			}
 
+			if (editor_edit_vertices.length) {
+				if (editor_edit_vertices.length >= 3 && editor_edit_vertices.length <= b2_maxPolygonVertices) {
+					ctx.beginPath();
+					ctx.moveTo(editor_edit_vertices[0].x, editor_edit_vertices[0].y);
+					for (let i = 1; i < editor_edit_vertices.length; ++i) {
+						const point = editor_edit_vertices[i];
+						ctx.lineTo(point.x, point.y);
+					}
+					ctx.fillStyle = "#F565";
+					ctx.fill();
+				}
+				else if (editor_edit_vertices.length >= 2) {
+					ctx.beginPath();
+					ctx.moveTo(editor_edit_vertices[0].x, editor_edit_vertices[0].y);
+					for (let i = 1; i < editor_edit_vertices.length; ++i) {
+						const point = editor_edit_vertices[i];
+						ctx.lineTo(point.x, point.y);
+					}
+					ctx.strokeStyle = "#5F65";
+					ctx.lineWidth = 0.25;
+					ctx.stroke();
+				}
+
+				ctx.fillStyle = "#F00A";
+
+				const [hw, hh] = [0.125, 0.125];
+				for (let i = 0; i < editor_edit_vertices.length; ++i) {
+					const point = editor_edit_vertices[i];
+					ctx.fillRect(point.x - hw, point.y - hh, hw * 2, hh * 2);
+				};
+			}
+			if (false) {
+				const { lowerBound, upperBound } = this.$_mouseAABB;
+				const [x1, y1] = [lowerBound.x, lowerBound.y];
+				const [x2, y2] = [upperBound.x, upperBound.y];
+
+				const [hw, hh] = [w * 0.5, h * 0.5];
+
+				ctx.strokeStyle = "#f007";
+				{
+					ctx.beginPath();
+					ctx.moveTo(0 - hw, y1);
+					ctx.lineTo(0 + hw, y1);
+					ctx.stroke();
+
+					ctx.beginPath();
+					ctx.moveTo(0 - hw, y2);
+					ctx.lineTo(0 + hw, y2);
+					ctx.stroke();
+				}
+
+				ctx.strokeStyle = "#0f07";
+				{
+					ctx.beginPath();
+					ctx.moveTo(x1, 0 - hh);
+					ctx.lineTo(x1, 0 + hh);
+					ctx.stroke();
+
+					ctx.beginPath();
+					ctx.moveTo(x2, 0 - hh);
+					ctx.lineTo(x2, 0 + hh);
+					ctx.stroke();
+				}
+
+				ctx.fillStyle = "#1246";
+				{
+					const [bw, bh] = [x2 - x1, y2 - y1];
+					ctx.fillRect(x1, y1, bw, bh);
+				}
+			}
 			ctx.restore();
 		}
 

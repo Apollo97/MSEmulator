@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div style="position: absolute; left: 0; top: 0;">
-		<div :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
+		<div @contextmenu.self.prevent :style="{'position': 'relative', 'width': system.resolution.x+'px', 'height': system.resolution.y+'px', 'line-height': 0}">
 			<gui-root ref="gui_root" p="/UI/StatusBar3">
 				<!-- begin bottomUI -->
 				<gui p="mainBar">

@@ -263,18 +263,31 @@
 		</transition>
 		<!-- end mapEditor -->
 		<!-------------------------------------------------------------------------->
-		<!-- begin shapeEditor -->
+		<!-- begin box2dEditor -->
 		<transition name="fade">
-			<ui-dialog title="ShapeEditor" ref="shapeEditor" v-show="wnds.debug_window.visable">
-				<!--<template slot="header">
+			<ui-dialog title="ShapeEditor" ref="box2dEditor" v-show="!workInProgress" :options="{width:'25em',height:'25em',hasHeader:true}">
+				<template slot="header">
 					Shape Editor
-				</template>-->
+				</template>
 				<template slot="content">
-					<ui-mob-list @resize="$refs.spawnpoint.reset_content_style()"></ui-mob-list>
+					<box2d-shape-editor :shape="sceneEditor.selectedShape"></box2d-shape-editor>
 				</template>
 			</ui-dialog>
 		</transition>
-		<!-- end shapeEditor -->
+		<!-- end box2dEditor -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin UIShapeList -->
+		<transition name="fade">
+			<ui-dialog title="ShapeList" ref="uiShapeList" v-show="!workInProgress" :options="{width:'18em',height:'18em',hasHeader:true}">
+				<template slot="header">
+					Shape List
+				</template>
+				<template slot="content">
+					<ui-shape-list :editor="sceneEditor"></ui-shape-list>
+				</template>
+			</ui-dialog>
+		</transition>
+		<!-- end UIShapeList -->
 		<!-------------------------------------------------------------------------->
 		<!-- begin constex menu -->
 		<transition name="fade">
@@ -317,12 +330,120 @@
 	import UIMobList from "./ui-mob-list.vue";
 	import UIMapEditor from "./ui-map-editor.vue";
 
+	import Box2dShapeEditor from "./SceneEditor/box2d-shape-editor.vue";
+	import UIShapeList from "./SceneEditor/shape-list.vue";
+	import { ShapeDef } from "./SceneEditor/ShapeDefinition.js";
+
 	//import { GameStateManager } from '../game/GameState.js';
 	
 	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
 
 	import { engine } from '../game/Engine.js';
+
+	class SceneEditor {
+		constructor() {
+			this.bodies = [];
+			this.fixtures = [];
+
+			/** @type {ShapeDef[]} */
+			this.shapes = [];
+
+
+			this._selectedBody = null;
+			this._selectedFixture = null;
+
+			/** @type {ShapeDef} */
+			this._selectedShape = null;
+
+
+			/** @type {string} */
+			this._selectedBodyName = null;
+
+			/** @type {string} */
+			this._selectedFixtureName = null;
+
+			/** @type {string} */
+			this._selectedShapeName = null;
+		}
+
+		get selectedBody() {
+			return this._selectedBody;
+		}
+		get selectedFixture() {
+			return this._selectedFixture;
+		}
+		get selectedShape() {
+			return this._selectedShape;
+		}
+
+		set selectedBodyName(bodyName) {
+			this.selectBody(bodyName);
+		}
+		set selectedFixtureName(fixtureName) {
+			this.selectFixture(fixtureName)
+		}
+		set selectedShapeName(shapeName) {
+			this.selectShape(shapeName);
+		}
+
+		get selectedBodyName() {
+			return this._selectedBodyName;
+		}
+		get selectedFixtureName() {
+			return this._selectedFixtureName;
+		}
+		get selectedShapeName() {
+			return this._selectedShapeName;
+		}
+
+		/**
+		 * @param {string} bodyName
+		 */
+		selectBody(bodyName) {
+			this._selectedBodyName = bodyName;
+			this._selectedBody = this.bodies.find(function (value) {
+				if (value.name == bodyName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} fixtureName
+		 */
+		selectFixture(fixtureName) {
+			this._selectedFixtureName = fixtureName;
+			this._selectedFixture = this.fixtures.find(function (value) {
+				if (value.name == fixtureName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} shapeName
+		 */
+		selectShape(shapeName) {
+			this._selectedShapeName = shapeName;
+			this._selectedShape = this.shapes.find(function (value) {
+				if (value.name == shapeName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} shapeName
+		 */
+		getShapeByName(shapeName) {
+			return this.shapes.find(function (value) {
+				if (value.name == shapeName) {
+					return true;
+				}
+			});
+		}
+	}
 
 	class EditorState {
 		constructor() {
@@ -339,6 +460,8 @@
 
 			this.progressValue = 0;
 			this.progressMaximum = 0;
+
+			this.sceneEditor = new SceneEditor();
 		}
 	}
 
@@ -733,6 +856,8 @@
 					debug_window: { name: "Map editor (Debug)", visable: true, },
 				},
 
+				workInProgress: true,
+
 				gv: $gv,
 			}
 		},
@@ -743,6 +868,7 @@
 				chara: "chara",			// current chara
 				progressValue: "progressValue",
 				progressMaximum: "progressMaximum",
+				sceneEditor: "sceneEditor",
 			}),
 			{
 			}
@@ -1000,6 +1126,9 @@
 
 			"ui-mob-list": UIMobList,
 			"ui-map-editor": UIMapEditor,
+
+			"box2d-shape-editor": Box2dShapeEditor,
+			"ui-shape-list": UIShapeList,
 		}
 	}
 
@@ -1024,8 +1153,7 @@
 
 	/*li.active {
 		background-color: lightcyan;
-	}
-	*/
+	}*/
 	.ui-character-list .active {
 		background: linear-gradient(to bottom, #ffec64 5%, #ffab23 100%);
 		background-color: #ffec64;

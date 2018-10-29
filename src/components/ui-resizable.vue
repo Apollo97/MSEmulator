@@ -7,23 +7,23 @@
 		 >
 		<table class="fill frame" ref="frame">
 			<tr>
-				<td class="resize-border nw color_nw" @mousedown="resizable_mousedown('nw', $event)" @mouseup="resizable_mouseup('nw', $event)"></td>
-				<td class="resize-border n color_n" @mousedown="resizable_mousedown('n', $event)" @mouseup="resizable_mouseup('n', $event)"></td>
-				<td class="resize-border ne color_ne" @mousedown="resizable_mousedown('ne', $event)" @mouseup="resizable_mouseup('ne', $event)"></td>
+				<td :style="resizableStyle_border_nw" class="resizable-border color_nw" @mousedown="resizable_mousedown('nw', $event)" @mouseup="resizable_mouseup('nw', $event)"></td>
+				<td :style="resizableStyle_border_n"  class="resizable-border color_n" @mousedown="resizable_mousedown('n', $event)" @mouseup="resizable_mouseup('n', $event)"></td>
+				<td :style="resizableStyle_border_ne" class="resizable-border color_ne" @mousedown="resizable_mousedown('ne', $event)" @mouseup="resizable_mouseup('ne', $event)"></td>
 			</tr>
 			<tr>
-				<td class="resize-border w color_w" @mousedown="resizable_mousedown('w', $event)" @mouseup="resizable_mouseup('w', $event)"></td>
+				<td :style="resizableStyle_border_w" class="resizable-border color_w" @mousedown="resizable_mousedown('w', $event)" @mouseup="resizable_mouseup('w', $event)"></td>
 				<td class="fill" @mousedown="resizable_mousedown('move', $event)" @mouseup="resizable_mouseup('move', $event)">
 					<div ref="content" class="fill content">
 						<slot></slot>
 					</div>
 				</td>
-				<td class="resize-border e color_e" @mousedown="resizable_mousedown('e', $event)" @mouseup="resizable_mouseup('e', $event)"></td>
+				<td :style="resizableStyle_border_e" class="resizable-border color_e" @mousedown="resizable_mousedown('e', $event)" @mouseup="resizable_mouseup('e', $event)"></td>
 			</tr>
 			<tr>
-				<td class="resize-border sw color_sw" @mousedown="resizable_mousedown('sw', $event)" @mouseup="resizable_mouseup('sw', $event)"></td>
-				<td class="resize-border s color_s" @mousedown="resizable_mousedown('s', $event)" @mouseup="resizable_mouseup('s', $event)"></td>
-				<td class="resize-border se color_se" @mousedown="resizable_mousedown('se', $event)" @mouseup="resizable_mouseup('se', $event)"></td>
+				<td :style="resizableStyle_border_sw" class="resizable-border color_sw" @mousedown="resizable_mousedown('sw', $event)" @mouseup="resizable_mouseup('sw', $event)"></td>
+				<td :style="resizableStyle_border_s"  class="resizable-border color_s" @mousedown="resizable_mousedown('s', $event)" @mouseup="resizable_mouseup('s', $event)"></td>
+				<td :style="resizableStyle_border_se" class="resizable-border color_se" @mousedown="resizable_mousedown('se', $event)" @mouseup="resizable_mouseup('se', $event)"></td>
 			</tr>
 		</table>
 	</div>
@@ -48,10 +48,16 @@
 		//if (!resizable_target) return;
 		resizable_target = null;
 		resizable_orientation = null;
+
+		window.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
+		window.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
 	}
 
-	window.addEventListener("mousemove", resizable_mouseMove, false);
-	window.addEventListener("mouseup", resizable_mouseUp, false);
+	if (module.hot) {
+		//remove old listener
+		window.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
+		window.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
+	}
 
 	function _to_css_px(value) {
 		return CSS.px(Math.trunc(value));
@@ -84,8 +90,12 @@
 		props: {
 			options: {
 				default: function () {
-					return default_options;
+					return Object.assign({}, default_options);
 				}
+			},
+			resizable_borderWidth: {
+				type: Number,
+				default: 5,//unit is px
 			},
 		},
 		data: function () {
@@ -95,30 +105,101 @@
 					boxSizing: "border-box",
 					//outline: "1px solid blue",
 					//border: "1px solid gray",
-					borderRadius: CSS.px(5),
-					left: CSS.em(5 + Math.trunc(Math.random() * 20)),
-					top: CSS.em(5 + Math.trunc(Math.random() * 20)),
-					width: CSS.em(20),
-					height: CSS.em(20),
-					zIndex: 0,
+					//borderRadius: CSS.px(5),
+					left: this.options.left || CSS.em(Math.trunc(Math.random() * 5)),
+					top: this.options.top || CSS.em(Math.trunc(Math.random() * 5)),
+					width: this.options.width || CSS.em(5 + Math.trunc(Math.random() * 10)),
+					height: this.options.height || CSS.em(5 + Math.trunc(Math.random() * 10)),
+					zIndex: this.options.zIndex || 0,
 				},
 				m_movable: true,
 				m_resizable: true,
+
+				_$resizable_borderWidth: 5,//unit is px
 				
 				_$options: Object.assign({}, default_options),
 			};
+		},
+		computed: {
+			resizableStyle_border_nw: function () {
+				return {
+					cursor: "nw-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					borderRadius: CSS.px(this.$data._$resizable_borderWidth) + " 0 0 0",
+				};
+			},
+			resizableStyle_border_n: function () {
+				return {
+					cursor: "n-resize",
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					/*borderBottom: "1px solid gray",*/
+				};
+			},
+			resizableStyle_border_ne: function () {
+				return {
+					cursor: "ne-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					borderRadius: "0 " + CSS.px(this.$data._$resizable_borderWidth) + " 0 0",
+				};
+			},
+			resizableStyle_border_w: function () {
+				return {
+					cursor: "w-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: "100%",
+					display: "block",
+					/*borderRight: "1px solid gray",*/
+				};
+			},
+			resizableStyle_border_e: function () {
+				return {
+					cursor: "e-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: "100%",
+					display: "block",
+					/*borderLeft: "1px solid gray",*/
+				};
+			},
+			resizableStyle_border_sw: function () {
+				return {
+					cursor: "sw-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					borderRadius: "0 0 0 " + CSS.px(this.$data._$resizable_borderWidth),
+				};
+			},
+			resizableStyle_border_s: function () {
+				return {
+					cursor: "s-resize",
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					/*borderTop: "1px solid gray",*/
+				};
+			},
+			resizableStyle_border_se: function () {
+				return {
+					cursor: "se-resize",
+					width: CSS.px(this.$data._$resizable_borderWidth),
+					height: CSS.px(this.$data._$resizable_borderWidth),
+					borderRadius: "0 0 " + CSS.px(this.$data._$resizable_borderWidth) + " 0",
+				};
+			},
 		},
 		watch: {
 			options: function () {
 				this.$data._$options = Object.assign({}, this.options, default_options);
 			},
+			resizable_borderWidth: function () {
+				this.$data._$resizable_borderWidth = this.resizable_borderWidth;
+			}
 		},
 		methods: {
 			setStyle: function (style) {
 				for (let [cssPropName, value] of Object.entries(style)) {
 					this.$set(this.style, cssPropName, value);
 				}
-				
+
 				this.$nextTick(() => {
 					let rect = this.$el.getBoundingClientRect();
 					this.style.left = _to_css_px(rect.left);
@@ -156,26 +237,32 @@
 					minHeight: minHeight,
 				});
 			},
+			show: function () {
+				this.$set(this.style, "visibility", "visible");
+			},
+			hide: function () {
+				this.$set(this.style, "visibility", "hidden");
+			},
 			isMovable: function () {
 				return this.$data._$options.movable && this.m_movable;
 			},
 			isResizable: function () {
 				return this.$data._$options.resizable && this.m_resizable;
 			},
-			resizable_mousedown: function (orientation, ev) {
-				if (ev.buttons == 1) {
+			resizable_mousedown: function (orientation, evt) {
+				if (evt.buttons == 1) {
 					if (!resizable_target) {
-						const tt = ev.target.tagName;
+						const tt = evt.target.tagName;
 						if (tt == "INPUT" || tt == "SELECT" || tt == "BUTTON" || tt == "SUMMARY") {
 							return;
 						}
-						//if (this.movableHandle instanceof Array) this.movableHandle.reduce((acc, v) => acc || ev.target.classList.contains(v), false)
+						//if (this.movableHandle instanceof Array) this.movableHandle.reduce((acc, v) => acc || evt.target.classList.contains(v), false)
 						if (orientation == "move") {
-							//if (ev.target.className.indexOf) {
-							//	console.log(ev, ev.target.className);
+							//if (evt.target.className.indexOf) {
+							//	console.log(evt, evt.target.className);
 							//	debugger;
 							//}
-							if (!this.isMovable() || ev.target.className.indexOf("header") < 0) {
+							if (!this.isMovable() || evt.target.className.indexOf("header") < 0) {
 								return;
 							}
 						}
@@ -184,19 +271,23 @@
 						}
 						//debugger;
 						//console.log("o: " + orientation + ", down");
-						resizable_target = this;
-						resizable_current_target = ev.currentTarget;
+						{
+							resizable_target = this;
+							window.addEventListener("mousemove", resizable_mouseMove, { passive: true });
+							window.addEventListener("mouseup", resizable_mouseUp, { passive: true });
+						}
+						resizable_current_target = evt.currentTarget;
 						resizable_orientation = orientation;
-						let el = ev.currentTarget;
+						let el = evt.currentTarget;
 						let rect = el.getBoundingClientRect();
-						resizable_local_left = rect.left - ev.pageX;
-						resizable_local_top = rect.top - ev.pageY;
-						resizable_local_right = rect.right - ev.pageX;
-						resizable_local_bottom = rect.bottom - ev.pageY;
+						resizable_local_left = rect.left - evt.pageX;
+						resizable_local_top = rect.top - evt.pageY;
+						resizable_local_right = rect.right - evt.pageX;
+						resizable_local_bottom = rect.bottom - evt.pageY;
 					}
 				}
 			},
-			resizable_mouseup: function (orientation, ev) {
+			resizable_mouseup: function (orientation, evt) {
 				if (resizable_target == this) {
 					resizable_target = null;
 					//console.log("o: " + orientation + ", up this");
@@ -206,91 +297,93 @@
 					//console.log("o: " + orientation + ", up ??");
 				}
 			},
-			resizable_onresize: function (orientation, ev) {
-				//console.log("o: " + orientation + ", x:" + ev.pageX);
-				
-				/*//check old width
-				if (this.style.minWidth && (this.style.minWidth instanceof CSSUnitValue)) {
-					const width = this.style.width.value;
-					const minWidth = this.style.minWidth.value;
-					
-					if (width >= minWidth && (
-						orientation == "nw" || orientation == "ne" ||
-						orientation == "w" || orientation == "e" ||
-						orientation == "sw" || orientation == "se")
-					) {
-						return;
-					}
-				}
-				
-				//check old height
-				if (this.style.minHeight && (this.style.minHeight instanceof CSSUnitValue)) {
-					const height = this.style.height.value;
-					const minHeight = this.style.minHeight.value;
-					if (height >= minHeight && (
-						orientation == "nw" || orientation == "n" || orientation == "ne" ||
-						orientation == "sw" || orientation == "s" || orientation == "se")
-					) {
-						return;
-					}
-				}*/
-				
+			resizable_onresize: function (orientation, evt) {
+				//console.log("o: " + orientation + ", x:" + evt.pageX);
 				{
-					let rect_content = this.$refs.content.getBoundingClientRect();
+					const rect_content = this.$refs.content.getBoundingClientRect();
+					const [content_width, content_height] = [
+						rect_content.width + this.$data._$resizable_borderWidth * 2,
+						rect_content.height + this.$data._$resizable_borderWidth * 2
+					];
 					
 					let rect = this.$el.getBoundingClientRect();
+
+					/**
+					 * double pageX, pageY;
+					 * https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/pageX#Browser_compatibility
+					 */
+					const [mouseX, mouseY] = [Math.trunc(evt.pageX), Math.trunc(evt.pageY)];
 					
-					let left = (ev.pageX + resizable_local_left);
-					let top = (ev.pageY + resizable_local_top);
+					let left = (mouseX + resizable_local_left);
+					let top = (mouseY + resizable_local_top);
 					
-					let right = (ev.pageX + resizable_local_right);
-					let bottom = (ev.pageY + resizable_local_bottom);
-					let width = (Math.max(right - rect.left, rect_content.width));
-					let height = (Math.max(bottom - rect.top, rect_content.height));
+					let right = (mouseX + resizable_local_right);
+					let bottom = (mouseY + resizable_local_bottom);
+					let width = Math.max(right - rect.left, content_width);
+					let height = Math.max(bottom - rect.top, content_height);
 					
 					let d_left = left - rect.left;
 					let d_top = top - rect.top;
 					
 					let width1, height1;
 					if (this.style.boxSizing == "border-box") {
-						width1 = (Math.max(rect.right - left, rect_content.width));
-						height1 = (Math.max(rect.bottom - top, rect_content.height));
+						width1 = Math.max(rect.right - left, content_width);
+						height1 = Math.max(rect.bottom - top, content_height);
 					}
 					else/* if (this.style.boxSizing == "content-box")*/ {//default
-						style = this.$el.computedStyleMap();
+						const style = this.$el.computedStyleMap();
 						
+						const borderLeftWidth = style.get("border-left-width").value;
+						const borderRightWidth = style.get("border-right-width").value;
+						const borderTopWidth = style.get("border-top-width").value;
+						const borderBottomWidth = style.get("border-bottom-width").value;
+
 						//TODO: calc unit
-						let bw = style.get("border-left-width").value + style.get("border-right-width").value;
-						let bh = style.get("border-top-width").value + style.get("border-bottom-width").value;
+						const bw = borderLeftWidth + borderRightWidth;
+						const bh = borderTopWidth + borderBottomWidth;
 						
-						width1 = (Math.max(rect.right - left - bw, rect_content.width));
-						height1 = (Math.max(rect.bottom - top - bh, rect_content.height));
+						width1 = Math.max(rect.right - left - bw, content_width);
+						height1 = Math.max(rect.bottom - top - bh, content_height);
 					}
+
+					const resize_threshold = 1;
 					
 					switch (orientation) {
 						case "nw":
-							this.style.left = _to_css_px(left);
-							this.style.top = _to_css_px(top);
-							this.style.width = _to_css_px(width1);
-							this.style.height = _to_css_px(height1);
+							if (this.style.width.value != width1) {
+								this.style.left = _to_css_px(left);
+								this.style.width = _to_css_px(width1);
+							}
+							if (this.style.height.value != height1) {
+								this.style.top = _to_css_px(top);
+								this.style.height = _to_css_px(height1);
+							}
 							break;
 						case "w":
-							this.style.left = _to_css_px(left);
-							this.style.width = _to_css_px(width1);
+							if (this.style.width.value != width1) {
+								this.style.left = _to_css_px(left);
+								this.style.width = _to_css_px(width1);
+							}
 							break;
 						case "n":
-							this.style.top = _to_css_px(top);
-							this.style.height = _to_css_px(height1);
+							if (this.style.height.value != height1) {
+								this.style.top = _to_css_px(top);
+								this.style.height = _to_css_px(height1);
+							}
 							break;
 							
 						case "ne":
-							this.style.top = _to_css_px(top);
+							if (this.style.height.value != height1) {
+								this.style.top = _to_css_px(top);
+								this.style.height = _to_css_px(height1);
+							}
 							this.style.width = _to_css_px(width);
-							this.style.height = _to_css_px(height1);
 							break;
 						case "sw":
-							this.style.left = _to_css_px(left);
-							this.style.width = _to_css_px(width1);
+							if (this.style.width.value != width1) {
+								this.style.left = _to_css_px(left);
+								this.style.width = _to_css_px(width1);
+							}
 							this.style.height = _to_css_px(height);
 							break;
 							
@@ -307,8 +400,8 @@
 							
 						case "move":
 							//TODO: pos - ResizeHolder
-							this.style.left = _to_css_px(left - 5);
-							this.style.top = _to_css_px(top - 5);
+							this.style.left = _to_css_px(left - this.$data._$resizable_borderWidth);
+							this.style.top = _to_css_px(top - this.$data._$resizable_borderWidth);
 							break;
 					}
 				}
@@ -323,7 +416,7 @@
 					let bottom = top + height;
 					
 					let bound = this.$el.parentElement.getBoundingClientRect();
-					
+
 					if (left < bound.left) {
 						this.style.left = _to_css_px(bound.left);
 					}
@@ -336,11 +429,16 @@
 					else if (bottom > bound.bottom) {
 						this.style.top = _to_css_px(bound.bottom - height);
 					}
+
+					//parentElement.style => "position: relative; top: 0; left: 0;"
+					this.style.left.value -= bound.left;
+					this.style.top.value -= bound.top;
 				}
 				
-				/*this.$emit("resizable", {
+				this.$emit("resizable", {
+					event: evt,
 					orientation: orientation,
-				});*/
+				});
 			},
 			onTouch: function (evt) {
 				const tt = evt.target.tagName;
@@ -381,6 +479,8 @@
 		},
 		mounted: function () {
 			let rect;
+
+			this.$data._$resizable_borderWidth = this.resizable_borderWidth;
 			
 			if (this.$refs.frame) {
 				rect = this.$refs.frame.getBoundingClientRect();
@@ -436,58 +536,9 @@
 		box-shadow: 0 0 1px 0px black;
 	}
 
-	.resize-border {
+	.resizable-border {
 		padding: 0;
 		background: hsla(208, 100%, 80%, 0.5);
-	}
-
-	.resize-border.nw {
-		cursor: nw-resize;
-		width: 5px;
-		height: 5px;
-		border-radius: 5px 0 0 0;
-	}
-	.resize-border.n {
-		cursor: n-resize;
-		height: 5px;
-		/*border-bottom: 1px solid gray;*/
-	}
-	.resize-border.ne {
-		cursor: ne-resize;
-		width: 5px;
-		height: 5px;
-		border-radius: 0 5px 0 0;
-	}
-	.resize-border.w {
-		cursor: w-resize;
-		width: 5px;
-		height: 100%;
-		display: block;
-		/*border-right: 1px solid gray;*/
-	}
-	.resize-border.e {
-		cursor: e-resize;
-		width: 5px;
-		height: 100%;
-		display: block;
-		/*border-left: 1px solid gray;*/
-	}
-	.resize-border.sw {
-		cursor: sw-resize;
-		width: 5px;
-		height: 5px;
-		border-radius: 0 0 0 5px;
-	}
-	.resize-border.s {
-		cursor: s-resize;
-		height: 5px;
-		/*border-top: 1px solid gray;*/
-	}
-	.resize-border.se {
-		cursor: se-resize;
-		width: 5px;
-		height: 5px;
-		border-radius: 0 0 5px 0;
 	}
 
 

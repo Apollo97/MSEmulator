@@ -1574,13 +1574,13 @@ export class PPlayer extends PPlayerBase {
 	Step(stamp) {
 		super.Step(stamp);
 		
-		if ($gv.input_keyDown['L'] == 1 && !$gv.mouse_dl) {
+		if ($gv.input_keyDown['l'] == 1 && !$gv.mouse_dl) {
 			const px = $gv.m_viewRect.left + $gv.mouse_x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y;
 
 			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);
 		}
-		else if ($gv.input_keyDown['L'] > 0 && $gv.mouse_dl) {
+		else if ($gv.input_keyDown['l'] > 0 && $gv.mouse_dl) {
 			const center = $gv.m_viewRect.center;
 			const px = $gv.m_viewRect.left + $gv.mouse_x - center.x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y - center.y;
@@ -1588,7 +1588,7 @@ export class PPlayer extends PPlayerBase {
 			this.body.SetLinearVelocity(new b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
 			this.foot_walk.SetLinearVelocity(new b2Vec2(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE));
 		}
-		else if ($gv.mouse_dm && $gv.mouse_dm % 12 == 1) {
+		else if ($gv.mouse_dm) {
 			const px = $gv.m_viewRect.left + $gv.mouse_x;
 			const py = $gv.m_viewRect.top + $gv.mouse_y;
 			this.setPosition(px / $gv.CANVAS_SCALE, py / $gv.CANVAS_SCALE, true);

@@ -2650,35 +2650,48 @@ export class SceneMap {
 
 		this._loadBgm(raw);
 
-		this.$load_tasks.push(this._constructBack(raw, this));
-		
-		this.$load_tasks.push(this._constructLayeredObject(raw, this).then((mapobj) => {
-			//this.layeredObject
-			//this.layeredTile
-		}));
-		
-		this.$load_tasks.push(this.portalMgr.load(raw, this).then((portals) => {
-		}));
-		
-		this.$load_tasks.push(this.__constructMiniMap(raw, this));
+		this.$load_tasks.push((async () => {
+			let tasks = [];
 
-		this.$load_tasks.push(this.controller.load(raw, this));//load foothold...
-		this.$load_tasks.push(this.lifeMgr.load(raw, this));
-		
-		this.$load_tasks.push(MapParticle.construct(raw, this));
+			tasks.push(this._constructBack(raw, this));
 
-		let load_results = await Promise.all(this.$load_tasks);
-		
-		const viewRect = this._compute_map_bound();
-		const viewCenter = viewRect.center;
-		
-		$gv.m_viewRect.setCenter(viewCenter.x, viewCenter.y);
-		
-		this.controller._createMapBound(viewRect);
-		
+			tasks.push(this._constructLayeredObject(raw, this).then((mapobj) => {
+				//this.layeredObject
+				//this.layeredTile
+			}));
+
+			tasks.push(this.portalMgr.load(raw, this).then((portals) => {
+			}));
+
+			tasks.push(MapParticle.construct(raw, this));
+
+			await Promise.all(tasks);
+
+			{
+				this.controller.load(raw, this);//load foothold...
+			}
+
+			{
+				const viewRect = this._compute_map_bound();
+				const viewCenter = viewRect.center;
+
+				$gv.m_viewRect.setCenter(viewCenter.x, viewCenter.y);
+
+				this.controller._createMapBorder(viewRect);
+			}
+
+			await this.lifeMgr.load(raw, this);
+		})());
+
+		this.$load_tasks.push((async () => {
+			await this.__constructMiniMap(raw, this);
+		})());
+
+		await Promise.all(this.$load_tasks);
+
 		this.controller.stop = false;//end load
-		
-		this.$load_tasks = [];
+
+		this.$load_tasks.length = 0;//clear
 		console.log("completed scene_map.waitLoaded: [...]");
 		
 		this._script();

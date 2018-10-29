@@ -591,7 +591,7 @@ export class Game {
 					{
 						ctx.beginPath();
 
-						ctx.fillStyle = "0xFFF7";
+						ctx.fillStyle = "#FFF7";
 						ctx.fillRect(0, 0, 96, 50);
 
 						ctx.fillStyle = "black";
@@ -734,6 +734,26 @@ export class Game {
 		}
 		for (let i in $gv.input_keyUp) {
 			$gv.input_keyUp[i] = 0;
+		}
+
+		if ($gv.mouse_dl) {
+			$gv.mouse_dl++;
+		}
+		if ($gv.mouse_dm) {
+			$gv.mouse_dm++;
+		}
+		if ($gv.mouse_dr) {
+			$gv.mouse_dr++;
+		}
+
+		if ($gv.mouse_ul) {
+			$gv.mouse_ul = 0;
+		}
+		if ($gv.mouse_um) {
+			$gv.mouse_um = 0;
+		}
+		if ($gv.mouse_ur) {
+			$gv.mouse_ur = 0;
 		}
 		
 		uiAnimationManager.update(stamp);

@@ -1,6 +1,6 @@
 ﻿
 <template>
-	<div class="UIToolTip">
+	<div class="UIToolTip" style="position: absolute;">
 		<template v-if="chara != null && stat != null && equip != null">
 			<div v-if="isShow" class="UIToolTip frame" style="/*height: 658px;*/">
 				<table style="position:absolute; left:0px; top:0px; width:100%; height:100%;">
@@ -670,12 +670,10 @@
 	.c3 {
 		background: rgba(0,128,255,0.5);
 	}*/
-	#UIToolTip {
-		display: inline-block;
-		z-index: 9999;
-	}
 	.UIToolTip {
-		font-family: PMingLiU !important;
+		position: relative;
+		z-index: 9999;
+		font-family: sans-serif;
 		font-size: 12px;
 		color: #FFF;
 	}

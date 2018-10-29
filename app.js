@@ -82,20 +82,7 @@ function main(firstInit) {
 		app = DataServer(app);
 	}
 	else {
-		app.get('/javascripts/version.js', function (req, res, next) {
-			let js = [
-				`window.DATA_VERSION=${"1"};`,
-				`window.DATA_TAG="static-server";`,
-				`window.DATA_LAST_MODIFIED="${(new Date(0)).toUTCString()}";`,
-			].join("\n");
-
-			res.writeHead(200, {
-				"Content-Type": "application/x-javascript; charset=utf-8",
-				"Access-Control-Allow-Origin": "*",
-			});
-
-			res.end(js);
-		});
+		get_javascripts_version_js(app, 1, "static-server", (new Date(0)).toUTCString());
 	}
 
 	startServer(app, port);
@@ -662,20 +649,7 @@ function DataServer(app) {
 			res.end(`<script>${url}</script>`);
 		});
 
-		a_pp.get('/javascripts/version.js', function (req, res, next) {
-			let js = [
-				`window.DATA_VERSION=${_data_provider.version};`,
-				`window.DATA_TAG="${_data_provider.setting.tag}";`,
-				`window.DATA_LAST_MODIFIED="${_data_provider.mtime_utcs}";`,
-			].join("\n");
-
-			res.writeHead(200, {
-				"Content-Type": "application/x-javascript; charset=utf-8",
-				"Access-Control-Allow-Origin": "*",
-			});
-
-			res.end(js);
-		});
+		get_javascripts_version_js(a_pp, _data_provider.version, _data_provider.setting.tag, _data_provider.mtime_utcs);
 
 		a_pp.get('/make_zorders', function (req, res, next) {
 			if (_data_provider.isNeedResponse(req, res, next)) {
@@ -1046,6 +1020,36 @@ function DataServer(app) {
 	});
 	
 	return app;
+}
+
+function get_javascripts_version_js(app, dataVersion, dataTag, lastModified) {
+	app.get('/javascripts/version.js', function (req, res, next) {
+		res.writeHead(200, {
+			"Content-Type": "application/x-javascript; charset=utf-8",
+			"Access-Control-Allow-Origin": "*",
+		});
+
+		res.end(`
+window.DATA_VERSION = ${dataVersion};
+window.DATA_TAG = "${dataTag}";
+window.DATA_LAST_MODIFIED = "${lastModified}";
+`
+		);
+	});
+	app.get('/javascripts/version.mjs', function (req, res, next) {
+		res.writeHead(200, {
+			"Content-Type": "application/x-javascript; charset=utf-8",
+			"Access-Control-Allow-Origin": "*",
+		});
+
+		res.end(`
+export const {
+	dataVersion: ${dataVersion},
+	dataTag: "${dataTag}",
+	dataLastModified: "${lastModified}",
+};`
+		);
+	});
 }
 
 function inspect_locale(obj) {

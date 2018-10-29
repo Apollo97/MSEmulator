@@ -68,6 +68,9 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     </Compile>
     <Compile Include="src\Common\PlayerData.js" />
     <Compile Include="src\components\CorePosition.js" />
+    <Compile Include="src\editor\SceneEditor\ShapeDefinition.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\game\Animation.js" />
     <Compile Include="src\game\Canvas2DRenderer.js" />
     <Compile Include="src\game\Cursor.js" />
@@ -260,11 +263,20 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="setting.ini" />
     <Content Include="src\components\ui-button-group.vue" />
     <Content Include="src\components\ui-dialog.vue" />
+    <Content Include="src\components\ui-draggable.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\components\ui-menu.vue" />
     <Content Include="src\components\ui-resizable.vue" />
     <Content Include="src\components\ui-sortable.vue" />
     <Content Include="src\components\ui-trigger.vue" />
+    <Content Include="src\editor\SceneEditor\box2d-shape-editor.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\editor\editor.vue" />
+    <Content Include="src\editor\SceneEditor\shape-list.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\editor\ui-character-renderer.vue" />
     <Content Include="src\editor\ui-character-svg.vue" />
     <Content Include="src\editor\ui-character.vue" />
@@ -307,6 +319,7 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Folder Include="src\Common\Packet\" />
     <Folder Include="src\components\" />
     <Folder Include="src\editor\" />
+    <Folder Include="src\editor\SceneEditor\" />
     <Folder Include="src\game\" />
     <Folder Include="src\game\MobSkill\" />
     <Folder Include="src\game\Physics\" />
