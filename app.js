@@ -728,14 +728,14 @@ function DataServer(app) {
 			];
 			let filePath = path.join(...dirArr);
 
-			if (fs.existsSync(filePath)) {
-				return;
-			}
-			else if (extname) {
+			if (extname) {
 				filePath = filePath + extname;
 				if (fs.existsSync(filePath)) {
 					return;
 				}
+			}
+			else if (fs.existsSync(filePath)) {
+				return;
 			}
 
 			dirArr.pop();//remove file nmae
@@ -1043,11 +1043,13 @@ window.DATA_LAST_MODIFIED = "${lastModified}";
 		});
 
 		res.end(`
-export const {
+export const version = {
 	dataVersion: ${dataVersion},
 	dataTag: "${dataTag}",
 	dataLastModified: "${lastModified}",
-};`
+};
+export default version;
+`
 		);
 	});
 }
