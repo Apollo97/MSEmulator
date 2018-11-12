@@ -57,12 +57,17 @@ export class Ground {
 		/** @type {Rectangle[]} */
 		this.rectChains = null;
 
+		/** @type {FootholdChain[]} */
+		this.chains = null;
+
 		this.init();
 	}
 
 	init() {
 		this.footholds = [];
 		this.bodies = [];
+		this.chains = [];
+		this.rectChains = [];
 	}
 
 	/**
@@ -91,11 +96,7 @@ export class Ground {
 			}
 		}
 
-		/** @type {FootholdChain[]} */
-		let chains = [];
-
 		let chainId = 0;
-		let rectChains = this.rectChains = [];
 
 		for (let i = 0; i < this.footholds.length; ++i) {
 			const foothold = this.footholds[i];
@@ -132,9 +133,9 @@ export class Ground {
 					this._create_chain(world, chain);
 				}
 
-				chains.push(chain);
+				this.chains.push(chain);
 
-				rectChains[chainId] = chain.bound;
+				this.rectChains[chainId] = chain.rect;
 				
 				chainId++;
 			}
@@ -155,7 +156,7 @@ export class Ground {
 		{
 			let bdef = new b2BodyDef();
 
-			const center = chain.bound.center;
+			const center = chain.rect.center;
 
 			bdef.type = b2BodyType.b2_kinematicBody;//可移動
 			bdef.position.Set(center.x / $gv.CANVAS_SCALE, center.y / $gv.CANVAS_SCALE);

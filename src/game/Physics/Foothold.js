@@ -19,7 +19,7 @@ export class FootholdChain {
 		/** @type {FootholdSingle[]} */
 		this.footholds = [];
 
-		this.bound = new Rectangle();
+		this.rect = new Rectangle();
 
 		this.loop = false;
 	}
@@ -51,7 +51,7 @@ export class FootholdChain {
 			}
 		}
 
-		this.bound.parse(left, top, right, bottom);
+		this.rect.parse(left, top, right, bottom);
 
 		this.FootholdType = type;
 
@@ -61,7 +61,7 @@ export class FootholdChain {
 			});
 		}
 		else if (type == FootholdChainChild) {
-			let center = this.bound.center;
+			let center = this.rect.center;
 			let xf = new b2Transform();
 
 			xf.SetPositionXY(center.x, center.y);

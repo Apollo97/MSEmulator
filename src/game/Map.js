@@ -149,6 +149,7 @@ class MapTextureClip extends MapTexture {
 	}
 }
 
+//TODO: MapElement
 class MapObjectBase {
 	constructor(_raw) {
 		if (_raw == null) {
@@ -192,6 +193,17 @@ class MapObjectBase {
 		if (process.env.NODE_ENV !== 'production') {
 			this.__max_repeat_count = 1;
 		}
+	}
+
+	get isMapElement() {
+		return true;
+	}
+
+	/**
+	 * this.textures.length > 1
+	 */
+	get isAnimation() {
+		return this.textures.length > 1;
 	}
 	
 	_load_object_info() {
@@ -419,6 +431,9 @@ class MapObjectBase {
 		window.m_selected_object = this;
 		window.m_hover_object = null;
 		$gv.mouse_dl = 0;
+
+		this.display_aabb = true;
+		this.aabb_color = "rgba(255,0,0,0.5)";
 	}
 	$unselect() {
 		this.display_aabb = false;
@@ -644,6 +659,17 @@ class MapObject extends MapObjectBase {
 		this.update = this._update_and_preload;
 	}
 
+	get isMapObject() {
+		return true;
+	}
+
+	/**
+	 * allow one frame
+	 */
+	get isAnimation() {
+		return true;
+	}
+
 	/**
 	 * @override
 	 * @param {number} i - texture index
@@ -655,7 +681,7 @@ class MapObject extends MapObjectBase {
 		let path = ["/Map", "Obj", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i], null_url, texture0);
-		texture._url = path;
+		//181105//texture._url = path;
 
 		return texture;
 	}
@@ -673,17 +699,22 @@ class MapObject extends MapObjectBase {
 			return map_sprite.Obj[this._raw.oS][this._raw.l0][this._raw.l1][this._raw.l2];
 		}
 		catch (ex) {
+			console.error(ex);
 			debugger;
 		}
 		return null;
 	}
 }
 
-class MapParticle extends MapObject {
+class MapParticle extends MapObjectBase {
 	constructor(_raw) {
 		super(_raw);
 		/** @type {ParticleGroup[]} */
 		this.groups = [];
+	}
+
+	get isMapParticle() {
+		return true;
 	}
 	
 	async load(particle_name) {
@@ -761,6 +792,11 @@ class MapObjectSkeletalAnim extends MapObject {
 		///** @type{number} tags */
 		//this._tags = this._get(0, "tags", String);
 	}
+
+	get isSkeletalAnim() {
+		return ture;
+	}
+
 	/** @type {string} */
 	get _folder() {
 		const raw = this._raw;
@@ -784,7 +820,7 @@ class MapObjectSkeletalAnim extends MapObject {
 			}
 			
 			if (raw.spineRandomStart) {
-				let t = ssanim.anim_length * Math.random();
+				let t = Math.trunc(ssanim.anim_length * Math.random());
 				ssanim.setAnimTime(t);
 			}
 			
@@ -841,17 +877,64 @@ class MapObjectSkeletalAnim extends MapObject {
 	}
 }
 
-class MapTile extends MapObject {
+class MapLayerInfo {
+	/**
+	 * @param {Partial<MapLayerInfo>} _raw
+	 */
+	constructor(_raw) {
+		/** @type {string} */
+		this.tS = null;
+
+		/** @type {number} */
+		this.tSMag = null;
+
+		if (_raw) {
+			Object.assign(this, _raw);
+		}
+	}
+
+	/**
+	 * no use
+	 * @returns {{}}
+	 */
+	async _load() {
+		const category = "Tile";
+		const tS = this.tS;
+		const url = `/Map/${category}/${tS}`;
+		try {
+			let data = await $get.data(url);
+			$map_sprite[category][tS] = data;
+			return data;
+		}
+		catch (ex) {
+			console.error(url, ex);
+		}
+	}
+}
+
+class MapTile extends MapObjectBase {
+	/**
+	 * @param {{}} _raw
+	 * @param {MapLayerInfo} info
+	 */
 	constructor(_raw, info) {
 		super(_raw);
+
+		/** @type {MapLayerInfo} */
 		this._info = info;
+
 		this.update = this._update_and_preload;
 	}
+
+	get isMapTile() {
+		return true;
+	}
+
 	load() {
 		let texture = new MapTexture(this._texture_raw);
 
 		this.textures[0] = texture;
-		this.textures[0]._url = ["/Map", "Tile", this._info.tS, this._raw.u, this._raw.no].join("/");
+		//181105//this.textures[0]._url = ["/Map", "Tile", this._info.tS, this._raw.u, this._raw.no].join("/");
 
 		this.__calc_aabb();
 	}
@@ -865,6 +948,7 @@ class MapTile extends MapObject {
 			return map_sprite.Tile[this._info.tS][this._raw.u][this._raw.no];
 		}
 		catch (ex) {
+			console.error(ex);
 			debugger;
 		}
 		return null;
@@ -879,7 +963,7 @@ class MapTile extends MapObject {
  * MapEditor: Map Portal
  * Map graph (struct): "Map/Map/Graph/"
  */
-class MapPortal extends MapObject {
+class MapPortal extends MapObjectBase {
 	constructor(_raw, mapRenderer) {
 		super(_raw);//load x, y
 		
@@ -910,6 +994,10 @@ class MapPortal extends MapObject {
 		this.skin = null;
 
 		this.update = this._update_and_preload;
+	}
+
+	get isMapPortal() {
+		return true;
 	}
 	
 	//sync
@@ -974,7 +1062,7 @@ class MapPortal extends MapObject {
 		
 		if (this.__display_mode == "editor") {
 			let texture = new MapTexture(_raw.editor[type]);
-			texture._url = [this._texture_base_path, this.__display_mode, type].join("/");
+			//181105//texture._url = [this._texture_base_path, this.__display_mode, type].join("/");
 			this.textures[0] = texture;
 		}
 		else if (_raw.game[type]) {
@@ -983,7 +1071,7 @@ class MapPortal extends MapObject {
 				let textures = _raw.game[type][skin];
 				for (let i in textures) {
 					let texture = new MapTexture(textures[i]);
-					texture._url = [this._texture_base_path, this.__display_mode, type, skin, i].join("/");
+					//181105//texture._url = [this._texture_base_path, this.__display_mode, type, skin, i].join("/");
 					this.textures.push(texture);
 				}
 			}
@@ -995,7 +1083,7 @@ class MapPortal extends MapObject {
 				let textures = _raw.game[type][skin][this.state];
 				for (let i in textures) {
 					let texture = new MapTexture(textures[i]);
-					texture._url = [this._texture_base_path, this.__display_mode, type, skin, this.state, i].join("/");
+					//181105//texture._url = [this._texture_base_path, this.__display_mode, type, skin, this.state, i].join("/");
 					this.textures.push(texture);
 				}
 			}
@@ -1126,6 +1214,10 @@ class MapBackBase extends MapObjectBase {
 	constructor(_raw) {
 		super(_raw);
 	}
+
+	get isMapBack() {
+		return true;
+	}
 }
 
 /**
@@ -1144,7 +1236,7 @@ class MapBack extends MapBackBase {
 			const raw = this._texture_raw;
 			if (raw) {
 				this.textures[0] = new MapTexture(this._texture_raw);
-				this.textures[0]._url = path;
+				//181105//this.textures[0]._url = path;
 			}
 		}
 		else {
@@ -1161,8 +1253,12 @@ class MapBack extends MapBackBase {
 	 * texture; info & data
 	 */
 	get _texture_raw() {
-		if (this._raw.bS && this._raw.no) {
+		try {
 			return map_sprite.Back[this._raw.bS]["back"][this._raw.no];
+		}
+		catch (ex) {
+			console.error(ex);
+			debugger;
 		}
 		return null;
 	}
@@ -1187,7 +1283,7 @@ class MapBackAnimation extends MapBackBase {
 		let path = ["/Map", "Back", this._texture_base_path, i].join("/");
 
 		let texture = new MapTexture(this._texture_raw[i]);
-		texture._url = path;
+		//181105//texture._url = path;
 
 		return texture;
 	}
@@ -1206,6 +1302,7 @@ class MapBackAnimation extends MapBackBase {
 			return map_sprite.Back[this._raw.bS]["ani"][this._raw.no];
 		}
 		catch (ex) {
+			console.error(ex);
 			debugger;
 		}
 		return null;
@@ -1218,6 +1315,11 @@ class MapBackSkeletalAnim extends MapBackBase {
 		/** @type {SSAnim} */
 		this.ssanim = null;
 	}
+
+	get isSkeletalAnim() {
+		return ture;
+	}
+
 	/** @type {string} */
 	get _folder() {
 		const ob = this._raw;
@@ -2172,6 +2274,16 @@ class AddCharacterOption {
 }
 
 /**
+ * @type {{MapObject:MapObject, MapObjectSkeletalAnim:MapObjectSkeletalAnim, MapParticle:MapParticle, MapTile:MapTile, MapBack:MapBack, MapBackAnimation:MapBackAnimation, MapBackSkeletalAnim:MapBackSkeletalAnim}}
+ */
+const MapElementTypeMap = {
+	MapObject, MapObjectSkeletalAnim,
+	MapParticle,
+	MapTile,
+	MapBack, MapBackAnimation, MapBackSkeletalAnim,
+};
+
+/**
  * require Renderer
  * @implements {IAsyncLoading}
  */
@@ -2294,7 +2406,7 @@ export class SceneMap {
 		let loading_task_map = new Map();
 		for (let i = 0; i in raw.back; ++i) {
 			let ob = raw.back[i];
-			const url = this._url + `back/${i}`;
+			const url = this._url + `/back/${i}`;
 
 			/** @type {MapBack|MapBackAnimation} */
 			let back;
@@ -2401,7 +2513,7 @@ export class SceneMap {
 		}
 	}
 	__constructLayeredObject_tile(i, layer, loading_task_map) {
-		const info = layer.info;
+		const info = new MapLayerInfo(layer.info);
 		let tiles = [];
 
 		if (info.tS) {
@@ -2417,7 +2529,7 @@ export class SceneMap {
 		for (let j = 0, ti = layer.tile[j]; !objIsEmpty(ti); j++ , ti = layer.tile[j]) {
 			let tile = new MapTile(ti, info);
 
-			tile._url = this._url + `${i}/tile/${j}`;
+			tile._url = this._url + `/${i}/tile/${j}`;
 
 			tiles.push(tile);
 		}
@@ -2455,7 +2567,7 @@ export class SceneMap {
 				}
 			}
 
-			obj._url = this._url + `${i}/obj/${j}`;
+			obj._url = this._url + `/${i}/obj/${j}`;
 			
 			if (obj.name != null) {
 				this.namedObject[obj.name] = obj;
@@ -2827,7 +2939,7 @@ export class SceneMap {
 	}
 	
 	_miniMap_src() {
-		return this._url + "miniMap/canvas";
+		return this._url + "/miniMap/canvas";
 		const a = {
 			"canvas": {
 				"": ""
@@ -2874,6 +2986,73 @@ export class SceneMap {
 		}
 		else {
 			debugger;
+		}
+	}
+
+	/**
+	 * @param {"MapObject"|"MapObjectSkeletalAnim"|"MapParticle"|"MapTile"|"MapBack"|"MapBackAnimation"|"MapBackSkeletalAnim"} typeName
+	 * @param {{}} data
+	 * @param {number} layer
+	 */
+	appendMapElement(typeName, data = {}, layer = 0) {
+		let b;
+		switch (typeName) {
+			case "MapObject":
+				b = new MapObject(data);
+				this.layeredObject[layer].push(b);
+				return b;
+			case "MapObjectSkeletalAnim":
+				b = new MapObjectSkeletalAnim(data);
+				this.layeredObject[layer].push(b);
+				return b;
+
+			case "MapParticle":
+				b = new MapParticle(data);
+				this.particleList.push(b);
+				return b;
+
+			case "MapTile":
+				b = new MapTile(data);
+				this.layeredTile[layer].push(b);
+				return b;
+
+			case "MapBack":
+				b = new MapBack(data);
+				if (layer) {
+					this.frontground.push(b);
+				}
+				else {
+					this.background.push(b);
+				}
+				return b;
+			case "MapBackAnimation":
+				b = new MapBackAnimation(data);
+				if (layer) {
+					this.frontground.push(b);
+				}
+				else {
+					this.background.push(b);
+				}
+				return b;
+			case "MapBackSkeletalAnim":
+				b = new MapBackSkeletalAnim(data);
+				if (layer) {
+					this.frontground.push(b);
+				}
+				else {
+					this.background.push(b);
+				}
+				return b;
+
+			default: {
+				//const type = MapElementTypeMap[typeName];
+				//if (type) {
+				//	return new type(data);
+				//}
+				//else {
+					console.error(typeName, data, layer);
+				//}
+			}
 		}
 	}
 

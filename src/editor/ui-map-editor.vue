@@ -1,9 +1,8 @@
 ﻿
 <template>
-	<div>
-		<div style="display: none;">{{aaaa}}</div>
-		<template v-for="(obj, index) in objs">
-			<div>
+	<div style="position: relative;">
+		<div v-for="(obj, index) in objs">
+			<div style="position: relative;">
 				<div @click="scrollIntoView($event,obj)" :style="get_ObjPath_style(obj)" class="info sticky" title="select it and scroll into view">
 					<span>[{{index}}]</span>
 					<span @contextmenu.prevent="copyToClipboard($event,obj._url)" class="text" >{{obj._url}}</span>
@@ -80,7 +79,7 @@
 						<div>
 							<table class="tb">
 								<tr v-for="(val, key) in obj._raw">
-									<td>{{key}}</td>
+									<th>{{key}}</th>
 									<td>{{val}}</td>
 								</tr>
 							</table>
@@ -92,12 +91,15 @@
 								<a>...</a>
 							</template>
 							<template v-else>
-								<a :href="obj.textures[obj.frame]._url">
-									{{obj._texture_base_path}}<span v-if="obj.constructor.name!='MapBackBase'" class="red-text">/{{obj.frame}}</span>
+								<a :href="obj.textures[obj.frame].texture.src">
+									<span class="{'green-text':obj.isSkeletalAnim}">{{obj._texture_base_path}}</span><span v-if="obj.isAnimation" class="red-text">/{{obj.frame}}</span>
 								</a>
 							</template>
 						</div>
 						<div><img :src="obj.textures[obj.frame].texture.src" class="img"></img></div>
+					</div>
+					<div v-else>
+						<span>未載入</span>
 					</div>
 					<div v-if="displayMode==1" class="info">
 						<table v-if="obj.textures.length && obj.textures[obj.frame].texture" class="table">
@@ -116,7 +118,7 @@
 							</tr>
 							<tr>
 								<td>size:</td>
-								<td>{{obj.textures[obj.frame]._raw.__h}} * {{obj.textures[obj.frame]._raw.__h}}</td>
+								<td>{{obj.textures[obj.frame]._raw.__w}} * {{obj.textures[obj.frame]._raw.__h}}</td>
 							</tr>
 							<tr>
 								<td>opacity</td>
@@ -136,7 +138,7 @@
 								<td>
 									<!--<input-number v-model.number="obj.textures[obj.frame].movetype" min="0" max="3" type="number" class="input" />-->
 									<input-select v-model.number="obj.textures[obj.frame].movetype" class="input">
-										<option value="0" title="">static</option>
+										<option value="0" title="">None</option>
 										<option value="1" title="">橫向移動</option>
 										<option value="2" title="">縱向移動</option>
 										<option value="3" title="">旋轉</option>
@@ -164,19 +166,31 @@
 								<td></td>
 							</tr>
 						</table>
+						<div v-else>
+							<span>未載入</span>
+						</div>
 					</div>
 					<div v-if="displayMode==2 || obj.constructor.name.endsWith('SkeletalAnim')" class="info">
-						<table class="tb">
+						<!--<table class="tb">
 							<tr v-for="(val, key) in obj._raw">
-								<td>{{key}}</td>
+								<th>{{key}}</th>
+								<td>{{val}}</td>
+							</tr>
+						</table>-->
+						<table v-if="obj.textures.length && obj.textures[obj.frame].texture" class="tb">
+							<tr v-for="(val, key) in obj.textures[obj.frame]._raw">
+								<th>{{key}}</th>
 								<td>{{val}}</td>
 							</tr>
 						</table>
+						<div v-else>
+							<span>未載入</span>
+						</div>
 					</div>
 				</div>
+				<hr />
 			</div>
-			<hr />
-		</template>
+		</div>
 	</div>
 </template>
 
@@ -192,7 +206,7 @@ export default {
 	//},
 	data: function () {
 		return {
-			aaaa: 0,
+			aaaa: 1,
 		};
 	},
 	methods: {
@@ -209,20 +223,38 @@ export default {
 			return typeb == 2 || typeb == 3 || typeb == 5 || typeb == 6 || typeb == 7;
 		},
 		get_ObjPath_style: function (obj) {
-			let style = obj.display_aabb ? { background:obj.aabb_color } : { };
-			style["border-bottom"] = "1px solid black";
-			return style;
+			if (obj.display_aabb) {
+				let style = {
+					"background-color": obj.aabb_color,
+					"text-shadow": "0 0 4px" + obj.aabb_color,
+					"border-bottom": "1px solid black",
+				};
+				return style;
+			}
+			return {};
 		},
 		scrollIntoView: function(event, obj) {
-			const center = obj.aabb.center;
-			$gv.m_viewRect.setCenter(center.x, center.y);
-			obj.$select();
+			if (obj.aabb) {
+				const center = obj.aabb.center;
+				$gv.m_viewRect.setCenter(center.x, center.y);
+				obj.$select();
+			}
 			
-			event.currentTarget.scrollIntoView();
+			event.currentTarget.scrollIntoView({
+				behavior: "smooth",
+				block: "start",
+				inline: "nearest",
+			});
+			//event.currentTarget.scrollTo({
+			//	left: event.offsetX,
+			//	top: event.offsetY,
+			//	behavior: "smooth",
+			//});
 
-			this.aaaa++;
+			this.fupdate();
 		},
 		fupdate: function () {
+			this.aaaa++;
 			this.$forceUpdate();
 		},
 		copyToClipboard: function (event, text) {
@@ -287,8 +319,11 @@ export default {
 .red-text {
 	color: red;
 }
+.green-text {
+	color: green;
+}
 
-.tb, .tb td {
+.tb, .tb td, .tb th {
 	border: 1px solid black;
 	border-collapse: collapse;
 	border-spacing: 0;
