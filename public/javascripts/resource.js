@@ -12,6 +12,9 @@ const $failed_urls = [];
 
 const $archive = {};
 
+const $symbol_partial = Symbol("partial");
+const $symbol_loading = Symbol("loading");
+
 
 window.character_emotion_list = ["blink", "hit", "smile", "troubled", "cry", "angry", "bewildered", "stunned",
 	"vomit", "oops", "cheers", "chu", "wink", "pain", "glitter", "despair", "love", "shine", "blaze", "hum",
@@ -174,7 +177,10 @@ function $setValue(obj, path, value) {
 	for (i = 0; i < lastIndex; ++i) {
 		let key = ps[i];
 		if (target[key] == null) {
-			target[key] = {};
+			target[key] = {
+				[$symbol_partial]: true,
+			};
+			console.info("partial object: ", path);
 		}
 		target = target[key];
 	}
@@ -182,19 +188,43 @@ function $setValue(obj, path, value) {
 	if (origin_value instanceof Promise) {
 		delete target[ps[lastIndex]];
 		target[ps[lastIndex]] = value;
+		if (target[ps[lastIndex]][$symbol_partial]) {
+			delete target[key][$symbol_partial];
+			console.info("A: completed object: ", path);
+		}
 	}
 	else if (origin_value && typeof origin_value == "object") {
-		//if (value instanceof Promise) {
-		//	debugger;
-		//}
-		//else {
-			for (let key in value) {
-				origin_value[key] = value[key] || origin_value[key];
+		if (value instanceof Promise) {
+			debugger;
+			origin_value[$symbol_loading] = value.then(function (data) {
+				//for (let key in value) {
+				//	origin_value[key] = value[key] || origin_value[key];
+				//}
+				objectAssignDeep(origin_value, value);
+				if (origin_value[$symbol_partial]) {
+					delete origin_value[$symbol_partial];
+					console.info("B1: completed object: ", path);
+				}
+				delete origin_value[$symbol_loading];
+			});
+		}
+		else {
+			//for (let key in value) {
+			//	origin_value[key] = value[key] || origin_value[key];
+			//}
+			objectAssignDeep(origin_value, value);
+			if (origin_value[$symbol_partial]) {
+				delete origin_value[$symbol_partial];
+				console.info("B2: completed object: ", path);
 			}
-		//}
+		}
 	}
 	else if (typeof value != "undefined") {
 		target[ps[lastIndex]] = value;
+		if (target[ps[lastIndex]][$symbol_partial]) {
+			delete target[ps[lastIndex]][$symbol_partial];
+			console.info("C: completed object: ", path);
+		}
 	}
 }
 function $getValue(obj, path) {
@@ -244,6 +274,9 @@ function _getDataPathByUrl(path) {
 	if (!url_startsWith_protocol(path)) {
 		if (window.$ROOT_PATH != "" && path.startsWith(window.$ROOT_PATH)) {
 			return path.slice(window.$ROOT_PATH.length);
+		}
+		else {
+			return path;
 		}
 	}
 	return undefined;
@@ -377,10 +410,13 @@ $get.data = async function $get_data(path) {
 	if (obj instanceof Promise) {
 		return await obj;
 	}
-	else if (obj) {
+	else if (obj && !obj[$symbol_partial]) {
 		return obj;
 	}
 	else {
+		if (obj && obj[$symbol_partial]) {
+			console.info("complet object: ", path);
+		}
 		const url = $get.dataUrl(path);
 
 		let task = (async function () {
@@ -421,12 +457,19 @@ $get.list = async function $get_list(path) {
 	}
 
 	if (obj instanceof Promise) {
+		console.warn("$get.list 未完成");
 		return await obj;
 	}
-	else if (obj) {
+	else if (obj && !obj[$symbol_partial]) {
+		console.warn("$get.list 未完成");
 		return obj;
 	}
 	else {
+		if (obj && obj[$symbol_partial]) {
+			console.info("complet object: ", path);
+		}
+		console.warn("$get.list 未完成");
+
 		const url = $get.listUrl(path);
 
 		let task = (async function () {
@@ -469,10 +512,13 @@ $get.binary = async function $get_data(path) {
 	if (obj instanceof Promise) {
 		return await obj;
 	}
-	else if (obj) {
+	else if (obj && !obj[$symbol_partial]) {
 		return obj;
 	}
 	else {
+		if (obj && obj[$symbol_partial]) {
+			console.info("complet object: ", path);
+		}
 		const url = $get.binaryUrl(path);
 
 		let task = (async function () {
@@ -998,4 +1044,34 @@ window.load_extern_item_data = async function (id) {
 	};
 
 	return raw;
+}
+
+function _objectAssignDeep(target, object) {
+	if (target != null && object != null) {
+		if (Object.prototype.valueOf.call(object) instanceof String) {
+			target = object;
+		}
+		else if (Object.prototype.valueOf.call(object) instanceof Number) {
+			target = object;
+		}
+		else if (Object.prototype.valueOf.call(object) instanceof Boolean) {
+			target = object;
+		}
+		else {
+			for (let key in object) {
+				let value = object[key];
+				if (value != null) {
+					target[key] = _objectAssignDeep(target[key], value);
+				}
+			}
+		}
+	}
+	return target;
+}
+
+function objectAssignDeep(target, ...objects) {
+	for (let object of objects) {
+		_objectAssignDeep(target, object);
+	}
+	return target;
 }
