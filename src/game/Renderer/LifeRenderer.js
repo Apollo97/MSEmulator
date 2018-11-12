@@ -102,7 +102,7 @@ export class LifeRenderer /*extends SceneObject*/ {
 				}
 
 				action = new Animation(this._raw[name], [this._url, name].join("/"));
-				action.is_loop = false;
+				action.is_loop = !this.isMob;
 				
 				tasks.push(action.load());
 				

@@ -24,6 +24,10 @@ export class NpcRenderer extends LifeRenderer {
 		return NpcRenderer._desc[id];
 	}
 
+	get isNpc() {
+		return true;
+	}
+
 	/**
 	 * @param {number} stamp
 	 */

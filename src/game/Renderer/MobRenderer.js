@@ -71,6 +71,10 @@ export class MobRenderer extends LifeRenderer {
 		return result;
 	}
 
+	get isMob() {
+		return true;
+	}
+
 	isFlyMob() {
 		return !!this._raw.flySpeed;
 	}
