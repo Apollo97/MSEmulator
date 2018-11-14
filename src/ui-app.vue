@@ -285,7 +285,7 @@
 						if (!this.m_is_always_show_tip) {
 							this.ItemTip_state.position = {
 								my: "left top",
-								at: `left+${event.clientX + 1} top+${event.clientY + 1}`,
+								at: `left+${Math.trunc(event.clientX + 1)} top+${Math.trunc(event.clientY + 1)}`,
 								of: document.body,
 								collision: "fit",
 								using: function (pos) {

@@ -36,7 +36,7 @@ export class GlobalVar {
 				this.m_display_physics_debug = false;
 			}
 			else {
-				this.m_editor_mode = false;
+				this.m_editor_mode = true;
 
 				this.m_display_foothold = false;
 

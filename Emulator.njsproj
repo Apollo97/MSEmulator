@@ -68,6 +68,12 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     </Compile>
     <Compile Include="src\Common\PlayerData.js" />
     <Compile Include="src\components\CorePosition.js" />
+    <Compile Include="src\editor\SceneEditor\BodyDefinition.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\editor\SceneEditor\FixtureDefinition.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\editor\SceneEditor\ShapeDefinition.js">
       <SubType>Code</SubType>
     </Compile>
@@ -270,11 +276,20 @@ _ELECTRON_PATH=C:\Users\GREEN\AppData\Roaming\npm\node_modules\electron-prebuilt
     <Content Include="src\components\ui-resizable.vue" />
     <Content Include="src\components\ui-sortable.vue" />
     <Content Include="src\components\ui-trigger.vue" />
+    <Content Include="src\editor\SceneEditor\body-list.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\editor\SceneEditor\box2d-shape-editor.vue">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\editor\editor.vue" />
+    <Content Include="src\editor\SceneEditor\fixture-list.vue">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="src\editor\SceneEditor\shape-list.vue">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="src\editor\ui-map-sprite-viewer.vue">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\editor\ui-character-renderer.vue" />

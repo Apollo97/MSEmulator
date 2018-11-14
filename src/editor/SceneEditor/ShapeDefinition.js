@@ -21,7 +21,7 @@ export const b2ShapeTypeToName = {
 	[b2ShapeType.e_polygonShape]: "polygon",
 };
 
-export const shapeNameToClass = {
+export const shapeTypeNameToClass = {
 	[b2ShapeType.e_circleShape]: b2CircleShape,
 	[b2ShapeType.e_edgeShape]: b2EdgeShape,
 	[b2ShapeType.e_chainShape]: b2ChainShape,
@@ -34,7 +34,7 @@ export class ShapeDef {
 		/** @type {string} */
 		this.name = null;
 
-		/** @type {string} */
+		/** @type {"circle"|"edge"|"chain"|"polygon"} */
 		this.type = null;
 
 		/** @type {number} */
@@ -70,11 +70,11 @@ export class ShapeDef {
 	}
 
 	clone() {
-		let sd = new ShapeDef();
+		let def = new ShapeDef();
 
-		sd.copy(this);
+		def.copy(this);
 
-		return sd;
+		return def;
 	}
 
 	///**

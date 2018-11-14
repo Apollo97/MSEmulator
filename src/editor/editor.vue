@@ -185,87 +185,111 @@
 		<!-- end spawnpoint -->
 		<!-------------------------------------------------------------------------->
 		<!-- begin equip_box -->
-		<transition name="fade">
-			<ui-dialog :title="wnds.equip_box.name" ref="equip_box" v-show="wnds.equip_box.visable">
-				<template slot="header">
-					Equip box
-				</template>
-				<template slot="content">
-					<ui-equip-box @clickItem="clickItem"
-								  @hoverItem="hoverItem"
-								  @mouseleaveItem="mouseleaveItem"
-								  @faceColor="faceColor"
-								  @hairColor="hairColor"
-								  @hairColor2="hairColor2"
-								  @hairMix2="hairMix2">
-					</ui-equip-box>
-				</template>
-			</ui-dialog>
-		</transition>
+		<ui-dialog :title="wnds.equip_box.name" ref="equip_box" v-show="wnds.equip_box.visable">
+			<template slot="header">
+				Equip box
+			</template>
+			<template slot="content">
+				<ui-equip-box @clickItem="clickItem"
+							  @hoverItem="hoverItem"
+							  @mouseleaveItem="mouseleaveItem"
+							  @faceColor="faceColor"
+							  @hairColor="hairColor"
+							  @hairColor2="hairColor2"
+							  @hairMix2="hairMix2">
+				</ui-equip-box>
+			</template>
+		</ui-dialog>
 		<!-- end equip_box -->
 		<!-------------------------------------------------------------------------->
 		<!-- begin mapEditor -->
 		<transition name="fade">
-			<template v-if="mapEditorMode.startsWith('layered')">
-				<ui-dialog :title="wnds.debug_window.name" ref="debug_window" v-show="wnds.debug_window.visable">
-					<template slot="header">
-						<select v-model="mapEditorMode">
-							<option value="background">background</option>
-							<option value="frontground">frontground</option>
-							<option value="layeredObject">layered object</option>
-							<option value="layeredTile">layered tile</option>
-						</select>
-						mode
-						<input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
-						<button @click="dirty++">{{dirty}}</button>
+			<ui-dialog :title="wnds.debug_window.name" ref="debug_window" v-if="scene_map()" v-show="wnds.debug_window.visable">
+				<template slot="header">
+					<button @click="fupdate">⟳</button>
+					mode
+					<input-number v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;"></input-number>
+					<input-select v-model="mapEditorMode">
+						<option value="background">background</option>
+						<option value="frontground">frontground</option>
+						<option value="layeredObject">layered object</option>
+						<option value="layeredTile">layered tile</option>
+					</input-select>
+					<template v-if="scene_map()[mapEditorMode][selectedLayer] && mapEditorMode.startsWith('layered')">
+						<label>
+							layer <input-select v-model="selectedLayer">
+								<option v-for="layer in scene_map()[mapEditorMode].length">{{layer - 1}}</option>
+							</input-select>
+						</label>
+						<span>{{scene_map()[mapEditorMode][selectedLayer].length}} objs</span>
 					</template>
-					<template slot="content">
-						<div v-if="scene_map() && scene_map()[mapEditorMode].length" :style="wnd_debug_style">
-							<div style="background: white;">
-								<input v-model="wnd_debug_style.background" type="color" title="window background color" />
-								<label>
-									layer <select v-model="selectedLayer">
-										<option v-for="layer in scene_map()[mapEditorMode].length">{{layer - 1}}</option>
-									</select>
-								</label>
-								<span>{{scene_map()[mapEditorMode][selectedLayer].length}} objs</span>
-							</div>
-							<hr />
-							<ui-map-editor :objs="scene_map()[mapEditorMode][selectedLayer]" :displayMode="displayMode"></ui-map-editor>
+					<template>
+						<div class="header">
+							<input v-model="wnd_debug_style.background" type="color" title="window background color" />
+
+							<template v-if="mapEditorMode=='background'">
+								<button @click="appendMapElement('MapBack',0)">add MapBack</button>
+								<button @click="appendMapElement('MaMapBackAnimationpBack',0)">add MapBackAnimation</button>
+								<button @click="appendMapElement('MapBackSkeletalAnim',0)">add MapBackSkeletalAnim</button>
+							</template>
+							<template v-else-if="mapEditorMode=='frontground'">
+								<button @click="appendMapElement('MapBack',1)">add MapBack</button>
+								<button @click="appendMapElement('MapBackAnimationpBack',1)">add MapBackAnimation</button>
+								<button @click="appendMapElement('MapBackSkeletalAnim',1)">add MapBackSkeletalAnim</button>
+							</template>
+
+							<template v-else-if="mapEditorMode=='layeredObject'">
+								<button @click="appendMapElement('MapObject',selectedLayer)">add MapObject</button>
+								<button @click="appendMapElement('MapObjectSkeletalAnim',selectedLayer)">add MapObjectSkeletalAnim</button>
+							</template>
+
+							<template v-else-if="mapEditorMode=='layeredTile'">
+								<button @click="appendMapElement('MapTile',selectedLayer)">add MapTile</button>
+							</template>
+
+							<template v-else-if="mapEditorMode=='particle'">
+								<button @click="appendMapElement('MapParticle',0)">add MapParticle</button>
+							</template>
+
+							<template v-else-if="mapEditorMode=='portal'">
+								<button @click="appendMapElement('MapPortal',0)">add MapPortal</button>
+							</template>
+
+							<button>duplicate</button>
+							<button>remove</button>
 						</div>
 					</template>
-				</ui-dialog>
-			</template>
-			<template v-else>
-				<ui-dialog :title="wnds.debug_window.name" v-show="wnds.debug_window.visable">
-					<template slot="header">
-						<select v-model="mapEditorMode">
-							<option value="background">background</option>
-							<option value="frontground">frontground</option>
-							<option value="layeredObject">layered object</option>
-							<option value="layeredTile">layered tile</option>
-						</select>
-						tex info
-						<input v-model="displayMode" type="number" min="0" max="2" style="width: 1.8em;">
-						<button @click="dirty--">{{dirty}}</button>
-					</template>
-					<template slot="content">
-						<div v-if="scene_map() && scene_map()[mapEditorMode].length" :style="wnd_debug_style">
-							<div style="background: white;">
-								<input v-model="wnd_debug_style.background" type="color" />
-							</div>
-							<hr />
-							<ui-map-editor :objs="scene_map()[mapEditorMode]" :displayMode="displayMode"></ui-map-editor>
-						</div>
-					</template>
-				</ui-dialog>
-			</template>
+				</template>
+				<template slot="content" v-if="scene_map()[mapEditorMode].length!=null">
+					<div :style="wnd_debug_style">
+						<template v-if="mapEditorMode.startsWith('layered')">
+							<ui-map-editor ref="mapEditor" :objs="scene_map()[mapEditorMode][selectedLayer]" :displayMode="displayMode"></ui-map-editor>
+						</template>
+						<template v-else>
+							<ui-map-editor ref="mapEditor" :objs="scene_map()[mapEditorMode]" :displayMode="displayMode"></ui-map-editor>
+						</template>
+					</div>
+				</template>
+			</ui-dialog>
 		</transition>
 		<!-- end mapEditor -->
 		<!-------------------------------------------------------------------------->
+		<!-- begin spriteViewer -->
+		<transition name="fade">
+			<ui-dialog title="SpriteViewer" ref="spriteViewer" v-show="true||workInProgress" :options="{width:'25em',height:'18em',hasHeader:true}">
+				<template slot="header">
+					Sprite Viewer
+				</template>
+				<template slot="content">
+					<ui-map-sprite-viewer></ui-map-sprite-viewer>
+				</template>
+			</ui-dialog>
+		</transition>
+		<!-- end spriteViewer -->
+		<!-------------------------------------------------------------------------->
 		<!-- begin box2dEditor -->
 		<transition name="fade">
-			<ui-dialog title="ShapeEditor" ref="box2dEditor" v-show="!workInProgress" :options="{width:'25em',height:'25em',hasHeader:true}">
+			<ui-dialog title="ShapeEditor" ref="box2dEditor" v-show="workInProgress" :options="{width:'25em',height:'18em',hasHeader:true}">
 				<template slot="header">
 					Shape Editor
 				</template>
@@ -278,7 +302,7 @@
 		<!-------------------------------------------------------------------------->
 		<!-- begin UIShapeList -->
 		<transition name="fade">
-			<ui-dialog title="ShapeList" ref="uiShapeList" v-show="!workInProgress" :options="{width:'18em',height:'18em',hasHeader:true}">
+			<ui-dialog title="ShapeList" ref="uiShapeList" v-show="workInProgress" :options="{width:'13em',height:'18em',hasHeader:true}">
 				<template slot="header">
 					Shape List
 				</template>
@@ -288,6 +312,32 @@
 			</ui-dialog>
 		</transition>
 		<!-- end UIShapeList -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin UIFixtureList -->
+		<transition name="fade">
+			<ui-dialog title="FixtureList" ref="uiFixtureList" v-show="workInProgress" :options="{width:'13em',height:'18em',hasHeader:true}">
+				<template slot="header">
+					Fixture List
+				</template>
+				<template slot="content">
+					<ui-fixture-list :editor="sceneEditor"></ui-fixture-list>
+				</template>
+			</ui-dialog>
+		</transition>
+		<!-- end UIFixtureList -->
+		<!-------------------------------------------------------------------------->
+		<!-- begin UIBodyList -->
+		<transition name="fade">
+			<ui-dialog title="BodyList" ref="uiBodyList" v-show="workInProgress" :options="{width:'13em',height:'18em',hasHeader:true}">
+				<template slot="header">
+					Body List
+				</template>
+				<template slot="content">
+					<ui-body-list :editor="sceneEditor"></ui-body-list>
+				</template>
+			</ui-dialog>
+		</transition>
+		<!-- end UIBodyList -->
 		<!-------------------------------------------------------------------------->
 		<!-- begin constex menu -->
 		<transition name="fade">
@@ -329,10 +379,15 @@
 
 	import UIMobList from "./ui-mob-list.vue";
 	import UIMapEditor from "./ui-map-editor.vue";
+	import UIMapSpriteViewer from "./ui-map-sprite-viewer.vue";
 
 	import Box2dShapeEditor from "./SceneEditor/box2d-shape-editor.vue";
 	import UIShapeList from "./SceneEditor/shape-list.vue";
+	import UIFixtureList from "./SceneEditor/fixture-list.vue";
+	import UIBodyList from "./SceneEditor/body-list.vue";
 	import { ShapeDef } from "./SceneEditor/ShapeDefinition.js";
+	import { FixtureDef } from "./SceneEditor/FixtureDefinition.js";
+	import { BodyDef } from "./SceneEditor/BodyDefinition.js";
 
 	//import { GameStateManager } from '../game/GameState.js';
 	
@@ -343,18 +398,30 @@
 
 	class SceneEditor {
 		constructor() {
+			/** @type {BodyDef[]} */
 			this.bodies = [];
+
+			/** @type {FixtureDef[]} */
 			this.fixtures = [];
 
 			/** @type {ShapeDef[]} */
 			this.shapes = [];
 
+			/** @type {JointDef[]} */
+			this.joints = [];
 
+
+			/** @type {BodyDef} */
 			this._selectedBody = null;
+
+			/** @type {FixtureDef} */
 			this._selectedFixture = null;
 
 			/** @type {ShapeDef} */
 			this._selectedShape = null;
+
+			/** @type {JointDef} */
+			this._selectedJoint = null;
 
 
 			/** @type {string} */
@@ -365,6 +432,9 @@
 
 			/** @type {string} */
 			this._selectedShapeName = null;
+
+			/** @type {string} */
+			this._selectedJointName = null;
 		}
 
 		get selectedBody() {
@@ -376,6 +446,9 @@
 		get selectedShape() {
 			return this._selectedShape;
 		}
+		get selectedJoint() {
+			return this._selectedJoint;
+		}
 
 		set selectedBodyName(bodyName) {
 			this.selectBody(bodyName);
@@ -386,6 +459,9 @@
 		set selectedShapeName(shapeName) {
 			this.selectShape(shapeName);
 		}
+		set selectedJointName(jointName) {
+			this.selectJoint(jointName);
+		}
 
 		get selectedBodyName() {
 			return this._selectedBodyName;
@@ -395,6 +471,9 @@
 		}
 		get selectedShapeName() {
 			return this._selectedShapeName;
+		}
+		get selectedJointName() {
+			return this._selectedJointName;
 		}
 
 		/**
@@ -434,11 +513,56 @@
 		}
 
 		/**
+		 * @param {string} jointName
+		 */
+		selectJoint(jointName) {
+			this._selectedJointName = jointName;
+			this._selectedJoint = this.joints.find(function (value) {
+				if (value.name == jointName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} bodyName
+		 */
+		getBodyByName(bodyName) {
+			return this.bodies.find(function (value) {
+				if (value.name == bodyName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} fixtureName
+		 */
+		getFixtureByName(fixtureName) {
+			return this.fixtures.find(function (value) {
+				if (value.name == fixtureName) {
+					return true;
+				}
+			});
+		}
+
+		/**
 		 * @param {string} shapeName
 		 */
 		getShapeByName(shapeName) {
 			return this.shapes.find(function (value) {
 				if (value.name == shapeName) {
+					return true;
+				}
+			});
+		}
+
+		/**
+		 * @param {string} jointName
+		 */
+		getJointByName(jointName) {
+			return this.joints.find(function (value) {
+				if (value.name == jointName) {
 					return true;
 				}
 			});
@@ -843,9 +967,9 @@
 				is_show_chara_dl_menu: false,
 
 				mapEditorMode: "layeredObject",
-				displayMode: 0,
+				displayMode: 2,
 				selectedLayer: 0,
-				wnd_debug_style: { background: "#ffffff", padding: "0 0.5em" },
+				wnd_debug_style: { background: "#fff" },
 
 				wnds: {
 					menu: { name: "$menu", visable: true },
@@ -856,7 +980,7 @@
 					debug_window: { name: "Map editor (Debug)", visable: true, },
 				},
 
-				workInProgress: true,
+				workInProgress: false,
 
 				gv: $gv,
 			}
@@ -1042,8 +1166,31 @@
 			_save_as_png: function () {
 				this.chara.renderer._save_as_png(engine, this.chara.id);
 			},
+			appendMapElement(elemType, layer) {
+				const data = {};
+				//const modeMap = {
+				//	background: "background",
+				//	frontground: "frontground",
+				//	layeredObject: "",
+				//	layeredTile: "",
+
+				//	MapObject, MapObjectSkeletalAnim,
+				//	MapParticle,
+				//	MapTile,
+				//	MapBack, MapBackAnimation, MapBackSkeletalAnim,
+				//	MapPortal,
+				//};
+				scene_map.appendMapElement(elemType, data, layer);
+				
+				this.fupdate();
+			},
+			fupdate: function () {
+				this.dirty++;
+
+				this.$refs.mapEditor.fupdate();
+			},
 		},
-		mounted: function () {
+		mounted: async function () {
 			{
 				const elem = document.getElementById("bgm");
 				this.$refs.bgm_outer.appendChild(elem);
@@ -1127,8 +1274,12 @@
 			"ui-mob-list": UIMobList,
 			"ui-map-editor": UIMapEditor,
 
+			"ui-map-sprite-viewer": UIMapSpriteViewer,
+
 			"box2d-shape-editor": Box2dShapeEditor,
 			"ui-shape-list": UIShapeList,
+			"ui-fixture-list": UIFixtureList,
+			"ui-body-list": UIBodyList,
 		}
 	}
 

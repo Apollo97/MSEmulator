@@ -7,9 +7,9 @@
 					<tr>
 						<td>
 							<div style="display: flex;">
-								<button @click="newShape">New</button>
-								<button @click="duplicateShape">Duplicate</button>
-								<button @click="deleteShape">Delete</button>
+								<button @click="newFixture">New</button>
+								<button @click="duplicateFixture">Duplicate</button>
+								<button @click="deleteFixture">Delete</button>
 							</div>
 						</td>
 					</tr>
@@ -28,13 +28,13 @@
 		<tr>
 			<td class="fill">
 				<ul class="fill list">
-					<template v-for="shape in editor.shapes">
-						<li @click="selectShape(shape.name)" :class="{selected:editor.selectedShapeName==shape.name}">
+					<template v-for="fixture in editor.fixtures">
+						<li @click="selectFixture(fixture.name)" :class="{selected:editor.selectedFixtureName==fixture.name}">
 							<span>
-								<span>{{shape.name}}</span>
+								<span>{{fixture.name}}</span>
 							</span>
 							<span v-if="isShowType">
-								<span>{{shape.type}}</span>
+								<span>{{fixture.type}}</span>
 							</span>
 						</li>
 					</template>
@@ -45,10 +45,10 @@
 </template>
 
 <script>
-	import { ShapeDef } from "./ShapeDefinition.js";
+	import { FixtureDef } from "./FixtureDefinition.js";
 
 
-	let shapeSN = 0;
+	let fixtureSN = 0;
 
 	export default {
 		props: {
@@ -64,52 +64,44 @@
 			};
 		},
 		methods: {
-			_newShape: function (name) {
+			newFixture: function () {
 				const editor = this.editor;
-				let def = new ShapeDef();
-				def.name = name;
-				editor.shapes.push(def);
-				return def;
+				let def = new FixtureDef();
+				def.name = "Fixture_" + (++fixtureSN);
+				editor.fixtures.push(def);
 			},
-			newShape: function () {
+			duplicateFixture: function (index) {
 				const editor = this.editor;
-				let def = new ShapeDef();
-				def.name = "Shape_" + (++shapeSN);
-				editor.shapes.push(def);
-				return def;
+				let def = editor.fixtures[index].clone();
+				def.name = "Fixture_" + (++fixtureSN) + "(" + def.name + ")";
+				editor.fixtures.push(def);
 			},
-			duplicateShape: function (index) {
+			deleteFixture: function (index) {
 				const editor = this.editor;
-				let def = editor.shapes[index].clone();
-				def.name = "Shape_" + (++shapeSN) + "(" + def.name + ")";
-				editor.shapes.push(def);
+				editor.fixtures.splice(index, 1);
 			},
-			deleteShape: function (index) {
-				const editor = this.editor;
-				editor.shapes.splice(index, 1);
-			},
-			selectShape: function (shapeName) {
+			selectFixture: function (fixtureName) {
 				if (!this.alertName) {
 					const editor = this.editor;
-					editor.selectedShapeName = shapeName;
-					this.inputName = shapeName;
-					return editor.selectedShape;
+					editor.selectedFixtureName = fixtureName;
+					this.inputName = fixtureName;
+					return editor.selectedFixture;
 				}
 				return false;
 			},
 
 			editName: function (evt) {
-				if (!this.editor.selectedShape) {
+				if (!this.editor.selectedFixture) {
 					return;
 				}
 				const newName = evt.target.value;//this.inputName
 				const editor = this.editor;
 
-				if (editor.selectedShape.name == newName) {
+				if (editor.selectedFixture.name == newName) {
 					this.alertName = false;
 					return;
 				}
-				else if (editor.getShapeByName(newName)) {
+				else if (editor.getFixtureByName(newName)) {
 					this.alertName = true;
 
 					let na = window.prompt("New name", newName + "_Copy");
@@ -121,27 +113,13 @@
 				}
 				else {
 					this.alertName = false;
-					editor.selectedShape.name = newName;
-					editor.selectedShapeName = newName;
+					editor.selectedFixture.name = newName;
+					editor.selectedFixtureName = newName;
 				}
-			},
-			loadFromMapData: async function () {
-				await scene_map.$promise;
-
-				const gnd = scene_map.controller.ground;
-
-				console.log(gnd.chains.map(a => a.footholds.map(a => a.id)));
-
-				gnd.chains.forEach(chain => {
-					chain.footholds.forEach(foothold => {
-						let def = this._newShape("foothold_" + foothold.id);
-						def.type = "edge";
-					});
-				});
-			},
+			}
 		},
 		mounted: async function () {
-			await this.loadFromMapData();
+			await scene_map.$promise;
 		}
 	}
 </script>
