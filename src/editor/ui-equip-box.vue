@@ -68,6 +68,7 @@
 												<option value="id">ID</option>
 												<option value="name">名稱</option>
 												<option value="icon">圖示</option>
+												<option value="version">Version</option>
 
 												<option value="attr" disabled>--item[attr]--</option>
 												<option value="reqLevel">reqLevel</option>
@@ -487,10 +488,9 @@
 										this.search_equip_result[0][attr] &&
 										this.search_equip_result[0][attr].localeCompare
 									) {//check attr is can compare
-										this.search_equip_result.sort(function (a, b) {
-											let sa = a[attr], sb = b[attr];
-											return sa.localeCompare(sb);
-										});
+										this.search_equip_result.sort(new Intl.Collator(navigator.language, {
+											numeric: true,
+										}).compare);
 									}
 								}
 							}
@@ -511,12 +511,9 @@
 									return true;
 								}
 							});
-							this.search_equip_result.sort(function (a, b) {
-								if (a.name && b.name) {
-									return a.name.localeCompare(b.name);
-								}
-								return 0;
-							});
+							this.search_equip_result.sort(new Intl.Collator(navigator.language, {
+								numeric: true,
+							}).compare);
 						}
 					}
 					catch (ex) {
@@ -678,44 +675,34 @@
 							equip_list = equip_list.sort(window.$sort_item);
 						}
 						else {
-							const sort_method = this.sortMethod;
+							const compare = new Intl.Collator(navigator.language, {
+								numeric: true,
+							}).compare;
 
-							const sortCompareMethod = this.sortCompareMethod == "greater" ? -1 : 1;
-							
-							switch (sort_method) {
-								case "name":
-									equip_list = equip_list.sort(function (a, b) {
-										let [v1 = "", v2 = ""] = [a.name, b.name];
-										return sortCompareMethod * v1.localeCompare(v2);
-									});
-									break;
+							let sort_method;
 
+							switch (this.sortMethod) {
 								case "icon":
-									equip_list = equip_list.sort(function (a, b) {
-										let [v1 = "", v2 = ""] = [a.__hash, b.__hash];
-										return sortCompareMethod * v1.localeCompare(v2);
-									});
+									sort_method = "__hash";
 									break;
-
-								case "id"://default order by id
-								case "reqLevel":
+								case "version":
+									sort_method = "__v";
+									break;
 								default:
-									if (sort_method) {
-										if (sortCompareMethod == -1) {
-											equip_list = equip_list.sort(function (a, b) {
-												let v1 = Number(a[sort_method]) | 0;
-												let v2 = Number(b[sort_method]) | 0;
-												return v2 - v1;
-											});
-										}
-										else {
-											equip_list = equip_list.sort(function (a, b) {
-												let v1 = Number(a[sort_method]) | 0;
-												let v2 = Number(b[sort_method]) | 0;
-												return v1 - v2;
-											});
-										}
-									}
+									sort_method = this.sortMethod;
+							}
+
+							if (this.sortCompareMethod == "greater") {
+								equip_list = equip_list.sort(function (a, b) {
+									let [v1 = "", v2 = ""] = [a[sort_method], b[sort_method]];
+									return compare(v2, v1);
+								});
+							}
+							else {
+								equip_list = equip_list.sort(function (a, b) {
+									let [v1 = "", v2 = ""] = [a[sort_method], b[sort_method]];
+									return compare(v1, v2);
+								});
 							}
 						}
 					}

@@ -214,13 +214,10 @@
 				if (!obj) {
 					return [];
 				}
-				return Object.keys(obj).sort(function (a, b) {
-					let x = a - b;
-					if (!isNaN(x)) {
-						return x;
-					}
-					return a.toLowerCase().localeCompare(b.toLowerCase());
-				});
+
+				return Object.keys(obj).sort(new Intl.Collator(navigator.language, {
+					numeric: true,
+				}).compare);
 			},
 			refresh: function () {
 				//$ResourceManager.archive[""].Map.Tile.allblackTile == $map_sprite.Tile.allblackTile;//true

@@ -190,7 +190,7 @@ function $setValue(obj, path, value) {
 		target[ps[lastIndex]] = value;
 		if (target[ps[lastIndex]][$symbol_partial]) {
 			delete target[key][$symbol_partial];
-			console.info("A: completed object: ", path);
+			console.info("completed object (promise): ", path);
 		}
 	}
 	else if (origin_value && typeof origin_value == "object") {
@@ -200,10 +200,10 @@ function $setValue(obj, path, value) {
 				//for (let key in value) {
 				//	origin_value[key] = value[key] || origin_value[key];
 				//}
-				objectAssignDeep(origin_value, value);
+				objectAssignDeep(origin_value, data);
 				if (origin_value[$symbol_partial]) {
 					delete origin_value[$symbol_partial];
-					console.info("B1: completed object: ", path);
+					console.info("completed object (await promise): ", path);
 				}
 				delete origin_value[$symbol_loading];
 			});
@@ -215,7 +215,7 @@ function $setValue(obj, path, value) {
 			objectAssignDeep(origin_value, value);
 			if (origin_value[$symbol_partial]) {
 				delete origin_value[$symbol_partial];
-				console.info("B2: completed object: ", path);
+				console.info("completed object (value): ", path);
 			}
 		}
 	}
@@ -298,8 +298,15 @@ function $getValueAsync(obj, path) {
 		if (value instanceof Promise) {
 			// ??
 			return new Promise(async function (resolve, reject) {
-				await value;
-				resolve(await $getValueAsync(obj, path));
+				try {
+					let t = await value;
+					resolve(t);
+					//resolve(await $getValueAsync(obj, path));
+				}
+				catch (ex) {
+					debugger;
+					reject(ex);
+				}
 			});
 		}
 		else {
@@ -313,8 +320,15 @@ function $getValueAsync(obj, path) {
 			let key = ps[i];
 			if (target[key] instanceof Promise) {
 				return new Promise(async function (resolve, reject) {
-					await target[key];
-					resolve(await $getValueAsync(obj, path));
+					try {
+						let t = await target[key];
+						resolve(t);
+						//resolve(await $getValueAsync(obj, path));
+					}
+					catch (ex) {
+						debugger;
+						reject(ex);
+					}
 				});
 			}
 			if (target[key]) {
@@ -327,8 +341,15 @@ function $getValueAsync(obj, path) {
 		let result = target[ps[lastIndex]];
 		if (result instanceof Promise) {
 			return new Promise(async function (resolve, reject) {
-				await result;
-				resolve(await $getValueAsync(obj, path));
+				try {
+					let t = await result;
+					resolve(t);
+					//resolve(await $getValueAsync(obj, path));
+				}
+				catch (ex) {
+					debugger;
+					reject(ex);
+				}
 			});
 		}
 		else {
@@ -371,13 +392,18 @@ $get.pack = async function $get_pack(path) {
 		const url = $get.packUrl(path);
 
 		let task = (async function () {
-			let jsonText = await ResourceManager.get(url);
+			try {
+				let jsonText = await ResourceManager.get(url);
 
-			obj = JSON.parse(jsonText);
+				obj = JSON.parse(jsonText);
 
-			_setValueByPath(path, obj, true);
+				_setValueByPath(path, obj, true);
 
-			return obj;
+				return obj;
+			}
+			catch (ex) {
+				return undefined;
+			}
 		})();
 		_setValueByPath(path, task, true);
 
@@ -420,13 +446,18 @@ $get.data = async function $get_data(path) {
 		const url = $get.dataUrl(path);
 
 		let task = (async function () {
-			let jsonText = await ResourceManager.get(url);
+			try {
+				let jsonText = await ResourceManager.get(url);
 
-			obj = JSON.parse(jsonText);
+				obj = JSON.parse(jsonText);
 
-			_setValueByPath(path, obj, false);
+				_setValueByPath(path, obj, false);
 
-			return obj;
+				return obj;
+			}
+			catch (ex) {
+				return undefined;
+			}
 		})();
 		_setValueByPath(path, task, false);
 
@@ -473,13 +504,18 @@ $get.list = async function $get_list(path) {
 		const url = $get.listUrl(path);
 
 		let task = (async function () {
-			let jsonText = await ResourceManager.get(url);
+			try {
+				let jsonText = await ResourceManager.get(url);
 
-			obj = JSON.parse(jsonText);
+				obj = JSON.parse(jsonText);
 
-			_setValueByPath(path, obj, false);
+				_setValueByPath(path, obj, false);
 
-			return obj;
+				return obj;
+			}
+			catch (ex) {
+				return undefined;
+			}
 		})();
 		_setValueByPath(path, task, false);
 
@@ -522,11 +558,16 @@ $get.binary = async function $get_data(path) {
 		const url = $get.binaryUrl(path);
 
 		let task = (async function () {
-			let buf = await ResourceManager.get(url, "arrayBuffer");
+			try {
+				let buf = await ResourceManager.get(url, "arrayBuffer");
 
-			_setValueByPath(path, buf, false);
+				_setValueByPath(path, buf, false);
 
-			return buf;
+				return buf;
+			}
+			catch (ex) {
+				return undefined;
+			}
 		})();
 		_setValueByPath(path, task, false);
 

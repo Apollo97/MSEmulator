@@ -278,7 +278,7 @@
 		<transition name="fade">
 			<ui-dialog title="SpriteViewer" ref="spriteViewer" v-show="true||workInProgress" :options="{width:'25em',height:'18em',hasHeader:true}">
 				<template slot="header">
-					Sprite Viewer
+					Map Sprite Viewer
 				</template>
 				<template slot="content">
 					<ui-map-sprite-viewer></ui-map-sprite-viewer>
