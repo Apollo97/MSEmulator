@@ -969,7 +969,7 @@
 				mapEditorMode: "layeredObject",
 				displayMode: 2,
 				selectedLayer: 0,
-				wnd_debug_style: { background: "#fff" },
+				wnd_debug_style: { background: "#ffffff" },
 
 				wnds: {
 					menu: { name: "$menu", visable: true },
@@ -981,6 +981,8 @@
 				},
 
 				workInProgress: false,
+
+				_elem_bgm: document.getElementById("bgm"),
 
 				gv: $gv,
 			}
@@ -1192,7 +1194,8 @@
 		},
 		mounted: async function () {
 			{
-				const elem = document.getElementById("bgm");
+				const elem = document.getElementById("bgm") || this._elem_bgm;
+				this._elem_bgm = elem;
 				this.$refs.bgm_outer.appendChild(elem);
 			}
 			
@@ -1257,7 +1260,8 @@
 			}
 		},
 		beforeDestroy: function () {
-			const elem = document.getElementById("bgm");
+			const elem = document.getElementById("bgm") || this._elem_bgm;
+			this._elem_bgm = elem;
 			document.getElementById("hidden_components").appendChild(elem);
 		},
 		components: {

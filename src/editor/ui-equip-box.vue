@@ -29,9 +29,9 @@
 							<option :value="'__v:/'+DATA_TAG_VERSION+'/'">current version</option>
 						</datalist>
 						<div style="position: relative; display: inline-block;">
-							<button @click="isShowSetting=!isShowSetting" @mouseover="isShowSetting=true" title="setting" style="padding: 0;">
-								<span v-if="!isShowSetting" style="color: black;">⚙️</span>
-								<span v-else style="color: red;">⚙️</span>
+							<button title="setting" style="padding: 0;">
+								<span v-if="!isShowSetting" @click="isShowSetting=!isShowSetting" @mouseover="isShowSetting=true" style="color: black;">⚙️</span>
+								<span v-else @click="isShowSetting=!isShowSetting" @mouseover="isShowSetting=true" style="color: red;">⚙️</span>
 							</button>
 						</div>
 					</div>
@@ -101,10 +101,10 @@
 									<span :value="value" :title="`${value}. ${text}色髮型 (${value})`" :style="{background: '#'+value}">{{text}}</span>
 								</template>
 							</ui-button-group>
-							<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 1px;">
+							<table class="hair_color" style="font-family: monospace; text-shadow: 0 0 5px white; border-spacing: 0px;">
 								<tr>
 									<td :style="getHairMixColor1CSS()"><span class="mix-color">{{String(100-hair_mix2)}}%</span></td>
-									<td style="width: 100%;"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
+									<td :style="getHairMixColorSliderCSS()"><input type="range" min="0" max="100" step="1" v-model.number="hair_mix2" style="width: 100%;" /></td>
 									<td :style="getHairMixColor2CSS()"><span class="mix-color">{{String(hair_mix2)}}%</span></td>
 								</tr>
 							</table>
@@ -133,7 +133,7 @@
 
 			<div v-if="__count_of_item_in_page > 0" class="item-list-page">
 				<template v-if="displayMode==false">
-					<ul class="item-list">
+					<ul ref="itemListView" class="item-list">
 						<template v-for="i in __count_of_item_in_page">
 							<li :key="__get_item_id(i - 1)"
 								:id="'item' + __get_item_id(i - 1)"
@@ -162,10 +162,11 @@
 					</ul>
 				</template>
 				<template v-else>
-					<div class="item-list-sm">
+					<div ref="itemListView" class="item-list-sm">
 						<template v-for="i in __count_of_item_in_page">
-							<div @contextmenu.prevent :key="__get_item_id(i - 1)"
+							<div :key="__get_item_id(i - 1)"
 								 :id="'item' + __get_item_id(i - 1)"
+								 @contextmenu.prevent
 								 @click.left="clickItem($event,i-1)"
 								 @mousemove="hoverItem($event,i-1)"
 								 @mouseleave="mouseleaveItem($event,i-1)"
@@ -402,6 +403,23 @@
 			getHairMixColor2CSS() {
 				return Object.assign({ "clip-path": "polygon(0% 10%, 0% 80%, 50% 100%, 100% 80%, 100% 10%)" }, this.hair_color2 != null ? hair_color_buttons[this.hair_color2].style : {});
 			},
+			getHairMixColorSliderCSS() {
+				let cs1 = hair_color_buttons[this.hair_color].style;
+
+				if (this.hair_color2 != null) {
+					let cs2 = hair_color_buttons[this.hair_color2].style;
+					return {
+						"width": "100%",
+						"background": `linear-gradient(to right, ${cs1.background}, ${cs2.background})`,
+					};
+				}
+				else {
+					return {
+						"width": "100%",
+						"background": cs1.background,
+					};
+				}
+			},
 			copyImageUrl: function (e, id) {
 				let img = e.currentTarget.querySelector("img");
 				if (img) {
@@ -457,7 +475,7 @@
 										this.search_equip_result = this.equip_list.filter((item, index) => {
 											let b1 = item.id == null || CharacterRenderConfig.getColorHairID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
-												item.$page = (index / this.countOfItemsPerPage);
+												item.$page = Math.trunc(index / this.countOfItemsPerPage);
 												return true;
 											}
 										});
@@ -468,7 +486,7 @@
 										this.search_equip_result = this.equip_list.filter((item, index) => {
 											let b1 = item.id == null || CharacterRenderConfig.getColorFaceID(item.id, 0);
 											if (b1 && b1.indexOf(black) != -1) {
-												item.$page = (index / this.countOfItemsPerPage);
+												item.$page = Math.trunc(index / this.countOfItemsPerPage);
 												return true;
 											}
 										});
@@ -478,7 +496,7 @@
 									let regexp = RegExp(rr[2]);
 									this.search_equip_result = this.equip_list.filter((item, index) => {
 										if (item[attr] != null && regexp.test(item[attr])) {
-											item.$page = (index / this.countOfItemsPerPage);
+											item.$page = Math.trunc(index / this.countOfItemsPerPage);
 											return true;
 										}
 									});
@@ -507,7 +525,7 @@
 										item.name.toLowerCase().indexOf(search_text.toLowerCase()) >= 0
 									)
 								) {
-									item.$page = (index / this.countOfItemsPerPage);
+									item.$page = Math.trunc(index / this.countOfItemsPerPage);
 									return true;
 								}
 							});
@@ -550,7 +568,12 @@
 					this.change_page(page);
 
 					this.$nextTick(() => {
-						window.location.hash = "item" + item.id;
+						let itemElemId = "item" + item.id;
+						//let elem = document.getElementById(itemElemId);
+						//elem.scrollIntoView({
+						//	behavior: "smooth",
+						//});
+						window.location.hash = itemElemId;
 
 						this.$refs.input_search.focus();
 
@@ -568,12 +591,16 @@
 				window.location.hash = "";
 			},
 			change_page: function (page) {
+				//console.log("change page: " + page);
 				if (this.page != page) {
 					this.$refs.content.scrollTop = 0;
 				}
 				this.page = page;
 				this.clearSearch();
-				//console.log("change page: " + page);
+				this.$nextTick(() => {
+					this.$refs.itemListView.scrollTop = 0;
+				});
+
 			},
 			__get_category_slot: function () {
 				const cateinfo = ItemCategoryInfo.get(this.selected_category);
@@ -1047,13 +1074,6 @@
 		border: 1px solid transparent;
 		text-shadow: 0 0 5px white, 0 0 10px white, 0 0 1px black;
 	}
-	.ui-equip-box .face_color button.active, .hair_color button.active {
-		border: 1px solid white;
-		box-shadow: 0 0 0.5em 0 blue, 0 0 1em 0 yellow;
-		color: white;
-		text-shadow: 0 0 0.1em black, 0 0 0.5em black;
-		z-index: 1;
-	}
 
 	.ui-equip-box .mix-color {
 		text-align: center;
@@ -1073,9 +1093,17 @@
 		cursor: pointer;
 		border: 1px solid transparent;
 		text-shadow: 0 0 5px white, 0 0 10px white, 0 0 1px black;
-		font-family: 微軟正黑體;
+		/*font-family: 微軟正黑體;*/
 		font-weight: bold;
 		font-size: 1em;
+	}
+
+	.ui-equip-box .face_color button.active, .hair_color button.active {
+		border: 1px solid white;
+		/*box-shadow: 0 0 0.5em 0 blue, 0 0 1em 0 yellow;*/
+		color: white;
+		text-shadow: 0 0 0.1em black, 0 0 0.5em black;
+		z-index: 1;
 	}
 
 	.ui-equip-box .button-area button > img {
