@@ -107,14 +107,17 @@ let SSAnim = (function () {
 								if (err) {
 									console.log("error loading:", image && image.src || page.name);
 								}
-								page.w = page.w || image.width;
-								page.h = page.h || image.height;
+								page.w = page.w || image.naturalWidth;
+								page.h = page.h || image.naturalHeight;
 								counter_dec();
 							}
 						})(page));
 					});
 				}
 				else {
+					alert("spine attachment images 未完成");
+					console.error("spine attachment images 未完成");
+
 					// load attachment images
 					that.spine_data.iterateSkins(function(skin_key, skin) {
 						skin.iterateAttachments(function(slot_key, skin_slot, attachment_key, attachment) {
@@ -197,8 +200,8 @@ let SSAnim = (function () {
 										if (err) {
 											console.log("error loading:", image && image.src || page.name);
 										}
-										page.w = page.w || image.width;
-										page.h = page.h || image.height;
+										page.w = page.w || image.naturalWidth;
+										page.h = page.h || image.naturalHeight;
 										counter_dec();
 									}
 								})(page));
@@ -261,7 +264,7 @@ let SSAnim = (function () {
 			}
 		}
 		
-		getAnimKeysCount(){
+		getAnimKeysCount() {
 			return this.spine_data.anim_keys.length;
 		}
 		
@@ -353,7 +356,7 @@ let SSAnim = (function () {
 			});
 			req.addEventListener('load', function() {
 					if (req.status === 200) {
-						callback(null, JSON.parse(req.response));
+						callback(null, req.response);
 					} else {
 						callback(req.response, null);
 					}

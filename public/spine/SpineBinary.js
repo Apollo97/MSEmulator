@@ -910,7 +910,8 @@ class SpineBinaryReader {
 				let frame = {};
 				frame.time = input.readFloat()
 				frame.mix = input.readFloat();
-				frame.bendPositive = input.readBoolean();
+				let bendDirection = input.readInt8();//from binary format
+				frame.bendPositive = bendDirection < 0 ? true : false;//to json format
 				if (frameIndex < frameCount - 1) {
 					frame.curve = this._readCurve();
 				}

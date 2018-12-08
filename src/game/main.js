@@ -171,13 +171,15 @@ window.onmouseup = function (e) {
  * @param {MouseEvent} e
  */
 window.onmousemove = function (e) {
+	$gv.mouse_x = e.pageX;
+	$gv.mouse_y = e.pageY;
+
 	if ($gv.m_editor_mode) {
 		if (!e.target.classList.contains("Editor")) {
 			return;
 		}
 	}
-	$gv.mouse_x = e.pageX;
-	$gv.mouse_y = e.pageY;
+
 	$gv.mouse_move = 1;
 }
 

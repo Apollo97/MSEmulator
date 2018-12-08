@@ -49,18 +49,18 @@
 		resizable_target = null;
 		resizable_orientation = null;
 
-		window.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
-		window.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
+		document.body.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
+		document.body.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
 	}
 
 	if (module.hot) {
 		//remove old listener
-		window.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
-		window.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
+		document.body.removeEventListener("mousemove", resizable_mouseMove, { passive: true });
+		document.body.removeEventListener("mouseup", resizable_mouseUp, { passive: true });
 	}
 
 	function _to_css_px(value) {
-		return CSS.px(Math.trunc(value));
+		return CSS.px(value);
 	}
 
 	const default_options = {
@@ -273,8 +273,8 @@
 						//console.log("o: " + orientation + ", down");
 						{
 							resizable_target = this;
-							window.addEventListener("mousemove", resizable_mouseMove, { passive: true });
-							window.addEventListener("mouseup", resizable_mouseUp, { passive: true });
+							document.body.addEventListener("mousemove", resizable_mouseMove, { passive: true });
+							document.body.addEventListener("mouseup", resizable_mouseUp, { passive: true });
 						}
 						resizable_current_target = evt.currentTarget;
 						resizable_orientation = orientation;
@@ -302,8 +302,8 @@
 				{
 					const rect_content = this.$refs.content.getBoundingClientRect();
 					const [content_width, content_height] = [
-						rect_content.width + this.$data._$resizable_borderWidth * 2,
-						rect_content.height + this.$data._$resizable_borderWidth * 2
+						(rect_content.width + this.$data._$resizable_borderWidth * 2),
+						(rect_content.height + this.$data._$resizable_borderWidth * 2),
 					];
 					
 					let rect = this.$el.getBoundingClientRect();
@@ -312,23 +312,23 @@
 					 * double pageX, pageY;
 					 * https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/pageX#Browser_compatibility
 					 */
-					const [mouseX, mouseY] = [Math.trunc(evt.pageX), Math.trunc(evt.pageY)];
+					const [mouseX, mouseY] = [evt.pageX, evt.pageY];
 					
 					let left = (mouseX + resizable_local_left);
 					let top = (mouseY + resizable_local_top);
 					
 					let right = (mouseX + resizable_local_right);
 					let bottom = (mouseY + resizable_local_bottom);
-					let width = Math.max(right - rect.left, content_width);
-					let height = Math.max(bottom - rect.top, content_height);
+					let width = (right - rect.left);
+					let height = (bottom - rect.top);
 					
 					let d_left = left - rect.left;
 					let d_top = top - rect.top;
 					
 					let width1, height1;
 					if (this.style.boxSizing == "border-box") {
-						width1 = Math.max(rect.right - left, content_width);
-						height1 = Math.max(rect.bottom - top, content_height);
+						width1 = (rect.right - left);
+						height1 = (rect.bottom - top);
 					}
 					else/* if (this.style.boxSizing == "content-box")*/ {//default
 						const style = this.$el.computedStyleMap();
@@ -342,45 +342,56 @@
 						const bw = borderLeftWidth + borderRightWidth;
 						const bh = borderTopWidth + borderBottomWidth;
 						
-						width1 = Math.max(rect.right - left - bw, content_width);
-						height1 = Math.max(rect.bottom - top - bh, content_height);
+						width1 = (rect.right - left - bw);
+						height1 = (rect.bottom - top - bh);
 					}
 
 					const resize_threshold = 1;
+
+					const computedStyleMap = this.$el.computedStyleMap();
+					const [minWidth, minHeight] = [
+						//(this.style.minWidth || computedStyleMap.get("min-width")).value,
+						//(this.style.minHeight || computedStyleMap.get("min-height")).value,
+						computedStyleMap.get("min-width").value,
+						computedStyleMap.get("min-height").value,
+					];
 					
 					switch (orientation) {
 						case "nw":
-							if (this.style.width.value != width1) {
+							if (width1 > minWidth) {
 								this.style.left = _to_css_px(left);
 								this.style.width = _to_css_px(width1);
 							}
-							if (this.style.height.value != height1) {
+							if (height1 > minHeight) {
 								this.style.top = _to_css_px(top);
 								this.style.height = _to_css_px(height1);
 							}
+							this.style.height = _to_css_px(height1);
 							break;
 						case "w":
-							if (this.style.width.value != width1) {
+							if (width1 > minWidth) {
 								this.style.left = _to_css_px(left);
 								this.style.width = _to_css_px(width1);
 							}
 							break;
 						case "n":
-							if (this.style.height.value != height1) {
+							if (height1 > minHeight) {
 								this.style.top = _to_css_px(top);
 								this.style.height = _to_css_px(height1);
 							}
+							this.style.height = _to_css_px(height1);
 							break;
 							
 						case "ne":
-							if (this.style.height.value != height1) {
+							if (height1 > minHeight) {
 								this.style.top = _to_css_px(top);
 								this.style.height = _to_css_px(height1);
 							}
+							this.style.height = _to_css_px(height1);
 							this.style.width = _to_css_px(width);
 							break;
 						case "sw":
-							if (this.style.width.value != width1) {
+							if (width1 > minWidth) {
 								this.style.left = _to_css_px(left);
 								this.style.width = _to_css_px(width1);
 							}

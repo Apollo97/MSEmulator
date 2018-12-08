@@ -750,6 +750,9 @@ class EquipImageFilter {
 
 	get hue() {
 		const equip = this.equip;
+		if (equip) {
+			return 0;
+		}
 		for (let i in equip.fragments) {
 			for (let j in equip.fragments[i].textures) {
 				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
@@ -761,6 +764,7 @@ class EquipImageFilter {
 				}
 			}
 		}
+		return 0;
 	}
 	set hue(value) {
 		const equip = this.equip;
@@ -779,6 +783,9 @@ class EquipImageFilter {
 
 	get sat() {
 		const equip = this.equip;
+		if (equip) {
+			return 100;
+		}
 		for (let i in equip.fragments) {
 			for (let j in equip.fragments[i].textures) {
 				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
@@ -790,6 +797,7 @@ class EquipImageFilter {
 				}
 			}
 		}
+		return 100;
 	}
 	set sat(value) {
 		const equip = this.equip;
@@ -807,6 +815,9 @@ class EquipImageFilter {
 	}
 	get bri() {
 		const equip = this.equip;
+		if (equip) {
+			return 100;
+		}
 		for (let i in equip.fragments) {
 			for (let j in equip.fragments[i].textures) {
 				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
@@ -818,6 +829,7 @@ class EquipImageFilter {
 				}
 			}
 		}
+		return 100;
 	}
 	set bri(value) {
 		const equip = this.equip;
@@ -836,6 +848,9 @@ class EquipImageFilter {
 
 	get contrast() {
 		const equip = this.equip;
+		if (equip) {
+			return 100;
+		}
 		for (let i in equip.fragments) {
 			for (let j in equip.fragments[i].textures) {
 				for (let k = 0; k < equip.fragments[i].textures[j].length; ++k) {
@@ -847,6 +862,7 @@ class EquipImageFilter {
 				}
 			}
 		}
+		return 100;
 	}
 	set contrast(value) {
 		const equip = this.equip;
@@ -866,12 +882,12 @@ class EquipImageFilter {
 	toJSON() {
 		return {
 			hue: this.hue,
-			saturation: strNum(this.sat),
-			brightness: strNum(this.bri),
-			contrast: strNum(this.contrast),
+			saturation: fixedNum(this.sat),
+			brightness: fixedNum(this.bri),
+			contrast: fixedNum(this.contrast),
 		};
-		function strNum(val) {
-			return (val / 100).toFixed(1);
+		function fixedNum(val) {
+			return Number((val / 100).toFixed(1));
 		}
 	}
 
@@ -1012,18 +1028,18 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 			region: region,
 			version: version,
 			hue: filter.hue,
-			saturation: strNum(filter.sat),
-			brightness: strNum(filter.bri),
-			contrast: strNum(filter.contrast),
-			alpha: Number(this.opacity.toFixed(1)),
+			saturation: fixedNum(filter.sat),
+			brightness: fixedNum(filter.bri),
+			contrast: fixedNum(filter.contrast),
+			alpha: Number((this.opacity).toFixed(1)),
 		};
 		if (animationName) {
 			obj.animationName = animationName;
 		}
 		return obj;
 
-		function strNum(val) {
-			return (val / 100).toFixed(1);
+		function fixedNum(val) {
+			return Number((val / 100).toFixed(1));
 		}
 	}
 
@@ -1250,6 +1266,7 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 				}
 			}
 		}
+		return 1;
 	}
 	/**
 	 * @param {number} opacity
@@ -3485,6 +3502,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			svg += '</g>';
 
 			svg += '<text x="0" y="122" fill="transparent">' + this._stringify(false) + '</text>';
+			svg += '<text x="0" y="144" fill="transparent">' + JSON.stringify(this) + '</text>';
 
 			svg += '</svg>';
 
@@ -3579,8 +3597,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 			}
 			if (!ft._url.startsWith("data:")) {
 				tasks.push((async function () {
-					ft.texture.$src = ft._url;
-					ft._url = await toDataURL(ft._url);
+					//ft.texture.$src = ft._url;
+					ft._url = await toDataURL(ft.texture.src);
 					return ft;
 				})());
 			}
@@ -3588,10 +3606,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				tasks.push(ft);
 			}
 			if (ft.graph2) {
-				let src = ft.graph2._url;
+				let src = ft.graph2.texture.src;
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
-						ft.texture.$src = ft._url;
+						//ft.texture.$src = ft._url;
 						ft.graph2._url = await toDataURL(src);
 						return ft.graph2;
 					})());
@@ -3601,10 +3619,10 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				}
 			}
 			if (ft.graph3) {
-				let src = ft.graph3._url;
+				let src = ft.graph3.texture.src;
 				if (!src.startsWith("data:")) {
 					tasks.push((async function () {
-						ft.texture.$src = ft._url;
+						//ft.texture.$src = ft._url;
 						ft.graph3._url = await toDataURL(src);
 						return ft.graph3;
 					})());
