@@ -32,13 +32,13 @@
 					<td>
 						<select v-model="chara.emotion" @input="oninput" title="表情">
 							<option v-if="!emotions.length" disabled value="">請選擇</option>
-							<option v-else v-for="item in emotions">{{item}}</option>
+							<option v-else v-for="item in emotions" :key="item">{{item}}</option>
 						</select>
 					</td>
 					<td>
 						<select v-model.number="chara.emotion_frame" @wheel.prevent="onwheel($event, 'emotion', chara.emotion_frame_count-1)" title="表情影格">
 							<option v-if="!emotions.length" disabled> ---- </option>
-							<option v-else v-for="frame in chara.emotion_frame_count" :value="frame - 1">{{frame - 1}}</option>
+							<option v-else v-for="frame in chara.emotion_frame_count" :key="frame" :value="frame - 1">{{frame - 1}}</option>
 						</select>
 					</td>
 					<td>
@@ -50,19 +50,19 @@
 					<td>
 						<select :disabled="sceneChara.enablePhysics" v-model="chara.action" @input="oninput" title="動作">
 							<option v-if="!actions.length" disabled value="">請選擇</option>
-							<option v-else v-for="item in actions">{{item}}</option>
+							<option v-else v-for="item in actions" :key="item">{{item}}</option>
 						</select>
 					</td>
 					<td>
 						<select :disabled="sceneChara.enablePhysics" v-model.number="chara.action_frame" @wheel.prevent="onwheel($event, 'action', chara.action_frame_count-1)" title="動作影格">
 							<option v-if="!actions.length" disabled> ---- </option>
-							<option v-else v-for="frame in chara.action_frame_count" :value="frame - 1">{{frame - 1}}</option>
+							<option v-else v-for="frame in chara.action_frame_count" :key="frame" :value="frame - 1">{{frame - 1}}</option>
 						</select>
 					</td>
 					<td v-if="chara.slots.tamingMob">
 						<select :disabled="sceneChara.enablePhysics" v-model="chara._ride_action" @input="oninput" title="騎寵動作">
 							<option v-if="!actions.length" disabled value="">騎寵動作</option>
-							<option v-else v-for="item in actions">{{item}}</option>
+							<option v-else v-for="item in actions" :key="item">{{item}}</option>
 						</select>
 					</td>
 				</tr>
@@ -131,7 +131,7 @@
 			<hr />
 			<table class="tb-equip-filter">
 				<template v-for="(equip,index) in chara.slots._ordered_slot">
-					<template v-if="equip">
+					<tbody v-if="equip" :key="index">
 						<tr :class="isShowEquipImageFilter[index] ? 'open':''" @click="showEquipImageFilter($event, index, equip)">
 							<!--<td style="width:1em;">
 								<span>{{getEquipCategoryName(equip)}}</span>
@@ -206,7 +206,7 @@
 								<td><input @click="equip.filter.contrast=100; oninput();" type="button" value="×" class="btn" /></td>
 							</tr>
 						</transition>
-					</template>
+					</tbody>
 				</template>
 			</table>
 		</div>
@@ -214,6 +214,8 @@
 </template>
 
 <script>
+	import InputNumber from "../components/input-number.vue";
+
 	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 
 	export default {
@@ -288,6 +290,9 @@
 				
 				this.oninput();
 			},
+		},
+		components: {
+			"input-number": InputNumber,
 		},
 	}
 

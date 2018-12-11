@@ -1,7 +1,7 @@
 ﻿
 <template>
 	<div style="position: relative;">
-		<div v-for="(obj, index) in objs">
+		<div v-for="(obj, index) in objs" :key="index">
 			<div style="position: relative;">
 				<div @click="scrollIntoView($event,obj)" :style="get_ObjPath_style(obj)" class="info sticky" title="select it and scroll into view">
 					<span>[{{index}}]</span>
@@ -78,7 +78,7 @@
 						<div>{{obj.constructor.name}}</div>
 						<div>
 							<table class="tb">
-								<tr v-for="(val, key) in obj._raw">
+								<tr v-for="(val, key) in obj._raw" :key="key">
 									<th>{{key}}</th>
 									<td>{{val}}</td>
 								</tr>
@@ -96,7 +96,7 @@
 								</a>
 							</template>
 						</div>
-						<div><img :src="obj.textures[obj.frame].texture.src" class="img"></img></div>
+						<div><img :src="obj.textures[obj.frame].texture.src" class="img" /></div>
 					</div>
 					<div v-else>
 						<span>未載入</span>
@@ -178,7 +178,7 @@
 							</tr>
 						</table>-->
 						<table v-if="obj.textures.length && obj.textures[obj.frame].texture" class="tb">
-							<tr v-for="(val, key) in obj.textures[obj.frame]._raw">
+							<tr v-for="(val, key) in obj.textures[obj.frame]._raw" :key="key">
 								<th>{{key}}</th>
 								<td>{{val}}</td>
 							</tr>
@@ -195,6 +195,8 @@
 </template>
 
 <script>
+import InputNumber from "../components/input-number.vue";
+import InputSelect from "../components/input-select.vue";
 
 export default {
 	props: ["objs", "displayMode"],
@@ -261,6 +263,10 @@ export default {
 			//window.copyToClipboard(text);
 			window.SelectText(event.currentTarget);
 		},
+	},
+	components: {
+		"input-number": InputNumber,
+		"input-select": InputSelect,
 	},
 }
 

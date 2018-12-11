@@ -144,7 +144,7 @@ class FragmentTexture extends SpriteBase {
 	}
 	/**
 	 * @param {CharacterAnimationBase} chara
-	 * @returns {Vec2}
+	 * @returns {function(CharacterAnimationBase,FragmentTexture,FragmentTexture):Vec2}
 	 */
 	_getRelativeFunction(chara) {
 		if (!this.isHasAnchor()) {
@@ -1010,11 +1010,26 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 	/**
 	 * @param {string} [animationName] - action animation
 	 */
-	toJSON(animationName) {
+	toJSON(animationName = "stand1") {
 		let region, version;
 		if (this._raw.info.__v) {
 			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
-			region = m[1] == "TWMS" ? "TMS" : m[1];
+			region = (function (r) {
+				const mm = {
+					GMS: "GMS",
+					CMS: "CMS",
+					KMS: "KMS",
+					JMS: "JMS",
+					SEA: "SEA",
+					TMS: "TMS",
+					TWMS: "TMS",
+				};
+				const result = mm[r];
+				if (!result) {
+					result = "GMS";
+				}
+				return result;
+			})([m[1]]);
 			version = "latest";//m[2];
 		}
 		else {
@@ -3039,6 +3054,19 @@ export class CharacterAnimationBase {
 	 * calc current frame bound box and restore result
 	 * @returns {Rectangle}
 	 */
+	calcBoundBox() {
+		if (this.__require_update) {
+			return this._calcBoundBox();
+		}
+		else {
+			return this._boundBox;
+		}
+	}
+
+	/**
+	 * calc current frame bound box and restore result
+	 * @returns {Rectangle}
+	 */
 	_calcBoundBox() {
 		let left = 0, top = 0, right = 0, bottom = 0;
 
@@ -3524,8 +3552,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	_save_as_png(renderer, filename) {
 		let bound = this._calcBoundBox();
 		let size = bound.size;
-		let x = -bound.left;
-		let y = bound.height;
+		let [x, y] = [-bound.left, bound.height];
 		let angle = 0;
 		let front = false;
 

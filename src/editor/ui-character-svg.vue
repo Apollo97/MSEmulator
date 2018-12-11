@@ -2,21 +2,22 @@
 <template>
 	<div v-if="chara != null" class="ui-character-frame">
 		<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink= "http://www.w3.org/1999/xlink"
-				x="0" y="0" width="64" height="96"
+				x="0" y="0" :width="style_frame.width" :height="style_frame.height"
 				>
-			<g transform="translate(32, 96)">
-				<template v-for="ft in frag_list">
-					<image v-if="ft.relative"
-						   :class="ft.classList"
-						   :x="ft.relative.x"
-						   :y="ft.relative.y"
-						   :width="ft.width"
-						   :height="ft.height"
-						   :opacity="ft.opacity"
-						   :transform="transform"
-						   :xlink:href="get_ft_src(ft)"
-						   >
-					</image>
+			<g :transform="`translate(${style_center.left}, ${style_center.top})`">
+				<template v-for="(ft,key) in frag_list">
+					<template v-if="ft.relative">
+						<image :key="key"
+							:class="ft.classList"
+							:x="ft.relative.x"
+							:y="ft.relative.y"
+							:width="ft.width"
+							:height="ft.height"
+							:opacity="ft.opacity"
+							:transform="transform"
+							:xlink:href="get_ft_src(ft)">
+						</image>
+					</template>
 				</template>
 			</g>
 		</svg>
@@ -73,6 +74,32 @@
 				}
 				
 				return transform;
+			},
+			style_frame: function () {
+				const chara = this.chara;
+				let bound = chara.calcBoundBox();
+				let size = bound.size;
+				return {
+					width: size.x,
+					height: size.y,
+					//width: Math.max(64, size.x),
+					//height: Math.max(96, size.y),
+				};
+			},
+			style_center: function () {
+				const chara = this.chara;
+				const style = {};
+			
+				let bound = chara.calcBoundBox();
+				let size = bound.size;
+				let [x, y] = [-bound.left, bound.height];
+				
+				style.left = x + "px";
+				style.top = y + "px";
+				//style.left = Math.max(32, x);
+				//style.top = Math.max(96, y);
+
+				return style;
 			},
 		},
 		data: function () {

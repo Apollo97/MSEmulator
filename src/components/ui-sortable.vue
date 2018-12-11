@@ -1,8 +1,8 @@
 ﻿
 <template>
-	<ul>
+	<component :is="tag">
 		<slot v-for="(item, index) in items" :item="item" :index="index"></slot>
-	</ul>
+	</component>
 </template>
 
 <script>
@@ -20,6 +20,9 @@
 						axis: "y",
 					};
 				},
+			},
+			tag: {
+				default: "ul"
 			},
 		},
 		//render: function (createElement) {

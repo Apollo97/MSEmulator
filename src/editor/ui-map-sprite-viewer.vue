@@ -19,7 +19,7 @@
 				<template v-if="packageList">
 					<select :disabled="isLoadingPackage" v-model="spritePackage">
 						<template v-for="packName in packageList">
-							<option :value="packName">{{packName}}</option>
+							<option :key="packName" :value="packName">{{packName}}</option>
 						</template>
 					</select>
 
@@ -37,13 +37,13 @@
 					<template v-if="spriteType=='Obj'&&spriteData.Obj[spritePackage]&&Object.keys(spriteData.Obj[spritePackage]).length">
 						<select :disabled="isLoadingPackage" v-model="obj_l0" @change="obj_l1=null">
 							<template v-for="l0 in makeList(spriteData.Obj[spritePackage])">
-								<option :value="l0">{{l0}}</option>
+								<option :key="l0" :value="l0">{{l0}}</option>
 							</template>
 						</select>
 						<template v-if="spriteData.Obj[spritePackage][obj_l0]">
 							<select :disabled="isLoadingPackage" v-model="obj_l1" @change="obj_l2=null">
 								<template v-for="l1 in makeList(spriteData.Obj[spritePackage][obj_l0])">
-									<option :value="l1">{{l1}}</option>
+									<option :key="l1" :value="l1">{{l1}}</option>
 								</template>
 							</select>
 						</template>
@@ -57,7 +57,7 @@
 					<template v-if="spriteData.Obj[spritePackage][obj_l0]">
 						<template v-if="spriteData.Obj[spritePackage][obj_l0][obj_l1]">
 							<template v-for="l2 in makeList(spriteData.Obj[spritePackage][obj_l0][obj_l1])">
-								<div @click="_onClick($event,['Obj',spritePackage,obj_l0,obj_l1,l2]);showPreview($event, spriteData.Obj[spritePackage][obj_l0][obj_l1][l2][0])"
+								<div :key="l2" @click="_onClick($event,['Obj',spritePackage,obj_l0,obj_l1,l2]);showPreview($event, spriteData.Obj[spritePackage][obj_l0][obj_l1][l2][0])"
 										@mouseover="showPreview($event, spriteData.Obj[spritePackage][obj_l0][obj_l1][l2][0])"
 										@mouseout="hidePreview"
 										class="icon-frame center-text">
@@ -81,12 +81,13 @@
 			<td class="fill">
 				<template v-if="spriteData.Tile[spritePackage]">
 					<template v-for="tileName in makeList(spriteData.Tile[spritePackage])">
-						<div class="hover-border-green">
+						<div :key="tileName" class="hover-border-green">
 							<div>
 								<span>{{tileName}}</span>
 							</div>
 							<template v-for="u in makeList(spriteData.Tile[spritePackage][tileName])">
-								<div @click="_onClick($event,['Tile',spritePackage,tileName,u]);showPreview($event, spriteData.Tile[spritePackage][tileName][u])"
+								<div :key="u"
+									 @click="_onClick($event,['Tile',spritePackage,tileName,u]);showPreview($event, spriteData.Tile[spritePackage][tileName][u])"
 									 @mouseover="showPreview($event, spriteData.Tile[spritePackage][tileName][u])"
 									 @mouseout="hidePreview"
 									 class="icon-frame center-text">
@@ -108,10 +109,11 @@
 				<template v-if="spriteData.Back[spritePackage]">
 					<template v-if="backType=='ani'">
 						<template v-for="no in makeList(spriteData.Back[spritePackage][backType])">
-							<div @click="_onClick($event,['Back',spritePackage,backType,no]);showPreview($event, spriteData.Back[spritePackage][backType][no])"
-									@mouseover="showPreview($event, spriteData.Back[spritePackage][backType][no][0])"
-									@mouseout="hidePreview"
-									class="icon-frame center-text">
+							<div :key="no"
+								 @click="_onClick($event,['Back',spritePackage,backType,no]);showPreview($event, spriteData.Back[spritePackage][backType][no])"
+								 @mouseover="showPreview($event, spriteData.Back[spritePackage][backType][no][0])"
+								 @mouseout="hidePreview"
+								 class="icon-frame center-text">
 								<div>
 									<span>{{no}}</span>
 								</div>
@@ -126,10 +128,11 @@
 					</template>
 					<template v-else>
 						<template v-for="no in makeList(spriteData.Back[spritePackage][backType])">
-							<div @click="_onClick($event,['Back',spritePackage,backType,no]);showPreview($event, spriteData.Back[spritePackage][backType][no])"
-									@mouseover="showPreview($event, spriteData.Back[spritePackage][backType][no])"
-									@mouseout="hidePreview"
-									class="icon-frame center-text">
+							<div :key="no"
+								 @click="_onClick($event,['Back',spritePackage,backType,no]);showPreview($event, spriteData.Back[spritePackage][backType][no])"
+								 @mouseover="showPreview($event, spriteData.Back[spritePackage][backType][no])"
+								 @mouseout="hidePreview"
+								 class="icon-frame center-text">
 								<div>
 									<span>{{no}}</span>
 								</div>
@@ -145,7 +148,7 @@
 		<tr v-else-if="0">
 			<template>
 				<td>
-					{{}}
+					{{""}}
 				</td>
 			</template>
 		</tr>

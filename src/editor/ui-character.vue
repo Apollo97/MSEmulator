@@ -1,12 +1,14 @@
 ﻿
 <template>
-	<div v-if="chara != null" class="frame">
-		<div class="center" :style="style_transform">
-			<template v-for="ft in frag_list">
-				<img v-if="ft.relative"
-					 :src="get_ft_src(ft)"
-					 :class="ft.classList"
-					 :style="get_ft_style(ft)" />
+	<div v-if="chara != null" class="frame" :style="style_frame">
+		<div :style="style_center">
+			<template v-for="(ft,key) in frag_list">
+				<template v-if="ft.relative">
+					<img :key="key"
+						:src="get_ft_src(ft)"
+						:class="ft.classList"
+						:style="get_ft_style(ft)" />
+				</template>
 			</template>
 		</div>
 	</div>
@@ -93,21 +95,48 @@
 				set: function (newVal) {
 				}
 			},
-			style_transform: function () {
+			style_frame: function () {
 				const chara = this.chara;
-				let transform = "";
-
-				if (chara.front > 0) {
-					transform += "rotateY(180deg)";
-				}
-
-				if (this.allowRotate && chara.angle) {
-					transform += `rotateZ(${chara.angle}rad)`;
-				}
-
+				let bound = chara.calcBoundBox();
+				let size = bound.size;
 				return {
-					transform: transform,
+					width: size.x + "px",
+					height: size.y + "px",
+					//width: Math.max(64, size.x) + "px",
+					//height: Math.max(96, size.y) + "px",
 				};
+			},
+			style_center: function () {
+				const chara = this.chara;
+				const style = {};
+
+				{
+					let transform = "";
+
+					if (chara.front > 0) {
+						transform += "rotateY(180deg)";
+					}
+
+					if (this.allowRotate && chara.angle) {
+						transform += `rotateZ(${chara.angle}rad)`;
+					}
+
+					style.transform = transform;
+				}
+
+				{
+					let bound = chara.calcBoundBox();
+					let size = bound.size;
+					let [x, y] = [-bound.left, bound.height];
+
+					style.position = "absolute";
+					style.left = x + "px";
+					style.top = y + "px";
+					//style.left = Math.max(32, x) + "px";
+					//style.top = Math.max(96, y) + "px";
+				}
+
+				return style;
 			},
 		},
 		methods: {
@@ -116,11 +145,12 @@
 			},
 			get_ft_style: function (ft) {
 				let style = {
+					position: "absolute",
 					left: ft.relative.x + "px",
 					top: ft.relative.y + "px",
-					opacity: ft.opacity,
 					width: ft.width + "px",
 					height: ft.height + "px",
+					opacity: ft.opacity,
 					filter: ft.filter.toString(),
 					visibility: ft.visible ? "visible" : "hidden",
 				};
@@ -155,7 +185,7 @@
 </script>
 
 <style scoped>
-	div.frame {
+	.frame {
 		display: inline-block;
 		position: relative;
 		width: 64px;
@@ -165,13 +195,5 @@
 		background-position: 0px 0px, 10px 10px;
 		background-size: 20px 20px;
 		background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee 100%),linear-gradient(45deg, #eee 25%, white 25%, white 75%, #eee 75%, #eee 100%);
-	}
-	div.center {
-		position: absolute;
-		left: 32px;
-		top: 96px;
-	}
-	img {
-		position: absolute;
 	}
 </style>

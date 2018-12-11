@@ -6,6 +6,8 @@
 	import Vue from "vue";
 	import Vuex from "vuex";
 
+	import mixEventListeners from "../components/mixEventListeners.js"
+
 	import { uiAnimationManager, UIAnimation } from "./UIAnimationManager";
 
 	var store = new Vuex.Store({
@@ -74,7 +76,7 @@
 
 	//Folder
 	let Gui = {
-		template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot/></div>",
+		template: "<div :data-p='p' v-on='mouseListeners'><slot/></div>",
 		store: store,
 		props: ["p"],
 		//data: function () {
@@ -88,7 +90,7 @@
 				
 				ds = [].concat(...ds.map(a => a.split("/")));
 				while ((i = ds.indexOf("..")) > 0) {
-					ds.splice(i - 1, 2)
+					ds.splice(i - 1, 2);
 				}
 				
 				return ds.join("/");
@@ -99,10 +101,33 @@
 				
 				ds = [].concat(...ds.map(a => a.split("/")));
 				while ((i = ds.indexOf("..")) > 0) {
-					ds.splice(i - 1, 2)
+					ds.splice(i - 1, 2);
 				}
 				
 				return ds.join("/");
+			},
+			mouseListeners: function () {
+				const vm = this;
+				return mixEventListeners(this.$listeners, {
+					mouseenter: function () {
+						vm.mouseenter.apply(vm, arguments);
+					},
+					mouseleave: function () {
+						vm.mouseleave.apply(vm, arguments);
+					},
+					mousedown: function () {
+						vm.mousedown.apply(vm, arguments);
+					},
+					mouseup: function () {
+						vm.mouseup.apply(vm, arguments);
+					},
+					mousemove: function () {
+						vm.mousemove.apply(vm, arguments);
+					},
+					click: function () {
+						vm.click.apply(vm, arguments);
+					},
+				});
 			},
 		},
 		methods: {
@@ -182,30 +207,30 @@
 				//return this._getData(this.getGuiParent(), this.p) || {};
 				return this.__getData() || {};
 			},
-			mouseenter: function ($event) {
-				this.$emit("mouseenter", $event);
+			mouseenter: function (event) {
+				this.$emit("mouseenter", event);
 			},
-			mouseleave: function ($event) {
-				this.$emit("mouseleave", $event);
+			mouseleave: function (event) {
+				this.$emit("mouseleave", event);
 			},
-			mousedown: function ($event) {
-				this.$emit("mousedown", $event);
+			mousedown: function (event) {
+				this.$emit("mousedown", event);
 			},
-			mouseup: function ($event) {
-				this.$emit("mouseup", $event);
+			mouseup: function (event) {
+				this.$emit("mouseup", event);
 			},
-			mousemove: function ($event) {
-				this.$emit("mouseup", $event);
+			mousemove: function (event) {
+				this.$emit("mouseup", event);
 			},
-			click: function ($event) {
-				this.$emit("click", $event);
+			click: function (event) {
+				this.$emit("click", event);
 			},
 		},
 	};
 
 	let GuiRoot = Vue.extend({
 		mixins: [Gui, {
-			template: "<div :data-p='p' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)'><slot v-if='m_data' /></div>",
+			template: "<div :data-p='p' v-on='mouseListeners'><slot v-if='m_data' /></div>",
 			data: function () {
 				return {
 					_$promise: null,
@@ -320,7 +345,7 @@
 	});
 	let GuiTextureS = Vue.extend({
 		mixins: [Gui, _GuiTexture, {
-			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			template: "<div :data-src='img_path' v-on='mouseListeners' :style='img_style'><slot /></div>",
 			computed: {
 				img_style: function () {
 					const x = -this.origin.x, y = -this.origin.y;
@@ -338,12 +363,12 @@
 	});
 	let GuiBackground = Vue.extend({
 		mixins: [GuiTexture, {
-			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='{ background:`url(${img}) no-repeat` }'><slot /></div>",
+			template: "<div :data-src='img_path' v-on='mouseListeners' :style='{ background:`url(${img}) no-repeat` }'><slot /></div>",
 		}]
 	});
 	let GuiExtendBg = Vue.extend({
 		mixins: [GuiTexture, {
-			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='{ background:`url(${img})` }'><slot /></div>",
+			template: "<div :data-src='img_path' v-on='mouseListeners' :style='{ background:`url(${img})` }'><slot /></div>",
 		}]
 	});
 	let GuiInput = Vue.extend({
@@ -359,7 +384,7 @@
 	});
 	let GuiFrameS = Vue.extend({
 		mixins: [GuiTextureS, {
-			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			template: "<div :data-src='img_path' v-on='mouseListeners' :style='img_style'><slot /></div>",
 			computed: {
 				img_style: function () {
 					const x = -this.origin.x, y = -this.origin.y;
@@ -376,7 +401,7 @@
 	});
 	let GuiBlock = Vue.extend({
 		mixins: [GuiTextureS, {
-			template: "<div :data-src='img_path' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :style='img_style'><slot /></div>",
+			template: "<div :data-src='img_path' v-on='mouseListeners' :style='img_style'><slot /></div>",
 			computed: {
 				img_style: function () {
 					const x = -this.origin.x, y = -this.origin.y;
@@ -391,7 +416,7 @@
 
 	let GuiButton = Vue.extend({
 		mixins: [Gui, {
-			template: "<div @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @mousemove='mousemove($event)' @click='click($event)' :data-p='p'><gui-texture :p='bp' style='display: inline-block;'></gui-texture></div>",
+			template: "<div v-on='mouseListeners' :data-p='p'><gui-texture :p='bp' style='display: inline-block;'></gui-texture></div>",
 			props: {
 				enabled: {
 					type: Boolean,
@@ -452,25 +477,25 @@
 						}
 					}
 				},
-				mouseenter: function ($event) {
+				mouseenter: function (event) {
 					this.setState("mouseOver");
-					this.$emit("mouseenter", $event);
+					this.$emit("mouseenter", event);
 				},
-				mouseleave: function ($event) {
+				mouseleave: function (event) {
 					this.setState("normal");
-					this.$emit("mouseleave", $event);
+					this.$emit("mouseleave", event);
 				},
-				mousedown: function ($event) {
+				mousedown: function (event) {
 					this.setState("pressed");
-					this.$emit("mousedown", $event);
+					this.$emit("mousedown", event);
 				},
-				mouseup: function ($event) {
+				mouseup: function (event) {
 					this.setState("mouseOver");
-					this.$emit("mouseup", $event);
+					this.$emit("mouseup", event);
 				},
-				click: function ($event) {
+				click: function (event) {
 					if (this.enabled) {
-						this.$emit("click", $event);
+						this.$emit("click", event);
 					}
 				},
 			},
@@ -506,7 +531,7 @@
 
 	let GuiButtonS = Vue.extend({
 		mixins: [GuiButton, {
-			template: "<gui-texture-s :p='bp' @mouseenter='mouseenter($event)' @mouseleave='mouseleave($event)' @mousedown='mousedown($event)' @mouseup='mouseup($event)' @click='click($event)'></gui-texture-s>",
+			template: "<gui-texture-s :p='bp' v-on='mouseListeners'></gui-texture-s>",
 			components: {
 				"gui-texture-s": GuiTextureS,
 			}

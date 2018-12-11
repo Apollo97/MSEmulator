@@ -14,19 +14,19 @@
 				</details>
 				<details open>
 					<summary>window</summary>
-					<p>
-						<div v-for="(wnd, key) in wnds" v-if="!wnd.name.startsWith('$')">
+					<div>
+						<div v-for="(wnd, key) in wnds" v-if="!wnd.name.startsWith('$')" :key="key">
 							<label>
 								<input type="checkbox" v-model="wnd.visable" @click="$refs[key]?$refs[key].requireOrder($event):undefined" checked /> {{wnd.name}}
 							</label>
 						</div>
-					</p>
+					</div>
 				</details>
 			</template>
 			<template>
 				<details>
 					<summary>scene</summary>
-					<p>
+					<div>
 						<div>
 							<label>
 								Map <input @keydown.enter="gv.scene_map.load($event.target.value.padStart(9, '0'))" />
@@ -61,29 +61,29 @@
 								<div><label>聊天顯示時間<input type="number" min="0" v-model.number="gv.ChatBalloon_display_duration" />毫秒</label></div>
 							</fieldset>
 						</div>
-					</p>
+					</div>
 				</details>
 				<details>
 					<summary>editor</summary>
-					<p>
+					<div>
 						<label><input type="checkbox" v-model="gv.m_display_foothold" /> foothold</label>
 						<label><input type="checkbox" v-model="gv.m_display_selected_object" /> selected object</label>
-					</p>
+					</div>
 				</details>
 				<details>
 					<summary>debug</summary>
-					<p>
+					<div>
 						<div><label><input type="checkbox" v-model="gv.m_display_debug_info" /> debug info</label></div>
 
 						<div><label><input type="checkbox" v-model="gv.m_display_physics_debug" /> physics debug</label></div>
 
-						<div v-for="flagName in gv.m_debugDraw.flagNames">
+						<div v-for="(flagName,key) in gv.m_debugDraw.flagNames" :key="key">
 							<label><input type="checkbox" v-model.number="gv.m_debugDraw[flagName]" /> {{flagName.slice(5)}}</label>
 						</div>
 						<div>
 							<label>axis length <input type="number" v-model="gv.m_debugDraw.axis_length" step="0.1" /></label>
 						</div>
-					</p>
+					</div>
 				</details>
 			</template>
 		</ui-dialog>
@@ -112,34 +112,34 @@
 								</div>
 							</div>
 							<div style="display: table-row; width: 100%; height: 100%;">
-								<ui-sortable :items="charaList" @input="oninput_sort" class="ui-character-list" style="overflow: auto; width: 100%; height: 100%; margin: 0; position: relative;">
+								<ui-sortable tag="table" :items="charaList" @input="oninput_sort" class="ui-character-list">
 									<template slot-scope="{item, index}">
-										<li :id="item.id" @mousedown.left="selectChara(item.id)" :class="[(selected == item.id ? 'active':''), item.id].join(' ')" :title="item.id" :key="item.id">
-											<table>
-												<tr @contextmenu.prevent="openCharacterDLMenu($event, item.id)">
-													<td title="順序" style="text-align: center;">
-														<div v-if="index">
-															<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index - 1)">▲</span>
-														</div>
-														<div>{{index}}</div>
-														<div v-if="index!=(charaList.length-1)">
-															<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index + 1)">▼</span>
-														</div>
-													</td>
-													<td>
-														<div>
-															<div class="ui-no-interactions">
-																<input v-if="item.renderer.pause" type="text" v-model="item.id" placeholder="名字" style="width: 90%;" />
-																<span v-else title="暫停後可改名">{{item.id}}</span>
-															</div>
-														</div>
-													</td>
-													<td style="position: relative;">
-														<ui-character :chara="item.renderer"></ui-character>
-													</td>
-												</tr>
-											</table>
-										</li>
+										<tr :id="item.id"
+											:class="[(selected == item.id ? 'active':''), item.id].join(' ')"
+											:title="item.id" :key="item.id"
+											@mousedown.left="selectChara(item.id)"
+											@contextmenu.prevent="openCharacterDLMenu($event, item.id)">
+											<td title="順序" style="text-align: center;">
+												<div v-if="index">
+													<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index - 1)">▲</span>
+												</div>
+												<div>{{index}}</div>
+												<div v-if="index!=(charaList.length-1)">
+													<span class="chara-ls-btn ui-no-interactions" @click="moveCharacterOrder(item, index + 1)">▼</span>
+												</div>
+											</td>
+											<td>
+												<div>
+													<div class="ui-no-interactions">
+														<input v-if="item.renderer.pause" type="text" v-model="item.id" placeholder="名字" style="width: 90%;" />
+														<span v-else title="暫停後可改名">{{item.id}}</span>
+													</div>
+												</div>
+											</td>
+											<td style="position: relative; text-align: center;">
+												<ui-character :chara="item.renderer"></ui-character>
+											</td>
+										</tr>
 									</template>
 								</ui-sortable>
 							</div>
@@ -218,7 +218,7 @@
 					<template v-if="scene_map()[mapEditorMode][selectedLayer] && mapEditorMode.startsWith('layered')">
 						<label>
 							layer <input-select v-model="selectedLayer">
-								<option v-for="layer in scene_map()[mapEditorMode].length">{{layer - 1}}</option>
+								<option v-for="(layer,key) in scene_map()[mapEditorMode].length" :key="key">{{layer - 1}}</option>
 							</input-select>
 						</label>
 						<span>{{scene_map()[mapEditorMode][selectedLayer].length}} objs</span>
@@ -366,6 +366,9 @@
 
 <script>
 	import Vuex from 'vuex';
+
+	import InputNumber from "../components/input-number.vue";
+	import InputSelect from "../components/input-select.vue";
 	
 	import UIDialog from '../components/ui-dialog.vue';
 	import UISortable from '../components/ui-sortable.vue';
@@ -1265,6 +1268,9 @@
 			document.getElementById("hidden_components").appendChild(elem);
 		},
 		components: {
+			"input-number": InputNumber,
+			"input-select": InputSelect,
+			
 			"ui-dialog": UIDialog,
 			"ui-sortable": UISortable,
 			"ui-trigger": UITrigger,
@@ -1306,17 +1312,23 @@
 		width: 100% !important;
 	}
 
+	.ui-character-list {
+		list-style: none;
+		padding: 0;
+		overflow: auto;
+		width: 100%;
+		margin: 0;
+		position: relative;
+		border-collapse: collapse;
+		border-spacing: 0;
+	}
+
 	/*li.active {
 		background-color: lightcyan;
 	}*/
 	.ui-character-list .active {
 		background: linear-gradient(to bottom, #ffec64 5%, #ffab23 100%);
 		background-color: #ffec64;
-	}
-
-	.ui-character-list {
-		list-style: none;
-		padding: 0;
 	}
 
 	.ui-character-list li {
@@ -1349,7 +1361,6 @@
 	}*/
 	
 	.chara-ls-btn-group {
-		display: inline;
 		float: right;
 	}
 	.chara-ls-btn {

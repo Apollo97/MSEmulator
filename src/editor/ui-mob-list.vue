@@ -81,7 +81,7 @@
 			</thead>
 			
 			<tbody>
-				<tr v-for="(spawn, index) in spawns" @mouseover="showPreview($event,spawn)" @mouseleave="hidePreview" class="item">
+				<tr v-for="(spawn, index) in spawns" :key="index" @mouseover="showPreview($event,spawn)" @mouseleave="hidePreview" class="item">
 					<td>
 						<button title="preview" style="text-align: center;" class="input">{{index}}</button>
 					</td>

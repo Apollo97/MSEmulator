@@ -10,12 +10,12 @@
 						<select v-model="selected_category" style="flex: 1;">
 							<template v-for="(og,key) in categoryGroupList">
 								<template v-if="og.length>1">
-									<optgroup :label="key">
-										<option v-for="cat in og" :value="cat.id_prefix">{{cat.categoryName}}</option>
+									<optgroup :key="key" :label="key">
+										<option v-for="(cat,cat_key) in og" :key="cat_key" :value="cat.id_prefix">{{cat.categoryName}}</option>
 									</optgroup>
 								</template>
 								<template v-else>
-									<option :value="og[0].id_prefix">{{og[0].categoryName}}</option>
+									<option :key="key" :value="og[0].id_prefix">{{og[0].categoryName}}</option>
 								</template>
 							</template>
 						</select>
@@ -124,8 +124,8 @@
 			<div v-if="__count_of_item_in_page > 0" style="display: table-row;">
 				<div class="m-pagination">
 					<template v-for="i in __count_of_page">
-						<span v-if="page == (i-1)" :title="i - 1" class="m-pagination-item active">{{i}}</span>
-						<span v-else @click.prevent="change_page(i - 1)" :title="i - 1" class="m-pagination-item">{{i}}</span>
+						<span :key="i" v-if="page == (i-1)" :title="i - 1" class="m-pagination-item active">{{i}}</span>
+						<span :key="i" v-else @click.prevent="change_page(i - 1)" :title="i - 1" class="m-pagination-item">{{i}}</span>
 					</template>
 				</div>
 			</div>

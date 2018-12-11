@@ -79,7 +79,7 @@
 								<!--淺在-Level-->
 								<texture style="position: absolute; left: 2px; top: 4px;" :src="`images/UI/UIToolTip/Item/ItemIcon/${equip.potential_level}`"></texture>
 							</div>
-							<img v-if="'icon' in equip" :src="getIconUrl()" @load="onload_icon($event)" class="UIToolTip equip-icon"></img>
+							<img v-if="'icon' in equip" :src="getIconUrl()" @load="onload_icon($event)" class="UIToolTip equip-icon" />
 							<texture style="position: absolute; left: 8px; top: 10px;" src="images/UI/UIToolTip/Item/ItemIcon/cover"></texture>
 						</div>
 						<div style="float: left; position: relative; top: 1px; width: 160px; height: 100%;">

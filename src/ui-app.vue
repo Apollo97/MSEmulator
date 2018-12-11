@@ -75,160 +75,11 @@
 <script>
 	import Vue from "vue";
 	import Vuex from "vuex";
-	
-	import StatusBar from "./ui/StatusBar.vue";
-	import UIWindowEquip from "./ui/UIWindow/Equip.vue";
-	import UIWindowItem from "./ui/UIWindow/Item.vue";
-	import UIWindowStat from "./ui/UIWindow/Stat.vue";
-	import UIWindowSkill from "./ui/UIWindow/Skill.vue";
-
-	import ItemTip from "./ui/UIToolTip/ItemTip.vue";
 
 	import Editor from "./editor/editor.vue";
 
 	import { ItemCategoryInfo, ResourceManager, ItemAttrNormalize } from '../public/javascripts/resource.js';
 
-
-	function findDirective(vnode, name, argument) {
-		return vnode.data.directives.filter(function (binding) {
-			return binding.name == name && binding.arg == argument;
-		});
-	}
-
-	function ui_directives(el, binding, vnode) {
-		let vm = vnode.context;
-		const modifiers = Object.keys(binding.modifiers);
-		
-		if (modifiers.length) {
-			modifiers.forEach(function (event) {
-				$(el).off(event);
-				$(el).on(event, function () {
-					let refBinding = findDirective(vnode, "ui", "ref");
-					if (refBinding[0]) {
-						let target = vm.$refs[refBinding[0].value];
-						
-						$(target).stop()[binding.arg](binding.value);
-					}
-				});
-			});
-		}
-		else if (binding.arg != "ref") {
-			vm.$nextTick(function () {
-				let refBinding = findDirective(vnode, "ui", "ref");
-				if (refBinding[0]) {
-					let target = vm.$refs[refBinding[0].value];
-					$(target).stop()[binding.arg](binding.value);
-				}
-			});
-		}
-	}
-	function ui_directives_unbind(el, binding, vnode) {
-		const modifiers = Object.keys(binding.modifiers);
-
-		if (modifiers.length) {
-			modifiers.forEach(function (event) {
-				$(el).off(event);
-			})
-		}
-	}
-	Vue.directive("ui", {
-		bind: ui_directives,
-		componentUpdated: ui_directives,
-		unbind: ui_directives_unbind
-	});
-
-	Vue.directive("declare", {
-		bind: function (el, binding, vnode) {
-			let vm = vnode.context;
-
-			for (let i in binding.modifiers) {
-				Vue.set(vm[binding.arg], i, binding.value);
-				//vm.$set(vm[binding.arg], i, binding.value);
-			}
-		},
-	});
-
-	//event: input
-	Vue.component("input-number", {
-		template: "<input :value='value' :step='step' :min='min' :max='max' @input='update($event.target.value)' @wheel.stop.prevent='wheel' type='number' />",
-		props: ["value", "step", "min", "max", "fixed"],
-		computed: {
-			_$value: function () {
-				return this.value === "" ? 0 : Number(this.value);
-			},
-			_$step: function () {
-				return this.step != null ? Number(this.step) : 1;
-			},
-			_$min: function () {
-				const { min = -Infinity } = this;
-				return Number(min);
-			},
-			_$max: function () {
-				const { max = Infinity } = this;
-				return Number(max);
-			},
-		},
-		methods: {
-			_$toFixed(val) {
-				const fixed = Number(this.fixed);
-				if (Number.isSafeInteger(fixed)) {
-					return val.toFixed(fixed);
-				}
-				return val;
-			},
-			update: function (val) {
-				if (val === "") {
-					return;
-				}
-				
-				val = Math.max(this._$min, Math.min(val, this._$max));
-				
-				this.$emit('input', this._$toFixed(val));
-				this.$parent.$forceUpdate();
-			},
-			wheel: function (event) {
-				if (event.target.value === "") {
-					return;
-				}
-				
-				const step = this._$step;
-				let val = Number(event.target.value);
-				if (event.deltaY < 0) {
-					val += step;
-				}
-				else if (event.deltaY > 0) {
-					val -= step;
-				}
-				this.update(val);
-			},
-		},
-	});
-
-	//event: input
-	Vue.component("input-select", {
-		template: "<select ref='input' :value='value' @input='update($event.target.value)' @wheel.stop.prevent='wheel'><slot></slot></select>",
-		props: ["value"],
-		methods: {
-			update: function (val) {
-				this.$emit('input', val);
-				this.$parent.$forceUpdate();
-			},
-			wheel: function (event) {
-				const values = [...this.$el.children].map(a=>a.value);
-				const length = values.length;
-				
-				let index = values.indexOf(event.target.value);
-				if (event.deltaY < 0) {
-					index -= 1;
-				}
-				else if (event.deltaY > 0) {
-					index += 1;
-				}
-				index = index >= 0 ? (index % length) : (length - 1);
-				this.update(values[index]);
-			},
-		},
-	});
 
 	export default {
 		store: Editor.store,
@@ -383,12 +234,12 @@
 		},
 		components: {
 			"editor": Editor,
-			"ui-tool-tip": ItemTip,
-			"status-bar": StatusBar,
-			"ui-window-equip": UIWindowEquip,
-			"ui-window-item": UIWindowItem,
-			"ui-window-stat": UIWindowStat,
-			"ui-window-skill": UIWindowSkill,
+			"ui-tool-tip": () => import("./ui/UIToolTip/ItemTip.vue"),
+			"status-bar": () => import("./ui/StatusBar.vue"),
+			"ui-window-equip": () => import("./ui/UIWindow/Equip.vue"),
+			"ui-window-item": () => import("./ui/UIWindow/Item.vue"),
+			"ui-window-stat": () => import("./ui/UIWindow/Stat.vue"),
+			"ui-window-skill": () => import("./ui/UIWindow/Skill.vue"),
 		}
 	};
 </script>
