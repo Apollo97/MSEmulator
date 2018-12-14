@@ -117,6 +117,7 @@
 										<tr :id="item.id"
 											:class="[(selected == item.id ? 'active':''), item.id].join(' ')"
 											:title="item.id" :key="item.id"
+											keyName="title"
 											@mousedown.left="selectChara(item.id)"
 											@contextmenu.prevent="openCharacterDLMenu($event, item.id)">
 											<td title="順序" style="text-align: center;">

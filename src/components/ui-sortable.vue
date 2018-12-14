@@ -24,6 +24,9 @@
 			tag: {
 				default: "ul"
 			},
+			keyName: {
+				default: "id"
+			},
 		},
 		//render: function (createElement) {
 		//	let es = [];
@@ -38,7 +41,9 @@
 		//},
 		methods: {
 			getValue: function () {
-				let order = $(this.$el).sortable("toArray");
+				let order = $(this.$el).sortable("toArray", {
+					attribute: this.keyName,
+				});
 				if (order.length != this.items.length) {
 					throw new Error("Can't get value before update.");
 				}
@@ -57,15 +62,18 @@
 				
 				this.$emit('update:items', new_list);	//output value by async
 				this.$emit('input', new_list);			//output value by event
-			}
+			},
+			bind_jquery_ui: function () {
+				const $$el = $(this.$el);
+				const options = Object.assign({
+					beforeStop: this.getValue.bind(this)
+				}, this.options);
+				$$el.sortable(options);
+				$$el.disableSelection();
+			},
 		},
-		mounted: function () {
-			const $$el = $(this.$el);
-			const options = Object.assign({
-				update: this.getValue.bind(this)
-			}, this.options);
-			$$el.sortable(options);
-			$$el.disableSelection();
+		/*mounted: function () {
+			this.bind_jquery_ui();
 		},
 		beforeUpdate: function () {
 			this.$nextTick(function () {//replace item from vue-component(<slot>) to jquery-ui-component($(this.$el))
@@ -85,15 +93,15 @@
 				}
 				$$el.sortable();
 			});
-		},
+		},*/
 		updated: function () {
-			$(this.$el).sortable();//make sortable
+			this.bind_jquery_ui();//make sortable
 		},
-		watch: {
+		/*watch: {
 			items: function (newValue) {
 				//$(this.$el).sortable();//make sortable
 			}
-		},
+		},*/
 	}
 </script>
 

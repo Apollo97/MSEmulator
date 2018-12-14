@@ -216,9 +216,9 @@ class Shader {
 		/** @type {WebGLProgram} */
 		this.program = null;
 
-		/** @type {nubmer} */
+		/** @type {number} */
 		this.vertexPositionAttribute = null;
-		/** @type {nubmer} */
+		/** @type {number} */
 		this.textureCoordAttribute = null;
 
 		/** @type {WebGLUniformLocation} */
