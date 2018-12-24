@@ -198,7 +198,7 @@ function argv_parse(argv) {
 
 /**
  * source: https://github.com/azu/promises-book/blob/master/Ch4_AdvancedPromises/lib/promise-sequence.js
- * @param {any} tasks
+ * @param {function():any} tasks
  */
 function sequenceTasks(tasks) {
 	function recordValue(results, value) {
@@ -259,7 +259,10 @@ function EquipList(iniFilePath) {
 			setting: path.join(__dirname, iniFilePath),
 			extractTo: path_equipList_dir,
 		}, function (error) {
-			if (error) reject(error);
+			if (error) {
+				//reject(error);
+				console.error(iniFilePath, ">", error);
+			}
 			resolve();
 		});
 	});
