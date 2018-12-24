@@ -3511,16 +3511,18 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		window.open(this._outlink());
 	}
 
-	_save_as_svg() {
+	_save_as_svg(renderer, filename) {
 		this.__texture_to_base64().then(frag_list => {
-			let file_name = this.id + ".svg";
-			//let frag_list = this.__frag_list;
+			let file_name = `${filename ? (filename+"."):""}${this.action}[${this.action_frame}].${this.emotion}[${this.emotion_frame}].svg`;
+			let bound = this.calcBoundBox();
+			let size = bound.size;
+			let [cx, cy] = [-bound.left, bound.height];
 	
 			let svg = '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >';
 
-			svg += '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink= "http://www.w3.org/1999/xlink">\n';// width="64" height="96"
+			svg += `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink= "http://www.w3.org/1999/xlink" width="${size.x}" height="${size.y}">\n`;
 
-			svg += '<g transform="translate(32, 96)">';
+			svg += `<g transform="translate(${cx}, ${cy})">`;
 			frag_list.forEach(function (ft) {
 				if (ft && ft.relative) {
 					let clz = ft.classList;

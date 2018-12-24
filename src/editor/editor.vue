@@ -345,7 +345,7 @@
 			<ui-menu :show="is_show_chara_dl_menu" ref="chara_dl_menu" @close="closeCharacterDLMenu" style="position: absolute; width: 8em; z-index: 99999;">
 				<template v-if="chara">
 					<a @click="_save_as_png">Save as PNG</a>
-					<a @click="chara.renderer._save_as_svg()">Save as SVG</a>
+					<a @click="_save_as_svg">Save as SVG</a>
 					<template v-if="progressMaximum == 0 || progressValue >= progressMaximum">
 						<a :href="chara.renderer._outlink()">Outlink</a>
 					</template>
@@ -1171,6 +1171,9 @@
 			},
 			_save_as_png: function () {
 				this.chara.renderer._save_as_png(engine, this.chara.id);
+			},
+			_save_as_svg: function () {
+				this.chara.renderer._save_as_svg(engine, this.chara.id);
 			},
 			appendMapElement(elemType, layer) {
 				const data = {};
