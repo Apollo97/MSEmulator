@@ -8,7 +8,7 @@ import { RenderingOption } from "./RenderingOption.js";
 import { CharacterRenderer } from "./CharacterRenderer.js";
 import { SceneCharacter } from "../SceneCharacter.js";
 import { Vec2 } from "../math.js";
-import { ItemCategoryInfo } from "../../../public/javascripts/resource.js";
+import { ItemCategoryInfo, ResourceManager } from "../../../public/javascripts/resource.js";
 
 
 class _ChairInfo {

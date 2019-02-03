@@ -750,7 +750,7 @@ class EquipImageFilter {
 
 	get hue() {
 		const equip = this.equip;
-		if (equip) {
+		if (!equip) {
 			return 0;
 		}
 		for (let i in equip.fragments) {
@@ -783,7 +783,7 @@ class EquipImageFilter {
 
 	get sat() {
 		const equip = this.equip;
-		if (equip) {
+		if (!equip) {
 			return 100;
 		}
 		for (let i in equip.fragments) {
@@ -815,7 +815,7 @@ class EquipImageFilter {
 	}
 	get bri() {
 		const equip = this.equip;
-		if (equip) {
+		if (!equip) {
 			return 100;
 		}
 		for (let i in equip.fragments) {
@@ -848,7 +848,7 @@ class EquipImageFilter {
 
 	get contrast() {
 		const equip = this.equip;
-		if (equip) {
+		if (!equip) {
 			return 100;
 		}
 		for (let i in equip.fragments) {
