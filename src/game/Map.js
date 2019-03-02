@@ -3178,7 +3178,19 @@ export class SceneMap {
 	 * @param {number} spawnPoint
 	 * @param {number} [_spawnPoint=]
 	 */
-	_spawnExistChara(chara, spawnPoint, _spawnPoint) {
+	async _spawnExistChara(chara, spawnPoint, _spawnPoint) {
+		if (this.$promise) {
+			await this.$promise;
+		}
+		this.__spawnExistChara(chara, spawnPoint, _spawnPoint);
+	}
+
+	/**
+	 * @param {SceneCharacter} chara
+	 * @param {number} spawnPoint
+	 * @param {number} [_spawnPoint=]
+	 */
+	__spawnExistChara(chara, spawnPoint, _spawnPoint) {
 		let player_spawns = this.portalMgr.portals.filter(a => a.pn == "sp");
 
 		if (spawnPoint == null) {
