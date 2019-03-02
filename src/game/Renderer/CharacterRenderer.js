@@ -895,10 +895,11 @@ class EquipImageFilter {
 	 * @param {{hue: number, saturation: number, brightness: number, contrast: number}} data
 	 */
 	parse(data) {
-		this.hue = Number(data.hue);
-		this.sat = Number(data.saturation);
-		this.bri = Number(data.brightness);
-		this.contrast = Number(data.contrast);
+		let { hue = 0, saturation = 1, brightness = 1, contrast = 1 } = data;
+		this.hue = Number(hue);
+		this.sat = Number(saturation) * 100;
+		this.bri = Number(brightness) * 100;
+		this.contrast = Number(contrast) * 100;
 	}
 }
 
@@ -1005,61 +1006,6 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		this.vslot = {};
 
 		this.filter = new EquipImageFilter(this);
-	}
-
-	/**
-	 * @param {string} [animationName] - action animation
-	 */
-	toJSON(animationName = "stand1") {
-		let region, version;
-		if (this._raw.info.__v) {
-			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
-			region = (function (r) {
-				const mm = {
-					GMS: "GMS",
-					CMS: "CMS",
-					KMS: "KMS",
-					JMS: "JMS",
-					SEA: "SEA",
-					TMS: "TMS",
-					TWMS: "TMS",
-				};
-				const result = mm[r];
-				if (!result) {
-					result = "GMS";
-				}
-				return result;
-			})([m[1]]);
-			version = "latest";//m[2];
-		}
-		else {
-			region = "TMS";
-			version = "latest";
-		}
-		const filter = this.filter;
-
-		let obj = {
-			itemId: Number(this.id),
-			region: region,
-			version: version,
-			hue: filter.hue,
-			saturation: fixedNum(filter.sat),
-			brightness: fixedNum(filter.bri),
-			contrast: fixedNum(filter.contrast),
-			alpha: Number((this.opacity).toFixed(1)),
-		};
-		if (animationName) {
-			obj.animationName = animationName;
-		}
-		return obj;
-
-		function fixedNum(val) {
-			return Number((val / 100).toFixed(1));
-		}
-	}
-
-	parse(data) {
-		throw new Error();
 	}
 
 	isLoaded() {
@@ -1252,6 +1198,67 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		this.effect == null;
 	}
 
+
+	/**
+	 * @param {string} [animationName] - action animation
+	 */
+	toJSON(animationName = "stand1") {
+		let region, version;
+		if (this._raw.info.__v) {
+			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
+			region = (function (r) {
+				const mm = {
+					GMS: "GMS",
+					CMS: "CMS",
+					KMS: "KMS",
+					JMS: "JMS",
+					SEA: "SEA",
+					TMS: "TMS",
+					TWMS: "TMS",
+				};
+				const result = mm[r];
+				if (!result) {
+					result = "GMS";
+				}
+				return result;
+			})([m[1]]);
+			version = "latest";//m[2];
+		}
+		else {
+			region = "TMS";
+			version = "latest";
+		}
+		const filter = this.filter;
+
+		let obj = {
+			itemId: Number(this.id),
+			region: region,
+			version: version,
+			hue: filter.hue,
+			saturation: fixedNum(filter.sat),
+			brightness: fixedNum(filter.bri),
+			contrast: fixedNum(filter.contrast),
+			alpha: Number((this.opacity).toFixed(1)),
+		};
+		if (animationName) {
+			obj.animationName = animationName;
+		}
+		return obj;
+
+		function fixedNum(val) {
+			return Number((val / 100).toFixed(1));
+		}
+	}
+
+	/**
+	 * another format
+	 * @param {{alpha: number, hue: number, saturation: number, brightness: number, contrast: number}} data
+	 */
+	parse(data) {
+		let { alpha = 1 } = data;
+		this.filter.parse(data);
+		this.opacity = Math.max(0, Math.min(alpha, 1));
+	}
 
 	/**
 	 * @param {Partial<{opacity:number,hue:number,sat:number,bri:number,contrast:number}>} option
@@ -3270,6 +3277,9 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		if (!category) {
 			category = ItemCategoryInfo.getJobWeaponCategory(this.job);
 		}
+		if (!(id && typeof id == "string")) {
+			throw new TypeError("id: string");
+		}
 		const item_type = id[0];
 		switch (item_type) {
 			case "0"://equip
@@ -3314,16 +3324,38 @@ export class CharacterRenderer extends CharacterAnimationBase {
 	}
 
 	/**
-	 * @param {{ear:boolean,items:[]}} option
+	 * @param {{showears:boolean,showLefEars:boolean,showHighLefEars:boolean,items:[]}} option
 	 */
 	set(option) {
-		this.ear = option.ear;
+		this.ear = Boolean(option.showears);
+		this.lefEar = Boolean(option.showLefEars);
+		this.highlefEar = Boolean(option.showHighLefEars);
 
-		option.items.forEach(itemData => {
-			if (itemData) {
-				this.use(itemData.itemId).then(item => {
-					item.set(itemData);
-				});
+		option.items.forEach(async (itemData) => {
+			try {
+				let itemId = Number(itemData.itemId | 0).toString().padStart(8, "0");
+				let item = await this.use(itemId);
+				item.set(itemData);
+			}
+			catch (ex) {
+				console.error("itemId:", itemData.itemId, ex, itemData);
+			}
+		});
+	}
+
+	/**
+	 * another format
+	 * @param {{alpha: number, hue: number, saturation: number, brightness: number, contrast: number}[]} equipDataArray
+	 */
+	parse(equipDataArray) {
+		equipDataArray.forEach(async (itemData) => {
+			try {
+				let itemId = Number(itemData.itemId | 0).toString().padStart(8, "0");
+				let equip = await this.use(itemId);
+				equip.parse(itemData);
+			}
+			catch (ex) {
+				console.error("itemId:", itemData.itemId, ex, itemData);
 			}
 		});
 	}
