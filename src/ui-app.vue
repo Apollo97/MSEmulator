@@ -172,20 +172,28 @@
 					this.ItemTip_state.display = false;
 				}
 			},
+			/**
+			 * shortcuts
+			 */
 			_onkeydown: function (event) {
-				switch (event.key) {
-					case "e":
-						this.isShowUIEquipWnd = !this.isShowUIEquipWnd;
-						break;
-					case "i":
-						this.isShowUIItemWnd = !this.isShowUIItemWnd;
-						break;
-					case "k":
-						this.isShowUISkillWnd = !this.isShowUISkillWnd;
-						break;
-					case "s":
-						this.isShowUIStatWnd = !this.isShowUIStatWnd;
-						break;
+				if (event.target.tagName == "INPUT" || event.target.tagName == "TEXTAREA" || event.target.contentEditable == "true") {
+					return;
+				}
+				else {
+					switch (event.key) {
+						case "e":
+							this.isShowUIEquipWnd = !this.isShowUIEquipWnd;
+							break;
+						case "i":
+							this.isShowUIItemWnd = !this.isShowUIItemWnd;
+							break;
+						case "k":
+							this.isShowUISkillWnd = !this.isShowUISkillWnd;
+							break;
+						case "s":
+							this.isShowUIStatWnd = !this.isShowUIStatWnd;
+							break;
+					}
 				}
 			}
 		},
@@ -203,7 +211,10 @@
 			let vm = this;
 
 			this.onkeydown = function (event) {
-				if (event.target.tagName != "INPUT") {
+				if (event.target.tagName == "INPUT" || event.target.tagName == "TEXTAREA" || event.target.contentEditable == "true") {
+					return;
+				}
+				else {
 					vm._onkeydown(event);
 				}
 			}
