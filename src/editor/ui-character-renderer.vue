@@ -1,6 +1,6 @@
 ﻿
 <template>
-	<div class="UICharacterRenderer" style="display: inline-block;">
+	<div class="UICharacterRenderer">
 		<div style="display: inline-block; vertical-align: top;">
 			<table style="border-collapse: collapse; border-spacing: 0px;">
 				<tr>
@@ -128,6 +128,23 @@
 					<td><input-number step="100" min="100" max="1000" v-model="max_value" /></td>
 				</tr>
 			</table>
+			<div>
+				<button @click="isShowCode=!isShowCode">Show code</button>
+				<div v-if="isShowCode" style="display: inline-block;">
+					<button @click="charaCode=JSON.stringify(sceneChara.renderer)">TO JSON *</button>
+				</div>
+				<div v-if="isShowCode" style="display: inline-block; float: right;">
+					<button>From JSON</button>
+					<button @click="sceneChara.renderer.parse(JSON.parse(charaCode))">From JSON *</button>
+					<button>From URL</button>
+					<button @click="_applyCharaDataUrl(charaCode)">From URL *</button>
+				</div>
+			</div>
+			<div v-if="isShowCode" style="position: absolutel; left: 0; top: 0;">
+				<div>
+					<textarea v-model="charaCode" style="box-sizing: border-box; width: 99%; min-width: 99%; min-height: 2.5em;"></textarea>
+				</div>
+			</div>
 			<hr />
 			<table class="tb-equip-filter">
 				<template v-for="(equip,index) in chara.slots._ordered_slot">
@@ -222,9 +239,11 @@
 		props: ["sceneChara"],
 		data: function () {
 			return {
+				isShowCode: false,
 				isShowDebug: false,
 				isShowEquipImageFilter: [],
 				max_value: 100,
+				charaCode: "",
 			}
 		},
 		computed: {
@@ -242,7 +261,41 @@
 				}
 			},
 		},
+		// watch: {
+		// 	"sceneChara.renderer.slots": {//circular object
+		// 		deep: true,
+		// 		handler: function (newVal, oldVal) {
+		// 			this.charaCode = JSON.stringify(this.sceneChara.renderer);
+		// 		},
+		// 	}
+		// },
 		methods: {
+			_applyCharaDataUrl: function (_url) {
+				const crr = this.sceneChara.renderer;
+
+				const url = decodeURIComponent(_url);
+
+				const m_showears = url.match(/showears=([^=]*)/);
+				const m_showLefEars = url.match(/showLefEars=([^=]*)/);
+				const m_showHighLefEars = url.match(/showHighLefEars=([^=]*)/);
+
+				const showears = m_showears ? (m_showears[1] == "true") : false;
+				const showLefEars = m_showLefEars ? (m_showLefEars[1] == "true") : false;
+				const showHighLefEars = m_showHighLefEars ? (m_showHighLefEars[1] == "true") : false;
+
+				crr.ear = showears;
+				crr.lefEar = showLefEars;
+				crr.highlefEar = showHighLefEars;
+
+				let m_code = url.match(/[^\{]*(\{.*\})[^\}]*/);
+				if (!m_code) {
+					return;
+				}
+
+				const charaCode = "[" + m_code[1] + "]";
+
+				crr.parse(JSON.parse(charaCode));
+			},
 			isEquip: function (id) {
 				return ItemCategoryInfo.isEquip(id);
 			},
