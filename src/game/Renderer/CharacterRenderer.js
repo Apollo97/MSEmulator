@@ -1216,7 +1216,7 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 					TMS: "TMS",
 					TWMS: "TMS",
 				};
-				const result = mm[r];
+				let result = mm[r];
 				if (!result) {
 					result = "GMS";
 				}
