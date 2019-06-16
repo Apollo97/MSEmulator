@@ -925,20 +925,20 @@ async function load_external_resource(url) {
 	url = url || "/items.json";
 	let raw;
 
-	try {
-		raw = ResourceManager._external_raw = JSON.parse(await $get.asset("equip.json"));
-		if (!raw) {
-			debugger;
-			throw Error("'/equip' is empty");
-		}
-	}
-	catch (ex) {
-		raw = ResourceManager._external_raw = JSON.parse(await $get("//labs.maplestory.io/api/gms/latest/item/category/equip"));
+	// try {
+	// 	raw = ResourceManager._external_raw = JSON.parse(await $get.asset("equip.json"));
+	// 	if (!raw) {
+	// 		debugger;
+	// 		throw Error("'/equip.json' is empty");
+	// 	}
+	// }
+	// catch (ex) {
+		raw = ResourceManager._external_raw = JSON.parse(await $get("https://maplestory.io/api/gms/latest/item/category/equip"));
 		if (!raw) {
 			debugger;
 			return;
 		}
-	}
+	// }
 	
 	for (let i = 0; i < raw.length; ++i) {
 		const item = raw[i];
@@ -967,7 +967,7 @@ async function load_external_resource(url) {
 				desc: item.desc,
 				cash: item.isCash ? 1 : 0,
 				icon: {
-					"": `//labs.maplestory.io/api/gms/latest/item/${item.id}/icon`,
+					"": `https://maplestory.io/api/gms/latest/item/${item.id}/icon`,
 				},
 			};
 
@@ -982,7 +982,7 @@ async function load_external_resource(url) {
 }
 
 function update_external_equip_list() {
-	const url = "https://labs.maplestory.io/api/gms/latest/item/category/equip";
+	const url = "https://maplestory.io/api/gms/latest/item/category/equip";
 	load_external_resource(url).then(() => {
 		_concat_external_resource(category, origin_data);
 		concat_external_resource = _concat_external_resource;
@@ -1043,7 +1043,7 @@ function _concat_external_resource(category, origin_data) {
 }
 
 window.load_extern_item_data = async function (id) {
-	let _raw = JSON.parse(await $get(`//labs.maplestory.io/api/gms/latest/item/${id}`));
+	let _raw = JSON.parse(await $get(`https://maplestory.io/api/gms/latest/item/${id}`));
 	let raw = {};
 
 	let default_ = _raw.frameBooks.default ? _raw.frameBooks.default.frames[0]:null;
