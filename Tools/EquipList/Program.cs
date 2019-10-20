@@ -294,10 +294,13 @@ internal class DataExtracter
 
 			foreach (var item in list)
 			{
-				var obj = (dynamic)item;
-				var id = obj.id;
+				//var obj = (dynamic)item;
+				//var id = obj.id;
+				//equipList[id] = obj;
 
-				equipList[id] = obj;
+				var eoColl = (IDictionary<String, object>)item;
+				var id = (string)eoColl["id"];
+				equipList[id] = eoColl;
 			}
 		}
 
@@ -368,16 +371,20 @@ internal class DataExtracter
 			{
 				bool modified = false;
 				data = existItems[identity];
+				var eoColl = (IDictionary<String, object>)data;
 
 				if (name != data.name)
 				{
 					data.name = name;
 					modified = true;
 				}
-				if (desc != null && desc != data.desc)
+				if (desc != null && eoColl.ContainsKey("desc"))
 				{
-					data.desc = desc;
-					modified = true;
+					if (desc != (string)eoColl["desc"])
+					{
+						data.desc = desc;
+						modified = true;
+					}
 				}
 
 				if (modified || new_identities.Contains(identity))
@@ -557,18 +564,22 @@ internal class DataExtracter
 			{
 				bool modified = false;
 				data = existItems[identity];
-
-				if (name != data.name)
+				var eoColl = (IDictionary<String, object>)data;
+				
+				if (name != (string)eoColl["name"])
 				{
 					data.name = name;
 					modified = true;
 				}
-				if (desc != null && desc != data.desc)
+				if (desc != null && eoColl.ContainsKey("desc"))
 				{
-					data.desc = desc;
-					modified = true;
+					if (desc != (string)eoColl["desc"])
+					{
+						data.desc = desc;
+						modified = true;
+					}
 				}
-
+	
 				if (modified || new_identities.Contains(identity))
 				{
 					data.__modified = DataSource.tag_version;
@@ -650,16 +661,20 @@ internal class DataExtracter
 			{
 				bool modified = false;
 				data = existItems[identity];
+				var eoColl = (IDictionary<String, object>)data;
 
 				if (name != data.name)
 				{
 					data.name = name;
 					modified = true;
 				}
-				if (desc != null && desc != data.desc)
+				if (desc != null && eoColl.ContainsKey("desc"))
 				{
-					data.desc = desc;
-					modified = true;
+					if (desc != (string)eoColl["desc"])
+					{
+						data.desc = desc;
+						modified = true;
+					}
 				}
 
 				if (modified || new_identities.Contains(identity))
@@ -745,8 +760,9 @@ internal class DataExtracter
 			if (existItems.ContainsKey(identity))
 			{
 				data = existItems[identity];
+				var eoColl = (IDictionary<String, object>)data;
 
-				bool modified = name != data.name;
+				bool modified = name != (string)eoColl["name"];
 
 				if (modified || new_identities.Contains(identity))
 				{
@@ -830,8 +846,8 @@ internal class DataExtracter
 			if (existItems.ContainsKey(identity))
 			{
 				data = existItems[identity];
-
-				bool modified = name != data.name;
+				var eoColl = (IDictionary<String, object>)data;
+				bool modified = name != (string)eoColl["name"];
 
 				if (modified || new_identities.Contains(identity))
 				{
