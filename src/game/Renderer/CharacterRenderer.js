@@ -3263,6 +3263,8 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		if (tasks && tasks.length) {
 			await Promise.all(tasks).then(() => {
 				this.__load_task = [];
+			}, function (err) {
+				console.error(err);
 			});
 		}
 	}
@@ -3372,7 +3374,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 				const cate = ItemCategoryInfo.get(ss[0]);
 				let id;
 				if (cate.slot == "face") {
-					id = ss[1];
+					id = ss[1].trim().padStart(8, 0);
 					this.$$changeLog.useEquip.push(id);
 					//
 					this.use(id);
@@ -3383,7 +3385,7 @@ export class CharacterRenderer extends CharacterAnimationBase {
 					let h2 = ss[1];
 					let h3 = ss[2];
 					//
-					id = ss[0];
+					id = ss[0].trim().padStart(8, 0);
 					this.$$changeLog.useEquip.push(id);
 					//
 					this.use(id).then(() => {
@@ -3417,8 +3419,11 @@ export class CharacterRenderer extends CharacterAnimationBase {
 					this.use.apply(this, ss, ss[1]);//this.use(ss[0], ss[1]);
 				}
 			}
-			else if (Number.isFinite(parseInt(v, 10))) {
-				this.use(v);
+			else {
+				if (Number.isFinite(parseInt(v, 10))) {
+					let id = v.trim().padStart(8, 0);
+					this.use(id);
+				}
 			}
 		});
 	}
