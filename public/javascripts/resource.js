@@ -118,6 +118,9 @@ export class ResourceManager {
 			throw new ex;
 		}
 
+		if (!results[0] || !results[1]) {
+			return null;
+		}
 		let data = Object.assign(results[0], results[1]);
 
 		data.id = itemId;
