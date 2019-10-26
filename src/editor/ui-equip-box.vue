@@ -649,7 +649,12 @@
 						return;
 					}
 
-					await concat_external_resource(coloredPath, equip_list);
+					try {
+						await concat_external_resource(coloredPath, equip_list);
+					}
+					catch (ex) {
+						console.error(ex);
+					}
 
 					if (cateinfo.slot == "weapon" && this.selected_category != "0170") {
 						let cash_weapon = JSON.parse(await $get.asset(`equips/0170.json`));
