@@ -39,7 +39,7 @@
     "vue-template-compiler": "^2.5.17",
     "webpack": "^4.16.5",
     "webpack-cli": "^2.1.2",
-    "webpack-dev-server": "^2.11.2",
+    "webpack-dev-server": "^3.8.2",
     "webpack-hot-middleware": "^2.22.1"
   },
   "main": "app.js",
