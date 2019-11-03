@@ -84,8 +84,8 @@
 				
 				zIndex: 0,
 				
-				_$width: 0,
-				_$height: 0,
+				_$width: null,
+				_$height: null,
 			};
 		},
 
@@ -119,8 +119,8 @@
 				
 				if (value) {
 					//save size
-					this._$width = this.$refs.window.style.width + "";
-					this._$height = this.$refs.window.style.height + "";
+					this._$width = this.$refs.window.style.width;
+					this._$height = this.$refs.window.style.height;
 					
 					const { width, height} = this.$refs.header.getBoundingClientRect();
 					
@@ -129,8 +129,8 @@
 					const innerBorder = 1 + 1;//?? left + right
 					const bbb = /*outerBorder + */ResizeHolder + innerBorder;
 					
-					this.$refs.window.style.width = (width + bbb) + "px";
-					this.$refs.window.style.height = (height + bbb) + "px";
+					this.$refs.window.style.width = CSS.px(width + bbb);
+					this.$refs.window.style.height = CSS.px(height + bbb);
 				}
 				else {
 					//restore size
