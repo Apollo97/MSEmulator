@@ -252,6 +252,9 @@ const symbol_isPack = Symbol("$pack");
 
 const url_startsWith_protocol = RegExp.prototype.test.bind(/^(([a-zA-Z^\:]+)(\:.*)$|\/\/)/);
 function _setValueByPath(path, value, is_pack) {
+	if (is_pack) {
+		value[symbol_isPack] = true;
+	}
 	if (url_startsWith_protocol(path)) {
 		return;
 	}
@@ -936,9 +939,14 @@ async function load_external_resource(url) {
 	// 	}
 	// }
 	// catch (ex) {
-		raw = ResourceManager._external_raw = JSON.parse(await $get("https://maplestory.io/api/gms/latest/item/category/equip"));
-		if (!raw) {
-			debugger;
+		try {
+			raw = ResourceManager._external_raw = JSON.parse(await $get("https://maplestory.io/api/gms/latest/item/category/equip"));
+			if (!raw) {
+				debugger;
+				return;
+			}
+		}
+		catch (ex) {
 			return;
 		}
 	// }
