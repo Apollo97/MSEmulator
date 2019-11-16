@@ -1208,25 +1208,26 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
 			region = (function (r) {
 				const mm = {
-					GMS: "GMS",
-					CMS: "CMS",
-					KMS: "KMS",
-					JMS: "JMS",
-					SEA: "SEA",
-					TMS: "TMS",
-					TWMS: "TMS",
+					"GMS": "GMS",
+					"CMS": "CMS",
+					"KMS": "KMS",
+					"JMS": "JMS",
+					"SEA": "SEA",
+					"TMS": "TMS",
+					"THMS": "THMS",
+					"TWMS": "TWMS",
 				};
 				let result = mm[r];
 				if (!result) {
-					result = "GMS";
+					result = ResourceManager.dataRegion;
 				}
 				return result;
 			})([m[1]]);
-			version = "latest";//m[2];
+			version = m[2] || ResourceManager.dataVersion;
 		}
 		else {
-			region = "TMS";
-			version = "latest";
+			region = ResourceManager.dataRegion;
+			version = ResourceManager.dataVersion;
 		}
 		const filter = this.filter;
 
@@ -3525,21 +3526,19 @@ export class CharacterRenderer extends CharacterAnimationBase {
 		const animationName = this.action;
 		const frame = this.action_frame;
 		const slots = this.slots;
-		const itemList = JSON.stringify(makeItemList.call());
-		return encodeURI(
-				"https://maplestory.io/api/character/" +
-				itemList.slice(1, itemList.length - 1) +    // not array
+		const itemList = makeItemList.call();
+		return "https://maplestory.io/api/character/" +
+				itemList +    // not array
 				"/" + animationName + "/" + frame + "?" +
 				"showears=" + this.elfEar +
 				"&showLefEars=" + this.lefEar +
 				"&resize=1" +
 				(name ? ("&name=" + name) : "") +
 				"&flipX=" + Boolean(this.front > 0) +
-				"&bgColor=0,0,0,0"
-				);
+				"&bgColor=0,0,0,0";
 		function makeItemList() {
 			return Object.values(slots).filter(a => a).map(item => {
-				return item.toJSON(animationName);
+				return encodeURIComponent(JSON.stringify(item.toJSON(animationName)));
 			});
 		}
 	}

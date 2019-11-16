@@ -85,6 +85,20 @@
 						</div>
 					</div>
 				</details>
+				<details open>
+					<summary>external resource</summary>
+					<div>
+						<div>
+							<button @click="reload_external_resource">reload</button>
+						</div>
+						<div>
+							<label>region <input type="text" v-model="external_resource_region" /></label>
+						</div>
+						<div>
+							<label>version <input type="text" v-model="external_resource_version" /></label>
+						</div>
+					</div>
+				</details>
 			</template>
 		</ui-dialog>
 		<!-- end menu -->
@@ -395,6 +409,7 @@
 
 	//import { GameStateManager } from '../game/GameState.js';
 	
+	import { ResourceManager, load_external_resource } from "../../public/javascripts/resource.js";
 	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
 
@@ -988,6 +1003,9 @@
 
 				_elem_bgm: document.getElementById("bgm"),
 
+				external_resource_region: ResourceManager.dataRegion,
+				external_resource_version: ResourceManager.dataVersion,
+
 				gv: $gv,
 			}
 		},
@@ -1001,9 +1019,39 @@
 				sceneEditor: "sceneEditor",
 			}),
 			{
+				/* external_resource_region: {
+					get: function () {
+						return ResourceManager.dataRegion;
+					},
+					set: function (value) {
+						ResourceManager.dataRegion = value;
+					},
+				},
+				external_resource_version: {
+					get: function () {
+						return ResourceManager.dataVersion;
+					},
+					set: function (value) {
+						ResourceManager.dataVersion = value;
+					},
+				}, */
 			}
 		),
 		methods: {
+			reload_external_resource: async function () {
+				let prev_region = ResourceManager.dataRegion;
+				let prev_version = ResourceManager.dataVersion;
+
+				ResourceManager.dataRegion = external_resource_region;
+				ResourceManager.dataVersion = external_resource_region;
+				try {
+					await load_external_resource();
+				}
+				catch (ex) {
+					ResourceManager.dataRegion = prev_region;
+					ResourceManager.dataVersion = prev_version;
+				}
+			},
 			scene_map: function () {
 				return window.scene_map;
 			},

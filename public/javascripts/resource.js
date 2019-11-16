@@ -27,6 +27,11 @@ window.character_action_list = ["walk1", "walk2", "stand1", "stand2", "alert", "
 		"ghostsit"*/];
 
 export class ResourceManager {
+	static get dataRegion() { return (localStorage.region || "TWMS").toUpperCase(); }
+	static set dataRegion(value) { localStorage.region = (value || "TWMS").toUpperCase(); }
+	static get dataVersion() { return (localStorage.version || "220").toUpperCase(); }
+	static set dataVersion(value) { localStorage.version = (value || "220").toUpperCase(); }
+
 	static isEquipExist(id, cateInfo) {
 		const dp = cateInfo.listPath;
 		const es = ResourceManager.equip_map[dp];
@@ -940,7 +945,7 @@ async function load_external_resource(url) {
 	// }
 	// catch (ex) {
 		try {
-			raw = ResourceManager._external_raw = JSON.parse(await $get("https://maplestory.io/api/gms/latest/item/category/equip"));
+			raw = ResourceManager._external_raw = JSON.parse(await $get(`https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/category/equip`));
 			if (!raw) {
 				debugger;
 				return;
@@ -978,7 +983,7 @@ async function load_external_resource(url) {
 				desc: item.desc,
 				cash: item.isCash ? 1 : 0,
 				icon: {
-					"": `https://maplestory.io/api/gms/latest/item/${item.id}/icon`,
+					"": `https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${item.id}/icon`,
 				},
 			};
 
@@ -993,7 +998,8 @@ async function load_external_resource(url) {
 }
 
 function update_external_equip_list() {
-	const url = "https://maplestory.io/api/gms/latest/item/category/equip";
+	debugger;//??
+	const url = `https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/category/equip`;
 	load_external_resource(url).then(() => {
 		_concat_external_resource(category, origin_data);
 		concat_external_resource = _concat_external_resource;
@@ -1054,7 +1060,7 @@ function _concat_external_resource(category, origin_data) {
 }
 
 window.load_extern_item_data = async function (id) {
-	let _raw = JSON.parse(await $get(`https://maplestory.io/api/gms/latest/item/${id}`));
+	let _raw = JSON.parse(await $get(`https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${id}`));
 	let raw = {};
 
 	let default_ = _raw.frameBooks.default ? _raw.frameBooks.default.frames[0]:null;
@@ -1089,10 +1095,11 @@ window.load_extern_item_data = async function (id) {
 	}
 
 	raw.info = {
-		islot: _raw.metaInfo.equip.islot,
-		vslot: _raw.metaInfo.equip.vslot,
-		icon: _raw.metaInfo.icon ? ("data:image/png;base64," + _raw.metaInfo.icon.iconRaw) : "",
-		cash: (_raw.metaInfo.cash && _raw.metaInfo.cash.cash) ? 1 : 0,
+		islot: _raw.metaInfo.islot,
+		vslot: _raw.metaInfo.vslot,
+		icon: "data:image/png;base64," + _raw.metaInfo.icon,
+		cash: _raw.metaInfo.cash ? 1 : 0,
+		__v: `${ResourceManager.dataRegion}${ResourceManager.dataVersion}`,
 	};
 
 	return raw;
