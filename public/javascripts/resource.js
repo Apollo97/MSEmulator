@@ -985,6 +985,7 @@ async function load_external_resource(url) {
 				icon: {
 					"": `https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${item.id}/icon`,
 				},
+				__v: `${ResourceManager.dataRegion}${ResourceManager.dataVersion}`,
 			};
 
 			ResourceManager.external[clz][cate].push(it);
@@ -1097,7 +1098,9 @@ window.load_extern_item_data = async function (id) {
 	raw.info = {
 		islot: _raw.metaInfo.islot,
 		vslot: _raw.metaInfo.vslot,
-		icon: "data:image/png;base64," + _raw.metaInfo.icon,
+		icon: {
+			"": `https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${_raw.id}/icon`,
+		},
 		cash: _raw.metaInfo.cash ? 1 : 0,
 		__v: `${ResourceManager.dataRegion}${ResourceManager.dataVersion}`,
 	};
