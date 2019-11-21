@@ -1042,8 +1042,8 @@
 				let prev_region = ResourceManager.dataRegion;
 				let prev_version = ResourceManager.dataVersion;
 
-				ResourceManager.dataRegion = external_resource_region;
-				ResourceManager.dataVersion = external_resource_region;
+				ResourceManager.dataRegion = this.external_resource_region;
+				ResourceManager.dataVersion = this.external_resource_region;
 				try {
 					await load_external_resource();
 				}
