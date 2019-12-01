@@ -89,13 +89,30 @@
 					<summary>external resource</summary>
 					<div>
 						<div>
-							<button @click="reload_external_resource">reload</button>
+							<button ref="reload_external_resource" @click="reload_external_resource">reload</button>
 						</div>
 						<div>
-							<label>region <input type="text" v-model="external_resource_region" /></label>
+							<label>region 
+								<select
+									v-model="external_resource_region"
+									@change="external_resource_version=resourceInfo[external_resource_region].slice(-1)[0].mapleVersionId">
+									<option
+										v-for="region in Object.keys(resourceInfo)"
+										:key="region"
+										:value="region">{{region}}</option>
+								</select>
+							</label>
 						</div>
 						<div>
-							<label>version <input type="text" v-model="external_resource_version" /></label>
+							<label>version 
+								<select v-if="resourceInfo[external_resource_region]"
+										v-model="external_resource_version">
+									<option
+										v-for="rv in resourceInfo[external_resource_region]"
+										:key="rv.mapleVersionId"
+										:value="rv.mapleVersionId">{{rv.mapleVersionId}}</option>
+								</select>
+							</label>
 						</div>
 					</div>
 				</details>
@@ -409,7 +426,7 @@
 
 	//import { GameStateManager } from '../game/GameState.js';
 	
-	import { ResourceManager, load_external_resource } from "../../public/javascripts/resource.js";
+	import { ResourceManager, load_external_resource, $get } from "../../public/javascripts/resource.js";
 	import { ItemCategoryInfo } from "../Common/ItemCategoryInfo.js";
 	import { BaseSceneCharacter, SceneCharacter, SceneRemoteCharacter } from '../game/SceneCharacter.js';
 
@@ -1003,6 +1020,7 @@
 
 				_elem_bgm: document.getElementById("bgm"),
 
+				resourceInfo: {},
 				external_resource_region: ResourceManager.dataRegion,
 				external_resource_version: ResourceManager.dataVersion,
 
@@ -1039,17 +1057,48 @@
 		),
 		methods: {
 			reload_external_resource: async function () {
-				let prev_region = ResourceManager.dataRegion;
-				let prev_version = ResourceManager.dataVersion;
+				if (Array.isArray(this.resourceInfo[this.external_resource_region])) {
+					let versionList = this.resourceInfo[this.external_resource_region];
+					if (versionList.find(rv => this.external_resource_version == rv.mapleVersionId)) {
+						let prev_region = ResourceManager.dataRegion;
+						let prev_version = ResourceManager.dataVersion;
+						try {
+								let btn = this.$refs.reload_external_resource;
 
-				ResourceManager.dataRegion = this.external_resource_region;
-				ResourceManager.dataVersion = this.external_resource_region;
-				try {
-					await load_external_resource();
+								btn.disabled = true;
+								btn.innerText = "Loading";
+
+								ResourceManager.dataRegion = this.external_resource_region;
+								ResourceManager.dataVersion = this.external_resource_version;
+								
+								await load_external_resource();
+
+								btn.innerText = "reload";
+								btn.disabled = false;
+						}
+						catch (ex) {
+							console.error(ex);
+							ResourceManager.dataRegion = prev_region;
+							ResourceManager.dataVersion = prev_version;
+						}
+					}
+					else {
+						let msg = "Unknow " + this.external_resource_region + " version: " + this.external_resource_version;
+						console.error(msg);
+						alert(msg);
+
+						//set last version
+						this.external_resource_version = this.resourceInfo[this.external_resource_region].slice(-1)[0].mapleVersionId;
+					}
 				}
-				catch (ex) {
-					ResourceManager.dataRegion = prev_region;
-					ResourceManager.dataVersion = prev_version;
+				else {
+					let msg = "Unknow region: " + this.external_resource_region;
+					console.error(msg);
+					alert(msg);
+
+					//set last version
+					this.external_resource_region = "TWMS";
+					this.external_resource_version = this.resourceInfo[this.external_resource_region].slice(-1)[0].mapleVersionId;
 				}
 			},
 			scene_map: function () {
@@ -1246,6 +1295,33 @@
 
 				this.$refs.mapEditor.fupdate();
 			},
+		},
+		created: function () {
+			debugger
+			$get("https://maplestory.io/api/wz?cache=false", "json").then(rawResourceInfo => {
+				let regionGroup = {};
+
+				if (Array.isArray(rawResourceInfo)) {
+					rawResourceInfo.forEach(rv => {
+						if (!regionGroup[rv.region]) {
+							regionGroup[rv.region] = [];
+						}
+						regionGroup[rv.region].push(rv);
+					});
+
+					Object.keys(regionGroup).forEach(region => {
+						regionGroup[region] = regionGroup[region].filter(rv => {
+							return rv.hasImages && rv.isReady;
+						}).sort((a, b) => {
+							let aa = a.mapleVersionId.split(".");
+							let ba = b.mapleVersionId.split(".");
+							return aa.map((va, vi) => va - (ba[vi] | 0)).find(a => a);
+						});
+
+						this.$set(this.resourceInfo, region, regionGroup[region]);
+					});
+				}
+			})
 		},
 		mounted: async function () {
 			{

@@ -47,7 +47,7 @@ export class ResourceManager {
 	
 	/**
 	 * @param {string} url
-	 * @param {""|"arraybuffer"|"blob"|"document"|"json"|"text"} responseType
+	 * @param {""|"arraybuffer"|"blob"|"document"|"json"|"text"} [responseType]
 	 */
 	static get(url, responseType) {
 		return new Promise(function (resolve, reject) {
@@ -371,10 +371,11 @@ function $getValueAsync(obj, path) {
 
 /**
  * @param {string} url
+ * @param {""|"arraybuffer"|"blob"|"document"|"json"|"text"} [responseType]
  * @returns {Promise<any>}
  */
-export let $get = function $get(url) {
-	return ResourceManager.get(url);
+export let $get = function $get(url, responseType) {
+	return ResourceManager.get(url, responseType);
 }
 /**
  * @param {string} path
@@ -912,28 +913,28 @@ ResourceManager.external = {
 	},
 };
 
+/** @type {{[category:string]:Map<string,{}>}} */
 ResourceManager.equip_map = {
 };
 
 for (let i in ItemTypeInfo.Equip) {
-	let cate = ItemTypeInfo.Equip[i];
-
-	ResourceManager.external.equip[cate] = [];
-	ResourceManager.equip_map[cate] = null;
+	let category = ItemTypeInfo.Equip[i];
+	ResourceManager.external.equip[category] = [];
+	ResourceManager.equip_map[category] = null;
 }
 for (let i = 0; i < 9; ++i) {
-	let cate = "Face" + i;
-	ResourceManager.external.equip[cate] = [];
-	ResourceManager.equip_map[cate] = null;
+	let category = "Face" + i;
+	ResourceManager.external.equip[category] = [];
+	ResourceManager.equip_map[category] = null;
 }
-for (let i = 0; i < 8; ++i) {
-	let cate = "Hair" + i;
-	ResourceManager.external.equip[cate] = [];
-	ResourceManager.equip_map[cate] = null;
+for (let i = 0; i <= 9; ++i) {
+	let category = "Hair" + i;
+	ResourceManager.external.equip[category] = [];
+	ResourceManager.equip_map[category] = null;
 }
 
-async function load_external_resource(url) {
-	url = url || "/items.json";
+export async function load_external_resource(url) {
+	//url = url || "/items.json";
 	let raw;
 
 	// try {
@@ -966,15 +967,15 @@ async function load_external_resource(url) {
 			}
 
 			let clz = item.typeInfo.overallCategory.toLowerCase();
-			let cate = ItemTypeInfo[item.typeInfo.overallCategory][item.typeInfo.subCategory];
-			if (!cate) {
+			let categoryName = ItemTypeInfo[item.typeInfo.overallCategory][item.typeInfo.subCategory];
+			if (!categoryName) {
 				continue;
 			}
-			else if (cate == "Face") {
-				cate += CharacterRenderConfig.getFaceColor(id);
+			else if (categoryName == "Face") {
+				categoryName += CharacterRenderConfig.getFaceColor(id);
 			}
-			else if (cate == "Hair") {
-				cate += CharacterRenderConfig.getHairColor(id);
+			else if (categoryName == "Hair") {
+				categoryName += CharacterRenderConfig.getHairColor(id);
 			}
 
 			let it = {
@@ -988,7 +989,12 @@ async function load_external_resource(url) {
 				__v: `${ResourceManager.dataRegion}${ResourceManager.dataVersion}`,
 			};
 
-			ResourceManager.external[clz][cate].push(it);
+			if (Array.isArray(ResourceManager.external[clz][categoryName])) {
+				ResourceManager.external[clz][categoryName].push(it);
+			}
+			else {
+				debugger
+			}
 		}
 		catch (ex) {
 			console.error("external resource: id(" + id + ")");
@@ -1029,6 +1035,7 @@ function _concat_external_resource(category, origin_data) {
 		if (!list) {
 			return;
 		}
+		/** @type {Map<string,{}>} */
 		let id_map = ResourceManager.equip_map[category];
 
 		if (!id_map) {
@@ -1042,10 +1049,12 @@ function _concat_external_resource(category, origin_data) {
 		}
 
 		list.forEach((item) => {
+			/** @type {string} */
 			let id = item.id;
 			if (!id_map.has(id)) {
 				item.$foreign = true;
 				origin_data.push(item);
+				id_map.set(id, item);
 			}
 			else {
 				let ori_item = id_map.get(id);
@@ -1060,9 +1069,37 @@ function _concat_external_resource(category, origin_data) {
 	}
 }
 
-window.load_extern_item_data = async function (id) {
-	let _raw = JSON.parse(await $get(`https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${id}`));
+/**
+ * @param {string} id
+ * @param {string} categoryName
+ */
+window.load_extern_item_data = async function (id, categoryName) {
+	let dataRegion, dataVersion;
+	//let itemInfo = ResourceManager.equip_map[categoryName].get(id);
+	let itemInfo = ResourceManager.external.equip[categoryName].find(itemInfo => itemInfo.id == id);
+	if (itemInfo) {
+		let __v = itemInfo.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
+		if (__v) {
+			dataRegion = __v[1] || ResourceManager.dataRegion;
+			dataVersion = __v[2] || ResourceManager.dataVersion;
+		}
+		else {
+			dataRegion = ResourceManager.dataRegion;
+			dataVersion = ResourceManager.dataVersion;
+		}
+	}
+	else {
+		dataRegion = ResourceManager.dataRegion;
+		dataVersion = ResourceManager.dataVersion;
+	}
+
+	let _raw = JSON.parse(await $get(`https://maplestory.io/api/${dataRegion}/${dataVersion}/item/${id}`));
 	let raw = {};
+
+	if (_raw == null) {
+		console.error("Not found:", id);
+		return null;
+	}
 
 	let default_ = _raw.frameBooks.default ? _raw.frameBooks.default.frames[0]:null;
 
@@ -1099,10 +1136,10 @@ window.load_extern_item_data = async function (id) {
 		islot: _raw.metaInfo.islot,
 		vslot: _raw.metaInfo.vslot,
 		icon: {
-			"": `https://maplestory.io/api/${ResourceManager.dataRegion}/${ResourceManager.dataVersion}/item/${_raw.id}/icon`,
+			"": `https://maplestory.io/api/${dataRegion}/${dataVersion}/item/${_raw.id}/icon`,
 		},
 		cash: _raw.metaInfo.cash ? 1 : 0,
-		__v: `${ResourceManager.dataRegion}${ResourceManager.dataVersion}`,
+		__v: `${dataRegion}${dataVersion}`,
 	};
 
 	return raw;

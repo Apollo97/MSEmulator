@@ -1047,7 +1047,7 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 		
 		try {
 			if (!raw && load_extern_item_data) {
-				raw = await load_extern_item_data(id);
+				raw = await load_extern_item_data(id, cateInfo.listPath || cateInfo.path || cateInfo.slot);
 			}
 		}
 		catch (ex) {
@@ -1205,7 +1205,7 @@ class CharacterAppearanceBase extends ICharacterAppearanceBase {
 	toJSON(animationName = "stand1") {
 		let region, version;
 		if (this._raw.info.__v) {
-			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9]*)/);
+			const m = this._raw.info.__v.toUpperCase().match(/([A-Z]*)([0-9\.]*)/);
 			region = (function (r) {
 				const mm = {
 					"GMS": "GMS",
